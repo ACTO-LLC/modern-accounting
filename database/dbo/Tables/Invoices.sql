@@ -1,0 +1,18 @@
+CREATE TABLE [dbo].[Invoices]
+(
+    [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+    [InvoiceNumber] NVARCHAR(50) NOT NULL,
+    [CustomerId] UNIQUEIDENTIFIER NOT NULL, -- FK to Customers (to be created)
+    [IssueDate] DATE NOT NULL,
+    [DueDate] DATE NOT NULL,
+    [TotalAmount] DECIMAL(19, 4) NOT NULL DEFAULT 0,
+    [Status] NVARCHAR(20) NOT NULL DEFAULT 'Draft', -- Draft, Sent, Paid, Overdue
+    [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+)
+GO
+
+ALTER TABLE [dbo].[Invoices]
+ENABLE CHANGE_TRACKING
+WITH (TRACK_COLUMNS_UPDATED = ON)
+GO

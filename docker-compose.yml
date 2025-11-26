@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  database:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: accounting-db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=StrongPassword123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+
+  dab:
+    image: mcr.microsoft.com/azure-databases/data-api-builder:latest
+    container_name: accounting-dab
+    depends_on:
+      - database
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./dab-config.json:/App/dab-config.json
+    environment:
+      - DAB_ENVIRONMENT=Development
+
+volumes:
+  sql-data:

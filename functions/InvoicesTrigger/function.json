@@ -1,0 +1,12 @@
+{
+    "bindings": [
+        {
+            "name": "changes",
+            "type": "sqlTrigger",
+            "direction": "in",
+            "tableName": "[dbo].[Invoices]",
+            "connectionStringSetting": "SqlConnectionString"
+        }
+    ],
+    "scriptFile": "../dist/InvoicesTrigger/index.js"
+}

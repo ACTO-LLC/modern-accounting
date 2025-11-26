@@ -1,0 +1,22 @@
+{
+  "name": "modern-accounting-system",
+  "version": "1.0.0",
+  "description": "Modern Double-Entry Accounting System",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:dab\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:dab": "docker-compose up",
+    "test": "cd client && npx playwright test"
+  },
+  "keywords": [
+    "accounting",
+    "dab",
+    "react",
+    "azure"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
