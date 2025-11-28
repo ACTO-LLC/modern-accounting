@@ -1,0 +1,34 @@
+
+Running 1 test using 1 worker
+
+Created test invoice: 8615D4C8-067E-4ADB-ABC1-072266611458
+  Γ£ÿ  1 [chromium] ΓÇ║ tests\invoice-edit-repro.spec.ts:4:3 ΓÇ║ Invoice Edit ΓÇ║ should load invoice for editing (30.6s)
+
+
+  1) [chromium] ΓÇ║ tests\invoice-edit-repro.spec.ts:4:3 ΓÇ║ Invoice Edit ΓÇ║ should load invoice for editing 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveValue[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: getByLabel('Invoice Number')
+    Expected: [32m"TEST-EDIT-1764344144677"[39m
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toHaveValue" with timeout 30000ms[22m
+    [2m  - waiting for getByLabel('Invoice Number')[22m
+
+
+      36 |     // 3. Verify the form loaded
+      37 |     // Check for the invoice number input to have the correct value
+    > 38 |     await expect(page.getByLabel('Invoice Number')).toHaveValue(invoiceData.InvoiceNumber);
+         |                                                     ^
+      39 |     
+      40 |     // Check if "Error loading invoice" is NOT present
+      41 |     await expect(page.getByText('Error loading invoice')).not.toBeVisible();
+        at C:\Users\EricHalsey\.gemini\antigravity\scratch\modern_accounting_system\client\tests\invoice-edit-repro.spec.ts:38:53
+
+    Error Context: test-results\invoice-edit-repro-Invoice-17e52-ld-load-invoice-for-editing-chromium\error-context.md
+
+  1 failed
+    [chromium] ΓÇ║ tests\invoice-edit-repro.spec.ts:4:3 ΓÇ║ Invoice Edit ΓÇ║ should load invoice for editing 

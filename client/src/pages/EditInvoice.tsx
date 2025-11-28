@@ -11,9 +11,17 @@ export default function EditInvoice() {
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['invoice', id],
     queryFn: async () => {
-      // Use filter to get invoice by ID and expand Lines
-      const response = await api.get<{ value: any[] }>(`/invoices?$filter=Id eq ${id}&$expand=Lines`);
-      return response.data.value[0];
+      // Fetch invoice and lines separately since $expand is not supported
+      const [invoiceResponse, linesResponse] = await Promise.all([
+        api.get<{ value: any[] }>(`/invoices?$filter=Id eq ${id}`),
+        api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${id}`)
+      ]);
+      
+      const invoice = invoiceResponse.data.value[0];
+      if (invoice) {
+        invoice.Lines = linesResponse.data.value;
+      }
+      return invoice;
     },
     enabled: !!id
   });

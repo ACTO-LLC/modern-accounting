@@ -17,3 +17,16 @@
 
 ### Database Verification
 **Insight**: Always verify API results by querying the database directly to ensure data integrity (e.g., correct foreign keys, line item association), not just relying on the API response code.
+
+## Data API Builder (DAB)
+
+### OData Limitations
+**Issue**: The `$expand` query parameter for including related entities (e.g., `/invoices?$expand=Lines`) may not be supported in all DAB configurations or versions, resulting in a 400 Bad Request.
+**Solution**: Instead of relying on `$expand`, perform separate API requests for the main entity and its related entities, then combine them in the frontend application logic. This is a more robust approach when OData support is uncertain.
+**Example**:
+```javascript
+const [invoice, lines] = await Promise.all([
+  api.get(`/invoices?$filter=Id eq ${id}`),
+  api.get(`/invoicelines?$filter=InvoiceId eq ${id}`)
+]);
+```
