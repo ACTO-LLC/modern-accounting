@@ -38,3 +38,7 @@ const [invoice, lines] = await Promise.all([
 2. Fetch current nested entities.
 3. Calculate diffs (Add, Update, Delete).
 4. Execute separate requests for each operation.
+
+### Entities backed by Views
+**Issue**: Entities backed by SQL Views (e.g., `source: "dbo.v_InvoiceLines"`) may fail during `POST` (Insert) operations if the view is not updatable or DAB cannot determine the primary key/schema correctly.
+**Solution**: For entities that require Write operations, point the `source` directly to the underlying Table (e.g., `source: "dbo.InvoiceLines"`) instead of a View, or ensure the View is properly configured with `INSTEAD OF` triggers (though direct Table access is simpler for DAB).

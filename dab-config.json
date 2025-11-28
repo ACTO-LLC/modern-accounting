@@ -205,7 +205,7 @@
             ]
         },
         "invoicelines": {
-            "source": "dbo.v_InvoiceLines",
+            "source": "dbo.InvoiceLines",
             "permissions": [
                 {
                     "role": "anonymous",

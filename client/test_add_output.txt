@@ -1,0 +1,33 @@
+
+Running 1 test using 1 worker
+
+Created test invoice: B553BB2B-3017-4EA8-8893-6BEF31E16C88
+  Γ£ÿ  1 [chromium] ΓÇ║ tests\invoice-add-line.spec.ts:4:3 ΓÇ║ Invoice Add Line Item ΓÇ║ should add a line item to an invoice (31.9s)
+
+
+  1) [chromium] ΓÇ║ tests\invoice-add-line.spec.ts:4:3 ΓÇ║ Invoice Add Line Item ΓÇ║ should add a line item to an invoice 
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected: [32m"http://localhost:5173/invoices"[39m
+    Received: [31m"http://localhost:5173/invoices[7m/B553BB2B-3017-4EA8-8893-6BEF31E16C88/edit[27m"[39m
+    Timeout:  30000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 30000ms[22m
+    [2m    33 ├ù unexpected value "http://localhost:5173/invoices/B553BB2B-3017-4EA8-8893-6BEF31E16C88/edit"[22m
+
+
+      46 |
+      47 |     // 6. Verify success (should redirect)
+    > 48 |     await expect(page).toHaveURL('http://localhost:5173/invoices');
+         |                        ^
+      49 |
+      50 |     // 7. Verify in DB
+      51 |     const verifyLinesResponse = await page.request.get(`http://localhost:5000/api/invoicelines?$filter=InvoiceId eq ${invoiceId}`);
+        at C:\Users\EricHalsey\.gemini\antigravity\scratch\modern_accounting_system\client\tests\invoice-add-line.spec.ts:48:24
+
+    Error Context: test-results\invoice-add-line-Invoice-A-e7a11-d-a-line-item-to-an-invoice-chromium\error-context.md
+
+  1 failed
+    [chromium] ΓÇ║ tests\invoice-add-line.spec.ts:4:3 ΓÇ║ Invoice Add Line Item ΓÇ║ should add a line item to an invoice 
