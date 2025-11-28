@@ -1,0 +1,4 @@
+InvoiceNumber,CustomerName,IssueDate,DueDate,Description,Quantity,UnitPrice
+INV-CSV-001,Test Customer,2023-11-29,2023-12-29,CSV Item 1,1,50.00
+INV-CSV-001,Test Customer,2023-11-29,2023-12-29,CSV Item 2,2,25.00
+INV-CSV-002,Test Customer,2023-11-30,2023-12-30,CSV Item 3,5,10.00

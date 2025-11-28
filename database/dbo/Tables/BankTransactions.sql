@@ -1,0 +1,49 @@
+CREATE TABLE [dbo].[BankTransactions]
+(
+    [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    
+    -- Source Info
+    [SourceType] NVARCHAR(20) NOT NULL, -- 'Bank' or 'CreditCard'
+    [SourceName] NVARCHAR(100), -- e.g., 'Wells Fargo Checking', 'Chase Credit Card'
+    [SourceAccountId] UNIQUEIDENTIFIER NOT NULL, -- Link to Accounts table
+    
+    -- Transaction Data
+    [TransactionDate] DATE NOT NULL,
+    [PostDate] DATE,
+    [Amount] DECIMAL(18,2) NOT NULL,
+    [Description] NVARCHAR(500) NOT NULL,
+    [Merchant] NVARCHAR(200),
+    
+    -- Credit Card Specific
+    [OriginalCategory] NVARCHAR(100), -- Bank's category
+    [TransactionType] NVARCHAR(50), -- Sale, Payment, Fee, etc.
+    [CardNumber] NVARCHAR(10), -- Last 4 digits
+    
+    [RawCSVLine] NVARCHAR(1000),
+    
+    -- AI Categorization
+    [SuggestedAccountId] UNIQUEIDENTIFIER,
+    [SuggestedCategory] NVARCHAR(100),
+    [SuggestedMemo] NVARCHAR(500),
+    [ConfidenceScore] DECIMAL(5,2),
+    
+    -- Bookkeeper Review
+    [Status] NVARCHAR(20) DEFAULT 'Pending', -- Pending, Approved, Rejected, Posted
+    [ReviewedBy] NVARCHAR(100),
+    [ReviewedDate] DATETIME,
+    
+    -- Final Categorization
+    [ApprovedAccountId] UNIQUEIDENTIFIER,
+    [ApprovedCategory] NVARCHAR(100),
+    [ApprovedMemo] NVARCHAR(500),
+    
+    -- Journal Entry Link
+    [JournalEntryId] UNIQUEIDENTIFIER,
+    
+    [CreatedDate] DATETIME DEFAULT GETDATE(),
+    
+    CONSTRAINT [FK_BankTransactions_SourceAccount] FOREIGN KEY ([SourceAccountId]) REFERENCES [dbo].[Accounts]([Id]),
+    CONSTRAINT [FK_BankTransactions_SuggestedAccount] FOREIGN KEY ([SuggestedAccountId]) REFERENCES [dbo].[Accounts]([Id]),
+    CONSTRAINT [FK_BankTransactions_ApprovedAccount] FOREIGN KEY ([ApprovedAccountId]) REFERENCES [dbo].[Accounts]([Id]),
+    CONSTRAINT [FK_BankTransactions_JournalEntry] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id])
+);

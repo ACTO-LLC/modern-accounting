@@ -18,5 +18,8 @@
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "mssql": "^12.1.1"
   }
 }

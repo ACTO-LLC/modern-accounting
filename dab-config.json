@@ -30,5 +30,215 @@
             }
         }
     },
-    "entities": {}
+    "entities": {
+        "accounts": {
+            "source": "dbo.Accounts",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "banktransactions": {
+            "source": "dbo.v_BankTransactions",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceType": "SourceType",
+                "SourceName": "SourceName",
+                "SourceAccountId": "SourceAccountId",
+                "TransactionDate": "TransactionDate",
+                "PostDate": "PostDate",
+                "Amount": "Amount",
+                "Description": "Description",
+                "Merchant": "Merchant",
+                "OriginalCategory": "OriginalCategory",
+                "TransactionType": "TransactionType",
+                "CardNumber": "CardNumber",
+                "RawCSVLine": "RawCSVLine",
+                "SuggestedAccountId": "SuggestedAccountId",
+                "SuggestedCategory": "SuggestedCategory",
+                "SuggestedMemo": "SuggestedMemo",
+                "ConfidenceScore": "ConfidenceScore",
+                "Status": "Status",
+                "ReviewedBy": "ReviewedBy",
+                "ReviewedDate": "ReviewedDate",
+                "ApprovedAccountId": "ApprovedAccountId",
+                "ApprovedCategory": "ApprovedCategory",
+                "ApprovedMemo": "ApprovedMemo",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedDate": "CreatedDate"
+            },
+            "relationships": {
+                "SourceAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "SourceAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "SuggestedAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "SuggestedAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "ApprovedAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ApprovedAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "JournalEntry": {
+                    "target.entity": "journalentries",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "journalentries": {
+            "source": "dbo.JournalEntries",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "customers": {
+            "source": "dbo.v_Customers",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Email": "Email",
+                "Phone": "Phone",
+                "Address": "Address",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "invoices": {
+            "source": "dbo.v_Invoices",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "InvoiceNumber": "InvoiceNumber",
+                "CustomerId": "CustomerId",
+                "IssueDate": "IssueDate",
+                "DueDate": "DueDate",
+                "TotalAmount": "TotalAmount",
+                "Status": "Status"
+            },
+            "relationships": {
+                "Customer": {
+                    "target.entity": "customers",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "CustomerId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Lines": {
+                    "target.entity": "invoicelines",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "InvoiceId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "invoicelines": {
+            "source": "dbo.v_InvoiceLines",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "InvoiceId": "InvoiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Invoice": {
+                    "target.entity": "invoices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "InvoiceId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        }
+    }
 }

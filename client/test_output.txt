@@ -1,0 +1,96 @@
+
+Running 5 tests using 1 worker
+
+[1A[2K[1/5] tests\e2e.spec.ts:8:1 ΓÇ║ can navigate to invoices and see seeded data
+[1A[2K  1) tests\e2e.spec.ts:8:1 ΓÇ║ can navigate to invoices and see seeded data ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('INV-001')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('INV-001')[22m
+
+
+      17 |   
+      18 |   // Check for the seeded invoice
+    > 19 |   await expect(page.getByText('INV-001')).toBeVisible();
+         |                                           ^
+      20 |   await expect(page.getByText('$1000.00')).toBeVisible();
+      21 |   await expect(page.getByText('Sent')).toBeVisible();
+      22 | });
+        at C:\Users\EricHalsey\.gemini\antigravity\scratch\modern_accounting_system\client\tests\e2e.spec.ts:19:43
+
+    Error Context: test-results\tests-e2e-can-navigate-to-invoices-and-see-seeded-data\error-context.md
+
+
+[1A[2K[2/5] tests\e2e.spec.ts:24:1 ΓÇ║ can create a new invoice
+[1A[2K  2) tests\e2e.spec.ts:24:1 ΓÇ║ can create a new invoice ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Create Invoice' })[22m
+
+
+      33 |   await page.getByLabel('Customer ID').fill('707E4008-77B6-4B89-9642-644ED79F09FF'); // Use same dummy ID
+      34 |   await page.getByLabel('Total Amount').fill('500.50');
+    > 35 |   await page.getByRole('button', { name: 'Create Invoice' }).click();
+         |                                                              ^
+      36 |
+      37 |   // Should redirect back to invoices
+      38 |   await expect(page).toHaveURL(/.*invoices/);
+        at C:\Users\EricHalsey\.gemini\antigravity\scratch\modern_accounting_system\client\tests\e2e.spec.ts:35:62
+
+    Error Context: test-results\tests-e2e-can-create-a-new-invoice\error-context.md
+
+
+[1A[2K[3/5] tests\e2e.spec.ts:45:1 ΓÇ║ can simulate bank feed
+[1A[2K[4/5] tests\e2e.spec.ts:63:1 ΓÇ║ can create a balanced journal entry
+[1A[2Ktests\e2e.spec.ts:63:1 ΓÇ║ can create a balanced journal entry
+[vite] connecting...
+
+[1A[2K[vite] connected.
+
+[1A[2K%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+
+[1A[2KChecking balance...
+
+[1A[2KSubmitting...
+
+[1A[2KWaiting for redirect...
+
+[1A[2KVerifying list...
+
+[1A[2K[5/5] tests\e2e.spec.ts:105:1 ΓÇ║ can edit an existing invoice
+[1A[2K  3) tests\e2e.spec.ts:105:1 ΓÇ║ can edit an existing invoice ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Create Invoice' })[22m
+
+
+      110 |   await page.getByLabel('Customer ID').fill('707E4008-77B6-4B89-9642-644ED79F09FF');
+      111 |   await page.getByLabel('Total Amount').fill('100.00');
+    > 112 |   await page.getByRole('button', { name: 'Create Invoice' }).click();
+          |                                                              ^
+      113 |   await expect(page).toHaveURL(/.*invoices/);
+      114 |   await expect(page.getByText(invoiceNumber)).toBeVisible();
+      115 |
+        at C:\Users\EricHalsey\.gemini\antigravity\scratch\modern_accounting_system\client\tests\e2e.spec.ts:112:62
+
+    Error Context: test-results\tests-e2e-can-edit-an-existing-invoice\error-context.md
+
+
+[1A[2K  3 failed
+    tests\e2e.spec.ts:8:1 ΓÇ║ can navigate to invoices and see seeded data ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    tests\e2e.spec.ts:24:1 ΓÇ║ can create a new invoice ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    tests\e2e.spec.ts:105:1 ΓÇ║ can edit an existing invoice ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  2 passed (1.2m)

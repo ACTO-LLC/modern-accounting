@@ -1,0 +1,3 @@
+{
+    "InvoiceJson": "{\"InvoiceNumber\": \"INV-TEST-SP\", \"CustomerId\": \"1CBEE948-C5BB-435C-A40B-D4FCCA7AD1F1\", \"IssueDate\": \"2025-11-27\", \"DueDate\": \"2025-12-27\", \"Status\": \"Draft\", \"TotalAmount\": 500, \"Lines\": [{\"Description\": \"Test Item SP\", \"Quantity\": 5, \"UnitPrice\": 100}]}"
+}

@@ -1,0 +1,21 @@
+{
+    "Id": "D05525FD-5196-4709-B1AC-007156652B6B",
+    "InvoiceNumber": "INV-TEST-FILE-ID-TOTAL-TIME-NOAMT",
+    "CustomerId": "1CBEE948-C5BB-435C-A40B-D4FCCA7AD1F1",
+    "IssueDate": "2025-11-27",
+    "DueDate": "2025-12-27",
+    "Status": "Draft",
+    "TotalAmount": 500,
+    "CreatedAt": "2025-11-27T12:00:00Z",
+    "UpdatedAt": "2025-11-27T12:00:00Z",
+    "Lines": [
+        {
+            "Id": "E05525FD-5196-4709-B1AC-007156652B6C",
+            "Description": "Test Item File ID Total Time NoAmt",
+            "Quantity": 5,
+            "UnitPrice": 100,
+            "CreatedAt": "2025-11-27T12:00:00Z",
+            "UpdatedAt": "2025-11-27T12:00:00Z"
+        }
+    ]
+}

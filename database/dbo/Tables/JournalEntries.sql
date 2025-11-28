@@ -10,11 +10,7 @@ CREATE TABLE [dbo].[JournalEntries]
     [PostedAt] DATETIME2 NULL,
     [PostedBy] NVARCHAR(100) NULL
 )
-WITH
-(
-    SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[JournalEntriesHistory]),
-    LEDGER = ON
-)
+
 GO
 
 -- Enable Change Tracking for Azure Functions Trigger

@@ -1,0 +1,99 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e6]: Modern Books
+      - navigation [ref=e7]:
+        - link "Dashboard" [ref=e8] [cursor=pointer]:
+          - /url: /
+          - img [ref=e9]
+          - text: Dashboard
+        - link "Invoices" [ref=e14] [cursor=pointer]:
+          - /url: /invoices
+          - img [ref=e15]
+          - text: Invoices
+        - link "Banking" [ref=e18] [cursor=pointer]:
+          - /url: /banking
+          - img [ref=e19]
+          - text: Banking
+        - link "Journal Entries" [ref=e23] [cursor=pointer]:
+          - /url: /journal-entries
+          - img [ref=e24]
+          - text: Journal Entries
+        - link "Import" [ref=e27] [cursor=pointer]:
+          - /url: /import
+          - img [ref=e28]
+          - text: Import
+        - link "Review" [ref=e31] [cursor=pointer]:
+          - /url: /review
+          - img [ref=e32]
+          - text: Review
+        - link "Transactions" [ref=e35] [cursor=pointer]:
+          - /url: /transactions
+          - img [ref=e36]
+          - text: Transactions
+        - link "Settings" [ref=e40] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e41]
+          - text: Settings
+    - main [ref=e45]:
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - button [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+          - heading "New Invoice" [level=1] [ref=e51]
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - generic [ref=e55]: Invoice Number
+              - textbox "Invoice Number" [ref=e56]:
+                - /placeholder: INV-002
+                - text: INV-TEST-CREATE-1764274595865
+            - generic [ref=e57]:
+              - generic [ref=e58]: Customer ID (UUID)
+              - textbox "Customer ID (UUID)" [ref=e59]:
+                - /placeholder: e.g. 707E4008-77B6-4B89-9642-644ED79F09FF
+                - text: 1CBEE948-C5BB-435C-A40B-D4FCCA7AD1F1
+            - generic [ref=e60]:
+              - generic [ref=e61]: Issue Date
+              - textbox "Issue Date" [ref=e62]: 2025-11-27
+            - generic [ref=e63]:
+              - generic [ref=e64]: Due Date
+              - textbox "Due Date" [ref=e65]: 2025-12-27
+            - generic [ref=e66]:
+              - generic [ref=e67]: Status
+              - combobox "Status" [ref=e68]:
+                - option "Draft" [selected]
+                - option "Sent"
+                - option "Paid"
+                - option "Overdue"
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - heading "Line Items" [level=3] [ref=e71]
+              - button "Add Item" [ref=e72] [cursor=pointer]:
+                - img [ref=e73]
+                - text: Add Item
+            - generic [ref=e75]:
+              - generic [ref=e76]:
+                - generic [ref=e77]: Description
+                - textbox "Item description" [ref=e78]: Test Item
+              - generic [ref=e79]:
+                - generic [ref=e80]: Qty
+                - spinbutton [ref=e81]: "5"
+              - generic [ref=e82]:
+                - generic [ref=e83]: Unit Price
+                - spinbutton [ref=e84]: "100"
+              - generic [ref=e85]:
+                - generic [ref=e86]: Amount
+                - generic [ref=e87]: $500.00
+              - button [ref=e88] [cursor=pointer]:
+                - img [ref=e89]
+          - generic [ref=e92]:
+            - generic [ref=e93]: "Total: $500.00"
+            - button "Cancel" [ref=e94] [cursor=pointer]
+            - button "Create Invoice" [ref=e95] [cursor=pointer]
+  - button "Open chat" [ref=e96] [cursor=pointer]:
+    - img [ref=e97]
+```
