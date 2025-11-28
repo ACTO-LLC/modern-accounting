@@ -30,3 +30,11 @@ const [invoice, lines] = await Promise.all([
   api.get(`/invoicelines?$filter=InvoiceId eq ${id}`)
 ]);
 ```
+
+### Nested Entity Updates
+**Issue**: DAB does not support updating nested entities (e.g., Line Items) via a `PATCH` request to the parent entity.
+**Solution**: Implement manual reconciliation in the frontend or API layer.
+1. Update the parent entity (excluding nested data).
+2. Fetch current nested entities.
+3. Calculate diffs (Add, Update, Delete).
+4. Execute separate requests for each operation.
