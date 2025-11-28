@@ -43,7 +43,7 @@
             ]
         },
         "banktransactions": {
-            "source": "dbo.v_BankTransactions",
+            "source": "dbo.BankTransactions",
             "permissions": [
                 {
                     "role": "anonymous",

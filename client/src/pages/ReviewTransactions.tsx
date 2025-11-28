@@ -78,7 +78,7 @@ export default function ReviewTransactions() {
   // Update transaction mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<BankTransaction> }) => {
-      const response = await fetch(`http://localhost:5000/api/banktransactions/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/banktransactions/Id/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -99,7 +99,7 @@ export default function ReviewTransactions() {
       await Promise.all(
         ids.map(id => {
           const txn = transactions.find(t => t.Id === id);
-          return fetch(`http://localhost:5000/api/banktransactions/${id}`, {
+          return fetch(`http://localhost:5000/api/banktransactions/Id/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -235,6 +235,56 @@ app.post('/api/import-csv', upload.single('file'), async (req, res) => {
             };
         }));
 
+        // Save to Database
+        await sql.connect(process.env.DB_CONNECTION_STRING);
+        const transaction = new sql.Transaction();
+        await transaction.begin();
+
+        try {
+            for (const txn of transactions) {
+                const request = new sql.Request(transaction);
+                request.input('Id', sql.UniqueIdentifier, crypto.randomUUID());
+                request.input('SourceType', sql.NVarChar, txn.SourceType);
+                request.input('BankName', sql.NVarChar, txn.SourceName);
+                request.input('SourceAccountId', sql.UniqueIdentifier, txn.SourceAccountId);
+                request.input('TransactionDate', sql.DateTime2, txn.TransactionDate);
+                request.input('PostDate', sql.DateTime2, txn.PostDate);
+                request.input('Amount', sql.Decimal(19, 4), txn.Amount);
+                request.input('Description', sql.NVarChar, txn.Description);
+                request.input('Merchant', sql.NVarChar, txn.Merchant);
+                request.input('OriginalCategory', sql.NVarChar, txn.OriginalCategory);
+                request.input('TransactionType', sql.NVarChar, txn.TransactionType);
+                request.input('CardNumber', sql.NVarChar, txn.CardNumber);
+                request.input('RawCSVLine', sql.NVarChar, txn.RawCSVLine);
+                request.input('SuggestedAccountId', sql.UniqueIdentifier, txn.SuggestedAccountId);
+                request.input('SuggestedCategory', sql.NVarChar, txn.SuggestedCategory);
+                request.input('SuggestedMemo', sql.NVarChar, txn.SuggestedMemo);
+                request.input('ConfidenceScore', sql.Decimal(5, 2), txn.ConfidenceScore);
+                request.input('Status', sql.NVarChar, txn.Status);
+                request.input('CreatedDate', sql.DateTime2, new Date());
+
+                await request.query(`
+                    INSERT INTO BankTransactions (
+                        Id, SourceType, BankName, SourceAccountId, TransactionDate, PostDate, 
+                        Amount, Description, Merchant, OriginalCategory, TransactionType, CardNumber, 
+                        RawCSVLine, SuggestedAccountId, SuggestedCategory, SuggestedMemo, ConfidenceScore, 
+                        Status, CreatedDate
+                    ) VALUES (
+                        @Id, @SourceType, @BankName, @SourceAccountId, @TransactionDate, @PostDate, 
+                        @Amount, @Description, @Merchant, @OriginalCategory, @TransactionType, @CardNumber, 
+                        @RawCSVLine, @SuggestedAccountId, @SuggestedCategory, @SuggestedMemo, @ConfidenceScore, 
+                        @Status, @CreatedDate
+                    )
+                `);
+            }
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        } finally {
+            await sql.close();
+        }
+
         res.json({
             success: true,
             count: transactions.length,
