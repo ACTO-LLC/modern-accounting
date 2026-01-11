@@ -14,6 +14,9 @@ import BankTransactions from './pages/BankTransactions';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
 import EditCustomer from './pages/EditCustomer';
+import ProductsServices from './pages/ProductsServices';
+import NewProductService from './pages/NewProductService';
+import EditProductService from './pages/EditProductService';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -36,6 +39,9 @@ function App() {
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
+            <Route path="products-services" element={<ProductsServices />} />
+            <Route path="products-services/new" element={<NewProductService />} />
+            <Route path="products-services/:id/edit" element={<EditProductService />} />
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="settings" element={<div>Settings Page</div>} />
           </Route>
