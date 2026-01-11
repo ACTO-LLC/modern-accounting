@@ -284,6 +284,7 @@
                 "PurchaseCost": "PurchaseCost",
                 "IncomeAccountId": "IncomeAccountId",
                 "ExpenseAccountId": "ExpenseAccountId",
+                "InventoryAssetAccountId": "InventoryAssetAccountId",
                 "Category": "Category",
                 "Taxable": "Taxable",
                 "Status": "Status",
@@ -305,6 +306,16 @@
                     "cardinality": "one",
                     "source.fields": [
                         "ExpenseAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "InventoryAssetAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "InventoryAssetAccountId"
                     ],
                     "target.fields": [
                         "Id"

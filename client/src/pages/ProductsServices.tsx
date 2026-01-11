@@ -4,7 +4,21 @@ import { Link } from 'react-router-dom';
 import { Plus, Package, Wrench, Box } from 'lucide-react';
 import api from '../lib/api';
 
-interface ProductService { Id: string; Name: string; SKU: string | null; Type: 'Inventory' | 'NonInventory' | 'Service'; Description: string | null; SalesPrice: number | null; PurchaseCost: number | null; Category: string | null; Taxable: boolean; Status: 'Active' | 'Inactive'; }
+interface ProductService {
+  Id: string;
+  Name: string;
+  SKU: string | null;
+  Type: 'Inventory' | 'NonInventory' | 'Service';
+  Description: string | null;
+  SalesPrice: number | null;
+  PurchaseCost: number | null;
+  IncomeAccountId: string | null;
+  ExpenseAccountId: string | null;
+  InventoryAssetAccountId: string | null;
+  Category: string | null;
+  Taxable: boolean;
+  Status: 'Active' | 'Inactive';
+}
 type FilterType = 'All' | 'Service' | 'NonInventory' | 'Inventory';
 
 export default function ProductsServices() {
