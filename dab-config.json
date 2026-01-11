@@ -928,6 +928,90 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "recurringtemplates": {
+            "source": "dbo.RecurringTemplates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "TemplateName": "TemplateName",
+                "TransactionType": "TransactionType",
+                "TemplateData": "TemplateData",
+                "Frequency": "Frequency",
+                "IntervalCount": "IntervalCount",
+                "DayOfMonth": "DayOfMonth",
+                "DayOfWeek": "DayOfWeek",
+                "StartDate": "StartDate",
+                "EndDate": "EndDate",
+                "MaxOccurrences": "MaxOccurrences",
+                "OccurrencesCreated": "OccurrencesCreated",
+                "AutoCreate": "AutoCreate",
+                "AutoSend": "AutoSend",
+                "ReminderDays": "ReminderDays",
+                "NextScheduledDate": "NextScheduledDate",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Schedules": {
+                    "target.entity": "recurringschedules",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "RecurringTemplateId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "recurringschedules": {
+            "source": "dbo.RecurringSchedules",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RecurringTemplateId": "RecurringTemplateId",
+                "CreatedTransactionId": "CreatedTransactionId",
+                "TransactionType": "TransactionType",
+                "ScheduledDate": "ScheduledDate",
+                "ActualDate": "ActualDate",
+                "Status": "Status",
+                "ErrorMessage": "ErrorMessage",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "Template": {
+                    "target.entity": "recurringtemplates",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "RecurringTemplateId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
