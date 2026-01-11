@@ -264,6 +264,68 @@
                 }
             }
         },
+        "productsservices": {
+            "source": "dbo.ProductsServices",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "SKU": "SKU",
+                "Type": "Type",
+                "Description": "Description",
+                "SalesPrice": "SalesPrice",
+                "PurchaseCost": "PurchaseCost",
+                "IncomeAccountId": "IncomeAccountId",
+                "ExpenseAccountId": "ExpenseAccountId",
+                "InventoryAssetAccountId": "InventoryAssetAccountId",
+                "Category": "Category",
+                "Taxable": "Taxable",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "IncomeAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "IncomeAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "ExpenseAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ExpenseAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "InventoryAssetAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "InventoryAssetAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
         "bankreconciliations": {
             "source": "dbo.BankReconciliations",
             "permissions": [
@@ -340,156 +402,6 @@
                     "cardinality": "one",
                     "source.fields": [
                         "ReconciliationId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
-            "key-fields": [
-                "Id"
-            ]
-        },
-        "projects": {
-            "source": "dbo.Projects",
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "mappings": {
-                "Id": "Id",
-                "Name": "Name",
-                "CustomerId": "CustomerId",
-                "Description": "Description",
-                "Status": "Status",
-                "StartDate": "StartDate",
-                "EndDate": "EndDate",
-                "BudgetedHours": "BudgetedHours",
-                "BudgetedAmount": "BudgetedAmount",
-                "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
-            },
-            "relationships": {
-                "Customer": {
-                    "target.entity": "customers",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "CustomerId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "TimeEntries": {
-                    "target.entity": "timeentries",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "ProjectId"
-                    ]
-                }
-            },
-            "key-fields": [
-                "Id"
-            ]
-        },
-        "timeentries": {
-            "source": "dbo.TimeEntries",
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "mappings": {
-                "Id": "Id",
-                "ProjectId": "ProjectId",
-                "CustomerId": "CustomerId",
-                "EmployeeName": "EmployeeName",
-                "EntryDate": "EntryDate",
-                "Hours": "Hours",
-                "HourlyRate": "HourlyRate",
-                "Description": "Description",
-                "IsBillable": "IsBillable",
-                "Status": "Status",
-                "InvoiceLineId": "InvoiceLineId",
-                "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
-            },
-            "relationships": {
-                "Project": {
-                    "target.entity": "projects",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ProjectId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Customer": {
-                    "target.entity": "customers",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "CustomerId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "InvoiceLine": {
-                    "target.entity": "invoicelines",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "InvoiceLineId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
-            "key-fields": [
-                "Id"
-            ]
-        },
-        "vendors": {
-            "source": "dbo.Vendors",
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "mappings": {
-                "Id": "Id",
-                "Name": "Name",
-                "Email": "Email",
-                "Phone": "Phone",
-                "Address": "Address",
-                "PaymentTerms": "PaymentTerms",
-                "TaxId": "TaxId",
-                "Is1099Vendor": "Is1099Vendor",
-                "DefaultExpenseAccountId": "DefaultExpenseAccountId",
-                "Status": "Status",
-                "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
-            },
-            "relationships": {
-                "DefaultExpenseAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "DefaultExpenseAccountId"
                     ],
                     "target.fields": [
                         "Id"
