@@ -20,6 +20,21 @@ const presets: { key: PresetKey; label: string }[] = [
   { key: 'custom', label: 'Custom Range' },
 ];
 
+/**
+ * Calculates date ranges for various preset periods.
+ * 
+ * @param preset - The preset period identifier
+ * @returns Object with start and end dates in ISO format, or null for custom
+ * 
+ * Preset periods:
+ * - thisMonth: First day to last day of current month
+ * - lastMonth: First day to last day of previous month
+ * - thisQuarter: First day to last day of current calendar quarter (Q1-Q4)
+ * - lastQuarter: First day to last day of previous calendar quarter, handles year boundary
+ * - thisYear: January 1 to December 31 of current year
+ * - lastYear: January 1 to December 31 of previous year
+ * - custom: Returns null to allow manual date selection
+ */
 function getPresetDates(preset: PresetKey): { start: string; end: string } | null {
   const today = new Date();
   const year = today.getFullYear();
@@ -44,11 +59,16 @@ function getPresetDates(preset: PresetKey): { start: string; end: string } | nul
         start: formatDate(new Date(year, quarter * 3, 1)),
         end: formatDate(new Date(year, quarter * 3 + 3, 0)),
       };
-    case 'lastQuarter':
+    case 'lastQuarter': {
+      // Handle year boundary when current quarter is Q1 (quarter = 0)
+      const lastQuarterYear = quarter === 0 ? year - 1 : year;
+      const lastQuarter = quarter === 0 ? 3 : quarter - 1;
+      const lastQuarterStartMonth = lastQuarter * 3;
       return {
-        start: formatDate(new Date(year, (quarter - 1) * 3, 1)),
-        end: formatDate(new Date(year, quarter * 3, 0)),
+        start: formatDate(new Date(lastQuarterYear, lastQuarterStartMonth, 1)),
+        end: formatDate(new Date(lastQuarterYear, lastQuarterStartMonth + 3, 0)),
       };
+    }
     case 'thisYear':
       return {
         start: formatDate(new Date(year, 0, 1)),
