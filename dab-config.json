@@ -411,6 +411,46 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "vendors": {
+            "source": "dbo.Vendors",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Email": "Email",
+                "Phone": "Phone",
+                "Address": "Address",
+                "PaymentTerms": "PaymentTerms",
+                "TaxId": "TaxId",
+                "Is1099Vendor": "Is1099Vendor",
+                "DefaultExpenseAccountId": "DefaultExpenseAccountId",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "DefaultExpenseAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "DefaultExpenseAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
