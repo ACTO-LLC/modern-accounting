@@ -8,8 +8,14 @@ CREATE TABLE [dbo].[JournalEntries]
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [CreatedBy] NVARCHAR(100) NOT NULL, -- Entra ID User
     [PostedAt] DATETIME2 NULL,
-    [PostedBy] NVARCHAR(100) NULL
+    [PostedBy] NVARCHAR(100) NULL,
+
+    -- Temporal table columns (system-versioned)
+    [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+    PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo])
 )
+WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[JournalEntries_History]))
 
 GO
 
