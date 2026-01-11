@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse } from 'lucide-react';
+import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
 
@@ -14,6 +14,7 @@ export default function Layout() {
     { name: 'Products & Services', href: '/products-services', icon: Package },
     { name: 'Inventory', href: '/inventory', icon: Warehouse },
     { name: 'Vendors', href: '/vendors', icon: Truck },
+    { name: 'Bills', href: '/bills', icon: Receipt },
     { name: 'Projects', href: '/projects', icon: FolderOpen },
     { name: 'Time Tracking', href: '/time-entries', icon: Clock },
     { name: 'Classes', href: '/classes', icon: Tag },
