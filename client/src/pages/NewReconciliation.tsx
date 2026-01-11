@@ -166,7 +166,7 @@ export default function NewReconciliation() {
       id: `journal-${jl.Id}`,
       type: 'JournalEntry',
       transactionId: jl.Id,
-      date: jl.CreatedAt, // Use CreatedAt as fallback date for journal lines
+      date: jl.CreatedAt, // Use CreatedAt timestamp for date instead of Id GUID
       description: jl.Description || 'Journal Entry',
       amount: jl.Debit > 0 ? jl.Debit : -jl.Credit
     }))
