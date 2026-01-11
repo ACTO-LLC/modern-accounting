@@ -1,10 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from './hooks/useToast';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Invoices from './pages/Invoices';
 import NewInvoice from './pages/NewInvoice';
 import EditInvoice from './pages/EditInvoice';
+import Estimates from './pages/Estimates';
+import NewEstimate from './pages/NewEstimate';
+import EditEstimate from './pages/EditEstimate';
 import Banking from './pages/Banking';
 import JournalEntries from './pages/JournalEntries';
 import NewJournalEntry from './pages/NewJournalEntry';
@@ -45,6 +49,7 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <ToastProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -52,6 +57,9 @@ function App() {
             <Route path="invoices" element={<Invoices />} />
             <Route path="invoices/new" element={<NewInvoice />} />
             <Route path="invoices/:id/edit" element={<EditInvoice />} />
+            <Route path="estimates" element={<Estimates />} />
+            <Route path="estimates/new" element={<NewEstimate />} />
+            <Route path="estimates/:id/edit" element={<EditEstimate />} />
             <Route path="banking" element={<Banking />} />
             <Route path="journal-entries" element={<JournalEntries />} />
             <Route path="journal-entries/new" element={<NewJournalEntry />} />
@@ -91,6 +99,7 @@ function App() {
         </Routes>
         <ChatInterface />
       </BrowserRouter>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }
