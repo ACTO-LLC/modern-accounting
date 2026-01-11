@@ -32,6 +32,8 @@ import NewProject from './pages/NewProject';
 import EditProject from './pages/EditProject';
 import TimeEntries from './pages/TimeEntries';
 import NewTimeEntry from './pages/NewTimeEntry';
+import Classes from './pages/Classes';
+import Locations from './pages/Locations';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -54,7 +56,6 @@ function App() {
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
-<<<<<<< HEAD
             <Route path="products-services" element={<ProductsServices />} />
             <Route path="products-services/new" element={<NewProductService />} />
             <Route path="products-services/:id/edit" element={<EditProductService />} />
@@ -66,8 +67,8 @@ function App() {
             <Route path="projects/:id/edit" element={<EditProject />} />
             <Route path="time-entries" element={<TimeEntries />} />
             <Route path="time-entries/new" element={<NewTimeEntry />} />
-=======
->>>>>>> a168d6a (Refactor: Address code review comments for financial reports)
+            <Route path="classes" element={<Classes />} />
+            <Route path="locations" element={<Locations />} />
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />

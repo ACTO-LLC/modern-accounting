@@ -561,6 +561,97 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "classes": {
+            "source": "dbo.Classes",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "ParentClassId": "ParentClassId",
+                "Description": "Description",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "ParentClass": {
+                    "target.entity": "classes",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ParentClassId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "SubClasses": {
+                    "target.entity": "classes",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "ParentClassId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "locations": {
+            "source": "dbo.Locations",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "ParentLocationId": "ParentLocationId",
+                "Address": "Address",
+                "Description": "Description",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "ParentLocation": {
+                    "target.entity": "locations",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ParentLocationId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "SubLocations": {
+                    "target.entity": "locations",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "ParentLocationId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
