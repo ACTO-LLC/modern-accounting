@@ -26,6 +26,7 @@ interface JournalEntryLine {
   Description: string;
   Debit: number;
   Credit: number;
+  CreatedAt: string;
 }
 
 interface ReconciliationItem {
@@ -165,7 +166,7 @@ export default function NewReconciliation() {
       id: `journal-${jl.Id}`,
       type: 'JournalEntry',
       transactionId: jl.Id,
-      date: jl.Id, // Would need join for actual date
+      date: jl.CreatedAt, // Use CreatedAt as fallback date for journal lines
       description: jl.Description || 'Journal Entry',
       amount: jl.Debit > 0 ? jl.Debit : -jl.Credit
     }))
@@ -237,11 +238,14 @@ export default function NewReconciliation() {
       const existingResponse = await fetch(
         `http://localhost:5000/api/reconciliationitems?$filter=ReconciliationId eq '${reconciliationId}' and TransactionId eq '${item.transactionId}'`
       );
+      if (!existingResponse.ok) {
+        throw new Error('Failed to fetch existing reconciliation items');
+      }
       const existing = (await existingResponse.json()).value as ReconciliationItem[];
 
       if (existing.length > 0) {
         // Update existing
-        await fetch(`http://localhost:5000/api/reconciliationitems/Id/${existing[0].Id}`, {
+        const updateResponse = await fetch(`http://localhost:5000/api/reconciliationitems/Id/${existing[0].Id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -249,9 +253,12 @@ export default function NewReconciliation() {
             ClearedAt: isCleared ? new Date().toISOString() : null
           })
         });
+        if (!updateResponse.ok) {
+          throw new Error('Failed to update reconciliation item');
+        }
       } else {
         // Create new
-        await fetch('http://localhost:5000/api/reconciliationitems', {
+        const createResponse = await fetch('http://localhost:5000/api/reconciliationitems', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -265,6 +272,9 @@ export default function NewReconciliation() {
             ClearedAt: isCleared ? new Date().toISOString() : null
           })
         });
+        if (!createResponse.ok) {
+          throw new Error('Failed to create reconciliation item');
+        }
       }
     }
   });
@@ -505,7 +515,7 @@ export default function NewReconciliation() {
                           <input
                             type="checkbox"
                             checked={clearedItems.has(item.id)}
-                            onChange={() => toggleCleared(item)}
+                            onChange={(e) => { e.stopPropagation(); toggleCleared(item); }}
                             className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                           />
                         </td>

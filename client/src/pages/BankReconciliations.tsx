@@ -138,7 +138,7 @@ export default function BankReconciliations() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <Link
-                      to={rec.Status === 'InProgress' ? `/reconciliations/${rec.Id}` : `/reconciliations/${rec.Id}/view`}
+                      to={`/reconciliations/${rec.Id}`}
                       className="inline-flex items-center text-indigo-600 hover:text-indigo-900"
                     >
                       <Eye className="h-5 w-5 mr-1" />
