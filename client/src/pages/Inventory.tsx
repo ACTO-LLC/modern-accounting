@@ -4,6 +4,38 @@ import { Link } from 'react-router-dom';
 import { Plus, Box, AlertTriangle, TrendingDown, ArrowUpCircle, ArrowDownCircle, RefreshCw } from 'lucide-react';
 import api from '../lib/api';
 
+// Security: Validation utilities for input sanitization
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validates that a string is a valid GUID format
+ */
+function isValidGuid(value: string): boolean {
+  return GUID_REGEX.test(value);
+}
+
+/**
+ * Escapes single quotes in strings for safe use in OData filters
+ */
+function escapeODataString(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+/**
+ * Validates and formats a GUID for use in OData filters
+ * @throws Error if the value is not a valid GUID
+ */
+function formatGuidForOData(value: string): string {
+  if (!isValidGuid(value)) {
+    throw new Error('Invalid GUID format');
+  }
+  return value;
+}
+
+// Constants for validation
+const MAX_ADJUSTMENT_QUANTITY = 999999999;
+const MIN_ADJUSTMENT_QUANTITY = -999999999;
+
 interface ProductService {
   Id: string;
   Name: string;
@@ -53,6 +85,8 @@ export default function Inventory() {
   const [selectedProduct, setSelectedProduct] = useState<ProductService | null>(null);
   const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
   const [adjustmentNotes, setAdjustmentNotes] = useState('');
+  const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch inventory items (only Type = 'Inventory')
@@ -87,21 +121,46 @@ export default function Inventory() {
   // Create adjustment mutation
   const createAdjustment = useMutation({
     mutationFn: async (data: { productId: string; quantity: number; notes: string }) => {
-      // Create inventory transaction
-      await api.post('/inventorytransactions', {
-        ProductId: data.productId,
-        TransactionDate: new Date().toISOString().split('T')[0],
-        TransactionType: 'Adjustment',
-        Quantity: data.quantity,
-        Notes: data.notes,
-        ReferenceType: 'Adjustment'
-      });
+      // Security: Validate GUID format to prevent injection attacks
+      if (!isValidGuid(data.productId)) {
+        throw new Error('Invalid product ID format');
+      }
 
-      // Update product quantity
+      // Validate quantity is a finite number within reasonable bounds
+      if (!Number.isFinite(data.quantity)) {
+        throw new Error('Quantity must be a valid number');
+      }
+      if (data.quantity < MIN_ADJUSTMENT_QUANTITY || data.quantity > MAX_ADJUSTMENT_QUANTITY) {
+        throw new Error(`Quantity must be between ${MIN_ADJUSTMENT_QUANTITY.toLocaleString()} and ${MAX_ADJUSTMENT_QUANTITY.toLocaleString()}`);
+      }
+
+      // Check for negative inventory result
       const product = inventoryItems?.find(p => p.Id === data.productId);
       if (product) {
         const newQuantity = (product.QuantityOnHand || 0) + data.quantity;
-        await api.patch(`/productsservices/Id/${data.productId}`, {
+        if (newQuantity < 0) {
+          throw new Error(`Adjustment would result in negative inventory (${newQuantity.toLocaleString()}). Current quantity: ${(product.QuantityOnHand || 0).toLocaleString()}`);
+        }
+      }
+
+      // Security: Escape notes to prevent injection in any downstream systems
+      const sanitizedNotes = data.notes ? escapeODataString(data.notes) : '';
+
+      // Create inventory transaction with validated GUID
+      const validatedProductId = formatGuidForOData(data.productId);
+      await api.post('/inventorytransactions', {
+        ProductId: validatedProductId,
+        TransactionDate: new Date().toISOString().split('T')[0],
+        TransactionType: 'Adjustment',
+        Quantity: data.quantity,
+        Notes: sanitizedNotes,
+        ReferenceType: 'Adjustment'
+      });
+
+      // Update product quantity with validated GUID
+      if (product) {
+        const newQuantity = (product.QuantityOnHand || 0) + data.quantity;
+        await api.patch(`/productsservices/Id/${validatedProductId}`, {
           QuantityOnHand: newQuantity
         });
       }
@@ -113,6 +172,11 @@ export default function Inventory() {
       setSelectedProduct(null);
       setAdjustmentQuantity(0);
       setAdjustmentNotes('');
+      setAdjustmentError(null);
+      setValidationError(null);
+    },
+    onError: (error: Error) => {
+      setAdjustmentError(error.message || 'An error occurred while saving the adjustment. Please try again.');
     }
   });
 
@@ -188,18 +252,51 @@ export default function Inventory() {
     setSelectedProduct(product);
     setAdjustmentQuantity(0);
     setAdjustmentNotes('');
+    setAdjustmentError(null);
+    setValidationError(null);
     setShowAdjustmentModal(true);
   };
 
   const handleAdjustmentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedProduct && adjustmentQuantity !== 0) {
-      createAdjustment.mutate({
-        productId: selectedProduct.Id,
-        quantity: adjustmentQuantity,
-        notes: adjustmentNotes
-      });
+    setValidationError(null);
+    setAdjustmentError(null);
+
+    // Client-side validation
+    if (!selectedProduct) {
+      setValidationError('No product selected');
+      return;
     }
+
+    if (adjustmentQuantity === 0) {
+      setValidationError('Adjustment quantity cannot be zero');
+      return;
+    }
+
+    // Validate that quantity is a valid number
+    if (!Number.isFinite(adjustmentQuantity)) {
+      setValidationError('Please enter a valid number');
+      return;
+    }
+
+    // Check bounds
+    if (adjustmentQuantity < MIN_ADJUSTMENT_QUANTITY || adjustmentQuantity > MAX_ADJUSTMENT_QUANTITY) {
+      setValidationError(`Quantity must be between ${MIN_ADJUSTMENT_QUANTITY.toLocaleString()} and ${MAX_ADJUSTMENT_QUANTITY.toLocaleString()}`);
+      return;
+    }
+
+    // Check for negative inventory result
+    const newQuantity = (selectedProduct.QuantityOnHand || 0) + adjustmentQuantity;
+    if (newQuantity < 0) {
+      setValidationError(`Cannot reduce inventory below zero. Maximum reduction: ${(selectedProduct.QuantityOnHand || 0).toLocaleString()}`);
+      return;
+    }
+
+    createAdjustment.mutate({
+      productId: selectedProduct.Id,
+      quantity: adjustmentQuantity,
+      notes: adjustmentNotes
+    });
   };
 
   if (loadingInventory && viewMode === 'inventory') {
@@ -578,6 +675,16 @@ export default function Inventory() {
             <p className="text-sm text-gray-500 mb-4">
               Current quantity on hand: {formatNumber(selectedProduct.QuantityOnHand)}
             </p>
+
+            {/* Error Messages */}
+            {(validationError || adjustmentError) && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-700">
+                  {validationError || adjustmentError}
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleAdjustmentSubmit}>
               <div className="mb-4">
                 <label htmlFor="adjustmentQty" className="block text-sm font-medium text-gray-700 mb-1">
@@ -587,10 +694,18 @@ export default function Inventory() {
                   type="number"
                   id="adjustmentQty"
                   value={adjustmentQuantity}
-                  onChange={(e) => setAdjustmentQuantity(parseFloat(e.target.value) || 0)}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    setAdjustmentQuantity(Number.isFinite(value) ? value : 0);
+                    setValidationError(null);
+                  }}
+                  className={`w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 ${
+                    validationError ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="Enter positive or negative number"
                   step="0.0001"
+                  min={MIN_ADJUSTMENT_QUANTITY}
+                  max={MAX_ADJUSTMENT_QUANTITY}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Use positive numbers to add, negative to subtract
@@ -607,11 +722,17 @@ export default function Inventory() {
                   rows={3}
                   className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
                   placeholder="Reason for adjustment (e.g., shrinkage, damage, count correction)"
+                  maxLength={500}
                 />
               </div>
               {adjustmentQuantity !== 0 && (
-                <p className="text-sm text-gray-600 mb-4">
+                <p className={`text-sm mb-4 ${
+                  (selectedProduct.QuantityOnHand || 0) + adjustmentQuantity < 0
+                    ? 'text-red-600 font-medium'
+                    : 'text-gray-600'
+                }`}>
                   New quantity will be: {formatNumber((selectedProduct.QuantityOnHand || 0) + adjustmentQuantity)}
+                  {(selectedProduct.QuantityOnHand || 0) + adjustmentQuantity < 0 && ' (invalid - cannot be negative)'}
                 </p>
               )}
               <div className="flex justify-end gap-3">
