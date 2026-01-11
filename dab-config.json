@@ -652,6 +652,81 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "inventorylocations": {
+            "source": "dbo.InventoryLocations",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Code": "Code",
+                "Description": "Description",
+                "Address": "Address",
+                "IsDefault": "IsDefault",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "inventorytransactions": {
+            "source": "dbo.InventoryTransactions",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProductId": "ProductId",
+                "LocationId": "LocationId",
+                "TransactionType": "TransactionType",
+                "Quantity": "Quantity",
+                "UnitCost": "UnitCost",
+                "TotalCost": "TotalCost",
+                "ReferenceType": "ReferenceType",
+                "ReferenceId": "ReferenceId",
+                "Notes": "Notes",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "Product": {
+                    "target.entity": "productsservices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ProductId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Location": {
+                    "target.entity": "inventorylocations",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "LocationId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
