@@ -14,6 +14,13 @@ import BankTransactions from './pages/BankTransactions';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
 import EditCustomer from './pages/EditCustomer';
+import BankReconciliations from './pages/BankReconciliations';
+import NewReconciliation from './pages/NewReconciliation';
+import Reports from './pages/Reports';
+import ProfitAndLoss from './pages/reports/ProfitAndLoss';
+import BalanceSheet from './pages/reports/BalanceSheet';
+import TrialBalance from './pages/reports/TrialBalance';
+import ARAgingSummary from './pages/reports/ARAgingSummary';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -37,6 +44,14 @@ function App() {
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
             <Route path="transactions" element={<BankTransactions />} />
+            <Route path="reconciliations" element={<BankReconciliations />} />
+            <Route path="reconciliations/new" element={<NewReconciliation />} />
+            <Route path="reconciliations/:id" element={<NewReconciliation />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="reports/profit-loss" element={<ProfitAndLoss />} />
+            <Route path="reports/balance-sheet" element={<BalanceSheet />} />
+            <Route path="reports/trial-balance" element={<TrialBalance />} />
+            <Route path="reports/ar-aging" element={<ARAgingSummary />} />
             <Route path="settings" element={<div>Settings Page</div>} />
           </Route>
         </Routes>
