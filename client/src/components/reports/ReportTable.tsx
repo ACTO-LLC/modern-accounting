@@ -30,6 +30,20 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+/**
+ * Sanitizes a cell value to prevent CSV formula injection.
+ * If a value starts with =, +, -, or @, it's prefixed with a single quote
+ * to prevent spreadsheet applications from interpreting it as a formula.
+ */
+function sanitizeCSVValue(value: string): string {
+  const trimmed = String(value).trim();
+  if (trimmed.startsWith('=') || trimmed.startsWith('+') || 
+      trimmed.startsWith('-') || trimmed.startsWith('@')) {
+    return `'${trimmed}`;
+  }
+  return trimmed;
+}
+
 export function exportToCSV(filename: string, columns: ReportColumn[], data: ReportRow[]) {
   const headers = columns.map((col) => col.header);
   const rows = data.map((row) =>
@@ -37,17 +51,23 @@ export function exportToCSV(filename: string, columns: ReportColumn[], data: Rep
       const value = row[col.key];
       if (value === undefined || value === null) return '';
       if (typeof value === 'number') return value.toString();
-      return `"${String(value).replace(/"/g, '""')}"`;
+      const sanitized = sanitizeCSVValue(String(value));
+      return `"${sanitized.replace(/"/g, '""')}"`;
     })
   );
 
   const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  link.href = url;
   link.download = `${filename}.csv`;
   link.click();
-  URL.revokeObjectURL(link.href);
+
+  // Delay revocation to ensure download completes
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 export default function ReportTable({ columns, data }: ReportTableProps) {
@@ -79,9 +99,15 @@ export default function ReportTable({ columns, data }: ReportTableProps) {
       'px-4 py-2 print:px-2 print:py-1 print:text-xs',
       getAlignment(column.align),
     ];
+
+    // Use explicit Tailwind classes for indentation to work with JIT compiler
     if (row.indent && column.key === columns[0].key) {
-      classes.push(`pl-${4 + row.indent * 4}`);
+      const indentClasses = ['pl-8', 'pl-12', 'pl-16', 'pl-20', 'pl-24'];
+      const indentLevel = Math.max(1, row.indent);
+      const index = Math.min(indentLevel - 1, indentClasses.length - 1);
+      classes.push(indentClasses[index]);
     }
+
     if (column.className) {
       classes.push(column.className);
     }
