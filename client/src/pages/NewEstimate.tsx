@@ -1,9 +1,22 @@
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import EstimateForm, { EstimateFormData } from '../components/EstimateForm';
+import { useToast } from '../hooks/useToast';
+
+interface CreateEstimateResponse {
+  Id: string;
+  EstimateNumber: string;
+  CustomerId: string;
+  IssueDate: string;
+  ExpirationDate: string | null;
+  TotalAmount: number;
+  Status: string;
+  Notes: string | null;
+}
 
 export default function NewEstimate() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const onSubmit = async (data: EstimateFormData) => {
     try {
@@ -11,7 +24,7 @@ export default function NewEstimate() {
       const { Lines, ...estimateData } = data;
 
       // Create the estimate first
-      const estimateResponse = await api.post('/estimates', estimateData);
+      const estimateResponse = await api.post<CreateEstimateResponse>('/estimates', estimateData);
       const estimate = estimateResponse.data;
 
       // Create estimate lines
@@ -26,10 +39,12 @@ export default function NewEstimate() {
         )
       );
 
+      showToast('Estimate created successfully', 'success');
       navigate('/estimates');
     } catch (error) {
       console.error('Failed to create estimate:', error);
-      alert('Failed to create estimate');
+      showToast('Failed to create estimate', 'error');
+      throw error; // Re-throw to keep the form in submitting state
     }
   };
 

@@ -3,6 +3,9 @@ import api from '../lib/api';
 import { Plus, FileText, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { formatGuidForOData, isValidUUID } from '../lib/validation';
+import ConfirmModal from '../components/ConfirmModal';
+import { useToast } from '../hooks/useToast';
 
 interface Estimate {
   Id: string;
@@ -14,6 +17,25 @@ interface Estimate {
   Status: string;
   ConvertedToInvoiceId: string | null;
   Notes: string | null;
+}
+
+interface EstimateLine {
+  Id: string;
+  EstimateId: string;
+  Description: string;
+  Quantity: number;
+  UnitPrice: number;
+  Amount?: number;
+}
+
+interface Invoice {
+  Id: string;
+  InvoiceNumber: string;
+  CustomerId: string;
+  IssueDate: string;
+  DueDate: string;
+  TotalAmount: number;
+  Status: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -28,7 +50,12 @@ const statusColors: Record<string, string> = {
 export default function Estimates() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    estimate: Estimate | null;
+  }>({ isOpen: false, estimate: null });
 
   const { data: estimates, isLoading, error } = useQuery({
     queryKey: ['estimates'],
@@ -41,15 +68,22 @@ export default function Estimates() {
 
   const convertToInvoiceMutation = useMutation({
     mutationFn: async (estimate: Estimate) => {
-      // 1. Fetch estimate lines
-      const linesResponse = await api.get<{ value: any[] }>(`/estimatelines?$filter=EstimateId eq ${estimate.Id}`);
+      // Validate estimate ID before using in OData filter
+      if (!isValidUUID(estimate.Id)) {
+        throw new Error('Invalid estimate ID');
+      }
+
+      // 1. Fetch estimate lines with properly quoted GUID
+      const linesResponse = await api.get<{ value: EstimateLine[] }>(
+        `/estimatelines?$filter=EstimateId eq ${formatGuidForOData(estimate.Id, 'EstimateId')}`
+      );
       const lines = linesResponse.data.value;
 
       // 2. Generate invoice number
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
 
       // 3. Create invoice
-      const invoiceResponse = await api.post('/invoices', {
+      const invoiceResponse = await api.post<Invoice>('/invoices', {
         InvoiceNumber: invoiceNumber,
         CustomerId: estimate.CustomerId,
         IssueDate: new Date().toISOString().split('T')[0],
@@ -61,7 +95,7 @@ export default function Estimates() {
 
       // 4. Create invoice lines
       await Promise.all(
-        lines.map((line: any) =>
+        lines.map((line: EstimateLine) =>
           api.post('/invoicelines', {
             InvoiceId: invoice.Id,
             Description: line.Description,
@@ -82,13 +116,29 @@ export default function Estimates() {
     onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ['estimates'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      showToast('Estimate converted to invoice successfully', 'success');
       navigate(`/invoices/${invoice.Id}/edit`);
     },
     onError: (error) => {
       console.error('Failed to convert estimate:', error);
-      alert('Failed to convert estimate to invoice');
+      showToast('Failed to convert estimate to invoice', 'error');
     },
   });
+
+  const handleConvertClick = (estimate: Estimate) => {
+    setConfirmModal({ isOpen: true, estimate });
+  };
+
+  const handleConfirmConvert = () => {
+    if (confirmModal.estimate) {
+      convertToInvoiceMutation.mutate(confirmModal.estimate);
+    }
+    setConfirmModal({ isOpen: false, estimate: null });
+  };
+
+  const handleCloseModal = () => {
+    setConfirmModal({ isOpen: false, estimate: null });
+  };
 
   const filteredEstimates = estimates?.filter((estimate) => {
     if (statusFilter === 'all') return true;
@@ -197,11 +247,7 @@ export default function Estimates() {
                     {(estimate.Status === 'Accepted' || estimate.Status === 'Sent' || estimate.Status === 'Draft') &&
                       !estimate.ConvertedToInvoiceId && (
                         <button
-                          onClick={() => {
-                            if (confirm('Convert this estimate to an invoice?')) {
-                              convertToInvoiceMutation.mutate(estimate);
-                            }
-                          }}
+                          onClick={() => handleConvertClick(estimate)}
                           disabled={convertToInvoiceMutation.isPending}
                           className="text-green-600 hover:text-green-900 inline-flex items-center"
                         >
@@ -225,6 +271,18 @@ export default function Estimates() {
           </tbody>
         </table>
       </div>
+
+      {/* Confirm Convert Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={handleCloseModal}
+        onConfirm={handleConfirmConvert}
+        title="Convert to Invoice"
+        message={`Are you sure you want to convert estimate ${confirmModal.estimate?.EstimateNumber || ''} to an invoice? This action will create a new invoice with the same line items.`}
+        confirmText="Convert"
+        cancelText="Cancel"
+        isLoading={convertToInvoiceMutation.isPending}
+      />
     </div>
   );
 }

@@ -5,24 +5,45 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 
+// Line item schema with proper validation
+const lineItemSchema = z.object({
+  Id: z.string().optional(),
+  Description: z.string().min(1, 'Description is required'),
+  Quantity: z.number().min(0.0001, 'Quantity must be positive'),
+  UnitPrice: z.number().min(0, 'Unit price must be zero or positive'),
+  Amount: z.number().optional()
+});
+
+// Main estimate schema with date validation
 export const estimateSchema = z.object({
   EstimateNumber: z.string().min(1, 'Estimate number is required'),
-  CustomerId: z.string().uuid('Invalid Customer ID'),
+  CustomerId: z.string().uuid('Please select a valid customer'),
   IssueDate: z.string().min(1, 'Issue date is required'),
   ExpirationDate: z.string().optional(),
-  TotalAmount: z.number().min(0, 'Amount must be positive'),
+  TotalAmount: z.number().min(0, 'Amount must be zero or positive'),
   Status: z.enum(['Draft', 'Sent', 'Accepted', 'Rejected', 'Expired', 'Converted']),
   Notes: z.string().optional(),
-  Lines: z.array(z.object({
-    Id: z.string().optional(),
-    Description: z.string().min(1, 'Description is required'),
-    Quantity: z.number().min(0.0001, 'Quantity must be positive'),
-    UnitPrice: z.number().min(0, 'Unit price must be positive'),
-    Amount: z.number().optional()
-  })).min(1, 'At least one line item is required')
+  Lines: z.array(lineItemSchema).min(1, 'At least one line item is required')
+}).refine((data) => {
+  // Validate that ExpirationDate is on or after IssueDate if both are provided
+  if (data.ExpirationDate && data.IssueDate) {
+    return new Date(data.ExpirationDate) >= new Date(data.IssueDate);
+  }
+  return true;
+}, {
+  message: 'Expiration date must be on or after the issue date',
+  path: ['ExpirationDate']
 });
 
 export type EstimateFormData = z.infer<typeof estimateSchema>;
+
+export interface EstimateLine {
+  Id?: string;
+  Description: string;
+  Quantity: number;
+  UnitPrice: number;
+  Amount?: number;
+}
 
 interface EstimateFormProps {
   initialValues?: Partial<EstimateFormData>;
@@ -78,7 +99,9 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label htmlFor="EstimateNumber" className="block text-sm font-medium text-gray-700">Estimate Number</label>
+            <label htmlFor="EstimateNumber" className="block text-sm font-medium text-gray-700">
+              Estimate Number <span className="text-red-500">*</span>
+            </label>
             <input
               id="EstimateNumber"
               type="text"
@@ -90,7 +113,9 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
           </div>
 
           <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">Customer ID (UUID)</label>
+            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">
+              Customer ID (UUID) <span className="text-red-500">*</span>
+            </label>
             <input
               id="CustomerId"
               type="text"
@@ -102,7 +127,9 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
           </div>
 
           <div>
-            <label htmlFor="IssueDate" className="block text-sm font-medium text-gray-700">Issue Date</label>
+            <label htmlFor="IssueDate" className="block text-sm font-medium text-gray-700">
+              Issue Date <span className="text-red-500">*</span>
+            </label>
             <input
               id="IssueDate"
               type="date"
@@ -113,7 +140,9 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
           </div>
 
           <div>
-            <label htmlFor="ExpirationDate" className="block text-sm font-medium text-gray-700">Expiration Date</label>
+            <label htmlFor="ExpirationDate" className="block text-sm font-medium text-gray-700">
+              Expiration Date
+            </label>
             <input
               id="ExpirationDate"
               type="date"
@@ -156,7 +185,9 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
         {/* Line Items */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Line Items</h3>
+            <h3 className="text-lg font-medium text-gray-900">
+              Line Items <span className="text-red-500">*</span>
+            </h3>
             <button
               type="button"
               onClick={() => append({ Description: '', Quantity: 1, UnitPrice: 0 })}
@@ -171,7 +202,9 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
             {fields.map((field, index) => (
               <div key={field.id} className="flex gap-4 items-start bg-gray-50 p-4 rounded-md">
                 <div className="flex-grow">
-                  <label className="block text-xs font-medium text-gray-500">Description</label>
+                  <label className="block text-xs font-medium text-gray-500">
+                    Description <span className="text-red-500">*</span>
+                  </label>
                   <input
                     {...register(`Lines.${index}.Description`)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
@@ -182,22 +215,34 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                   )}
                 </div>
                 <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-500">Qty</label>
+                  <label className="block text-xs font-medium text-gray-500">
+                    Qty <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     step="0.0001"
+                    min="0.0001"
                     {...register(`Lines.${index}.Quantity`, { valueAsNumber: true })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
                   />
+                  {errors.Lines?.[index]?.Quantity && (
+                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Quantity?.message}</p>
+                  )}
                 </div>
                 <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-500">Unit Price</label>
+                  <label className="block text-xs font-medium text-gray-500">
+                    Unit Price <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     {...register(`Lines.${index}.UnitPrice`, { valueAsNumber: true })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
                   />
+                  {errors.Lines?.[index]?.UnitPrice && (
+                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.UnitPrice?.message}</p>
+                  )}
                 </div>
                 <div className="w-32">
                   <label className="block text-xs font-medium text-gray-500">Amount</label>
@@ -208,14 +253,18 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                 <button
                   type="button"
                   onClick={() => remove(index)}
-                  className="mt-6 text-red-600 hover:text-red-800"
+                  disabled={fields.length === 1}
+                  className="mt-6 text-red-600 hover:text-red-800 disabled:text-gray-300 disabled:cursor-not-allowed"
+                  title={fields.length === 1 ? 'At least one line item is required' : 'Remove item'}
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
             ))}
           </div>
-          {errors.Lines && <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>}
+          {errors.Lines && typeof errors.Lines.message === 'string' && (
+            <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>
+          )}
         </div>
 
         <div className="flex justify-end items-center border-t pt-4">
