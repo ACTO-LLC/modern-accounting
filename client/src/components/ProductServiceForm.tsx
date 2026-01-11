@@ -15,14 +15,15 @@ export const productServiceSchema = z.object({
     if (val === '' || val === null || val === undefined) return null;
     const num = typeof val === 'string' ? parseFloat(val) : val;
     return isNaN(num) ? null : num;
-  }),
+  }).refine(val => val === null || val >= 0, { message: 'Sales price cannot be negative' }),
   PurchaseCost: z.union([z.number(), z.string()]).optional().nullable().transform(val => {
     if (val === '' || val === null || val === undefined) return null;
     const num = typeof val === 'string' ? parseFloat(val) : val;
     return isNaN(num) ? null : num;
-  }),
+  }).refine(val => val === null || val >= 0, { message: 'Purchase cost cannot be negative' }),
   IncomeAccountId: z.string().optional().nullable().transform(val => val === '' ? null : val),
   ExpenseAccountId: z.string().optional().nullable().transform(val => val === '' ? null : val),
+  InventoryAssetAccountId: z.string().optional().nullable().transform(val => val === '' ? null : val),
   Category: z.string().optional().nullable(),
   Taxable: z.boolean().default(true),
   Status: z.enum(['Active', 'Inactive']).default('Active'),
@@ -49,6 +50,7 @@ export default function ProductServiceForm({ initialValues, onSubmit, title, isS
 
   const incomeAccounts = accounts?.filter(a => a.Type === 'Revenue') || [];
   const expenseAccounts = accounts?.filter(a => a.Type === 'Expense') || [];
+  const assetAccounts = accounts?.filter(a => a.Type === 'Asset') || [];
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<ProductServiceFormData>({
     resolver: zodResolver(productServiceSchema),
@@ -60,7 +62,7 @@ export default function ProductServiceForm({ initialValues, onSubmit, title, isS
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/products-services')} className="mr-4 text-gray-500 hover:text-gray-700"><ArrowLeft className="w-6 h-6" /></button>
+        <button onClick={() => navigate('/products-services')} className="mr-4 text-gray-500 hover:text-gray-700" aria-label="Back to products and services"><ArrowLeft className="w-6 h-6" /></button>
         <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
       </div>
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
@@ -104,6 +106,7 @@ export default function ProductServiceForm({ initialValues, onSubmit, title, isS
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-gray-500 sm:text-sm">$</span></div>
                 <input id="SalesPrice" type="number" step="0.01" {...register('SalesPrice')} className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
               </div>
+              {errors.SalesPrice && <p className="mt-1 text-sm text-red-600">{errors.SalesPrice.message}</p>}
             </div>
             <div>
               <label htmlFor="PurchaseCost" className="block text-sm font-medium text-gray-700">Purchase Cost</label>
@@ -111,6 +114,7 @@ export default function ProductServiceForm({ initialValues, onSubmit, title, isS
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-gray-500 sm:text-sm">$</span></div>
                 <input id="PurchaseCost" type="number" step="0.01" {...register('PurchaseCost')} className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
               </div>
+              {errors.PurchaseCost && <p className="mt-1 text-sm text-red-600">{errors.PurchaseCost.message}</p>}
             </div>
           </div>
         </div>
@@ -131,6 +135,16 @@ export default function ProductServiceForm({ initialValues, onSubmit, title, isS
                 {expenseAccounts.map((account) => (<option key={account.Id} value={account.Id}>{account.Code} - {account.Name}</option>))}
               </select>
             </div>
+            {selectedType === 'Inventory' && (
+              <div className="col-span-2">
+                <label htmlFor="InventoryAssetAccountId" className="block text-sm font-medium text-gray-700">Inventory Asset Account</label>
+                <select id="InventoryAssetAccountId" {...register('InventoryAssetAccountId')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                  <option value="">Select an account...</option>
+                  {assetAccounts.map((account) => (<option key={account.Id} value={account.Id}>{account.Code} - {account.Name}</option>))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">Account used to track inventory value on the balance sheet</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="border-t pt-6">

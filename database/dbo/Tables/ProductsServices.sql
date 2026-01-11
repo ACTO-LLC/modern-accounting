@@ -9,6 +9,7 @@ CREATE TABLE [dbo].[ProductsServices]
     [PurchaseCost] DECIMAL(18, 2) NULL,
     [IncomeAccountId] UNIQUEIDENTIFIER NULL,
     [ExpenseAccountId] UNIQUEIDENTIFIER NULL,
+    [InventoryAssetAccountId] UNIQUEIDENTIFIER NULL,
     [Category] NVARCHAR(100) NULL,
     [Taxable] BIT NOT NULL DEFAULT 1,
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Active', -- Active, Inactive
@@ -22,6 +23,7 @@ CREATE TABLE [dbo].[ProductsServices]
     -- Foreign Key Constraints
     CONSTRAINT [FK_ProductsServices_IncomeAccount] FOREIGN KEY ([IncomeAccountId]) REFERENCES [dbo].[Accounts]([Id]),
     CONSTRAINT [FK_ProductsServices_ExpenseAccount] FOREIGN KEY ([ExpenseAccountId]) REFERENCES [dbo].[Accounts]([Id]),
+    CONSTRAINT [FK_ProductsServices_InventoryAssetAccount] FOREIGN KEY ([InventoryAssetAccountId]) REFERENCES [dbo].[Accounts]([Id]),
 
     -- Check constraint for Type
     CONSTRAINT [CK_ProductsServices_Type] CHECK ([Type] IN ('Inventory', 'NonInventory', 'Service')),
