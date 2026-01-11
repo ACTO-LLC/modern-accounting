@@ -1,7 +1,59 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
-import { Plus, Pause, Play, Trash2, Calendar, RefreshCw } from 'lucide-react';
+import { Plus, Pause, Play, Trash2, Calendar, RefreshCw, AlertTriangle, X } from 'lucide-react';
+import { isAxiosError } from 'axios';
+
+// Type aliases for better type safety
+type TransactionType = 'Invoice' | 'Bill' | 'JournalEntry';
+type FrequencyType = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
+
+// Helper to extract error message from API errors
+function getErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    return error.response?.data?.message || error.response?.data?.error || error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+}
+
+// Validation error interface
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
+// Validate form data before submission
+function validateTemplateForm(data: CreateTemplateFormData): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!data.TemplateName.trim()) {
+    errors.push({ field: 'TemplateName', message: 'Template name is required' });
+  }
+  if (data.IntervalCount < 1 || data.IntervalCount > 365) {
+    errors.push({ field: 'IntervalCount', message: 'Interval must be between 1 and 365' });
+  }
+  if (!data.StartDate) {
+    errors.push({ field: 'StartDate', message: 'Start date is required' });
+  }
+  if (data.EndDate && data.StartDate && data.EndDate < data.StartDate) {
+    errors.push({ field: 'EndDate', message: 'End date must be on or after start date' });
+  }
+  if (data.Frequency === 'Weekly' && (data.DayOfWeek === null || data.DayOfWeek < 0 || data.DayOfWeek > 6)) {
+    errors.push({ field: 'DayOfWeek', message: 'Day of week is required for weekly frequency' });
+  }
+  if (data.Frequency === 'Monthly' && (data.DayOfMonth === null || (data.DayOfMonth < 1 && data.DayOfMonth !== -1) || data.DayOfMonth > 31)) {
+    errors.push({ field: 'DayOfMonth', message: 'Day of month is required for monthly frequency' });
+  }
+  if (data.MaxOccurrences !== null && (data.MaxOccurrences < 1 || data.MaxOccurrences > 9999)) {
+    errors.push({ field: 'MaxOccurrences', message: 'Max occurrences must be between 1 and 9999' });
+  }
+  if (data.ReminderDays < 0 || data.ReminderDays > 365) {
+    errors.push({ field: 'ReminderDays', message: 'Reminder days must be between 0 and 365' });
+  }
+  return errors;
+}
 
 interface RecurringTemplate {
   Id: string;
@@ -61,6 +113,9 @@ export default function RecurringTransactions() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<RecurringTemplate | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<RecurringTemplate | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Fetch recurring templates
   const { data: templates, isLoading, error } = useQuery({
@@ -99,6 +154,10 @@ export default function RecurringTransactions() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-templates'] });
       setShowCreateModal(false);
+      setErrorMessage(null);
+    },
+    onError: (error: unknown) => {
+      setErrorMessage(getErrorMessage(error));
     },
   });
 
@@ -110,6 +169,10 @@ export default function RecurringTransactions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-templates'] });
+      setErrorMessage(null);
+    },
+    onError: (error: unknown) => {
+      setErrorMessage(getErrorMessage(error));
     },
   });
 
@@ -120,8 +183,27 @@ export default function RecurringTransactions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-templates'] });
+      setShowDeleteConfirm(false);
+      setTemplateToDelete(null);
+      setErrorMessage(null);
+    },
+    onError: (error: unknown) => {
+      setErrorMessage(getErrorMessage(error));
+      setShowDeleteConfirm(false);
+      setTemplateToDelete(null);
     },
   });
+
+  const handleDeleteConfirm = () => {
+    if (templateToDelete) {
+      deleteMutation.mutate(templateToDelete.Id);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setTemplateToDelete(null);
+  };
 
   const getFrequencyLabel = (template: RecurringTemplate) => {
     const interval = template.IntervalCount > 1 ? `Every ${template.IntervalCount} ` : '';
@@ -183,6 +265,21 @@ export default function RecurringTransactions() {
           New Recurring Template
         </button>
       </div>
+
+      {/* Error Alert */}
+      {errorMessage && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex items-start">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="ml-3 flex-1">
+              <p className="text-sm text-red-700">{errorMessage}</p>
+            </div>
+            <button onClick={() => setErrorMessage(null)} className="ml-3 text-red-400 hover:text-red-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white shadow overflow-hidden rounded-md">
         <table className="min-w-full divide-y divide-gray-200">
@@ -259,9 +356,8 @@ export default function RecurringTransactions() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Are you sure you want to delete this recurring template?')) {
-                            deleteMutation.mutate(template.Id);
-                          }
+                          setTemplateToDelete(template);
+                          setShowDeleteConfirm(true);
                         }}
                         className="text-red-600 hover:text-red-900"
                         title="Delete"
@@ -277,12 +373,48 @@ export default function RecurringTransactions() {
         </table>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && templateToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">Delete Recurring Template</h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Are you sure you want to delete "{templateToDelete.TemplateName}"? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create Template Modal */}
       {showCreateModal && (
         <CreateTemplateModal
           onClose={() => setShowCreateModal(false)}
           onSubmit={(data) => createMutation.mutate(data)}
           isSubmitting={createMutation.isPending}
+          error={createMutation.error ? getErrorMessage(createMutation.error) : null}
         />
       )}
 
@@ -354,9 +486,10 @@ interface CreateTemplateModalProps {
   onClose: () => void;
   onSubmit: (data: CreateTemplateFormData) => void;
   isSubmitting: boolean;
+  error: string | null;
 }
 
-function CreateTemplateModal({ onClose, onSubmit, isSubmitting }: CreateTemplateModalProps) {
+function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateTemplateModalProps) {
   const [formData, setFormData] = useState<CreateTemplateFormData>({
     TemplateName: '',
     TransactionType: 'Invoice',
@@ -373,10 +506,20 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting }: CreateTemplate
     ReminderDays: 3,
   });
 
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors = validateTemplateForm(formData);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors([]);
     onSubmit(formData);
   };
+
+  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -385,6 +528,33 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting }: CreateTemplate
           <h3 className="text-lg font-medium text-gray-900">Create Recurring Template</h3>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+          {/* API Error */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div className="flex items-center">
+                <AlertTriangle className="w-4 h-4 text-red-600 mr-2" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Validation Errors Summary */}
+          {validationErrors.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              <div className="flex items-start">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-yellow-800">Please fix the following errors:</p>
+                  <ul className="mt-1 text-sm text-yellow-700 list-disc list-inside">
+                    {validationErrors.map((err, idx) => (
+                      <li key={idx}>{err.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Template Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Template Name</label>
@@ -403,7 +573,7 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting }: CreateTemplate
             <label className="block text-sm font-medium text-gray-700">Transaction Type</label>
             <select
               value={formData.TransactionType}
-              onChange={(e) => setFormData({ ...formData, TransactionType: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, TransactionType: e.target.value as TransactionType })}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               {TRANSACTION_TYPES.map((type) => (
@@ -419,7 +589,7 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting }: CreateTemplate
               <select
                 value={formData.Frequency}
                 onChange={(e) => {
-                  const freq = e.target.value as any;
+                  const freq = e.target.value as FrequencyType;
                   setFormData({
                     ...formData,
                     Frequency: freq,
