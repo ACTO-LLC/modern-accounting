@@ -55,7 +55,7 @@ export default function Dashboard() {
   const { data: journalEntries } = useQuery({
     queryKey: ['journal-entries'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/journalentries?$orderby=TransactionDate desc');
+      const response = await fetch('/api/journalentries?$orderby=TransactionDate desc');
       if (!response.ok) throw new Error('Failed to fetch journal entries');
       const data = await response.json();
       // We need to fetch lines for calculation. 
@@ -71,7 +71,7 @@ export default function Dashboard() {
   const { data: allLines } = useQuery({
     queryKey: ['journal-entry-lines'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/journalentrylines');
+      const response = await fetch('/api/journalentrylines');
       if (!response.ok) throw new Error('Failed to fetch lines');
       const data = await response.json();
       return data.value as JournalEntryLine[];
@@ -82,7 +82,7 @@ export default function Dashboard() {
   const { data: accounts } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/accounts');
+      const response = await fetch('/api/accounts');
       if (!response.ok) throw new Error('Failed to fetch accounts');
       const data = await response.json();
       return data.value as Account[];
@@ -93,7 +93,7 @@ export default function Dashboard() {
   const { data: bankTransactions } = useQuery({
     queryKey: ['bank-transactions'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/banktransactions');
+      const response = await fetch('/api/banktransactions');
       if (!response.ok) throw new Error('Failed to fetch bank transactions');
       const data = await response.json();
       return data.value as BankTransaction[];

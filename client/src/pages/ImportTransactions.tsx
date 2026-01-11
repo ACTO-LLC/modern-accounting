@@ -37,7 +37,7 @@ export default function ImportTransactions() {
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/accounts');
+      const response = await fetch('/api/accounts');
       if (!response.ok) throw new Error('Failed to fetch accounts');
       const data = await response.json();
       return data.value as Account[];

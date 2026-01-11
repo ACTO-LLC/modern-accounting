@@ -45,8 +45,8 @@ export default function ReviewTransactions() {
     queryKey: ['bank-transactions', statusFilter],
     queryFn: async () => {
       const url = statusFilter === 'all' 
-        ? 'http://localhost:5000/api/banktransactions'
-        : `http://localhost:5000/api/banktransactions?$filter=Status eq '${statusFilter}'`;
+        ? '/api/banktransactions'
+        : `/api/banktransactions?$filter=Status eq '${statusFilter}'`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch transactions');
       const data = await response.json();
@@ -58,7 +58,7 @@ export default function ReviewTransactions() {
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/accounts');
+      const response = await fetch('/api/accounts');
       if (!response.ok) throw new Error('Failed to fetch accounts');
       const data = await response.json();
       return data.value as Account[];
@@ -80,7 +80,7 @@ export default function ReviewTransactions() {
   // Update transaction mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<BankTransaction> }) => {
-      const response = await fetch(`http://localhost:5000/api/banktransactions/Id/${id}`, {
+      const response = await fetch(`/api/banktransactions/Id/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -101,7 +101,7 @@ export default function ReviewTransactions() {
       await Promise.all(
         ids.map(id => {
           const txn = transactions.find(t => t.Id === id);
-          return fetch(`http://localhost:5000/api/banktransactions/Id/${id}`, {
+          return fetch(`/api/banktransactions/Id/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

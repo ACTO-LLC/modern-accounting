@@ -26,7 +26,7 @@ export default function BankReconciliations() {
   const { data: reconciliationsData, isLoading } = useQuery({
     queryKey: ['bank-reconciliations'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/bankreconciliations?$orderby=CreatedAt desc');
+      const response = await fetch('/api/bankreconciliations?$orderby=CreatedAt desc');
       if (!response.ok) throw new Error('Failed to fetch reconciliations');
       return (await response.json()).value as BankReconciliation[];
     }
@@ -35,7 +35,7 @@ export default function BankReconciliations() {
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/accounts');
+      const response = await fetch('/api/accounts');
       if (!response.ok) throw new Error('Failed to fetch accounts');
       return (await response.json()).value as Account[];
     }

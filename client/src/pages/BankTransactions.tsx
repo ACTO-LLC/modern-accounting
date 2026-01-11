@@ -69,7 +69,7 @@ export default function BankTransactions() {
       }
       
       const filterString = filters.length > 0 ? `$filter=${filters.join(' and ')}&` : '';
-      const url = `http://localhost:5000/api/banktransactions?${filterString}$top=${pageSize}&$skip=${page * pageSize}&$count=true`;
+      const url = `/api/banktransactions?${filterString}$top=${pageSize}&$skip=${page * pageSize}&$count=true`;
       
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch transactions');
@@ -85,7 +85,7 @@ export default function BankTransactions() {
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/accounts');
+      const response = await fetch('/api/accounts');
       if (!response.ok) throw new Error('Failed to fetch accounts');
       const data = await response.json();
       return data.value as Account[];
@@ -111,7 +111,7 @@ export default function BankTransactions() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
-      const response = await fetch('http://localhost:5000/api/banktransactions', {
+      const response = await fetch('/api/banktransactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -139,7 +139,7 @@ export default function BankTransactions() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<BankTransaction> }) => {
-      const response = await fetch(`http://localhost:5000/api/banktransactions/${id}`, {
+      const response = await fetch(`/api/banktransactions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -158,7 +158,7 @@ export default function BankTransactions() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`http://localhost:5000/api/banktransactions/${id}`, {
+      const response = await fetch(`/api/banktransactions/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete transaction');
