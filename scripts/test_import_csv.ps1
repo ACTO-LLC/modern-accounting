@@ -1,4 +1,4 @@
-$csvPath = "c:\Users\EricHalsey\.gemini\antigravity\scratch\modern_accounting_system\test_invoices.csv"
+$csvPath = "$PSScriptRoot\..\data\test\test_invoices.csv"
 $uri = "http://localhost:7072/api/import-invoices"
 
 try {

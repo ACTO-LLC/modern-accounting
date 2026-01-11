@@ -38,3 +38,6 @@ local.settings.json
 .idea
 *.suo
 *.user
+
+# Debug logs
+dab_debug_log.txt
