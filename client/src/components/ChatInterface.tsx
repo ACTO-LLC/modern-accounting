@@ -1,11 +1,29 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+}
+
+// Configure DOMPurify to allow safe link attributes
+const sanitizeConfig: DOMPurify.Config = {
+  ALLOWED_TAGS: ['a', 'b', 'i', 'em', 'strong', 'br', 'p', 'span'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+  ALLOW_DATA_ATTR: false,
+};
+
+function sanitizeAndFormatContent(content: string): string {
+  // First convert markdown links to HTML
+  const htmlContent = content.replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" class="underline hover:text-indigo-300" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+  // Then sanitize the result
+  return DOMPurify.sanitize(htmlContent, sanitizeConfig);
 }
 
 export default function ChatInterface() {
@@ -48,7 +66,7 @@ export default function ChatInterface() {
       const response = await fetch('http://localhost:7071/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: input,
           history: messages.slice(-5) // Send last 5 messages for context
         })
@@ -57,7 +75,7 @@ export default function ChatInterface() {
       if (!response.ok) throw new Error('Chat API failed');
 
       const data = await response.json();
-      
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -130,13 +148,10 @@ export default function ChatInterface() {
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <div 
+              <div
                 className="text-sm whitespace-pre-wrap"
                 dangerouslySetInnerHTML={{
-                  __html: message.content.replace(
-                    /\[([^\]]+)\]\(([^)]+)\)/g,
-                    '<a href="$2" class="underline hover:text-indigo-300" target="_blank" rel="noopener noreferrer">$1</a>'
-                  )
+                  __html: sanitizeAndFormatContent(message.content)
                 }}
               />
               <p className={`text-xs mt-1 ${
