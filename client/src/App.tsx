@@ -5,6 +5,9 @@ import Dashboard from './pages/Dashboard';
 import Invoices from './pages/Invoices';
 import NewInvoice from './pages/NewInvoice';
 import EditInvoice from './pages/EditInvoice';
+import Estimates from './pages/Estimates';
+import NewEstimate from './pages/NewEstimate';
+import EditEstimate from './pages/EditEstimate';
 import Banking from './pages/Banking';
 import JournalEntries from './pages/JournalEntries';
 import NewJournalEntry from './pages/NewJournalEntry';
@@ -46,6 +49,9 @@ function App() {
             <Route path="invoices" element={<Invoices />} />
             <Route path="invoices/new" element={<NewInvoice />} />
             <Route path="invoices/:id/edit" element={<EditInvoice />} />
+            <Route path="estimates" element={<Estimates />} />
+            <Route path="estimates/new" element={<NewEstimate />} />
+            <Route path="estimates/:id/edit" element={<EditEstimate />} />
             <Route path="banking" element={<Banking />} />
             <Route path="journal-entries" element={<JournalEntries />} />
             <Route path="journal-entries/new" element={<NewJournalEntry />} />
@@ -54,7 +60,6 @@ function App() {
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
-<<<<<<< HEAD
             <Route path="products-services" element={<ProductsServices />} />
             <Route path="products-services/new" element={<NewProductService />} />
             <Route path="products-services/:id/edit" element={<EditProductService />} />
@@ -66,8 +71,6 @@ function App() {
             <Route path="projects/:id/edit" element={<EditProject />} />
             <Route path="time-entries" element={<TimeEntries />} />
             <Route path="time-entries/new" element={<NewTimeEntry />} />
-=======
->>>>>>> a168d6a (Refactor: Address code review comments for financial reports)
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />

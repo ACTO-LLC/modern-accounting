@@ -561,6 +561,112 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "estimates": {
+            "source": "dbo.v_Estimates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EstimateNumber": "EstimateNumber",
+                "CustomerId": "CustomerId",
+                "IssueDate": "IssueDate",
+                "ExpirationDate": "ExpirationDate",
+                "TotalAmount": "TotalAmount",
+                "Status": "Status",
+                "ConvertedToInvoiceId": "ConvertedToInvoiceId",
+                "Notes": "Notes",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Customer": {
+                    "target.entity": "customers",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "CustomerId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "ConvertedInvoice": {
+                    "target.entity": "invoices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ConvertedToInvoiceId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Lines": {
+                    "target.entity": "estimatelines",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "EstimateId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "estimatelines": {
+            "source": "dbo.EstimateLines",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EstimateId": "EstimateId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Estimate": {
+                    "target.entity": "estimates",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "EstimateId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "ProductService": {
+                    "target.entity": "productsservices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ProductServiceId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
