@@ -22,6 +22,9 @@ import EditProductService from './pages/EditProductService';
 import Vendors from './pages/Vendors';
 import NewVendor from './pages/NewVendor';
 import EditVendor from './pages/EditVendor';
+import Bills from './pages/Bills';
+import NewBill from './pages/NewBill';
+import EditBill from './pages/EditBill';
 import Reports from './pages/Reports';
 import ProfitAndLoss from './pages/reports/ProfitAndLoss';
 import BalanceSheet from './pages/reports/BalanceSheet';
@@ -54,20 +57,20 @@ function App() {
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
-<<<<<<< HEAD
             <Route path="products-services" element={<ProductsServices />} />
             <Route path="products-services/new" element={<NewProductService />} />
             <Route path="products-services/:id/edit" element={<EditProductService />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="vendors/new" element={<NewVendor />} />
             <Route path="vendors/:id/edit" element={<EditVendor />} />
+            <Route path="bills" element={<Bills />} />
+            <Route path="bills/new" element={<NewBill />} />
+            <Route path="bills/:id/edit" element={<EditBill />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/new" element={<NewProject />} />
             <Route path="projects/:id/edit" element={<EditProject />} />
             <Route path="time-entries" element={<TimeEntries />} />
             <Route path="time-entries/new" element={<NewTimeEntry />} />
-=======
->>>>>>> a168d6a (Refactor: Address code review comments for financial reports)
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
