@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, ChevronRight, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import api from '../lib/api';
 
 interface Class {
@@ -20,6 +20,37 @@ interface ClassInput {
   Status?: string;
 }
 
+// Validation constants
+const NAME_MAX_LENGTH = 100;
+
+// Validation error messages
+interface ValidationErrors {
+  name?: string;
+}
+
+/**
+ * Get all descendant IDs of a given class to prevent circular references.
+ * If class A is a parent of B, and B is a parent of C, then A cannot have B or C as its parent.
+ */
+function getDescendantIds(classId: string, classes: Class[]): Set<string> {
+  const descendants = new Set<string>();
+  const queue = [classId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    // Find all classes that have currentId as their parent
+    const children = classes.filter((c) => c.ParentClassId === currentId);
+    for (const child of children) {
+      if (!descendants.has(child.Id)) {
+        descendants.add(child.Id);
+        queue.push(child.Id);
+      }
+    }
+  }
+
+  return descendants;
+}
+
 export default function Classes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -31,6 +62,7 @@ export default function Classes() {
     Description: '',
     Status: 'Active',
   });
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   const queryClient = useQueryClient();
 
@@ -86,12 +118,57 @@ export default function Classes() {
       Description: '',
       Status: 'Active',
     });
+    setValidationErrors({});
+  };
+
+  /**
+   * Validate form data before submission
+   */
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+    const trimmedName = formData.Name.trim();
+
+    // Check for empty name
+    if (!trimmedName) {
+      errors.name = 'Name is required';
+    } else if (trimmedName.length > NAME_MAX_LENGTH) {
+      errors.name = `Name must be ${NAME_MAX_LENGTH} characters or less`;
+    } else {
+      // Check for duplicate names at the same level (same parent)
+      const parentId = formData.ParentClassId || null;
+      const duplicate = classes?.find(
+        (c) =>
+          c.Name.toLowerCase() === trimmedName.toLowerCase() &&
+          c.ParentClassId === parentId &&
+          (!editingClass || c.Id !== editingClass.Id)
+      );
+      if (duplicate) {
+        errors.name = 'A class with this name already exists at this level';
+      }
+    }
+
+    // Validate circular reference protection (extra safety check)
+    if (editingClass && formData.ParentClassId) {
+      const descendantIds = getDescendantIds(editingClass.Id, classes || []);
+      if (descendantIds.has(formData.ParentClassId)) {
+        errors.name = 'Cannot set a descendant as parent (circular reference)';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     const submitData = {
       ...formData,
+      Name: formData.Name.trim(),
       ParentClassId: formData.ParentClassId || null,
     };
     if (editingClass) {
@@ -109,6 +186,7 @@ export default function Classes() {
       Description: classItem.Description || '',
       Status: classItem.Status,
     });
+    setValidationErrors({});
     setShowForm(true);
   };
 
@@ -136,10 +214,19 @@ export default function Classes() {
     return matchesSearch && matchesStatus;
   });
 
-  // Get top-level classes for parent selection (exclude self when editing)
-  const availableParents = classes?.filter(
-    (c) => !editingClass || c.Id !== editingClass.Id
-  );
+  // Get available parents for selection - exclude self AND all descendants to prevent circular references
+  const availableParents = useMemo(() => {
+    if (!classes) return [];
+    if (!editingClass) return classes;
+
+    // Get all descendants of the current class
+    const descendantIds = getDescendantIds(editingClass.Id, classes);
+
+    // Filter out the current class and all its descendants
+    return classes.filter(
+      (c) => c.Id !== editingClass.Id && !descendantIds.has(c.Id)
+    );
+  }, [classes, editingClass]);
 
   if (isLoading) return <div className="p-4">Loading classes...</div>;
   if (error)
@@ -185,12 +272,23 @@ export default function Classes() {
                   type="text"
                   id="name"
                   required
+                  maxLength={NAME_MAX_LENGTH}
                   value={formData.Name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, Name: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  onChange={(e) => {
+                    setFormData({ ...formData, Name: e.target.value });
+                    if (validationErrors.name) {
+                      setValidationErrors({ ...validationErrors, name: undefined });
+                    }
+                  }}
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 sm:text-sm border p-2 ${
+                    validationErrors.name
+                      ? 'border-red-300 focus:border-red-500'
+                      : 'border-gray-300 focus:border-indigo-500'
+                  }`}
                 />
+                {validationErrors.name && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+                )}
               </div>
               <div>
                 <label

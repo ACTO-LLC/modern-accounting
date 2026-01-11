@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, ChevronRight, X, MapPin } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import api from '../lib/api';
 
 interface Location {
@@ -22,6 +22,37 @@ interface LocationInput {
   Status?: string;
 }
 
+// Validation constants
+const NAME_MAX_LENGTH = 100;
+
+// Validation error messages
+interface ValidationErrors {
+  name?: string;
+}
+
+/**
+ * Get all descendant IDs of a given location to prevent circular references.
+ * If location A is a parent of B, and B is a parent of C, then A cannot have B or C as its parent.
+ */
+function getDescendantIds(locationId: string, locations: Location[]): Set<string> {
+  const descendants = new Set<string>();
+  const queue = [locationId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    // Find all locations that have currentId as their parent
+    const children = locations.filter((l) => l.ParentLocationId === currentId);
+    for (const child of children) {
+      if (!descendants.has(child.Id)) {
+        descendants.add(child.Id);
+        queue.push(child.Id);
+      }
+    }
+  }
+
+  return descendants;
+}
+
 export default function Locations() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -34,6 +65,7 @@ export default function Locations() {
     Description: '',
     Status: 'Active',
   });
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   const queryClient = useQueryClient();
 
@@ -90,12 +122,57 @@ export default function Locations() {
       Description: '',
       Status: 'Active',
     });
+    setValidationErrors({});
+  };
+
+  /**
+   * Validate form data before submission
+   */
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+    const trimmedName = formData.Name.trim();
+
+    // Check for empty name
+    if (!trimmedName) {
+      errors.name = 'Name is required';
+    } else if (trimmedName.length > NAME_MAX_LENGTH) {
+      errors.name = `Name must be ${NAME_MAX_LENGTH} characters or less`;
+    } else {
+      // Check for duplicate names at the same level (same parent)
+      const parentId = formData.ParentLocationId || null;
+      const duplicate = locations?.find(
+        (l) =>
+          l.Name.toLowerCase() === trimmedName.toLowerCase() &&
+          l.ParentLocationId === parentId &&
+          (!editingLocation || l.Id !== editingLocation.Id)
+      );
+      if (duplicate) {
+        errors.name = 'A location with this name already exists at this level';
+      }
+    }
+
+    // Validate circular reference protection (extra safety check)
+    if (editingLocation && formData.ParentLocationId) {
+      const descendantIds = getDescendantIds(editingLocation.Id, locations || []);
+      if (descendantIds.has(formData.ParentLocationId)) {
+        errors.name = 'Cannot set a descendant as parent (circular reference)';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     const submitData = {
       ...formData,
+      Name: formData.Name.trim(),
       ParentLocationId: formData.ParentLocationId || null,
     };
     if (editingLocation) {
@@ -114,6 +191,7 @@ export default function Locations() {
       Description: location.Description || '',
       Status: location.Status,
     });
+    setValidationErrors({});
     setShowForm(true);
   };
 
@@ -142,10 +220,19 @@ export default function Locations() {
     return matchesSearch && matchesStatus;
   });
 
-  // Get available parents for selection (exclude self when editing)
-  const availableParents = locations?.filter(
-    (l) => !editingLocation || l.Id !== editingLocation.Id
-  );
+  // Get available parents for selection - exclude self AND all descendants to prevent circular references
+  const availableParents = useMemo(() => {
+    if (!locations) return [];
+    if (!editingLocation) return locations;
+
+    // Get all descendants of the current location
+    const descendantIds = getDescendantIds(editingLocation.Id, locations);
+
+    // Filter out the current location and all its descendants
+    return locations.filter(
+      (l) => l.Id !== editingLocation.Id && !descendantIds.has(l.Id)
+    );
+  }, [locations, editingLocation]);
 
   if (isLoading) return <div className="p-4">Loading locations...</div>;
   if (error)
@@ -191,12 +278,23 @@ export default function Locations() {
                   type="text"
                   id="name"
                   required
+                  maxLength={NAME_MAX_LENGTH}
                   value={formData.Name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, Name: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  onChange={(e) => {
+                    setFormData({ ...formData, Name: e.target.value });
+                    if (validationErrors.name) {
+                      setValidationErrors({ ...validationErrors, name: undefined });
+                    }
+                  }}
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 sm:text-sm border p-2 ${
+                    validationErrors.name
+                      ? 'border-red-300 focus:border-red-500'
+                      : 'border-gray-300 focus:border-indigo-500'
+                  }`}
                 />
+                {validationErrors.name && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+                )}
               </div>
               <div>
                 <label
