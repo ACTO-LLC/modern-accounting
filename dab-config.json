@@ -263,6 +263,68 @@
                     ]
                 }
             }
+        },
+        "productsservices": {
+            "source": "dbo.ProductsServices",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "SKU": "SKU",
+                "Type": "Type",
+                "Description": "Description",
+                "SalesPrice": "SalesPrice",
+                "PurchaseCost": "PurchaseCost",
+                "IncomeAccountId": "IncomeAccountId",
+                "ExpenseAccountId": "ExpenseAccountId",
+                "InventoryAssetAccountId": "InventoryAssetAccountId",
+                "Category": "Category",
+                "Taxable": "Taxable",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "IncomeAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "IncomeAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "ExpenseAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ExpenseAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "InventoryAssetAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "InventoryAssetAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
