@@ -41,3 +41,7 @@ local.settings.json
 
 # Debug logs
 dab_debug_log.txt
+
+# Worktree generated files
+dab-config.worktree.json
+docker-compose.worktree.yml
