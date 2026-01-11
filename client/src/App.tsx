@@ -14,11 +14,6 @@ import BankTransactions from './pages/BankTransactions';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
 import EditCustomer from './pages/EditCustomer';
-import Projects from './pages/Projects';
-import NewProject from './pages/NewProject';
-import EditProject from './pages/EditProject';
-import TimeEntries from './pages/TimeEntries';
-import NewTimeEntry from './pages/NewTimeEntry';
 import Reports from './pages/Reports';
 import ProfitAndLoss from './pages/reports/ProfitAndLoss';
 import BalanceSheet from './pages/reports/BalanceSheet';
@@ -46,11 +41,6 @@ function App() {
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="projects/new" element={<NewProject />} />
-            <Route path="projects/:id/edit" element={<EditProject />} />
-            <Route path="time-entries" element={<TimeEntries />} />
-            <Route path="time-entries/new" element={<NewTimeEntry />} />
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reports" element={<Reports />} />
             <Route path="reports/profit-loss" element={<ProfitAndLoss />} />
