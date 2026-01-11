@@ -42,6 +42,7 @@ import Inventory from './pages/Inventory';
 import Bills from './pages/Bills';
 import NewBill from './pages/NewBill';
 import EditBill from './pages/EditBill';
+import RecurringTransactions from './pages/RecurringTransactions';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ function App() {
             <Route path="classes" element={<Classes />} />
             <Route path="locations" element={<Locations />} />
             <Route path="inventory" element={<Inventory />} />
+            <Route path="recurring" element={<RecurringTransactions />} />
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
