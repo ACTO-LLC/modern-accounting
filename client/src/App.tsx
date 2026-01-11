@@ -19,6 +19,9 @@ import NewReconciliation from './pages/NewReconciliation';
 import ProductsServices from './pages/ProductsServices';
 import NewProductService from './pages/NewProductService';
 import EditProductService from './pages/EditProductService';
+import Vendors from './pages/Vendors';
+import NewVendor from './pages/NewVendor';
+import EditVendor from './pages/EditVendor';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -44,6 +47,9 @@ function App() {
             <Route path="products-services" element={<ProductsServices />} />
             <Route path="products-services/new" element={<NewProductService />} />
             <Route path="products-services/:id/edit" element={<EditProductService />} />
+            <Route path="vendors" element={<Vendors />} />
+            <Route path="vendors/new" element={<NewVendor />} />
+            <Route path="vendors/:id/edit" element={<EditVendor />} />
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
