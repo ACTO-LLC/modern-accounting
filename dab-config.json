@@ -288,7 +288,11 @@
                 "Category": "Category",
                 "Taxable": "Taxable",
                 "Status": "Status",
-                "CreatedAt": "CreatedAt"
+                "CreatedAt": "CreatedAt",
+                "QuantityOnHand": "QuantityOnHand",
+                "ReorderPoint": "ReorderPoint",
+                "InventoryValuationMethod": "InventoryValuationMethod",
+                "DefaultLocationId": "DefaultLocationId"
             },
             "relationships": {
                 "IncomeAccount": {
@@ -319,6 +323,26 @@
                     ],
                     "target.fields": [
                         "Id"
+                    ]
+                },
+                "DefaultLocation": {
+                    "target.entity": "inventorylocations",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "DefaultLocationId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "InventoryTransactions": {
+                    "target.entity": "inventorytransactions",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "ProductId"
                     ]
                 }
             },
@@ -552,6 +576,82 @@
                     "cardinality": "one",
                     "source.fields": [
                         "InvoiceLineId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "inventorylocations": {
+            "source": "dbo.InventoryLocations",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Code": "Code",
+                "Description": "Description",
+                "Address": "Address",
+                "IsDefault": "IsDefault",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "inventorytransactions": {
+            "source": "dbo.InventoryTransactions",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProductId": "ProductId",
+                "LocationId": "LocationId",
+                "TransactionDate": "TransactionDate",
+                "TransactionType": "TransactionType",
+                "Quantity": "Quantity",
+                "UnitCost": "UnitCost",
+                "TotalCost": "TotalCost",
+                "ReferenceType": "ReferenceType",
+                "ReferenceId": "ReferenceId",
+                "Notes": "Notes",
+                "CreatedAt": "CreatedAt",
+                "CreatedBy": "CreatedBy"
+            },
+            "relationships": {
+                "Product": {
+                    "target.entity": "productsservices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ProductId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Location": {
+                    "target.entity": "inventorylocations",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "LocationId"
                     ],
                     "target.fields": [
                         "Id"
