@@ -17,9 +17,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
-  "dependencies": {
-    "mssql": "^12.1.1"
+    "concurrently": "^8.2.2",
+    "mssql": "^12.2.0"
   }
 }

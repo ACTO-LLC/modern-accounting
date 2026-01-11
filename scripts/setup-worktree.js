@@ -142,13 +142,11 @@ function createDabConfig(dbName, dabPort) {
     return outputPath;
 }
 
-function createDockerComposeOverride(dabPort, dabConfigPath) {
-    const override = `version: '3.8'
-
-services:
-  dab-worktree:
+function createDockerComposeOverride(worktreeName, dabPort) {
+    const override = `services:
+  dab-${worktreeName}:
     image: mcr.microsoft.com/azure-databases/data-api-builder:latest
-    container_name: accounting-dab-worktree
+    container_name: accounting-dab-${worktreeName}
     ports:
       - "${dabPort}:5000"
     volumes:
@@ -161,7 +159,7 @@ services:
 
     const outputPath = path.join(__dirname, '..', 'docker-compose.worktree.yml');
     fs.writeFileSync(outputPath, override);
-    console.log(`✓ Created docker-compose.worktree.yml (DAB on port ${dabPort})`);
+    console.log(`✓ Created docker-compose.worktree.yml (DAB on port ${dabPort}, container: accounting-dab-${worktreeName})`);
 
     return outputPath;
 }
@@ -274,7 +272,7 @@ async function main() {
 
         // Create configuration files
         createDabConfig(dbName, dabPort);
-        createDockerComposeOverride(dabPort, 'dab-config.worktree.json');
+        createDockerComposeOverride(worktreeName, dabPort);
         createClientEnv(dabPort);
 
         // Print usage instructions
