@@ -34,6 +34,7 @@ import TimeEntries from './pages/TimeEntries';
 import NewTimeEntry from './pages/NewTimeEntry';
 import Classes from './pages/Classes';
 import Locations from './pages/Locations';
+import Inventory from './pages/Inventory';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ function App() {
             <Route path="time-entries/new" element={<NewTimeEntry />} />
             <Route path="classes" element={<Classes />} />
             <Route path="locations" element={<Locations />} />
+            <Route path="inventory" element={<Inventory />} />
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
