@@ -325,6 +325,92 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "bankreconciliations": {
+            "source": "dbo.BankReconciliations",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankAccountId": "BankAccountId",
+                "StatementDate": "StatementDate",
+                "StatementEndingBalance": "StatementEndingBalance",
+                "BeginningBalance": "BeginningBalance",
+                "ClearedDeposits": "ClearedDeposits",
+                "ClearedPayments": "ClearedPayments",
+                "Status": "Status",
+                "CompletedAt": "CompletedAt",
+                "CompletedBy": "CompletedBy",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "BankAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "BankAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Items": {
+                    "target.entity": "reconciliationitems",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "ReconciliationId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "reconciliationitems": {
+            "source": "dbo.ReconciliationItems",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ReconciliationId": "ReconciliationId",
+                "TransactionType": "TransactionType",
+                "TransactionId": "TransactionId",
+                "TransactionDate": "TransactionDate",
+                "Description": "Description",
+                "Amount": "Amount",
+                "IsCleared": "IsCleared",
+                "ClearedAt": "ClearedAt"
+            },
+            "relationships": {
+                "Reconciliation": {
+                    "target.entity": "bankreconciliations",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ReconciliationId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }

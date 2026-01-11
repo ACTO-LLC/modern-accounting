@@ -14,6 +14,8 @@ import BankTransactions from './pages/BankTransactions';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
 import EditCustomer from './pages/EditCustomer';
+import BankReconciliations from './pages/BankReconciliations';
+import NewReconciliation from './pages/NewReconciliation';
 import ProductsServices from './pages/ProductsServices';
 import NewProductService from './pages/NewProductService';
 import EditProductService from './pages/EditProductService';
@@ -43,6 +45,9 @@ function App() {
             <Route path="products-services/new" element={<NewProductService />} />
             <Route path="products-services/:id/edit" element={<EditProductService />} />
             <Route path="transactions" element={<BankTransactions />} />
+            <Route path="reconciliations" element={<BankReconciliations />} />
+            <Route path="reconciliations/new" element={<NewReconciliation />} />
+            <Route path="reconciliations/:id" element={<NewReconciliation />} />
             <Route path="settings" element={<div>Settings Page</div>} />
           </Route>
         </Routes>
