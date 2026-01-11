@@ -727,6 +727,101 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "bills": {
+            "source": "dbo.Bills",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "BillNumber": "BillNumber",
+                "BillDate": "BillDate",
+                "DueDate": "DueDate",
+                "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
+                "Status": "Status",
+                "Terms": "Terms",
+                "Memo": "Memo",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Vendor": {
+                    "target.entity": "vendors",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "VendorId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Lines": {
+                    "target.entity": "billlines",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "BillId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "billlines": {
+            "source": "dbo.BillLines",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BillId": "BillId",
+                "AccountId": "AccountId",
+                "Description": "Description",
+                "Amount": "Amount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Bill": {
+                    "target.entity": "bills",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "BillId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Account": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "AccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }

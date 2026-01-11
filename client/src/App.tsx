@@ -35,6 +35,9 @@ import NewTimeEntry from './pages/NewTimeEntry';
 import Classes from './pages/Classes';
 import Locations from './pages/Locations';
 import Inventory from './pages/Inventory';
+import Bills from './pages/Bills';
+import NewBill from './pages/NewBill';
+import EditBill from './pages/EditBill';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -63,6 +66,9 @@ function App() {
             <Route path="vendors" element={<Vendors />} />
             <Route path="vendors/new" element={<NewVendor />} />
             <Route path="vendors/:id/edit" element={<EditVendor />} />
+            <Route path="bills" element={<Bills />} />
+            <Route path="bills/new" element={<NewBill />} />
+            <Route path="bills/:id/edit" element={<EditBill />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/new" element={<NewProject />} />
             <Route path="projects/:id/edit" element={<EditProject />} />
