@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users } from 'lucide-react';
+import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
 
@@ -16,6 +16,7 @@ export default function Layout() {
     { name: 'Import', href: '/import', icon: Upload },
     { name: 'Review', href: '/review', icon: CheckCircle },
     { name: 'Transactions', href: '/transactions', icon: Database },
+    { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -32,7 +33,7 @@ export default function Layout() {
         <nav className="p-4 space-y-1">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.href;
+            const isActive = location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href));
             return (
               <Link
                 key={item.name}
