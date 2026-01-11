@@ -27,6 +27,11 @@ import ProfitAndLoss from './pages/reports/ProfitAndLoss';
 import BalanceSheet from './pages/reports/BalanceSheet';
 import TrialBalance from './pages/reports/TrialBalance';
 import ARAgingSummary from './pages/reports/ARAgingSummary';
+import Projects from './pages/Projects';
+import NewProject from './pages/NewProject';
+import EditProject from './pages/EditProject';
+import TimeEntries from './pages/TimeEntries';
+import NewTimeEntry from './pages/NewTimeEntry';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -55,6 +60,11 @@ function App() {
             <Route path="vendors" element={<Vendors />} />
             <Route path="vendors/new" element={<NewVendor />} />
             <Route path="vendors/:id/edit" element={<EditVendor />} />
+            <Route path="projects" element={<Projects />} />
+            <Route path="projects/new" element={<NewProject />} />
+            <Route path="projects/:id/edit" element={<EditProject />} />
+            <Route path="time-entries" element={<TimeEntries />} />
+            <Route path="time-entries/new" element={<NewTimeEntry />} />
             <Route path="transactions" element={<BankTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
