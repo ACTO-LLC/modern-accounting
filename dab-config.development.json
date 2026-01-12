@@ -1,0 +1,25 @@
+{
+    "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.0.0/dab.draft.schema.json",
+    "data-source": {
+        "database-type": "mssql",
+        "connection-string": "Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true",
+        "options": {
+            "set-session-context": true
+        }
+    },
+    "runtime": {
+        "host": {
+            "mode": "development",
+            "cors": {
+                "origins": [
+                    "http://localhost:5173",
+                    "http://localhost:5179"
+                ],
+                "allow-credentials": true
+            },
+            "authentication": {
+                "provider": "Simulator"
+            }
+        }
+    }
+}

@@ -21,8 +21,6 @@ services:
       - "5000:5000"
     volumes:
       - ./dab-config.json:/App/dab-config.json
-    environment:
-      - DAB_ENVIRONMENT=Development
 
 volumes:
   sql-data:
