@@ -234,9 +234,9 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
 
         // Store the endCursor for the next page
         if (data.endCursor && paginationModel.page >= paginationState.cursors.length - 1) {
-          setPaginationState((prev) => ({
-            cursors: [...prev.cursors, data.endCursor],
-          }));
+          setPaginationState({
+            cursors: [...paginationState.cursors, data.endCursor],
+          });
         }
 
         // Estimate total rows for pagination display

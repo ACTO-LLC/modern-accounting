@@ -165,10 +165,8 @@ test.describe('MUI DataGrid - Server-side Features', () => {
         if (await option10.isVisible()) {
           await option10.click();
 
-          // Wait for the grid to update to 10 rows
-          await expect(page.locator('.MuiDataGrid-row')).toHaveCount(10, { timeout: 5000 }).catch(() => {
-            // If we don't have exactly 10 rows, that's okay - there might be fewer items
-          });
+          // Wait for the grid to update - we expect 10 or fewer rows (if there are fewer items in the dataset)
+          await page.waitForSelector('.MuiDataGrid-row', { timeout: 5000 });
         }
       }
     });
