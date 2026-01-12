@@ -172,10 +172,11 @@ export default function GlobalSearch() {
 
     try {
       // Build OData filter queries for server-side filtering
-      const invoiceFilter = `${buildContainsFilter('InvoiceNumber', searchTerm)} or ${buildContainsFilter('customer/Name', searchTerm)}`;
+      // Note: DAB doesn't support nested property filters (customer/Name), so we only filter on direct fields
+      const invoiceFilter = buildContainsFilter('InvoiceNumber', searchTerm);
       const customerFilter = `${buildContainsFilter('Name', searchTerm)} or ${buildContainsFilter('Email', searchTerm)}`;
       const vendorFilter = buildContainsFilter('Name', searchTerm);
-      const billFilter = `${buildContainsFilter('BillNumber', searchTerm)} or ${buildContainsFilter('vendor/Name', searchTerm)}`;
+      const billFilter = buildContainsFilter('BillNumber', searchTerm);
       const productFilter = `${buildContainsFilter('Name', searchTerm)} or ${buildContainsFilter('SKU', searchTerm)}`;
       // Fetch filtered data in parallel with $top=5 to limit results
       const [invoicesRes, customersRes, vendorsRes, billsRes, productsRes] = await Promise.all([
