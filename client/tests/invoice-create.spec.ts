@@ -4,7 +4,11 @@ test('can create invoice with line items', async ({ page }) => {
   await page.goto('http://localhost:5173/invoices/new');
   
   await page.getByLabel('Invoice Number').fill('INV-TEST-CREATE-' + Date.now());
-  await page.getByLabel('Customer ID').fill('1CBEE948-C5BB-435C-A40B-D4FCCA7AD1F1');
+  
+  // Select customer from dropdown
+  await page.getByRole('button', { name: /Select a customer/i }).click();
+  await page.getByRole('option').first().click();
+  
   await page.getByLabel('Issue Date').fill('2025-11-27');
   await page.getByLabel('Due Date').fill('2025-12-27');
   

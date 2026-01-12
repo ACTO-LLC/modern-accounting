@@ -40,7 +40,11 @@ test.describe('Estimates Management', () => {
 
     // 3. Fill Estimate Form
     await page.getByLabel('Estimate Number').fill(estimateNumber);
-    await page.getByLabel('Customer ID (UUID)').fill(testCustomerId);
+    
+    // Select customer from dropdown
+    await page.getByRole('button', { name: /Select a customer/i }).click();
+    await page.getByRole('option').first().click();
+    
     await page.getByLabel('Issue Date').fill('2025-01-15');
     await page.getByLabel('Expiration Date').fill('2025-02-15');
     await page.getByLabel('Status').selectOption('Draft');
@@ -80,7 +84,11 @@ test.describe('Estimates Management', () => {
     // 1. Create an estimate first
     await page.goto(`${baseUrl}/estimates/new`);
     await page.getByLabel('Estimate Number').fill(estimateNumber);
-    await page.getByLabel('Customer ID (UUID)').fill(testCustomerId);
+    
+    // Select customer from dropdown
+    await page.getByRole('button', { name: /Select a customer/i }).click();
+    await page.getByRole('option').first().click();
+    
     await page.getByLabel('Issue Date').fill('2025-01-15');
     await page.locator('input[name="Lines.0.Description"]').fill('Initial Service');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
@@ -126,7 +134,11 @@ test.describe('Estimates Management', () => {
     await page.goto(`${baseUrl}/estimates/new`);
     const draftEstimateNumber = `EST-DRAFT-${timestamp}`;
     await page.getByLabel('Estimate Number').fill(draftEstimateNumber);
-    await page.getByLabel('Customer ID (UUID)').fill(testCustomerId);
+    
+    // Select customer from dropdown
+    await page.getByRole('button', { name: /Select a customer/i }).click();
+    await page.getByRole('option').first().click();
+    
     await page.getByLabel('Issue Date').fill('2025-01-15');
     await page.getByLabel('Status').selectOption('Draft');
     await page.locator('input[name="Lines.0.Description"]').fill('Draft Service');
@@ -139,7 +151,11 @@ test.describe('Estimates Management', () => {
     await page.goto(`${baseUrl}/estimates/new`);
     const sentEstimateNumber = `EST-SENT-${timestamp}`;
     await page.getByLabel('Estimate Number').fill(sentEstimateNumber);
-    await page.getByLabel('Customer ID (UUID)').fill(testCustomerId);
+    
+    // Select customer from dropdown
+    await page.getByRole('button', { name: /Select a customer/i }).click();
+    await page.getByRole('option').first().click();
+    
     await page.getByLabel('Issue Date').fill('2025-01-15');
     await page.getByLabel('Status').selectOption('Sent');
     await page.locator('input[name="Lines.0.Description"]').fill('Sent Service');
@@ -176,7 +192,11 @@ test.describe('Estimates Management', () => {
     // 1. Create an estimate with Accepted status (eligible for conversion)
     await page.goto(`${baseUrl}/estimates/new`);
     await page.getByLabel('Estimate Number').fill(estimateNumber);
-    await page.getByLabel('Customer ID (UUID)').fill(testCustomerId);
+    
+    // Select customer from dropdown
+    await page.getByRole('button', { name: /Select a customer/i }).click();
+    await page.getByRole('option').first().click();
+    
     await page.getByLabel('Issue Date').fill('2025-01-15');
     await page.getByLabel('Status').selectOption('Accepted');
     await page.locator('input[name="Lines.0.Description"]').fill('Accepted Service');

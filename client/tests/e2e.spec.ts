@@ -30,7 +30,11 @@ test('can create a new invoice', async ({ page }) => {
   await expect(page).toHaveURL(/.*invoices\/new/);
   
   await page.getByLabel('Invoice Number').fill(invoiceNumber);
-  await page.getByLabel('Customer ID').fill('707E4008-77B6-4B89-9642-644ED79F09FF'); // Use same dummy ID
+  
+  // Select customer from dropdown
+  await page.getByRole('button', { name: /Select a customer/i }).click();
+  await page.getByRole('option').first().click();
+  
   await page.getByLabel('Total Amount').fill('500.50');
   await page.getByRole('button', { name: 'Create Invoice' }).click();
 
@@ -107,7 +111,11 @@ test('can edit an existing invoice', async ({ page }) => {
   const invoiceNumber = `INV-EDIT-${Date.now()}`;
   await page.goto('http://localhost:5173/invoices/new');
   await page.getByLabel('Invoice Number').fill(invoiceNumber);
-  await page.getByLabel('Customer ID').fill('707E4008-77B6-4B89-9642-644ED79F09FF');
+  
+  // Select customer from dropdown
+  await page.getByRole('button', { name: /Select a customer/i }).click();
+  await page.getByRole('option').first().click();
+  
   await page.getByLabel('Total Amount').fill('100.00');
   await page.getByRole('button', { name: 'Create Invoice' }).click();
   await expect(page).toHaveURL(/.*invoices/);

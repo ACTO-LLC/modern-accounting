@@ -1,13 +1,14 @@
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect, ReactNode } from 'react';
+import CustomerSelector from './CustomerSelector';
 
 export const invoiceSchema = z.object({
   InvoiceNumber: z.string().min(1, 'Invoice number is required'),
-  CustomerId: z.string().uuid('Invalid Customer ID'),
+  CustomerId: z.string().uuid('Please select a customer'),
   IssueDate: z.string().min(1, 'Issue date is required'),
   DueDate: z.string().min(1, 'Due date is required'),
   TotalAmount: z.number().min(0, 'Amount must be positive'),
@@ -92,15 +93,19 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
           </div>
 
           <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">Customer ID (UUID)</label>
-            <input
-              id="CustomerId"
-              type="text"
-              {...register('CustomerId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="e.g. 707E4008-77B6-4B89-9642-644ED79F09FF"
+            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">Customer</label>
+            <Controller
+              name="CustomerId"
+              control={control}
+              render={({ field }) => (
+                <CustomerSelector
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  error={errors.CustomerId?.message}
+                  disabled={isSubmitting}
+                />
+              )}
             />
-            {errors.CustomerId && <p className="mt-1 text-sm text-red-600">{errors.CustomerId.message}</p>}
           </div>
 
           <div>
