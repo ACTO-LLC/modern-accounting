@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, FileText, Users, Truck, Receipt, Package, X, Command } from 'lucide-react';
+import { Search, FileText, Users, Truck, Receipt, Package, X, Command, AlertCircle } from 'lucide-react';
 import api from '../lib/api';
 import clsx from 'clsx';
 
@@ -72,6 +72,17 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+// Escape single quotes in OData string values by doubling them
+function escapeODataString(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+// Build OData contains filter for a field
+function buildContainsFilter(field: string, term: string): string {
+  const escapedTerm = escapeODataString(term.toLowerCase());
+  return `contains(tolower(${field}), '${escapedTerm}')`;
+}
+
 export default function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -83,6 +94,7 @@ export default function GlobalSearch() {
     products: [],
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -107,6 +119,7 @@ export default function GlobalSearch() {
     setQuery('');
     setResults({ invoices: [], customers: [], vendors: [], bills: [], products: [] });
     setSelectedIndex(0);
+    setError(null);
   }, []);
 
   const closeSearch = useCallback(() => {
@@ -114,6 +127,7 @@ export default function GlobalSearch() {
     setQuery('');
     setResults({ invoices: [], customers: [], vendors: [], bills: [], products: [] });
     setSelectedIndex(0);
+    setError(null);
   }, []);
 
   // Keyboard shortcut handler (Ctrl+K / Cmd+K)
@@ -148,32 +162,32 @@ export default function GlobalSearch() {
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults({ invoices: [], customers: [], vendors: [], bills: [], products: [] });
+      setError(null);
       return;
     }
 
     setIsLoading(true);
-    const searchTerm = searchQuery.toLowerCase();
+    setError(null);
+    const searchTerm = searchQuery.trim();
 
     try {
-      // Fetch all data in parallel
+      // Build OData filter queries for server-side filtering
+      const invoiceFilter = `${buildContainsFilter('InvoiceNumber', searchTerm)} or ${buildContainsFilter('customer/Name', searchTerm)}`;
+      const customerFilter = `${buildContainsFilter('Name', searchTerm)} or ${buildContainsFilter('Email', searchTerm)}`;
+      const vendorFilter = buildContainsFilter('Name', searchTerm);
+      const billFilter = `${buildContainsFilter('BillNumber', searchTerm)} or ${buildContainsFilter('vendor/Name', searchTerm)}`;
+      const productFilter = `${buildContainsFilter('Name', searchTerm)} or ${buildContainsFilter('SKU', searchTerm)}`;
+      // Fetch filtered data in parallel with $top=5 to limit results
       const [invoicesRes, customersRes, vendorsRes, billsRes, productsRes] = await Promise.all([
-        api.get<{ value: Invoice[] }>('/invoices?$expand=customer').catch(() => ({ data: { value: [] } })),
-        api.get<{ value: Customer[] }>('/customers').catch(() => ({ data: { value: [] } })),
-        api.get<{ value: Vendor[] }>('/vendors').catch(() => ({ data: { value: [] } })),
-        api.get<{ value: Bill[] }>('/bills?$expand=vendor').catch(() => ({ data: { value: [] } })),
-        api.get<{ value: ProductService[] }>('/productsservices').catch(() => ({ data: { value: [] } })),
+        api.get<{ value: Invoice[] }>(`/invoices?$expand=customer&$filter=${encodeURIComponent(invoiceFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
+        api.get<{ value: Customer[] }>(`/customers?$filter=${encodeURIComponent(customerFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
+        api.get<{ value: Vendor[] }>(`/vendors?$filter=${encodeURIComponent(vendorFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
+        api.get<{ value: Bill[] }>(`/bills?$expand=vendor&$filter=${encodeURIComponent(billFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
+        api.get<{ value: ProductService[] }>(`/productsservices?$filter=${encodeURIComponent(productFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
       ]);
 
-      // Filter invoices
+      // Map invoices to search results
       const invoiceResults: SearchResult[] = (invoicesRes.data.value || [])
-        .filter((inv: any) => {
-          const customerName = inv.customer?.Name || inv.CustomerName || '';
-          return (
-            inv.InvoiceNumber?.toLowerCase().includes(searchTerm) ||
-            customerName.toLowerCase().includes(searchTerm)
-          );
-        })
-        .slice(0, 5)
         .map((inv: any) => ({
           id: inv.Id,
           type: 'invoice' as const,
@@ -182,13 +196,8 @@ export default function GlobalSearch() {
           path: `/invoices/${inv.Id}/edit`,
         }));
 
-      // Filter customers
+      // Map customers to search results
       const customerResults: SearchResult[] = (customersRes.data.value || [])
-        .filter((cust: Customer) =>
-          cust.Name?.toLowerCase().includes(searchTerm) ||
-          cust.Email?.toLowerCase().includes(searchTerm)
-        )
-        .slice(0, 5)
         .map((cust: Customer) => ({
           id: cust.Id,
           type: 'customer' as const,
@@ -197,12 +206,8 @@ export default function GlobalSearch() {
           path: `/customers/${cust.Id}/edit`,
         }));
 
-      // Filter vendors
+      // Map vendors to search results
       const vendorResults: SearchResult[] = (vendorsRes.data.value || [])
-        .filter((vendor: Vendor) =>
-          vendor.Name?.toLowerCase().includes(searchTerm)
-        )
-        .slice(0, 5)
         .map((vendor: Vendor) => ({
           id: vendor.Id,
           type: 'vendor' as const,
@@ -211,16 +216,8 @@ export default function GlobalSearch() {
           path: `/vendors/${vendor.Id}/edit`,
         }));
 
-      // Filter bills
+      // Map bills to search results
       const billResults: SearchResult[] = (billsRes.data.value || [])
-        .filter((bill: any) => {
-          const vendorName = bill.vendor?.Name || bill.VendorName || '';
-          return (
-            bill.BillNumber?.toLowerCase().includes(searchTerm) ||
-            vendorName.toLowerCase().includes(searchTerm)
-          );
-        })
-        .slice(0, 5)
         .map((bill: any) => ({
           id: bill.Id,
           type: 'bill' as const,
@@ -229,13 +226,8 @@ export default function GlobalSearch() {
           path: `/bills/${bill.Id}/edit`,
         }));
 
-      // Filter products/services
+      // Map products/services to search results
       const productResults: SearchResult[] = (productsRes.data.value || [])
-        .filter((prod: ProductService) =>
-          prod.Name?.toLowerCase().includes(searchTerm) ||
-          prod.SKU?.toLowerCase().includes(searchTerm)
-        )
-        .slice(0, 5)
         .map((prod: ProductService) => ({
           id: prod.Id,
           type: 'product' as const,
@@ -252,8 +244,9 @@ export default function GlobalSearch() {
         products: productResults,
       });
       setSelectedIndex(0);
-    } catch (error) {
-      console.error('Search error:', error);
+    } catch (err) {
+      console.error('Search error:', err);
+      setError('Failed to search. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -416,6 +409,14 @@ export default function GlobalSearch() {
             </button>
           </div>
 
+          {/* Aria live region for screen readers */}
+          <div aria-live="polite" className="sr-only">
+            {isLoading && 'Searching...'}
+            {!isLoading && hasQuery && !hasResults && !error && `No results found for ${query}`}
+            {!isLoading && hasResults && `Found ${flatResults.length} results`}
+            {error && error}
+          </div>
+
           {/* Results */}
           <div
             ref={resultsRef}
@@ -428,7 +429,20 @@ export default function GlobalSearch() {
               </div>
             )}
 
-            {!isLoading && hasQuery && !hasResults && (
+            {!isLoading && error && (
+              <div className="px-4 py-8 text-center text-red-500">
+                <AlertCircle className="h-8 w-8 mx-auto mb-2 text-red-400" />
+                <p className="text-sm">{error}</p>
+                <button
+                  onClick={() => performSearch(debouncedQuery)}
+                  className="mt-3 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!isLoading && !error && hasQuery && !hasResults && (
               <div className="px-4 py-8 text-center text-gray-500">
                 <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <p className="text-sm">No results found for "{query}"</p>
@@ -436,7 +450,7 @@ export default function GlobalSearch() {
               </div>
             )}
 
-            {!isLoading && !hasQuery && (
+            {!isLoading && !error && !hasQuery && (
               <div className="px-4 py-8 text-center text-gray-500">
                 <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <p className="text-sm">Start typing to search</p>
@@ -444,7 +458,7 @@ export default function GlobalSearch() {
               </div>
             )}
 
-            {!isLoading && hasResults && (
+            {!isLoading && !error && hasResults && (
               <div className="py-2">
                 {/* Invoices */}
                 {results.invoices.length > 0 && (
