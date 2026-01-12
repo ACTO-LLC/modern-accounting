@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 
 export const invoiceSchema = z.object({
   InvoiceNumber: z.string().min(1, 'Invoice number is required'),
@@ -29,9 +29,10 @@ interface InvoiceFormProps {
   title: string;
   isSubmitting?: boolean;
   submitButtonText?: string;
+  headerActions?: ReactNode;
 }
 
-export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Invoice' }: InvoiceFormProps) {
+export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Invoice', headerActions }: InvoiceFormProps) {
   const navigate = useNavigate();
   const { register, control, handleSubmit, setValue, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
@@ -66,11 +67,14 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/invoices')} className="mr-4 text-gray-500 hover:text-gray-700">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center">
+          <button onClick={() => navigate('/invoices')} className="mr-4 text-gray-500 hover:text-gray-700">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        </div>
+        {headerActions && <div className="flex items-center">{headerActions}</div>}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
