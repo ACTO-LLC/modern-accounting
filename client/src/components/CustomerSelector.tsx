@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Search, Loader2 } from 'lucide-react';
-import api, { Customer } from '../lib/api';
+import { ChevronDown, Search, Loader2, RefreshCw } from 'lucide-react';
+import { customersApi, Customer } from '../lib/api';
 
 export interface CustomerSelectorProps {
   value: string;
@@ -15,24 +15,22 @@ export interface CustomerSelectorProps {
 export default function CustomerSelector({
   value,
   onChange,
-  required: _required = false,
+  required = false,
   disabled = false,
   error,
   className = '',
 }: CustomerSelectorProps) {
-  // _required is available for future use (e.g., accessibility attributes)
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Fetch customers
-  const { data: customers, isLoading, isError } = useQuery({
+  const { data: customers, isLoading, isError, refetch } = useQuery({
     queryKey: ['customers'],
-    queryFn: async () => {
-      const response = await api.get<{ value: Customer[] }>('/customers');
-      return response.data.value;
-    },
+    queryFn: customersApi.getAll,
   });
 
   // Find selected customer
@@ -59,6 +57,7 @@ export default function CustomerSelector({
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setSearchTerm('');
+        setFocusedIndex(-1);
       }
     };
 
@@ -73,16 +72,44 @@ export default function CustomerSelector({
     }
   }, [isOpen]);
 
+  // Reset focused index when filtered list changes
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchTerm]);
+
   const handleSelect = (customerId: string) => {
     onChange(customerId);
     setIsOpen(false);
     setSearchTerm('');
+    setFocusedIndex(-1);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Escape') {
       setIsOpen(false);
       setSearchTerm('');
+      setFocusedIndex(-1);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setFocusedIndex((prev) => {
+        const next = prev < filteredCustomers.length - 1 ? prev + 1 : prev;
+        listItemsRef.current[next]?.scrollIntoView({ block: 'nearest' });
+        return next;
+      });
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setFocusedIndex((prev) => {
+        const next = prev > 0 ? prev - 1 : -1;
+        if (next === -1) {
+          inputRef.current?.focus();
+        } else {
+          listItemsRef.current[next]?.scrollIntoView({ block: 'nearest' });
+        }
+        return next;
+      });
+    } else if (event.key === 'Enter' && focusedIndex >= 0) {
+      event.preventDefault();
+      handleSelect(filteredCustomers[focusedIndex].Id);
     }
   };
 
@@ -93,6 +120,10 @@ export default function CustomerSelector({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls="customer-listbox"
+        aria-required={required}
         className={`
           w-full flex items-center justify-between
           mt-1 rounded-md border shadow-sm
@@ -109,7 +140,9 @@ export default function CustomerSelector({
               Loading customers...
             </span>
           ) : isError ? (
-            'Error loading customers'
+            <span className="flex items-center text-red-600">
+              Error loading customers
+            </span>
           ) : selectedCustomer ? (
             <span>
               {selectedCustomer.Name}
@@ -127,6 +160,9 @@ export default function CustomerSelector({
       {/* Dropdown */}
       {isOpen && !disabled && (
         <div
+          id="customer-listbox"
+          role="listbox"
+          aria-label="Customer selection"
           className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-hidden"
           onKeyDown={handleKeyDown}
         >
@@ -140,6 +176,7 @@ export default function CustomerSelector({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search customers..."
+                aria-label="Search customers"
                 className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
@@ -152,19 +189,36 @@ export default function CustomerSelector({
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Loading...
               </div>
+            ) : isError ? (
+              <div className="px-4 py-3 text-center">
+                <p className="text-sm text-red-600 mb-2">Error loading customers</p>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-md transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Retry
+                </button>
+              </div>
             ) : filteredCustomers.length === 0 ? (
               <div className="px-4 py-3 text-sm text-gray-500 text-center">
                 {searchTerm ? 'No customers found' : 'No customers available'}
               </div>
             ) : (
-              filteredCustomers.map((customer) => (
+              filteredCustomers.map((customer, index) => (
                 <button
                   key={customer.Id}
+                  ref={(el) => (listItemsRef.current[index] = el)}
                   type="button"
+                  role="option"
+                  aria-selected={customer.Id === value}
                   onClick={() => handleSelect(customer.Id)}
+                  onMouseEnter={() => setFocusedIndex(index)}
                   className={`
                     w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none
-                    ${customer.Id === value ? 'bg-indigo-100 text-indigo-900' : 'text-gray-900'}
+                    ${customer.Id === value ? 'bg-indigo-100 text-indigo-900' : ''}
+                    ${focusedIndex === index ? 'bg-indigo-50' : 'text-gray-900'}
                   `}
                 >
                   <div className="font-medium">{customer.Name}</div>
