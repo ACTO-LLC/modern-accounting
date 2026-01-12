@@ -59,6 +59,48 @@ api.interceptors.response.use(
   }
 );
 
+// GraphQL client - uses a separate axios instance with no baseURL to hit /graphql directly
+const graphqlClient = axios.create({
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add the same auth interceptor to graphQL client
+graphqlClient.interceptors.request.use(
+  async (config) => {
+    if (msalInstance) {
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) {
+        const silentRequest: SilentRequest = {
+          ...apiRequest,
+          account: accounts[0],
+        };
+
+        try {
+          const response = await msalInstance.acquireTokenSilent(silentRequest);
+          config.headers.Authorization = `Bearer ${response.accessToken}`;
+        } catch (error) {
+          if (error instanceof InteractionRequiredAuthError) {
+            console.warn('Token refresh required for GraphQL');
+          }
+        }
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// GraphQL query helper
+export async function graphql<T = any>(query: string, variables?: Record<string, any>): Promise<T> {
+  const response = await graphqlClient.post('/graphql', { query, variables });
+  if (response.data.errors) {
+    throw new Error(response.data.errors[0]?.message || 'GraphQL error');
+  }
+  return response.data.data;
+}
+
 export default api;
 
 // Project Types

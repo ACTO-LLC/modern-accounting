@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, FileText, Users, Truck, Receipt, Package, X, Command, AlertCircle } from 'lucide-react';
-import api from '../lib/api';
+import { graphql } from '../lib/api';
 import clsx from 'clsx';
 
 // Search result types
@@ -72,16 +72,63 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-// Escape single quotes in OData string values by doubling them
-function escapeODataString(value: string): string {
-  return value.replace(/'/g, "''");
+// Escape special characters in GraphQL string values
+function escapeGraphQLString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-// Build OData contains filter for a field
-// Note: DAB doesn't support tolower(), so search is case-sensitive
-function buildContainsFilter(field: string, term: string): string {
-  const escapedTerm = escapeODataString(term);
-  return `contains(${field}, '${escapedTerm}')`;
+// GraphQL query for global search
+function buildSearchQuery(searchTerm: string): string {
+  const escaped = escapeGraphQLString(searchTerm);
+  return `
+    query GlobalSearch {
+      invoices(filter: { InvoiceNumber: { contains: "${escaped}" } }, first: 5) {
+        items {
+          Id
+          InvoiceNumber
+          TotalAmount
+          Status
+          Customer { Name }
+        }
+      }
+      customers(filter: { or: [
+        { Name: { contains: "${escaped}" } },
+        { Email: { contains: "${escaped}" } }
+      ] }, first: 5) {
+        items {
+          Id
+          Name
+          Email
+        }
+      }
+      vendors(filter: { Name: { contains: "${escaped}" } }, first: 5) {
+        items {
+          Id
+          Name
+        }
+      }
+      bills(filter: { BillNumber: { contains: "${escaped}" } }, first: 5) {
+        items {
+          Id
+          BillNumber
+          TotalAmount
+          Status
+          Vendor { Name }
+        }
+      }
+      productsservices(filter: { or: [
+        { Name: { contains: "${escaped}" } },
+        { SKU: { contains: "${escaped}" } }
+      ] }, first: 5) {
+        items {
+          Id
+          Name
+          SKU
+          Type
+        }
+      }
+    }
+  `;
 }
 
 export default function GlobalSearch() {
@@ -159,7 +206,7 @@ export default function GlobalSearch() {
     }
   }, [isOpen]);
 
-  // Search function
+  // Search function using GraphQL
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults({ invoices: [], customers: [], vendors: [], bills: [], products: [] });
@@ -172,34 +219,26 @@ export default function GlobalSearch() {
     const searchTerm = searchQuery.trim();
 
     try {
-      // Build OData filter queries for server-side filtering
-      // Note: DAB doesn't support nested property filters (customer/Name), so we only filter on direct fields
-      const invoiceFilter = buildContainsFilter('InvoiceNumber', searchTerm);
-      const customerFilter = `${buildContainsFilter('Name', searchTerm)} or ${buildContainsFilter('Email', searchTerm)}`;
-      const vendorFilter = buildContainsFilter('Name', searchTerm);
-      const billFilter = buildContainsFilter('BillNumber', searchTerm);
-      const productFilter = `${buildContainsFilter('Name', searchTerm)} or ${buildContainsFilter('SKU', searchTerm)}`;
-      // Fetch filtered data in parallel with $top=5 to limit results
-      const [invoicesRes, customersRes, vendorsRes, billsRes, productsRes] = await Promise.all([
-        api.get<{ value: Invoice[] }>(`/invoices?$expand=customer&$filter=${encodeURIComponent(invoiceFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
-        api.get<{ value: Customer[] }>(`/customers?$filter=${encodeURIComponent(customerFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
-        api.get<{ value: Vendor[] }>(`/vendors?$filter=${encodeURIComponent(vendorFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
-        api.get<{ value: Bill[] }>(`/bills?$expand=vendor&$filter=${encodeURIComponent(billFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
-        api.get<{ value: ProductService[] }>(`/productsservices?$filter=${encodeURIComponent(productFilter)}&$top=5`).catch(() => ({ data: { value: [] } })),
-      ]);
+      // Use GraphQL for search - DAB REST doesn't support filtering
+      const query = buildSearchQuery(searchTerm);
+      const data = await graphql(query);
+
+      if (!data) {
+        throw new Error('No data returned from search');
+      }
 
       // Map invoices to search results
-      const invoiceResults: SearchResult[] = (invoicesRes.data.value || [])
+      const invoiceResults: SearchResult[] = (data.invoices?.items || [])
         .map((inv: any) => ({
           id: inv.Id,
           type: 'invoice' as const,
           title: `Invoice ${inv.InvoiceNumber}`,
-          subtitle: inv.customer?.Name || inv.CustomerName || `$${inv.TotalAmount?.toFixed(2) || '0.00'}`,
+          subtitle: inv.Customer?.Name || `$${inv.TotalAmount?.toFixed(2) || '0.00'}`,
           path: `/invoices/${inv.Id}/edit`,
         }));
 
       // Map customers to search results
-      const customerResults: SearchResult[] = (customersRes.data.value || [])
+      const customerResults: SearchResult[] = (data.customers?.items || [])
         .map((cust: Customer) => ({
           id: cust.Id,
           type: 'customer' as const,
@@ -209,7 +248,7 @@ export default function GlobalSearch() {
         }));
 
       // Map vendors to search results
-      const vendorResults: SearchResult[] = (vendorsRes.data.value || [])
+      const vendorResults: SearchResult[] = (data.vendors?.items || [])
         .map((vendor: Vendor) => ({
           id: vendor.Id,
           type: 'vendor' as const,
@@ -219,17 +258,17 @@ export default function GlobalSearch() {
         }));
 
       // Map bills to search results
-      const billResults: SearchResult[] = (billsRes.data.value || [])
+      const billResults: SearchResult[] = (data.bills?.items || [])
         .map((bill: any) => ({
           id: bill.Id,
           type: 'bill' as const,
           title: `Bill ${bill.BillNumber || 'N/A'}`,
-          subtitle: bill.vendor?.Name || bill.VendorName || `$${bill.TotalAmount?.toFixed(2) || '0.00'}`,
+          subtitle: bill.Vendor?.Name || `$${bill.TotalAmount?.toFixed(2) || '0.00'}`,
           path: `/bills/${bill.Id}/edit`,
         }));
 
       // Map products/services to search results
-      const productResults: SearchResult[] = (productsRes.data.value || [])
+      const productResults: SearchResult[] = (data.productsservices?.items || [])
         .map((prod: ProductService) => ({
           id: prod.Id,
           type: 'product' as const,
