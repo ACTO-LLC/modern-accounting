@@ -1,14 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { Plus, Copy } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
-import { 
-  generateNextInvoiceNumber, 
-  calculateInvoiceTotal, 
-  getCurrentDate, 
+import { GridColDef } from '@mui/x-data-grid';
+import ServerDataGrid from '../components/ServerDataGrid';
+import {
+  generateNextInvoiceNumber,
+  calculateInvoiceTotal,
+  getCurrentDate,
   getDateNDaysFromNow,
-  type Invoice 
+  type Invoice
 } from '../lib/invoiceUtils';
 import { formatGuidForOData } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
@@ -21,46 +23,45 @@ interface InvoiceLine {
   UnitPrice: number;
 }
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Paid': return 'bg-green-100 text-green-800';
+    case 'Partial': return 'bg-yellow-100 text-yellow-800';
+    case 'Overdue': return 'bg-red-100 text-red-800';
+    case 'Sent': return 'bg-blue-100 text-blue-800';
+    case 'Draft': return 'bg-gray-100 text-gray-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
 export default function Invoices() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { showToast } = useToast();
-
-  const { data: invoices, isLoading, error } = useQuery({
-    queryKey: ['invoices'],
-    queryFn: async () => {
-      const response = await api.get<{ value: Invoice[] }>('/invoices');
-      console.log('Invoices data:', response.data);
-      return response.data.value;
-    },
-  });
 
   const duplicateMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      // 1. Fetch the original invoice
-      const invoiceResponse = await api.get<{ value: Invoice[] }>(`/invoices?$filter=Id eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`);
+      const invoiceResponse = await api.get<{ value: Invoice[] }>(`/invoices?\$filter=Id eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`);
       const originalInvoice = invoiceResponse.data.value[0];
       if (!originalInvoice) {
         throw new Error('Invoice not found');
       }
 
-      // 2. Fetch the invoice lines
-      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`);
+      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?\$filter=InvoiceId eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`);
       const originalLines = linesResponse.data.value;
 
-      // Validate that invoice has line items
       if (!originalLines || originalLines.length === 0) {
         throw new Error('Cannot duplicate invoice with no line items');
       }
 
-      // 3. Generate new invoice number
-      const newInvoiceNumber = generateNextInvoiceNumber(invoices || []);
+      const allInvoicesResponse = await api.get<{ value: Invoice[] }>('/invoices');
+      const allInvoices = allInvoicesResponse.data.value;
 
-      // 4. Calculate total amount from lines
+      const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || []);
       const totalAmount = calculateInvoiceTotal(originalLines);
 
-      // 5. Create new invoice with current date and Draft status
       const newInvoice = {
         InvoiceNumber: newInvoiceNumber,
         CustomerId: originalInvoice.CustomerId,
@@ -73,7 +74,6 @@ export default function Invoices() {
       const createResponse = await api.post<Invoice>('/invoices', newInvoice);
       const createdInvoice = createResponse.data;
 
-      // 6. Create line items for the new invoice in parallel
       await Promise.all(
         originalLines.map(line =>
           api.post('/invoicelines', {
@@ -89,8 +89,8 @@ export default function Invoices() {
     },
     onSuccess: (newInvoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setRefreshKey(prev => prev + 1);
       showToast(`Invoice ${newInvoice.InvoiceNumber} has been duplicated`, 'success');
-      // Navigate to edit page for the new invoice
       navigate('/invoices/' + newInvoice.Id + '/edit');
     },
     onError: (error) => {
@@ -103,81 +103,88 @@ export default function Invoices() {
     }
   });
 
-  const handleDuplicate = (invoiceId: string) => {
+  const handleDuplicate = (e: React.MouseEvent, invoiceId: string) => {
+    e.stopPropagation();
     setDuplicatingId(invoiceId);
     duplicateMutation.mutate(invoiceId);
   };
 
-  if (isLoading) return <div className="p-4">Loading invoices...</div>;
-  if (error) return <div className="p-4 text-red-600">Error loading invoices</div>;
+  const columns: GridColDef[] = [
+    { field: 'InvoiceNumber', headerName: 'Invoice #', width: 130, filterable: true },
+    { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true },
+    { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true },
+    {
+      field: 'TotalAmount',
+      headerName: 'Amount',
+      width: 120,
+      type: 'number',
+      filterable: true,
+      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+    },
+    {
+      field: 'Status',
+      headerName: 'Status',
+      width: 110,
+      filterable: true,
+      renderCell: (params) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(params.value)}`}>
+          {params.value}
+        </span>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 180,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/invoices/${params.row.Id}/edit`);
+            }}
+            className="text-indigo-600 hover:text-indigo-900"
+          >
+            Edit
+          </button>
+          <button
+            onClick={(e) => handleDuplicate(e, params.row.Id)}
+            disabled={duplicatingId === params.row.Id}
+            className="text-gray-600 hover:text-gray-900 disabled:opacity-50 inline-flex items-center"
+            title="Duplicate invoice"
+          >
+            <Copy className="w-4 h-4 mr-1" />
+            {duplicatingId === params.row.Id ? '...' : 'Duplicate'}
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
-        <button
-          onClick={() => navigate('/invoices/new')}
-          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        <Link
+          to="/invoices/new"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Invoice
-        </button>
+        </Link>
       </div>
 
-      <div className="bg-white shadow overflow-hidden rounded-md">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {invoices?.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                  No invoices found.
-                </td>
-              </tr>
-            ) : (
-              invoices?.map((invoice) => (
-                <tr key={invoice.Id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invoice.InvoiceNumber}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{invoice.IssueDate}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{invoice.DueDate}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${invoice.TotalAmount?.toFixed(2) || '0.00'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      {invoice.Status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-3">
-                    <button
-                      onClick={() => navigate('/invoices/' + invoice.Id + '/edit')}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDuplicate(invoice.Id)}
-                      disabled={duplicatingId === invoice.Id}
-                      className="text-gray-600 hover:text-gray-900 disabled:opacity-50 inline-flex items-center"
-                      title="Duplicate invoice"
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      {duplicatingId === invoice.Id ? 'Duplicating...' : 'Duplicate'}
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ServerDataGrid<Invoice>
+        entityName="invoices"
+        queryFields="Id InvoiceNumber CustomerId IssueDate DueDate TotalAmount Status"
+        columns={columns}
+        editPath="/invoices/{id}/edit"
+        initialPageSize={25}
+        emptyMessage="No invoices found."
+        refreshKey={refreshKey}
+      />
     </div>
   );
 }
