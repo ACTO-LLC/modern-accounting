@@ -1,10 +1,14 @@
 import { Configuration, LogLevel } from '@azure/msal-browser';
 
-// MSAL configuration for Azure AD B2C
-// These values should be configured via environment variables in production
+// MSAL configuration for Azure AD
+// These values MUST be configured via environment variables
+if (!import.meta.env.VITE_AZURE_CLIENT_ID) {
+  throw new Error('VITE_AZURE_CLIENT_ID environment variable is required');
+}
+
 export const msalConfig: Configuration = {
   auth: {
-    clientId: import.meta.env.VITE_AZURE_CLIENT_ID || 'your-client-id',
+    clientId: import.meta.env.VITE_AZURE_CLIENT_ID,
     authority: import.meta.env.VITE_AZURE_AUTHORITY || 'https://login.microsoftonline.com/common',
     redirectUri: import.meta.env.VITE_REDIRECT_URI || window.location.origin,
     postLogoutRedirectUri: window.location.origin,
@@ -45,8 +49,11 @@ export const loginRequest = {
 };
 
 // Scopes for accessing the DAB API (Data API Builder)
+// Note: Falls back to default scope if not configured for development
 export const apiRequest = {
-  scopes: import.meta.env.VITE_API_SCOPES?.split(' ') || ['api://your-api-id/access_as_user'],
+  scopes: import.meta.env.VITE_API_SCOPES 
+    ? import.meta.env.VITE_API_SCOPES.split(' ')
+    : ['openid', 'profile'],
 };
 
 // User roles for RBAC

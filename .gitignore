@@ -5,6 +5,15 @@ node_modules
 
 # Testing
 coverage
+test-results
+playwright-report
+*.spec.js.map
+
+# Test output and debug files
+test_*.txt
+test_*.js
+*_output.txt
+*_debug.txt
 
 # Production
 dist
