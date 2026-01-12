@@ -3,16 +3,14 @@ import api from '../lib/api';
 import { Plus, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-
-interface Invoice {
-  Id: string;
-  InvoiceNumber: string;
-  CustomerId: string;
-  IssueDate: string;
-  DueDate: string;
-  TotalAmount: number;
-  Status: string;
-}
+import { 
+  generateNextInvoiceNumber, 
+  calculateInvoiceTotal, 
+  getCurrentDate, 
+  getDateNDaysFromNow,
+  type Invoice 
+} from '../lib/invoiceUtils';
+import { useToast } from '../hooks/useToast';
 
 interface InvoiceLine {
   Id: string;
@@ -22,23 +20,11 @@ interface InvoiceLine {
   UnitPrice: number;
 }
 
-// Generate next invoice number based on existing invoices
-function generateNextInvoiceNumber(invoices: Invoice[]): string {
-  const existingNumbers = invoices
-    .map(inv => {
-      const match = inv.InvoiceNumber.match(/^INV-(\d+)$/);
-      return match ? parseInt(match[1], 10) : 0;
-    })
-    .filter(n => n > 0);
-
-  const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
-  return 'INV-' + String(maxNumber + 1).padStart(3, '0');
-}
-
 export default function Invoices() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const { data: invoices, isLoading, error } = useQuery({
     queryKey: ['invoices'],
@@ -52,31 +38,33 @@ export default function Invoices() {
   const duplicateMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
       // 1. Fetch the original invoice
-      const invoiceResponse = await api.get<{ value: Invoice[] }>('/invoices?$filter=Id eq ' + invoiceId);
+      const invoiceResponse = await api.get<{ value: Invoice[] }>(`/invoices?$filter=Id eq ${invoiceId}`);
       const originalInvoice = invoiceResponse.data.value[0];
       if (!originalInvoice) {
         throw new Error('Invoice not found');
       }
 
       // 2. Fetch the invoice lines
-      const linesResponse = await api.get<{ value: InvoiceLine[] }>('/invoicelines?$filter=InvoiceId eq ' + invoiceId);
+      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${invoiceId}`);
       const originalLines = linesResponse.data.value;
+
+      // Validate that invoice has line items
+      if (!originalLines || originalLines.length === 0) {
+        throw new Error('Cannot duplicate invoice with no line items');
+      }
 
       // 3. Generate new invoice number
       const newInvoiceNumber = generateNextInvoiceNumber(invoices || []);
 
       // 4. Calculate total amount from lines
-      const totalAmount = originalLines.reduce((sum, line) => sum + (line.Quantity * line.UnitPrice), 0);
+      const totalAmount = calculateInvoiceTotal(originalLines);
 
       // 5. Create new invoice with current date and Draft status
-      const today = new Date().toISOString().split('T')[0];
-      const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
       const newInvoice = {
         InvoiceNumber: newInvoiceNumber,
         CustomerId: originalInvoice.CustomerId,
-        IssueDate: today,
-        DueDate: dueDate,
+        IssueDate: getCurrentDate(),
+        DueDate: getDateNDaysFromNow(30),
         TotalAmount: totalAmount,
         Status: 'Draft'
       };
@@ -84,26 +72,30 @@ export default function Invoices() {
       const createResponse = await api.post<Invoice>('/invoices', newInvoice);
       const createdInvoice = createResponse.data;
 
-      // 6. Create line items for the new invoice
-      for (const line of originalLines) {
-        await api.post('/invoicelines', {
-          InvoiceId: createdInvoice.Id,
-          Description: line.Description,
-          Quantity: line.Quantity,
-          UnitPrice: line.UnitPrice
-        });
-      }
+      // 6. Create line items for the new invoice in parallel
+      await Promise.all(
+        originalLines.map(line =>
+          api.post('/invoicelines', {
+            InvoiceId: createdInvoice.Id,
+            Description: line.Description,
+            Quantity: line.Quantity,
+            UnitPrice: line.UnitPrice
+          })
+        )
+      );
 
       return createdInvoice;
     },
     onSuccess: (newInvoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      showToast(`Invoice ${newInvoice.InvoiceNumber} has been duplicated`, 'success');
       // Navigate to edit page for the new invoice
       navigate('/invoices/' + newInvoice.Id + '/edit');
     },
     onError: (error) => {
       console.error('Failed to duplicate invoice:', error);
-      alert('Failed to duplicate invoice');
+      const message = error instanceof Error ? error.message : 'Failed to duplicate invoice';
+      showToast(message, 'error');
     },
     onSettled: () => {
       setDuplicatingId(null);
