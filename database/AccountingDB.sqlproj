@@ -58,12 +58,29 @@
     <Folder Include="Properties" />
     <Folder Include="dbo" />
     <Folder Include="dbo\Tables" />
+    <Folder Include="dbo\Views" />
     <Folder Include="dbo\StoredProcedures" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Tables -->
     <Build Include="dbo\Tables\Accounts.sql" />
-    <Build Include="dbo\Tables\JournalEntries.sql" />
+    <Build Include="dbo\Tables\BankReconciliations.sql" />
+    <Build Include="dbo\Tables\BankTransactions.sql" />
+    <Build Include="dbo\Tables\Customers.sql" />
+    <Build Include="dbo\Tables\InvoiceLines.sql" />
     <Build Include="dbo\Tables\Invoices.sql" />
+    <Build Include="dbo\Tables\JournalEntries.sql" />
+    <Build Include="dbo\Tables\JournalEntryLines.sql" />
+    <Build Include="dbo\Tables\ProductsServices.sql" />
+    <Build Include="dbo\Tables\Projects.sql" />
+    <Build Include="dbo\Tables\ReconciliationItems.sql" />
+    <Build Include="dbo\Tables\TimeEntries.sql" />
+    <Build Include="dbo\Tables\Vendors.sql" />
+    <!-- Views -->
+    <Build Include="dbo\Views\v_Invoices.sql" />
+    <Build Include="dbo\Views\v_InvoiceLines.sql" />
+    <!-- Stored Procedures -->
+    <Build Include="dbo\StoredProcedures\CreateInvoice.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="Script.PostDeployment.sql" />

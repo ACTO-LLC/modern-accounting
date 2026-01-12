@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { PublicClientApplication, SilentRequest, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { apiRequest } from './authConfig';
 
 const api = axios.create({
   baseURL: '/api',
@@ -6,6 +8,56 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Store the MSAL instance for use in interceptors
+let msalInstance: PublicClientApplication | null = null;
+
+// Initialize the API with MSAL instance for token injection
+export function initializeApiAuth(instance: PublicClientApplication) {
+  msalInstance = instance;
+}
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  async (config) => {
+    if (msalInstance) {
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) {
+        const silentRequest: SilentRequest = {
+          ...apiRequest,
+          account: accounts[0],
+        };
+
+        try {
+          const response = await msalInstance.acquireTokenSilent(silentRequest);
+          config.headers.Authorization = `Bearer ${response.accessToken}`;
+        } catch (error) {
+          if (error instanceof InteractionRequiredAuthError) {
+            // Token refresh failed, user needs to re-authenticate
+            console.warn('Token refresh required, user may need to re-authenticate');
+          }
+        }
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for handling auth errors
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Unauthorized - token may be expired or invalid
+      console.error('Unauthorized request - authentication required');
+      // Could trigger a login redirect here if needed
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;
 

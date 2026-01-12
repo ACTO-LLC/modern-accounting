@@ -1,11 +1,34 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw, LogOut, User, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const { user, userRole, logout } = useAuth();
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -38,8 +61,40 @@ export default function Layout() {
         "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-center h-16 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 border-b border-gray-200 px-4">
           <span className="text-xl font-bold text-indigo-600">Modern Books</span>
+          {/* User Menu */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-1 p-1 rounded-md text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <User className="h-5 w-5" />
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {isUserMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user?.name || user?.username || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.username}
+                  </p>
+                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded">
+                    {userRole}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <nav className="p-4 space-y-1">
           {navigation.map((item) => {
