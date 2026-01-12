@@ -93,7 +93,9 @@ export default function CustomerSelector({
       event.preventDefault();
       setFocusedIndex((prev) => {
         const next = prev < filteredCustomers.length - 1 ? prev + 1 : prev;
-        listItemsRef.current[next]?.scrollIntoView({ block: 'nearest' });
+        if (next < listItemsRef.current.length) {
+          listItemsRef.current[next]?.scrollIntoView({ block: 'nearest' });
+        }
         return next;
       });
     } else if (event.key === 'ArrowUp') {
@@ -102,12 +104,12 @@ export default function CustomerSelector({
         const next = prev > 0 ? prev - 1 : -1;
         if (next === -1) {
           inputRef.current?.focus();
-        } else {
+        } else if (next >= 0 && next < listItemsRef.current.length) {
           listItemsRef.current[next]?.scrollIntoView({ block: 'nearest' });
         }
         return next;
       });
-    } else if (event.key === 'Enter' && focusedIndex >= 0) {
+    } else if (event.key === 'Enter' && focusedIndex >= 0 && focusedIndex < filteredCustomers.length) {
       event.preventDefault();
       handleSelect(filteredCustomers[focusedIndex].Id);
     }
@@ -216,9 +218,9 @@ export default function CustomerSelector({
                   onClick={() => handleSelect(customer.Id)}
                   onMouseEnter={() => setFocusedIndex(index)}
                   className={`
-                    w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none
+                    w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none
                     ${customer.Id === value ? 'bg-indigo-100 text-indigo-900' : ''}
-                    ${focusedIndex === index ? 'bg-indigo-50' : 'text-gray-900'}
+                    ${focusedIndex === index ? 'bg-indigo-50' : ''}
                   `}
                 >
                   <div className="font-medium">{customer.Name}</div>
