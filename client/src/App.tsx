@@ -1,7 +1,15 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PublicClientApplication } from '@azure/msal-browser';
+import { MsalProvider } from '@azure/msal-react';
+import { useEffect } from 'react';
 import { ToastProvider } from './hooks/useToast';
+import { msalConfig } from './lib/authConfig';
+import { initializeApiAuth } from './lib/api';
+import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Invoices from './pages/Invoices';
 import NewInvoice from './pages/NewInvoice';
@@ -46,13 +54,22 @@ import RecurringTransactions from './pages/RecurringTransactions';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
+const msalInstance = new PublicClientApplication(msalConfig);
 
-function App() {
+function AppContent() {
+  useEffect(() => {
+    // Initialize API auth interceptor with MSAL instance
+    initializeApiAuth(msalInstance);
+  }, []);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-      <BrowserRouter>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
+        {/* Public route */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="invoices" element={<Invoices />} />
@@ -98,11 +115,24 @@ function App() {
             <Route path="reports/ar-aging" element={<ARAgingSummary />} />
             <Route path="settings" element={<div>Settings Page</div>} />
           </Route>
-        </Routes>
-        <ChatInterface />
-      </BrowserRouter>
-      </ToastProvider>
-    </QueryClientProvider>
+        </Route>
+      </Routes>
+      <ChatInterface />
+    </BrowserRouter>
+  );
+}
+
+function App() {
+  return (
+    <MsalProvider instance={msalInstance}>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </MsalProvider>
   );
 }
 
