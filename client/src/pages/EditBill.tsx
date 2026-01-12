@@ -48,10 +48,10 @@ export default function EditBill() {
       if (!isIdValid) {
         throw new Error('Invalid bill ID format');
       }
-      // Fix SQL injection: Quote GUID values in OData filter
+      // Use unquoted GUIDs in OData filter for DAB
       const [billResponse, linesResponse] = await Promise.all([
-        api.get<{ value: Bill[] }>(`/bills?$filter=Id eq '${id}'`),
-        api.get<{ value: BillLine[] }>(`/billlines?$filter=BillId eq '${id}'`)
+        api.get<{ value: Bill[] }>(`/bills?$filter=Id eq ${id}`),
+        api.get<{ value: BillLine[] }>(`/billlines?$filter=BillId eq ${id}`)
       ]);
 
       const billData = billResponse.data.value[0];
@@ -74,8 +74,8 @@ export default function EditBill() {
       await api.patch(`/bills/Id/${id}`, billData);
 
       // 2. Handle Lines Reconciliation
-      // Fix SQL injection: Quote GUID value in OData filter
-      const currentLinesResponse = await api.get<{ value: BillLine[] }>(`/billlines?$filter=BillId eq '${id}'`);
+      // Use unquoted GUIDs in OData filter for DAB
+      const currentLinesResponse = await api.get<{ value: BillLine[] }>(`/billlines?$filter=BillId eq ${id}`);
       const currentLines = currentLinesResponse.data.value;
       const currentLineIds = new Set(currentLines.map(l => l.Id));
 

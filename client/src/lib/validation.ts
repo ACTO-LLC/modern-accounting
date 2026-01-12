@@ -31,14 +31,14 @@ export function validateUUID(id: string | undefined | null, fieldName: string = 
 
 /**
  * Safely formats a GUID for OData filter queries
- * Validates the GUID and wraps it in quotes
+ * Validates the GUID and returns it without quotes (DAB does not use quotes for GUIDs)
  * @param id - The GUID to format
  * @param fieldName - The name of the field for the error message
- * @returns The quoted GUID string for use in OData filters
+ * @returns The GUID string for use in OData filters (unquoted)
  */
 export function formatGuidForOData(id: string | undefined | null, fieldName: string = 'ID'): string {
   const validatedId = validateUUID(id, fieldName);
-  return `'${validatedId}'`;
+  return validatedId;
 }
 
 /**

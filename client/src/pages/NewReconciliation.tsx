@@ -99,7 +99,7 @@ export default function NewReconciliation() {
     queryKey: ['reconciliation-items', id],
     queryFn: async () => {
       if (!id) return [];
-      const response = await fetch(`/api/reconciliationitems?$filter=ReconciliationId eq '${id}'`);
+      const response = await fetch(`/api/reconciliationitems?$filter=ReconciliationId eq ${id}`);
       if (!response.ok) throw new Error('Failed to fetch items');
       return (await response.json()).value as ReconciliationItem[];
     },
@@ -126,10 +126,10 @@ export default function NewReconciliation() {
 
   // Fetch bank transactions for the selected account
   const { data: transactionsData } = useQuery({
-    queryKey: ['bank-transactions', selectedAccountId],
+    queryKey: ['banktransactions', selectedAccountId],
     queryFn: async () => {
       if (!selectedAccountId) return [];
-      const response = await fetch(`/api/banktransactions?$filter=SourceAccountId eq '${selectedAccountId}' and Status eq 'Approved'&$orderby=TransactionDate`);
+      const response = await fetch(`/api/banktransactions?$filter=SourceAccountId eq ${selectedAccountId} and Status eq 'Approved'&$orderby=TransactionDate`);
       if (!response.ok) throw new Error('Failed to fetch transactions');
       return (await response.json()).value as BankTransaction[];
     },
@@ -141,7 +141,7 @@ export default function NewReconciliation() {
     queryKey: ['journal-lines', selectedAccountId],
     queryFn: async () => {
       if (!selectedAccountId) return [];
-      const response = await fetch(`/api/journalentrylines?$filter=AccountId eq '${selectedAccountId}'&$orderby=CreatedAt`);
+      const response = await fetch(`/api/journalentrylines?$filter=AccountId eq ${selectedAccountId}&$orderby=CreatedAt`);
       if (!response.ok) throw new Error('Failed to fetch journal lines');
       return (await response.json()).value as JournalEntryLine[];
     },
@@ -236,7 +236,7 @@ export default function NewReconciliation() {
 
       // Check if item already exists
       const existingResponse = await fetch(
-        `/api/reconciliationitems?$filter=ReconciliationId eq '${reconciliationId}' and TransactionId eq '${item.transactionId}'`
+        `/api/reconciliationitems?$filter=ReconciliationId eq ${reconciliationId} and TransactionId eq ${item.transactionId}`
       );
       if (!existingResponse.ok) {
         throw new Error('Failed to fetch existing reconciliation items');

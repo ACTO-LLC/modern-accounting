@@ -61,7 +61,7 @@ export default function BankTransactions() {
 
   // Fetch transactions with pagination
   const { data: transactionsResponse, isLoading } = useQuery({
-    queryKey: ['bank-transactions', statusFilter, page, pageSize],
+    queryKey: ['banktransactions', statusFilter, page, pageSize],
     queryFn: async () => {
       const filters = [];
       if (statusFilter !== 'all') {
@@ -130,7 +130,7 @@ export default function BankTransactions() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
       setShowModal(false);
       resetForm();
     }
@@ -148,7 +148,7 @@ export default function BankTransactions() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
       setShowModal(false);
       setEditingTransaction(null);
       resetForm();
@@ -165,7 +165,7 @@ export default function BankTransactions() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
     }
   });
 

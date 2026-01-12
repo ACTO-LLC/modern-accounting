@@ -167,7 +167,7 @@ export const timeEntriesApi = {
   },
 
   getByProject: async (projectId: string): Promise<TimeEntry[]> => {
-    const response = await api.get(`/timeentries?$filter=ProjectId eq '${projectId}'`);
+    const response = await api.get(`/timeentries?$filter=ProjectId eq ${projectId}`);
     return response.data.value;
   },
 
