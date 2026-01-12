@@ -78,9 +78,10 @@ function escapeODataString(value: string): string {
 }
 
 // Build OData contains filter for a field
+// Note: DAB doesn't support tolower(), so search is case-sensitive
 function buildContainsFilter(field: string, term: string): string {
-  const escapedTerm = escapeODataString(term.toLowerCase());
-  return `contains(tolower(${field}), '${escapedTerm}')`;
+  const escapedTerm = escapeODataString(term);
+  return `contains(${field}, '${escapedTerm}')`;
 }
 
 export default function GlobalSearch() {
