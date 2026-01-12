@@ -15,14 +15,15 @@ interface Vendor {
 
 export default function Vendors() {
   const columns: GridColDef[] = [
-    { field: 'Name', headerName: 'Name', width: 180, filterable: true },
-    { field: 'Email', headerName: 'Email', width: 180, filterable: true },
-    { field: 'Phone', headerName: 'Phone', width: 130, filterable: true },
-    { field: 'PaymentTerms', headerName: 'Payment Terms', width: 130, filterable: true },
+    { field: 'Name', headerName: 'Name', flex: 1, minWidth: 180, filterable: true },
+    { field: 'Email', headerName: 'Email', flex: 1, minWidth: 180, filterable: true },
+    { field: 'Phone', headerName: 'Phone', flex: 0.7, minWidth: 130, filterable: true },
+    { field: 'PaymentTerms', headerName: 'Payment Terms', flex: 0.7, minWidth: 130, filterable: true },
     {
       field: 'Status',
       headerName: 'Status',
-      width: 100,
+      flex: 0.6,
+      minWidth: 100,
       filterable: true,
       renderCell: (params) => (
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -35,7 +36,8 @@ export default function Vendors() {
     {
       field: 'Is1099Vendor',
       headerName: '1099',
-      width: 80,
+      flex: 0.5,
+      minWidth: 80,
       filterable: true,
       renderCell: (params) => params.value ? (
         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Yes</span>

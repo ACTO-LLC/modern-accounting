@@ -26,7 +26,8 @@ export default function ProductsServices() {
     {
       field: 'Name',
       headerName: 'Name',
-      width: 200,
+      flex: 1.2,
+      minWidth: 200,
       filterable: true,
       renderCell: (params) => {
         const IconComponent = params.row.Type === 'Service' ? Wrench :
@@ -41,11 +42,12 @@ export default function ProductsServices() {
         );
       }
     },
-    { field: 'SKU', headerName: 'SKU', width: 120, filterable: true, renderCell: (params) => params.value || '-' },
+    { field: 'SKU', headerName: 'SKU', flex: 0.7, minWidth: 120, filterable: true, renderCell: (params) => params.value || '-' },
     {
       field: 'Type',
       headerName: 'Type',
-      width: 130,
+      flex: 0.8,
+      minWidth: 130,
       filterable: true,
       renderCell: (params) => {
         const styles: Record<string, string> = {
@@ -65,11 +67,12 @@ export default function ProductsServices() {
         );
       }
     },
-    { field: 'Category', headerName: 'Category', width: 130, filterable: true, renderCell: (params) => params.value || '-' },
+    { field: 'Category', headerName: 'Category', flex: 0.8, minWidth: 130, filterable: true, renderCell: (params) => params.value || '-' },
     {
       field: 'SalesPrice',
       headerName: 'Sales Price',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       type: 'number',
       filterable: true,
       align: 'right',
@@ -79,7 +82,8 @@ export default function ProductsServices() {
     {
       field: 'Status',
       headerName: 'Status',
-      width: 100,
+      flex: 0.6,
+      minWidth: 100,
       filterable: true,
       renderCell: (params) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

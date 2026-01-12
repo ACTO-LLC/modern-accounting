@@ -49,6 +49,12 @@ const statusColors: Record<string, string> = {
   Converted: 'bg-purple-100 text-purple-800',
 };
 
+// Helper function to check if an estimate can be converted to an invoice
+const canConvertToInvoice = (estimate: Estimate): boolean => {
+  const convertibleStatuses = ['Accepted', 'Sent', 'Draft'];
+  return convertibleStatuses.includes(estimate.Status) && !estimate.ConvertedToInvoiceId;
+};
+
 export default function Estimates() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -129,19 +135,21 @@ export default function Estimates() {
   };
 
   const columns: GridColDef[] = [
-    { field: 'EstimateNumber', headerName: 'Estimate #', width: 130, filterable: true },
-    { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true },
+    { field: 'EstimateNumber', headerName: 'Estimate #', flex: 0.8, minWidth: 130, filterable: true },
+    { field: 'IssueDate', headerName: 'Date', flex: 0.7, minWidth: 120, filterable: true },
     {
       field: 'ExpirationDate',
       headerName: 'Expiration',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       filterable: true,
       renderCell: (params) => params.value || '-'
     },
     {
       field: 'TotalAmount',
       headerName: 'Amount',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       type: 'number',
       filterable: true,
       renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
@@ -149,7 +157,8 @@ export default function Estimates() {
     {
       field: 'Status',
       headerName: 'Status',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       filterable: true,
       renderCell: (params) => (
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
@@ -160,7 +169,8 @@ export default function Estimates() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 250,
+      flex: 1.5,
+      minWidth: 250,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -174,8 +184,7 @@ export default function Estimates() {
           >
             Edit
           </button>
-          {(params.row.Status === 'Accepted' || params.row.Status === 'Sent' || params.row.Status === 'Draft') &&
-            !params.row.ConvertedToInvoiceId && (
+          {canConvertToInvoice(params.row as Estimate) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

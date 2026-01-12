@@ -35,7 +35,7 @@ const getStatusColor = (status: string) => {
 };
 
 export default function Bills() {
-  const { data: vendors } = useQuery({
+  const { data: vendors, isLoading: vendorsLoading, isError: vendorsError } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
       const response = await api.get<{ value: Vendor[] }>('/vendors');
@@ -49,20 +49,26 @@ export default function Bills() {
   }, {} as Record<string, string>) || {};
 
   const columns: GridColDef[] = [
-    { field: 'BillNumber', headerName: 'Bill #', width: 120, filterable: true },
+    { field: 'BillNumber', headerName: 'Bill #', flex: 0.7, minWidth: 120, filterable: true },
     {
       field: 'VendorId',
       headerName: 'Vendor',
-      width: 180,
+      flex: 1,
+      minWidth: 180,
       filterable: true,
-      renderCell: (params) => vendorMap[params.value] || 'Unknown Vendor'
+      renderCell: (params) => {
+        if (vendorsLoading) return 'Loading...';
+        if (vendorsError) return 'Error loading vendor';
+        return vendorMap[params.value] || 'Unknown Vendor';
+      }
     },
-    { field: 'BillDate', headerName: 'Bill Date', width: 120, filterable: true },
-    { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true },
+    { field: 'BillDate', headerName: 'Bill Date', flex: 0.7, minWidth: 120, filterable: true },
+    { field: 'DueDate', headerName: 'Due Date', flex: 0.7, minWidth: 120, filterable: true },
     {
       field: 'TotalAmount',
       headerName: 'Amount',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       type: 'number',
       filterable: true,
       renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
@@ -70,7 +76,8 @@ export default function Bills() {
     {
       field: 'balance',
       headerName: 'Balance Due',
-      width: 120,
+      flex: 0.8,
+      minWidth: 120,
       sortable: false,
       filterable: false,
       renderCell: (params) => `$${((params.row.TotalAmount || 0) - (params.row.AmountPaid || 0)).toFixed(2)}`,
@@ -78,7 +85,8 @@ export default function Bills() {
     {
       field: 'Status',
       headerName: 'Status',
-      width: 100,
+      flex: 0.6,
+      minWidth: 100,
       filterable: true,
       renderCell: (params) => (
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(params.value)}`}>

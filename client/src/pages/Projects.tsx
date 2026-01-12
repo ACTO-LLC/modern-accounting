@@ -32,7 +32,7 @@ const formatCurrency = (amount?: number) => {
 };
 
 export default function Projects() {
-  const { data: customers = [] } = useQuery<Customer[]>({
+  const { data: customers = [], isLoading: customersLoading, isError: customersError } = useQuery<Customer[]>({
     queryKey: ['customers'],
     queryFn: customersApi.getAll,
   });
@@ -43,7 +43,8 @@ export default function Projects() {
     {
       field: 'Name',
       headerName: 'Project Name',
-      width: 200,
+      flex: 1.2,
+      minWidth: 200,
       filterable: true,
       renderCell: (params) => (
         <div>
@@ -57,14 +58,20 @@ export default function Projects() {
     {
       field: 'CustomerId',
       headerName: 'Customer',
-      width: 150,
+      flex: 0.9,
+      minWidth: 150,
       filterable: true,
-      renderCell: (params) => customersMap.get(params.value) || 'Unknown'
+      renderCell: (params) => {
+        if (customersLoading) return 'Loading...';
+        if (customersError) return 'Error loading customer';
+        return customersMap.get(params.value) || 'Unknown';
+      }
     },
     {
       field: 'Status',
       headerName: 'Status',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       filterable: true,
       renderCell: (params) => (
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(params.value)}`}>
@@ -75,7 +82,8 @@ export default function Projects() {
     {
       field: 'StartDate',
       headerName: 'Dates',
-      width: 150,
+      flex: 0.9,
+      minWidth: 150,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -89,7 +97,8 @@ export default function Projects() {
     {
       field: 'BudgetedAmount',
       headerName: 'Budget',
-      width: 130,
+      flex: 0.8,
+      minWidth: 130,
       sortable: false,
       filterable: false,
       renderCell: (params) => (

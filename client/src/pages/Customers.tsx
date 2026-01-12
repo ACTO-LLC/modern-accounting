@@ -13,10 +13,10 @@ interface Customer {
 
 export default function Customers() {
   const columns: GridColDef[] = [
-    { field: 'Name', headerName: 'Name', width: 200, filterable: true },
-    { field: 'Email', headerName: 'Email', width: 200, filterable: true },
-    { field: 'Phone', headerName: 'Phone', width: 150, filterable: true },
-    { field: 'Address', headerName: 'Address', width: 250, filterable: true },
+    { field: 'Name', headerName: 'Name', flex: 1, minWidth: 200, filterable: true },
+    { field: 'Email', headerName: 'Email', flex: 1, minWidth: 200, filterable: true },
+    { field: 'Phone', headerName: 'Phone', flex: 0.8, minWidth: 150, filterable: true },
+    { field: 'Address', headerName: 'Address', flex: 1.2, minWidth: 250, filterable: true },
   ];
 
   return (

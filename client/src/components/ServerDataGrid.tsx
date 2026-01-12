@@ -73,7 +73,6 @@ interface GraphQLResponse<T> {
 
 interface PaginationState {
   cursors: (string | null)[];
-  currentPage: number;
 }
 
 export default function ServerDataGrid<T extends GridValidRowModel>({
@@ -108,9 +107,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   });
   const [paginationState, setPaginationState] = useState<PaginationState>({
     cursors: [null], // First page has no cursor
-    currentPage: 0,
   });
-  const [, setHasNextPage] = useState(false);
 
   // Sorting state
   const [sortModel, setSortModel] = useState<GridSortModel>([]);
@@ -118,13 +115,32 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   // Filter state
   const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
 
+  // Sanitize GraphQL identifiers to prevent malformed queries
+  const sanitizeGraphQLIdentifier = useCallback((value: string): string | null => {
+    return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value) ? value : null;
+  }, []);
+
+  // Escape string values for GraphQL
+  const escapeGraphQLString = useCallback((value: string): string => {
+    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+  }, []);
+
   // Build the GraphQL orderBy parameter
   const buildOrderBy = useCallback((sort: GridSortModel): string | null => {
     if (sort.length === 0) return null;
 
     const { field, sort: direction } = sort[0];
-    return `{ ${field}: ${direction?.toUpperCase() || 'ASC'} }`;
-  }, []);
+    const safeField = sanitizeGraphQLIdentifier(String(field));
+    if (!safeField) {
+      console.warn(`Invalid field name for orderBy: ${field}`);
+      return null;
+    }
+
+    const upperDirection = (direction || 'asc').toString().toUpperCase();
+    const safeDirection = upperDirection === 'ASC' || upperDirection === 'DESC' ? upperDirection : 'ASC';
+
+    return `{ ${safeField}: ${safeDirection} }`;
+  }, [sanitizeGraphQLIdentifier]);
 
   // Build the GraphQL filter parameter
   const buildFilter = useCallback((filter: GridFilterModel, base?: Record<string, unknown>): string | null => {
@@ -133,10 +149,20 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
     // Add base filter if provided
     if (base) {
       Object.entries(base).forEach(([field, condition]) => {
+        const safeField = sanitizeGraphQLIdentifier(field);
+        if (!safeField) {
+          console.warn(`Invalid field name in base filter: ${field}`);
+          return;
+        }
         if (typeof condition === 'object' && condition !== null) {
           Object.entries(condition as Record<string, unknown>).forEach(([op, value]) => {
-            const formattedValue = typeof value === 'string' ? `"${value}"` : value;
-            filterParts.push(`${field}: { ${op}: ${formattedValue} }`);
+            const safeOp = sanitizeGraphQLIdentifier(op);
+            if (!safeOp) {
+              console.warn(`Invalid operator in base filter: ${op}`);
+              return;
+            }
+            const formattedValue = typeof value === 'string' ? `"${escapeGraphQLString(value)}"` : value;
+            filterParts.push(`${safeField}: { ${safeOp}: ${formattedValue} }`);
           });
         }
       });
@@ -145,16 +171,20 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
     // Add user filters
     filter.items.forEach((item) => {
       if (item.value !== undefined && item.value !== null && item.value !== '') {
-        const field = item.field;
+        const safeField = sanitizeGraphQLIdentifier(String(item.field));
+        if (!safeField) {
+          console.warn(`Invalid field name in filter: ${item.field}`);
+          return;
+        }
         const operator = operatorMap[item.operator] || 'contains';
-        const value = typeof item.value === 'string' ? `"${item.value}"` : item.value;
-        filterParts.push(`${field}: { ${operator}: ${value} }`);
+        const value = typeof item.value === 'string' ? `"${escapeGraphQLString(item.value)}"` : item.value;
+        filterParts.push(`${safeField}: { ${operator}: ${value} }`);
       }
     });
 
     if (filterParts.length === 0) return null;
     return `{ ${filterParts.join(', ')} }`;
-  }, []);
+  }, [sanitizeGraphQLIdentifier, escapeGraphQLString]);
 
   // Fetch data from GraphQL
   const fetchData = useCallback(async () => {
@@ -201,12 +231,10 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
           items = transformData(items);
         }
         setRows(items);
-        setHasNextPage(data.hasNextPage);
 
         // Store the endCursor for the next page
         if (data.endCursor && paginationModel.page >= paginationState.cursors.length - 1) {
           setPaginationState((prev) => ({
-            ...prev,
             cursors: [...prev.cursors, data.endCursor],
           }));
         }
@@ -248,7 +276,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   const handlePaginationModelChange = useCallback((newModel: GridPaginationModel) => {
     // If page size changed, reset to first page
     if (newModel.pageSize !== paginationModel.pageSize) {
-      setPaginationState({ cursors: [null], currentPage: 0 });
+      setPaginationState({ cursors: [null] });
       setPaginationModel({ ...newModel, page: 0 });
     } else {
       setPaginationModel(newModel);
@@ -258,7 +286,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   // Handle sort changes
   const handleSortModelChange = useCallback((newSortModel: GridSortModel) => {
     // Reset pagination when sorting changes
-    setPaginationState({ cursors: [null], currentPage: 0 });
+    setPaginationState({ cursors: [null] });
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
     setSortModel(newSortModel);
   }, []);
@@ -266,7 +294,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   // Handle filter changes
   const handleFilterModelChange = useCallback((newFilterModel: GridFilterModel) => {
     // Reset pagination when filters change
-    setPaginationState({ cursors: [null], currentPage: 0 });
+    setPaginationState({ cursors: [null] });
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
     setFilterModel(newFilterModel);
   }, []);

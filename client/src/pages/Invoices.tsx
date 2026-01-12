@@ -117,13 +117,14 @@ export default function Invoices() {
   };
 
   const columns: GridColDef[] = [
-    { field: 'InvoiceNumber', headerName: 'Invoice #', width: 130, filterable: true },
-    { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true },
-    { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true },
+    { field: 'InvoiceNumber', headerName: 'Invoice #', flex: 0.8, minWidth: 130, filterable: true },
+    { field: 'IssueDate', headerName: 'Date', flex: 0.7, minWidth: 120, filterable: true },
+    { field: 'DueDate', headerName: 'Due Date', flex: 0.7, minWidth: 120, filterable: true },
     {
       field: 'TotalAmount',
       headerName: 'Amount',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       type: 'number',
       filterable: true,
       renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
@@ -131,7 +132,8 @@ export default function Invoices() {
     {
       field: 'Status',
       headerName: 'Status',
-      width: 120,
+      flex: 0.7,
+      minWidth: 120,
       filterable: true,
       renderCell: (params) => (
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
@@ -142,7 +144,8 @@ export default function Invoices() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 150,
+      flex: 1,
+      minWidth: 180,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -163,7 +166,7 @@ export default function Invoices() {
             title="Duplicate invoice"
           >
             <Copy className="w-4 h-4 mr-1" />
-            {duplicatingId === params.row.Id ? '...' : ''}
+            {duplicatingId === params.row.Id ? 'Duplicating...' : 'Duplicate'}
           </button>
         </div>
       ),
