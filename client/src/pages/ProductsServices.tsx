@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Plus, Package, Wrench, Box } from 'lucide-react';
+import { Plus, Wrench, Box, Package } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import ServerDataGrid from '../components/ServerDataGrid';
 
@@ -11,22 +11,10 @@ interface ProductService {
   Description: string | null;
   SalesPrice: number | null;
   PurchaseCost: number | null;
-  IncomeAccountId: string | null;
-  ExpenseAccountId: string | null;
-  InventoryAssetAccountId: string | null;
   Category: string | null;
   Taxable: boolean;
   Status: 'Active' | 'Inactive';
 }
-
-const getTypeIcon = (type: string) => {
-  switch (type) {
-    case 'Service': return <Wrench className="w-4 h-4 text-blue-500" />;
-    case 'Inventory': return <Box className="w-4 h-4 text-green-500" />;
-    case 'NonInventory': return <Package className="w-4 h-4 text-orange-500" />;
-    default: return <Package className="w-4 h-4 text-gray-500" />;
-  }
-};
 
 const formatCurrency = (value: number | null) => {
   if (value === null || value === undefined) return '-';
@@ -40,20 +28,24 @@ export default function ProductsServices() {
       headerName: 'Name',
       width: 200,
       filterable: true,
-      renderCell: (params) => (
-        <div className="flex items-center">
-          {getTypeIcon(params.row.Type)}
-          <span className="ml-2">{params.value}</span>
-        </div>
-      ),
+      renderCell: (params) => {
+        const IconComponent = params.row.Type === 'Service' ? Wrench :
+          params.row.Type === 'Inventory' ? Box : Package;
+        const iconColor = params.row.Type === 'Service' ? 'text-blue-500' :
+          params.row.Type === 'Inventory' ? 'text-green-500' : 'text-orange-500';
+        return (
+          <div className="flex items-center">
+            <IconComponent className={`w-4 h-4 mr-2 ${iconColor}`} />
+            <span className="text-sm font-medium text-gray-900">{params.value}</span>
+          </div>
+        );
+      }
     },
-    { field: 'SKU', headerName: 'SKU', width: 120, filterable: true,
-      renderCell: (params) => params.value || '-'
-    },
+    { field: 'SKU', headerName: 'SKU', width: 120, filterable: true, renderCell: (params) => params.value || '-' },
     {
       field: 'Type',
       headerName: 'Type',
-      width: 120,
+      width: 130,
       filterable: true,
       renderCell: (params) => {
         const styles: Record<string, string> = {
@@ -71,17 +63,17 @@ export default function ProductsServices() {
             {labels[params.value] || params.value}
           </span>
         );
-      },
+      }
     },
-    { field: 'Category', headerName: 'Category', width: 130, filterable: true,
-      renderCell: (params) => params.value || '-'
-    },
+    { field: 'Category', headerName: 'Category', width: 130, filterable: true, renderCell: (params) => params.value || '-' },
     {
       field: 'SalesPrice',
       headerName: 'Sales Price',
       width: 120,
       type: 'number',
       filterable: true,
+      align: 'right',
+      headerAlign: 'right',
       renderCell: (params) => formatCurrency(params.value),
     },
     {

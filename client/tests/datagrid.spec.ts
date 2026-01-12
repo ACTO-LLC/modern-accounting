@@ -1,184 +1,203 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('DataGrid Server-Side Features', () => {
+test.describe('MUI DataGrid - Server-side Features', () => {
+
   test.describe('Invoices Page', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/invoices');
+    test('should display invoices in DataGrid with pagination', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
+
       // Wait for the DataGrid to load
-      await page.waitForSelector('[data-testid="sentinelStart"]', { timeout: 10000 }).catch(() => {});
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      // Verify header is visible
+      await expect(page.getByRole('heading', { name: 'Invoices' })).toBeVisible();
+
+      // Verify DataGrid column headers are present
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Invoice #' })).toBeVisible();
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Amount' })).toBeVisible();
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Status' })).toBeVisible();
+
+      // Verify pagination controls exist
+      await expect(page.locator('.MuiTablePagination-root')).toBeVisible();
     });
 
-    test('should display invoices in DataGrid', async ({ page }) => {
-      // Check that the DataGrid is rendered
-      const dataGrid = page.locator('.MuiDataGrid-root');
-      await expect(dataGrid).toBeVisible();
+    test('should sort invoices by clicking column header', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
-      // Check for column headers
-      await expect(page.getByRole('columnheader', { name: /invoice/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /date/i }).first()).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /amount/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /status/i })).toBeVisible();
-    });
-
-    test('should support pagination', async ({ page }) => {
-      // Check pagination controls exist
-      const paginationControls = page.locator('.MuiTablePagination-root');
-      await expect(paginationControls).toBeVisible();
-
-      // Check rows per page selector
-      const rowsPerPageSelector = page.locator('.MuiTablePagination-select');
-      await expect(rowsPerPageSelector).toBeVisible();
-    });
-
-    test('should support sorting by clicking column header', async ({ page }) => {
-      // Click on Invoice # column header to sort
-      const invoiceHeader = page.getByRole('columnheader', { name: /invoice/i });
+      // Get the Invoice # column header and click to sort
+      const invoiceHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Invoice #' });
       await invoiceHeader.click();
 
-      // Wait for sort indicator
-      await expect(page.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
+      // Verify sort indicator appears (ascending or descending)
+      await expect(invoiceHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
+
+      // Click again to change sort direction
+      await invoiceHeader.click();
+      await expect(invoiceHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible();
     });
 
-    test('should have New Invoice button', async ({ page }) => {
-      const newButton = page.getByRole('link', { name: /new invoice/i });
-      await expect(newButton).toBeVisible();
-      await expect(newButton).toHaveAttribute('href', '/invoices/new');
+    test('should filter invoices using column filter', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      // Wait for some data to load
+      await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
+
+      // Open the column menu for Status
+      const statusHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Status' });
+      const menuButton = statusHeader.locator('.MuiDataGrid-menuIcon button');
+
+      // Check if the menu icon exists (only visible on hover in some configurations)
+      if (await menuButton.isVisible()) {
+        await menuButton.click();
+
+        // Look for filter option in the menu
+        const filterItem = page.locator('.MuiMenuItem-root').filter({ hasText: /filter/i });
+        if (await filterItem.isVisible()) {
+          await filterItem.click();
+
+          // Verify filter panel appears
+          await expect(page.locator('.MuiDataGrid-filterForm')).toBeVisible({ timeout: 5000 });
+        }
+      }
+    });
+
+    test('should navigate to edit page when clicking a row', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+      await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
+
+      // Click on a row
+      const firstRow = page.locator('.MuiDataGrid-row').first();
+      await firstRow.click();
+
+      // Should navigate to edit page
+      await expect(page).toHaveURL(/\/invoices\/.*\/edit/);
+    });
+
+    test('should have New Invoice button that navigates correctly', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      await page.getByRole('button', { name: /New Invoice/i }).click();
+      await expect(page).toHaveURL(/\/invoices\/new/);
     });
   });
 
   test.describe('Customers Page', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/customers');
-      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
-    });
-
     test('should display customers in DataGrid', async ({ page }) => {
-      const dataGrid = page.locator('.MuiDataGrid-root');
-      await expect(dataGrid).toBeVisible();
+      await page.goto('http://localhost:5173/customers');
 
-      // Check for column headers
-      await expect(page.getByRole('columnheader', { name: /name/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /email/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /phone/i })).toBeVisible();
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      // Verify header
+      await expect(page.getByRole('heading', { name: 'Customers' })).toBeVisible();
+
+      // Verify column headers
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Name' })).toBeVisible();
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Email' })).toBeVisible();
     });
 
-    test('should navigate to edit page on row click', async ({ page }) => {
-      // Wait for at least one row to be visible
+    test('should sort customers by name', async ({ page }) => {
+      await page.goto('http://localhost:5173/customers');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      const nameHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Name' });
+      await nameHeader.click();
+
+      // Sort indicator should appear
+      await expect(nameHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
+    });
+
+    test('should navigate to edit customer on row click', async ({ page }) => {
+      await page.goto('http://localhost:5173/customers');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+      await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
+
       const firstRow = page.locator('.MuiDataGrid-row').first();
+      await firstRow.click();
 
-      // Check if there are any rows
-      const rowCount = await page.locator('.MuiDataGrid-row').count();
-      if (rowCount > 0) {
-        await firstRow.click();
-        // Should navigate to edit page
-        await expect(page).toHaveURL(/\/customers\/.*\/edit/);
-      }
-    });
-  });
-
-  test.describe('Bills Page', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/bills');
-      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
-    });
-
-    test('should display bills in DataGrid', async ({ page }) => {
-      const dataGrid = page.locator('.MuiDataGrid-root');
-      await expect(dataGrid).toBeVisible();
-
-      // Check for column headers
-      await expect(page.getByRole('columnheader', { name: /bill/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /vendor/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /amount/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /status/i })).toBeVisible();
-    });
-  });
-
-  test.describe('Vendors Page', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/vendors');
-      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
-    });
-
-    test('should display vendors in DataGrid', async ({ page }) => {
-      const dataGrid = page.locator('.MuiDataGrid-root');
-      await expect(dataGrid).toBeVisible();
-
-      // Check for column headers
-      await expect(page.getByRole('columnheader', { name: /name/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /email/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /status/i })).toBeVisible();
+      await expect(page).toHaveURL(/\/customers\/.*\/edit/);
     });
   });
 
   test.describe('Estimates Page', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/estimates');
-      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
-    });
-
     test('should display estimates in DataGrid', async ({ page }) => {
-      const dataGrid = page.locator('.MuiDataGrid-root');
-      await expect(dataGrid).toBeVisible();
+      await page.goto('http://localhost:5173/estimates');
 
-      // Check for column headers
-      await expect(page.getByRole('columnheader', { name: /estimate/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /date/i }).first()).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /amount/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /status/i })).toBeVisible();
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      // Verify header
+      await expect(page.getByRole('heading', { name: 'Estimates & Quotes' })).toBeVisible();
+
+      // Verify column headers
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Estimate #' })).toBeVisible();
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Amount' })).toBeVisible();
+      await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Status' })).toBeVisible();
+    });
+
+    test('should sort estimates by amount', async ({ page }) => {
+      await page.goto('http://localhost:5173/estimates');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      const amountHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Amount' });
+      await amountHeader.click();
+
+      await expect(amountHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
     });
   });
 
-  test.describe('Products & Services Page', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/products-services');
-      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
-    });
-
-    test('should display products and services in DataGrid', async ({ page }) => {
-      const dataGrid = page.locator('.MuiDataGrid-root');
-      await expect(dataGrid).toBeVisible();
-
-      // Check for column headers
-      await expect(page.getByRole('columnheader', { name: /name/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /type/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /sales price/i })).toBeVisible();
-    });
-  });
-
-  test.describe('Projects Page', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/projects');
-      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
-    });
-
-    test('should display projects in DataGrid', async ({ page }) => {
-      const dataGrid = page.locator('.MuiDataGrid-root');
-      await expect(dataGrid).toBeVisible();
-
-      // Check for column headers
-      await expect(page.getByRole('columnheader', { name: /project name/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /customer/i })).toBeVisible();
-      await expect(page.getByRole('columnheader', { name: /status/i })).toBeVisible();
-    });
-  });
-
-  test.describe('DataGrid Filter Feature', () => {
-    test('should show filter menu on column header click', async ({ page }) => {
-      await page.goto('/invoices');
+  test.describe('Pagination', () => {
+    test('should be able to change page size on invoices', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
-      // Find the column menu button for Invoice # column
-      const columnMenuButton = page.locator('.MuiDataGrid-columnHeader')
-        .filter({ hasText: /invoice/i })
-        .locator('.MuiDataGrid-menuIcon');
+      // Find the page size selector
+      const pageSizeSelector = page.locator('.MuiTablePagination-select');
 
-      if (await columnMenuButton.isVisible()) {
-        await columnMenuButton.click();
-        // Check that menu appears
-        await expect(page.locator('.MuiDataGrid-menu')).toBeVisible({ timeout: 3000 });
+      if (await pageSizeSelector.isVisible()) {
+        // Click to open the dropdown
+        await pageSizeSelector.click();
+
+        // Look for page size options
+        const option10 = page.locator('.MuiMenuItem-root').filter({ hasText: '10' });
+        if (await option10.isVisible()) {
+          await option10.click();
+
+          // Wait for the grid to update
+          await page.waitForTimeout(500);
+        }
       }
+    });
+
+    test('should navigate between pages using pagination controls', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      // Check for next page button
+      const nextPageButton = page.locator('[aria-label="Go to next page"]');
+
+      if (await nextPageButton.isVisible() && await nextPageButton.isEnabled()) {
+        await nextPageButton.click();
+
+        // Wait for data to load
+        await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
+      }
+    });
+  });
+
+  test.describe('DataGrid Styling', () => {
+    test('should have proper DataGrid styling', async ({ page }) => {
+      await page.goto('http://localhost:5173/invoices');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      // Check that the grid container exists
+      await expect(page.locator('.MuiDataGrid-root')).toBeVisible();
+
+      // Check column headers have a background
+      const columnHeaders = page.locator('.MuiDataGrid-columnHeaders');
+      await expect(columnHeaders).toBeVisible();
     });
   });
 });

@@ -15,29 +15,20 @@ interface Project {
   EndDate?: string;
   BudgetedHours?: number;
   BudgetedAmount?: number;
-  CreatedAt: string;
-  UpdatedAt: string;
 }
-
-const formatCurrency = (amount?: number) => {
-  if (amount === undefined || amount === null) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-};
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
-    case 'Active':
-      return 'bg-green-100 text-green-800';
-    case 'Completed':
-      return 'bg-blue-100 text-blue-800';
-    case 'OnHold':
-      return 'bg-yellow-100 text-yellow-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
+    case 'Active': return 'bg-green-100 text-green-800';
+    case 'Completed': return 'bg-blue-100 text-blue-800';
+    case 'OnHold': return 'bg-yellow-100 text-yellow-800';
+    default: return 'bg-gray-100 text-gray-800';
   }
+};
+
+const formatCurrency = (amount?: number) => {
+  if (amount === undefined || amount === null) return '-';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 };
 
 export default function Projects() {
@@ -56,24 +47,24 @@ export default function Projects() {
       filterable: true,
       renderCell: (params) => (
         <div>
-          <div className="font-medium">{params.value}</div>
+          <div className="text-sm font-medium text-gray-900">{params.value}</div>
           {params.row.Description && (
             <div className="text-sm text-gray-500 truncate max-w-xs">{params.row.Description}</div>
           )}
         </div>
-      ),
+      )
     },
     {
       field: 'CustomerId',
       headerName: 'Customer',
-      width: 180,
+      width: 150,
       filterable: true,
-      renderCell: (params) => customersMap.get(params.value) || 'Unknown',
+      renderCell: (params) => customersMap.get(params.value) || 'Unknown'
     },
     {
       field: 'Status',
       headerName: 'Status',
-      width: 110,
+      width: 120,
       filterable: true,
       renderCell: (params) => (
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(params.value)}`}>
@@ -83,25 +74,31 @@ export default function Projects() {
     },
     {
       field: 'StartDate',
-      headerName: 'Start Date',
-      width: 120,
-      filterable: true,
-      renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString() : '-',
-    },
-    {
-      field: 'EndDate',
-      headerName: 'End Date',
-      width: 120,
-      filterable: true,
-      renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString() : '-',
+      headerName: 'Dates',
+      width: 150,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="text-sm text-gray-500">
+          {params.row.StartDate && <div>Start: {new Date(params.row.StartDate).toLocaleDateString()}</div>}
+          {params.row.EndDate && <div>End: {new Date(params.row.EndDate).toLocaleDateString()}</div>}
+          {!params.row.StartDate && !params.row.EndDate && '-'}
+        </div>
+      ),
     },
     {
       field: 'BudgetedAmount',
       headerName: 'Budget',
-      width: 120,
-      type: 'number',
-      filterable: true,
-      renderCell: (params) => formatCurrency(params.value),
+      width: 130,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="text-sm text-gray-500">
+          {params.row.BudgetedHours && <div>{params.row.BudgetedHours} hrs</div>}
+          {params.row.BudgetedAmount && <div>{formatCurrency(params.row.BudgetedAmount)}</div>}
+          {!params.row.BudgetedHours && !params.row.BudgetedAmount && '-'}
+        </div>
+      ),
     },
   ];
 
@@ -111,7 +108,7 @@ export default function Projects() {
         <h1 className="text-2xl font-semibold text-gray-900">Projects</h1>
         <Link
           to="/projects/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Project

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { Plus, Copy } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -23,15 +23,12 @@ interface InvoiceLine {
   UnitPrice: number;
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Paid': return 'bg-green-100 text-green-800';
-    case 'Partial': return 'bg-yellow-100 text-yellow-800';
-    case 'Overdue': return 'bg-red-100 text-red-800';
-    case 'Sent': return 'bg-blue-100 text-blue-800';
-    case 'Draft': return 'bg-gray-100 text-gray-800';
-    default: return 'bg-gray-100 text-gray-800';
-  }
+const statusColors: Record<string, string> = {
+  Draft: 'bg-gray-100 text-gray-800',
+  Sent: 'bg-blue-100 text-blue-800',
+  Paid: 'bg-green-100 text-green-800',
+  Overdue: 'bg-red-100 text-red-800',
+  Partial: 'bg-yellow-100 text-yellow-800',
 };
 
 export default function Invoices() {
@@ -41,23 +38,32 @@ export default function Invoices() {
   const [refreshKey, setRefreshKey] = useState(0);
   const { showToast } = useToast();
 
+  const { data: allInvoices } = useQuery({
+    queryKey: ['invoices-all'],
+    queryFn: async () => {
+      const response = await api.get<{ value: Invoice[] }>('/invoices');
+      return response.data.value;
+    },
+  });
+
   const duplicateMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      const invoiceResponse = await api.get<{ value: Invoice[] }>(`/invoices?\$filter=Id eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`);
+      const invoiceResponse = await api.get<{ value: Invoice[] }>(
+        `/invoices?$filter=Id eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`
+      );
       const originalInvoice = invoiceResponse.data.value[0];
       if (!originalInvoice) {
         throw new Error('Invoice not found');
       }
 
-      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?\$filter=InvoiceId eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`);
+      const linesResponse = await api.get<{ value: InvoiceLine[] }>(
+        `/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(invoiceId, 'Invoice Id')}`
+      );
       const originalLines = linesResponse.data.value;
 
       if (!originalLines || originalLines.length === 0) {
         throw new Error('Cannot duplicate invoice with no line items');
       }
-
-      const allInvoicesResponse = await api.get<{ value: Invoice[] }>('/invoices');
-      const allInvoices = allInvoicesResponse.data.value;
 
       const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || []);
       const totalAmount = calculateInvoiceTotal(originalLines);
@@ -89,7 +95,8 @@ export default function Invoices() {
     },
     onSuccess: (newInvoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      setRefreshKey(prev => prev + 1);
+      queryClient.invalidateQueries({ queryKey: ['invoices-all'] });
+      setRefreshKey(k => k + 1);
       showToast(`Invoice ${newInvoice.InvoiceNumber} has been duplicated`, 'success');
       navigate('/invoices/' + newInvoice.Id + '/edit');
     },
@@ -124,10 +131,10 @@ export default function Invoices() {
     {
       field: 'Status',
       headerName: 'Status',
-      width: 110,
+      width: 120,
       filterable: true,
       renderCell: (params) => (
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(params.value)}`}>
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
           {params.value}
         </span>
       ),
@@ -135,15 +142,15 @@ export default function Invoices() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 180,
+      width: 150,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center space-x-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/invoices/${params.row.Id}/edit`);
+              navigate('/invoices/' + params.row.Id + '/edit');
             }}
             className="text-indigo-600 hover:text-indigo-900"
           >
@@ -156,7 +163,7 @@ export default function Invoices() {
             title="Duplicate invoice"
           >
             <Copy className="w-4 h-4 mr-1" />
-            {duplicatingId === params.row.Id ? '...' : 'Duplicate'}
+            {duplicatingId === params.row.Id ? '...' : ''}
           </button>
         </div>
       ),
@@ -177,13 +184,13 @@ export default function Invoices() {
       </div>
 
       <ServerDataGrid<Invoice>
+        key={refreshKey}
         entityName="invoices"
         queryFields="Id InvoiceNumber CustomerId IssueDate DueDate TotalAmount Status"
         columns={columns}
         editPath="/invoices/{id}/edit"
         initialPageSize={25}
         emptyMessage="No invoices found."
-        refreshKey={refreshKey}
       />
     </div>
   );

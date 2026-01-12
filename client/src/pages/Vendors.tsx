@@ -15,9 +15,9 @@ interface Vendor {
 
 export default function Vendors() {
   const columns: GridColDef[] = [
-    { field: 'Name', headerName: 'Name', width: 200, filterable: true },
-    { field: 'Email', headerName: 'Email', width: 200, filterable: true },
-    { field: 'Phone', headerName: 'Phone', width: 150, filterable: true },
+    { field: 'Name', headerName: 'Name', width: 180, filterable: true },
+    { field: 'Email', headerName: 'Email', width: 180, filterable: true },
+    { field: 'Phone', headerName: 'Phone', width: 130, filterable: true },
     { field: 'PaymentTerms', headerName: 'Payment Terms', width: 130, filterable: true },
     {
       field: 'Status',
@@ -38,9 +38,7 @@ export default function Vendors() {
       width: 80,
       filterable: true,
       renderCell: (params) => params.value ? (
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-          Yes
-        </span>
+        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Yes</span>
       ) : (
         <span className="text-gray-400">No</span>
       ),
@@ -53,7 +51,7 @@ export default function Vendors() {
         <h1 className="text-2xl font-semibold text-gray-900">Vendors</h1>
         <Link
           to="/vendors/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Vendor

@@ -103,7 +103,7 @@ export default function Estimates() {
     onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ['estimates'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      setRefreshKey(prev => prev + 1);
+      setRefreshKey(k => k + 1);
       showToast('Estimate converted to invoice successfully', 'success');
       navigate(`/invoices/${invoice.Id}/edit`);
     },
@@ -132,7 +132,11 @@ export default function Estimates() {
   const columns: GridColDef[] = [
     { field: 'EstimateNumber', headerName: 'Estimate #', width: 130, filterable: true },
     { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true },
-    { field: 'ExpirationDate', headerName: 'Expiration', width: 120, filterable: true,
+    {
+      field: 'ExpirationDate',
+      headerName: 'Expiration',
+      width: 120,
+      filterable: true,
       renderCell: (params) => params.value || '-'
     },
     {
@@ -146,7 +150,7 @@ export default function Estimates() {
     {
       field: 'Status',
       headerName: 'Status',
-      width: 110,
+      width: 120,
       filterable: true,
       renderCell: (params) => (
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
@@ -161,7 +165,7 @@ export default function Estimates() {
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center space-x-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -174,7 +178,10 @@ export default function Estimates() {
           {(params.row.Status === 'Accepted' || params.row.Status === 'Sent' || params.row.Status === 'Draft') &&
             !params.row.ConvertedToInvoiceId && (
               <button
-                onClick={(e) => handleConvertClick(e, params.row as Estimate)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleConvertClick(params.row as Estimate);
+                }}
                 disabled={convertToInvoiceMutation.isPending}
                 className="text-green-600 hover:text-green-900 inline-flex items-center"
               >
@@ -213,13 +220,13 @@ export default function Estimates() {
       </div>
 
       <ServerDataGrid<Estimate>
+        key={refreshKey}
         entityName="estimates"
         queryFields="Id EstimateNumber CustomerId IssueDate ExpirationDate TotalAmount Status ConvertedToInvoiceId Notes"
         columns={columns}
         editPath="/estimates/{id}/edit"
         initialPageSize={25}
         emptyMessage="No estimates found."
-        refreshKey={refreshKey}
       />
 
       <ConfirmModal

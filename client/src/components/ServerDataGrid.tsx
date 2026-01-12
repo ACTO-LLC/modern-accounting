@@ -63,8 +63,6 @@ interface ServerDataGridProps<T extends GridValidRowModel> {
   disableRowSelectionOnClick?: boolean;
   // Custom empty state message
   emptyMessage?: string;
-  // Key to trigger refresh
-  refreshKey?: number;
 }
 
 interface GraphQLResponse<T> {
@@ -95,7 +93,6 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   checkboxSelection = false,
   disableRowSelectionOnClick = true,
   emptyMessage = 'No data found.',
-  refreshKey,
 }: ServerDataGridProps<T>) {
   const navigate = useNavigate();
 
@@ -245,7 +242,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   // Fetch data when dependencies change
   useEffect(() => {
     fetchData();
-  }, [fetchData, refreshKey]);
+  }, [fetchData]);
 
   // Handle pagination changes
   const handlePaginationModelChange = useCallback((newModel: GridPaginationModel) => {
