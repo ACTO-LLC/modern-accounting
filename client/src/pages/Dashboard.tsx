@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   // Fetch Bank Transactions for Pending Actions
   const { data: bankTransactions } = useQuery({
-    queryKey: ['bank-transactions'],
+    queryKey: ['banktransactions'],
     queryFn: async () => {
       const response = await fetch('/api/banktransactions');
       if (!response.ok) throw new Error('Failed to fetch bank transactions');

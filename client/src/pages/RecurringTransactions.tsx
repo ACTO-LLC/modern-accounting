@@ -132,7 +132,7 @@ export default function RecurringTransactions() {
     queryFn: async () => {
       if (!selectedTemplate) return [];
       const response = await api.get<{ value: RecurringSchedule[] }>(
-        `/recurringschedules?$filter=RecurringTemplateId eq '${selectedTemplate.Id}'&$orderby=ScheduledDate desc`
+        `/recurringschedules?$filter=RecurringTemplateId eq ${selectedTemplate.Id}&$orderby=ScheduledDate desc`
       );
       return response.data.value;
     },

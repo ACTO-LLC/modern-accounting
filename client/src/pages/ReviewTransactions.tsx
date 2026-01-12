@@ -42,7 +42,7 @@ export default function ReviewTransactions() {
 
   // Fetch transactions
   const { data: transactionsData, isLoading } = useQuery({
-    queryKey: ['bank-transactions', statusFilter],
+    queryKey: ['banktransactions', statusFilter],
     queryFn: async () => {
       const url = statusFilter === 'all' 
         ? '/api/banktransactions'
@@ -89,7 +89,7 @@ export default function ReviewTransactions() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
       setEditingId(null);
       setSelectedIds(new Set());
     }
@@ -115,7 +115,7 @@ export default function ReviewTransactions() {
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
       setSelectedIds(new Set());
     }
   });
@@ -223,7 +223,7 @@ export default function ReviewTransactions() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
       alert(`Successfully posted ${data.count} transactions to the journal!`);
     },
     onError: (error) => {

@@ -15,9 +15,9 @@ interface BankTransaction {
 export default function Banking() {
   const queryClient = useQueryClient();
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['bank-transactions'],
+    queryKey: ['banktransactions'],
     queryFn: async () => {
-      const response = await api.get<{ value: BankTransaction[] }>('/bank-transactions');
+      const response = await api.get<{ value: BankTransaction[] }>('/banktransactions');
       return response.data.value;
     },
   });
@@ -53,11 +53,11 @@ export default function Banking() {
       ];
 
       for (const tx of dummyTransactions) {
-        await api.post('/bank-transactions', tx);
+        await api.post('/banktransactions', tx);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
     },
   });
 
