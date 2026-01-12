@@ -23,6 +23,8 @@ interface Vendor {
   Name: string;
 }
 
+// Helper function to get status badge color for bills
+// Handles all known bill statuses with a fallback for unknown statuses
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'Paid': return 'bg-green-100 text-green-800';
@@ -30,6 +32,7 @@ const getStatusColor = (status: string) => {
     case 'Overdue': return 'bg-red-100 text-red-800';
     case 'Open': return 'bg-blue-100 text-blue-800';
     case 'Draft': return 'bg-gray-100 text-gray-800';
+    // Fallback for any unknown status values
     default: return 'bg-gray-100 text-gray-800';
   }
 };
