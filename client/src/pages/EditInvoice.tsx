@@ -4,16 +4,14 @@ import api from '../lib/api';
 import InvoiceForm, { InvoiceFormData } from '../components/InvoiceForm';
 import { Copy } from 'lucide-react';
 import { useState } from 'react';
-
-interface Invoice {
-  Id: string;
-  InvoiceNumber: string;
-  CustomerId: string;
-  IssueDate: string;
-  DueDate: string;
-  TotalAmount: number;
-  Status: string;
-}
+import { 
+  generateNextInvoiceNumber, 
+  calculateInvoiceTotal, 
+  getCurrentDate, 
+  getDateNDaysFromNow,
+  type Invoice 
+} from '../lib/invoiceUtils';
+import { useToast } from '../hooks/useToast';
 
 interface InvoiceLine {
   Id: string;
@@ -23,24 +21,12 @@ interface InvoiceLine {
   UnitPrice: number;
 }
 
-// Generate next invoice number based on existing invoices
-function generateNextInvoiceNumber(invoices: Invoice[]): string {
-  const existingNumbers = invoices
-    .map(inv => {
-      const match = inv.InvoiceNumber.match(/^INV-(\d+)$/);
-      return match ? parseInt(match[1], 10) : 0;
-    })
-    .filter(n => n > 0);
-
-  const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
-  return 'INV-' + String(maxNumber + 1).padStart(3, '0');
-}
-
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const { showToast } = useToast();
 
   // Fetch all invoices to generate new invoice number
   const { data: allInvoices } = useQuery({
@@ -89,8 +75,8 @@ export default function EditInvoice() {
       const toUpdate = incomingLines.filter(l => l.Id && currentLineIds.has(l.Id));
       const toAdd = incomingLines.filter(l => !l.Id);
 
-      // Execute operations
-      const promises = [
+      // Execute operations in parallel
+      await Promise.all([
         ...toDelete.map(l => api.delete(`/invoicelines/Id/${l.Id}`)),
         ...toUpdate.map(l => api.patch(`/invoicelines/Id/${l.Id}`, {
           Description: l.Description,
@@ -103,18 +89,18 @@ export default function EditInvoice() {
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice
         }))
-      ];
-
-      await Promise.all(promises);
+      ]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      showToast('Invoice has been updated', 'success');
       navigate('/invoices');
     },
     onError: (error) => {
       console.error('Failed to update invoice:', error);
-      alert('Failed to update invoice');
+      const message = error instanceof Error ? error.message : 'Failed to update invoice';
+      showToast(message, 'error');
     }
   });
 
@@ -125,24 +111,26 @@ export default function EditInvoice() {
       }
 
       // Fetch the invoice lines
-      const linesResponse = await api.get<{ value: InvoiceLine[] }>('/invoicelines?$filter=InvoiceId eq ' + id);
+      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${id}`);
       const originalLines = linesResponse.data.value;
+
+      // Validate that invoice has line items
+      if (!originalLines || originalLines.length === 0) {
+        throw new Error('Cannot duplicate invoice with no line items');
+      }
 
       // Generate new invoice number
       const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || []);
 
       // Calculate total amount from lines
-      const totalAmount = originalLines.reduce((sum, line) => sum + (line.Quantity * line.UnitPrice), 0);
+      const totalAmount = calculateInvoiceTotal(originalLines);
 
       // Create new invoice with current date and Draft status
-      const today = new Date().toISOString().split('T')[0];
-      const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
       const newInvoice = {
         InvoiceNumber: newInvoiceNumber,
         CustomerId: invoice.CustomerId,
-        IssueDate: today,
-        DueDate: dueDate,
+        IssueDate: getCurrentDate(),
+        DueDate: getDateNDaysFromNow(30),
         TotalAmount: totalAmount,
         Status: 'Draft'
       };
@@ -150,26 +138,30 @@ export default function EditInvoice() {
       const createResponse = await api.post<Invoice>('/invoices', newInvoice);
       const createdInvoice = createResponse.data;
 
-      // Create line items for the new invoice
-      for (const line of originalLines) {
-        await api.post('/invoicelines', {
-          InvoiceId: createdInvoice.Id,
-          Description: line.Description,
-          Quantity: line.Quantity,
-          UnitPrice: line.UnitPrice
-        });
-      }
+      // Create line items for the new invoice in parallel
+      await Promise.all(
+        originalLines.map(line =>
+          api.post('/invoicelines', {
+            InvoiceId: createdInvoice.Id,
+            Description: line.Description,
+            Quantity: line.Quantity,
+            UnitPrice: line.UnitPrice
+          })
+        )
+      );
 
       return createdInvoice;
     },
     onSuccess: (newInvoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      showToast(`Invoice ${newInvoice.InvoiceNumber} has been duplicated`, 'success');
       // Navigate to edit page for the new invoice
       navigate('/invoices/' + newInvoice.Id + '/edit');
     },
     onError: (error) => {
       console.error('Failed to duplicate invoice:', error);
-      alert('Failed to duplicate invoice');
+      const message = error instanceof Error ? error.message : 'Failed to duplicate invoice';
+      showToast(message, 'error');
     },
     onSettled: () => {
       setIsDuplicating(false);
