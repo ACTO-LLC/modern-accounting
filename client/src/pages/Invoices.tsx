@@ -10,6 +10,7 @@ import {
   getDateNDaysFromNow,
   type Invoice 
 } from '../lib/invoiceUtils';
+import { formatGuidForOData } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
 
 interface InvoiceLine {
@@ -38,14 +39,14 @@ export default function Invoices() {
   const duplicateMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
       // 1. Fetch the original invoice
-      const invoiceResponse = await api.get<{ value: Invoice[] }>(`/invoices?$filter=Id eq ${invoiceId}`);
+      const invoiceResponse = await api.get<{ value: Invoice[] }>(`/invoices?$filter=Id eq ${formatGuidForOData(invoiceId, 'InvoiceId')}`);
       const originalInvoice = invoiceResponse.data.value[0];
       if (!originalInvoice) {
         throw new Error('Invoice not found');
       }
 
       // 2. Fetch the invoice lines
-      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${invoiceId}`);
+      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(invoiceId, 'InvoiceId')}`);
       const originalLines = linesResponse.data.value;
 
       // Validate that invoice has line items

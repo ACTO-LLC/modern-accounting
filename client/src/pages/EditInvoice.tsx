@@ -11,6 +11,7 @@ import {
   getDateNDaysFromNow,
   type Invoice 
 } from '../lib/invoiceUtils';
+import { formatGuidForOData } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
 
 interface InvoiceLine {
@@ -40,10 +41,11 @@ export default function EditInvoice() {
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['invoice', id],
     queryFn: async () => {
+      if (!id) return null;
       // Fetch invoice and lines separately since $expand is not supported
       const [invoiceResponse, linesResponse] = await Promise.all([
-        api.get<{ value: any[] }>(`/invoices?$filter=Id eq ${id}`),
-        api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${id}`)
+        api.get<{ value: any[] }>(`/invoices?$filter=Id eq ${formatGuidForOData(id, 'InvoiceId')}`),
+        api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'InvoiceId')}`)
       ]);
       
       const invoice = invoiceResponse.data.value[0];
@@ -57,13 +59,15 @@ export default function EditInvoice() {
 
   const mutation = useMutation({
     mutationFn: async (data: InvoiceFormData) => {
+      if (!id) throw new Error('Invoice ID is required');
+      
       // 1. Update Invoice (exclude Lines)
       const { Lines, ...invoiceData } = data;
       await api.patch(`/invoices/Id/${id}`, invoiceData);
 
       // 2. Handle Lines Reconciliation
       // Fetch current lines from DB to know what to delete
-      const currentLinesResponse = await api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${id}`);
+      const currentLinesResponse = await api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'InvoiceId')}`);
       const currentLines = currentLinesResponse.data.value;
       const currentLineIds = new Set(currentLines.map(l => l.Id));
 
@@ -111,7 +115,7 @@ export default function EditInvoice() {
       }
 
       // Fetch the invoice lines
-      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${id}`);
+      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'InvoiceId')}`);
       const originalLines = linesResponse.data.value;
 
       // Validate that invoice has line items
