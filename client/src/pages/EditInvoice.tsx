@@ -44,8 +44,8 @@ export default function EditInvoice() {
       if (!id) return null;
       // Fetch invoice and lines separately since $expand is not supported
       const [invoiceResponse, linesResponse] = await Promise.all([
-        api.get<{ value: any[] }>(`/invoices?$filter=Id eq ${formatGuidForOData(id, 'InvoiceId')}`),
-        api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'InvoiceId')}`)
+        api.get<{ value: any[] }>(`/invoices?$filter=Id eq ${formatGuidForOData(id, 'Invoice Id')}`),
+        api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'Invoice Id')}`)
       ]);
       
       const invoice = invoiceResponse.data.value[0];
@@ -67,7 +67,7 @@ export default function EditInvoice() {
 
       // 2. Handle Lines Reconciliation
       // Fetch current lines from DB to know what to delete
-      const currentLinesResponse = await api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'InvoiceId')}`);
+      const currentLinesResponse = await api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'Invoice Id')}`);
       const currentLines = currentLinesResponse.data.value;
       const currentLineIds = new Set(currentLines.map(l => l.Id));
 
@@ -115,7 +115,7 @@ export default function EditInvoice() {
       }
 
       // Fetch the invoice lines
-      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'InvoiceId')}`);
+      const linesResponse = await api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'Invoice Id')}`);
       const originalLines = linesResponse.data.value;
 
       // Validate that invoice has line items
