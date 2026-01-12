@@ -1,8 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { Plus, FileText, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { GridColDef } from '@mui/x-data-grid';
+import ServerDataGrid from '../components/ServerDataGrid';
 import { formatGuidForOData, isValidUUID } from '../lib/validation';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
@@ -51,38 +53,25 @@ export default function Estimates() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [refreshKey, setRefreshKey] = useState(0);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     estimate: Estimate | null;
   }>({ isOpen: false, estimate: null });
 
-  const { data: estimates, isLoading, error } = useQuery({
-    queryKey: ['estimates'],
-    queryFn: async () => {
-      const response = await api.get<{ value: Estimate[] }>('/estimates');
-      console.log('Estimates data:', response.data);
-      return response.data.value;
-    },
-  });
-
   const convertToInvoiceMutation = useMutation({
     mutationFn: async (estimate: Estimate) => {
-      // Validate estimate ID before using in OData filter
       if (!isValidUUID(estimate.Id)) {
         throw new Error('Invalid estimate ID');
       }
 
-      // 1. Fetch estimate lines with properly quoted GUID
       const linesResponse = await api.get<{ value: EstimateLine[] }>(
         `/estimatelines?$filter=EstimateId eq ${formatGuidForOData(estimate.Id, 'EstimateId')}`
       );
       const lines = linesResponse.data.value;
 
-      // 2. Generate invoice number
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
 
-      // 3. Create invoice
       const invoiceResponse = await api.post<Invoice>('/invoices', {
         InvoiceNumber: invoiceNumber,
         CustomerId: estimate.CustomerId,
@@ -93,7 +82,6 @@ export default function Estimates() {
       });
       const invoice = invoiceResponse.data;
 
-      // 4. Create invoice lines
       await Promise.all(
         lines.map((line: EstimateLine) =>
           api.post('/invoicelines', {
@@ -105,7 +93,6 @@ export default function Estimates() {
         )
       );
 
-      // 5. Update estimate status to Converted
       await api.patch(`/estimates/Id/${estimate.Id}`, {
         Status: 'Converted',
         ConvertedToInvoiceId: invoice.Id,
@@ -116,6 +103,7 @@ export default function Estimates() {
     onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ['estimates'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setRefreshKey(k => k + 1);
       showToast('Estimate converted to invoice successfully', 'success');
       navigate(`/invoices/${invoice.Id}/edit`);
     },
@@ -140,13 +128,82 @@ export default function Estimates() {
     setConfirmModal({ isOpen: false, estimate: null });
   };
 
-  const filteredEstimates = estimates?.filter((estimate) => {
-    if (statusFilter === 'all') return true;
-    return estimate.Status === statusFilter;
-  });
-
-  if (isLoading) return <div className="p-4">Loading estimates...</div>;
-  if (error) return <div className="p-4 text-red-600">Error loading estimates</div>;
+  const columns: GridColDef[] = [
+    { field: 'EstimateNumber', headerName: 'Estimate #', width: 130, filterable: true },
+    { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true },
+    {
+      field: 'ExpirationDate',
+      headerName: 'Expiration',
+      width: 120,
+      filterable: true,
+      renderCell: (params) => params.value || '-'
+    },
+    {
+      field: 'TotalAmount',
+      headerName: 'Amount',
+      width: 120,
+      type: 'number',
+      filterable: true,
+      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+    },
+    {
+      field: 'Status',
+      headerName: 'Status',
+      width: 120,
+      filterable: true,
+      renderCell: (params) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
+          {params.value}
+        </span>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 250,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/estimates/${params.row.Id}/edit`);
+            }}
+            className="text-indigo-600 hover:text-indigo-900"
+          >
+            Edit
+          </button>
+          {(params.row.Status === 'Accepted' || params.row.Status === 'Sent' || params.row.Status === 'Draft') &&
+            !params.row.ConvertedToInvoiceId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleConvertClick(params.row as Estimate);
+                }}
+                disabled={convertToInvoiceMutation.isPending}
+                className="text-green-600 hover:text-green-900 inline-flex items-center"
+              >
+                <ArrowRight className="w-4 h-4 mr-1" />
+                Convert
+              </button>
+            )}
+          {params.row.ConvertedToInvoiceId && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/invoices/${params.row.ConvertedToInvoiceId}/edit`);
+              }}
+              className="text-purple-600 hover:text-purple-900 inline-flex items-center"
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              Invoice
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div>
@@ -161,118 +218,16 @@ export default function Estimates() {
         </button>
       </div>
 
-      {/* Status Filter */}
-      <div className="mb-4">
-        <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">
-          Filter by Status
-        </label>
-        <select
-          id="statusFilter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-        >
-          <option value="all">All Statuses</option>
-          <option value="Draft">Draft</option>
-          <option value="Sent">Sent</option>
-          <option value="Accepted">Accepted</option>
-          <option value="Rejected">Rejected</option>
-          <option value="Expired">Expired</option>
-          <option value="Converted">Converted</option>
-        </select>
-      </div>
+      <ServerDataGrid<Estimate>
+        key={refreshKey}
+        entityName="estimates"
+        queryFields="Id EstimateNumber CustomerId IssueDate ExpirationDate TotalAmount Status ConvertedToInvoiceId Notes"
+        columns={columns}
+        editPath="/estimates/{id}/edit"
+        initialPageSize={25}
+        emptyMessage="No estimates found."
+      />
 
-      <div className="bg-white shadow overflow-hidden rounded-md">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estimate #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Expiration
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredEstimates?.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                  No estimates found.
-                </td>
-              </tr>
-            ) : (
-              filteredEstimates?.map((estimate) => (
-                <tr key={estimate.Id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {estimate.EstimateNumber}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {estimate.IssueDate}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {estimate.ExpirationDate || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${estimate.TotalAmount?.toFixed(2) || '0.00'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        statusColors[estimate.Status] || 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {estimate.Status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-3">
-                    <button
-                      onClick={() => navigate(`/estimates/${estimate.Id}/edit`)}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Edit
-                    </button>
-                    {(estimate.Status === 'Accepted' || estimate.Status === 'Sent' || estimate.Status === 'Draft') &&
-                      !estimate.ConvertedToInvoiceId && (
-                        <button
-                          onClick={() => handleConvertClick(estimate)}
-                          disabled={convertToInvoiceMutation.isPending}
-                          className="text-green-600 hover:text-green-900 inline-flex items-center"
-                        >
-                          <ArrowRight className="w-4 h-4 mr-1" />
-                          Convert to Invoice
-                        </button>
-                      )}
-                    {estimate.ConvertedToInvoiceId && (
-                      <button
-                        onClick={() => navigate(`/invoices/${estimate.ConvertedToInvoiceId}/edit`)}
-                        className="text-purple-600 hover:text-purple-900 inline-flex items-center"
-                      >
-                        <FileText className="w-4 h-4 mr-1" />
-                        View Invoice
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Confirm Convert Modal */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={handleCloseModal}
