@@ -7,10 +7,16 @@ interface AddAccountModalProps {
   onClose: () => void;
 }
 
+// Map account subtypes to their parent types
+const ACCOUNT_TYPE_MAPPING: Record<string, { type: string; subtype: string }> = {
+  'Bank': { type: 'Asset', subtype: 'Bank' },
+  'Credit Card': { type: 'Liability', subtype: 'Credit Card' },
+};
+
 export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    type: 'Bank',
+    subtype: 'Bank',
     accountNumber: '',
     description: ''
   });
@@ -19,18 +25,24 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await fetch('/api/Account', {
+      const typeMapping = ACCOUNT_TYPE_MAPPING[data.subtype];
+      // Generate a unique code from name + timestamp to ensure uniqueness
+      const timestamp = Date.now().toString(36);
+      const code = data.name.toUpperCase().replace(/\s+/g, '_').substring(0, 40) + '_' + timestamp;
+
+      const response = await fetch('/api/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           Name: data.name,
-          Type: data.type,
+          Type: typeMapping.type,
+          Subtype: typeMapping.subtype,
           AccountNumber: data.accountNumber || null,
           Description: data.description || null,
-          Code: data.name.toUpperCase().replace(/\s+/g, '_').substring(0, 50) // Auto-generate code
+          Code: code
         })
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to create account');
@@ -40,11 +52,11 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       onClose();
-      setFormData({ name: '', type: 'Bank', accountNumber: '', description: '' });
+      setFormData({ name: '', subtype: 'Bank', accountNumber: '', description: '' });
       alert('Account created successfully!');
     },
     onError: (error) => {
-      alert(`Error creating account: ${error.message}`);
+      alert('Error creating account: ' + error.message);
     }
   });
 
@@ -75,8 +87,8 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
           <div>
             <label className="block text-sm font-medium text-gray-700">Account Type *</label>
             <select
-              value={formData.type}
-              onChange={e => setFormData({ ...formData, type: e.target.value })}
+              value={formData.subtype}
+              onChange={e => setFormData({ ...formData, subtype: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
             >
               <option value="Bank">Bank</option>
