@@ -42,8 +42,8 @@ export default function NewSubmission() {
   const mutation = useMutation({
     mutationFn: async (data: SubmissionFormData) => {
       // Create the submission first
-      const response = await api.post<{ Id: string }>('/submissions', data);
-      const submissionId = response.data.Id;
+      const response = await api.post<{ value: { Id: string }[] }>('/submissions', data);
+      const submissionId = response.data.value[0].Id;
 
       // Then create attachments if any
       if (attachments.length > 0) {
