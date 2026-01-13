@@ -5,6 +5,8 @@ node_modules
 
 # Testing
 coverage
+playwright-report/
+test-results/
 
 # Production
 dist
@@ -45,3 +47,5 @@ dab_debug_log.txt
 # Worktree generated files
 dab-config.worktree.json
 docker-compose.worktree.yml
+
+tmpclaude*
