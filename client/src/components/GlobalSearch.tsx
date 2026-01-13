@@ -388,12 +388,12 @@ export default function GlobalSearch() {
     return (
       <button
         onClick={openSearch}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         aria-label="Open search"
       >
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">Search...</span>
-        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-gray-400 bg-white rounded border border-gray-200">
+        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
           <Command className="h-3 w-3" />K
         </kbd>
       </button>
@@ -412,13 +412,13 @@ export default function GlobalSearch() {
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4">
         <div
-          className="w-full max-w-xl bg-white rounded-xl shadow-2xl overflow-hidden"
+          className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Global search"
         >
           {/* Search input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
             <input
               ref={inputRef}
@@ -427,7 +427,7 @@ export default function GlobalSearch() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search invoices, customers, vendors, bills, products..."
-              className="flex-1 text-base text-gray-900 placeholder-gray-400 bg-transparent border-none outline-none"
+              className="flex-1 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-transparent border-none outline-none"
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
@@ -436,7 +436,7 @@ export default function GlobalSearch() {
             {query && (
               <button
                 onClick={() => setQuery('')}
-                className="p-1 text-gray-400 hover:text-gray-600"
+                className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
@@ -444,7 +444,7 @@ export default function GlobalSearch() {
             )}
             <button
               onClick={closeSearch}
-              className="px-2 py-1 text-xs text-gray-400 bg-gray-100 rounded hover:bg-gray-200"
+              className="px-2 py-1 text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               ESC
             </button>
@@ -464,14 +464,14 @@ export default function GlobalSearch() {
             className="max-h-[60vh] overflow-y-auto"
           >
             {isLoading && (
-              <div className="px-4 py-8 text-center text-gray-500">
+              <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                 <div className="inline-block h-5 w-5 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin" />
                 <p className="mt-2 text-sm">Searching...</p>
               </div>
             )}
 
             {!isLoading && error && (
-              <div className="px-4 py-8 text-center text-red-500">
+              <div className="px-4 py-8 text-center text-red-500 dark:text-red-400">
                 <AlertCircle className="h-8 w-8 mx-auto mb-2 text-red-400" />
                 <p className="text-sm">{error}</p>
                 <button
@@ -565,19 +565,19 @@ export default function GlobalSearch() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200 bg-gray-50 text-xs text-gray-500">
+          <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">↑</kbd>
-                <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">↓</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">↑</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">↓</kbd>
                 <span>to navigate</span>
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">Enter</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">Enter</kbd>
                 <span>to select</span>
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">Esc</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">Esc</kbd>
                 <span>to close</span>
               </span>
             </div>
@@ -608,7 +608,7 @@ function ResultSection({
 }: ResultSectionProps) {
   return (
     <div className="mb-2">
-      <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         {title}
       </div>
       {results.map((result, index) => {
@@ -622,7 +622,7 @@ function ResultSection({
             onClick={() => onResultClick(result)}
             className={clsx(
               'w-full flex items-center gap-3 px-4 py-2 text-left transition-colors',
-              isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
+              isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
             )}
           >
             <div className="flex-shrink-0">
@@ -631,16 +631,16 @@ function ResultSection({
             <div className="flex-1 min-w-0">
               <div className={clsx(
                 'text-sm font-medium truncate',
-                isSelected ? 'text-indigo-700' : 'text-gray-900'
+                isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-white'
               )}>
                 {result.title}
               </div>
-              <div className="text-xs text-gray-500 truncate">
+              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {result.subtitle}
               </div>
             </div>
             {isSelected && (
-              <div className="flex-shrink-0 text-xs text-indigo-600">
+              <div className="flex-shrink-0 text-xs text-indigo-600 dark:text-indigo-400">
                 Enter to open
               </div>
             )}

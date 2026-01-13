@@ -298,11 +298,11 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <p className="text-red-600">Error loading data: {error}</p>
+      <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md p-4">
+        <p className="text-red-600 dark:text-red-400">Error loading data: {error}</p>
         <button
           onClick={fetchData}
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
         >
           Retry
         </button>
@@ -317,7 +317,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
           {headerActions}
         </div>
       )}
-      <div style={{ height, width: '100%' }} className="bg-white rounded-lg shadow">
+      <div style={{ height, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow">
         <DataGrid
           rows={rows}
           columns={columnsWithActions}
@@ -352,8 +352,8 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
               cursor: editPath || onRowClick ? 'pointer' : 'default',
             },
             '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#f9fafb',
-              borderBottom: '1px solid #e5e7eb',
+              backgroundColor: 'var(--datagrid-header-bg, #f9fafb)',
+              borderBottom: '1px solid var(--datagrid-border, #e5e7eb)',
             },
             '& .MuiDataGrid-cell': {
               borderBottom: '1px solid #e5e7eb',
