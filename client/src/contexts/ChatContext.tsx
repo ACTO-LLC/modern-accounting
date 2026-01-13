@@ -7,6 +7,20 @@ export interface Message {
   timestamp: Date;
   isUncertain?: boolean;
   toolUsed?: string | null;
+  attachments?: FileAttachment[];
+  isEditing?: boolean;
+  originalContent?: string;
+  error?: boolean;
+  retryable?: boolean;
+}
+
+export interface FileAttachment {
+  fileId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  extractedText?: string;
+  preview?: string;
 }
 
 export interface Insight {
@@ -25,11 +39,16 @@ interface ChatContextType {
   isOpen: boolean;
   isLoading: boolean;
   insights: Insight[];
+  pendingAttachments: FileAttachment[];
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
+  updateMessage: (id: string, updates: Partial<Message>) => void;
   clearMessages: () => void;
   setIsOpen: (open: boolean) => void;
   setIsLoading: (loading: boolean) => void;
   setInsights: (insights: Insight[]) => void;
+  addPendingAttachment: (file: FileAttachment) => void;
+  removePendingAttachment: (fileId: string) => void;
+  clearPendingAttachments: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -50,6 +69,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<FileAttachment[]>([]);
 
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
     const newMessage: Message = {
@@ -60,8 +80,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setMessages(prev => [...prev, newMessage]);
   }, []);
 
+  const updateMessage = useCallback((id: string, updates: Partial<Message>) => {
+    setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, ...updates } : msg));
+  }, []);
+
   const clearMessages = useCallback(() => {
     setMessages([initialMessage]);
+  }, []);
+
+  const addPendingAttachment = useCallback((file: FileAttachment) => {
+    setPendingAttachments(prev => [...prev, file]);
+  }, []);
+
+  const removePendingAttachment = useCallback((fileId: string) => {
+    setPendingAttachments(prev => prev.filter(f => f.fileId !== fileId));
+  }, []);
+
+  const clearPendingAttachments = useCallback(() => {
+    setPendingAttachments([]);
   }, []);
 
   const value: ChatContextType = {
@@ -69,11 +105,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     isOpen,
     isLoading,
     insights,
+    pendingAttachments,
     addMessage,
+    updateMessage,
     clearMessages,
     setIsOpen,
     setIsLoading,
     setInsights,
+    addPendingAttachment,
+    removePendingAttachment,
+    clearPendingAttachments,
   };
 
   return (

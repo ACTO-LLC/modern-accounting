@@ -4,12 +4,52 @@ import dotenv from 'dotenv';
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 import axios from 'axios';
 import { randomUUID } from 'crypto';
+import multer from 'multer';
+import { createWorker } from 'tesseract.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Configure multer for file uploads
+const uploadDir = path.join(__dirname, 'uploads');
+await fs.mkdir(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueName = `${Date.now()}-${randomUUID()}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+            'application/pdf',
+            'text/csv', 'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Unsupported file type'));
+        }
+    }
+});
 
 const client = new OpenAIClient(
     process.env.AZURE_OPENAI_ENDPOINT,
@@ -182,12 +222,21 @@ const systemPrompt = `You are an expert accounting assistant for a modern accoun
 
 3. PROACTIVE INSIGHTS: When data shows issues (overdue invoices, upcoming due dates, unusual patterns), proactively mention them to help the user.
 
+4. FILE PROCESSING: When users upload images or documents, extract information and take action:
+   - Business cards: Extract contact info and offer to create customer/vendor records
+   - Receipts: Extract merchant, amount, date, and suggest categorization
+   - Bank statements: Identify account info and offer to create accounts in COA
+   - Credit card statements: Auto-detect card issuer and create liability accounts
+   - Invoices from vendors: Extract vendor info and amounts
+
 IMPORTANT RULES:
 - Always use tools to fetch data. Never fabricate financial information.
 - When uncertain, say "I'm not entirely sure, but..." or "Based on the available data..."
 - Format currency as $X,XXX.XX
 - Include clickable links formatted as [text](link) when referring to specific records
 - For general accounting guidance (not about user's specific data), answer based on GAAP principles
+- When you can confidently extract info from a file and take action (create account, customer, vendor), do it automatically and inform the user afterward
+- Only ask for confirmation when there's ambiguity (e.g., "Is this a customer or vendor?")
 
 ACCOUNT TYPES:
 - Asset (1xxx): Cash, Bank, Accounts Receivable, Inventory, Equipment
@@ -204,7 +253,14 @@ COMMON EXPENSE CATEGORIES:
 - Software subscriptions -> Software/Technology Expense
 - Professional services -> Professional Fees
 - Bank fees -> Bank Service Charges
-- Insurance -> Insurance Expense`;
+- Insurance -> Insurance Expense
+
+AUTO-CREATION GUIDELINES:
+- Bank statements: Create bank account automatically, mention what was created
+- Credit cards: Create liability account automatically with last 4 digits
+- Business cards: Always ask "Customer or Vendor?" before creating
+- Receipts: If expense category doesn't exist in COA, offer to create it
+- Do first, confirm after - reduce clicks to zero where possible`;
 
 const tools = [
     {
@@ -330,6 +386,63 @@ const tools = [
                     invoice_number: { type: 'string', description: 'Invoice number to copy' }
                 },
                 required: ['invoice_number']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'create_customer',
+            description: 'Create a new customer record with contact information.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string', description: 'Customer/Company name' },
+                    email: { type: 'string', description: 'Email address' },
+                    phone: { type: 'string', description: 'Phone number' },
+                    address: { type: 'string', description: 'Full address' }
+                },
+                required: ['name']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'create_vendor',
+            description: 'Create a new vendor record with contact information.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string', description: 'Vendor/Company name' },
+                    email: { type: 'string', description: 'Email address' },
+                    phone: { type: 'string', description: 'Phone number' },
+                    address: { type: 'string', description: 'Full address' },
+                    is_1099_vendor: { type: 'boolean', description: 'Whether this is a 1099 vendor' }
+                },
+                required: ['name']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'create_account',
+            description: 'Create a new account in the chart of accounts.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    code: { type: 'string', description: 'Account code (e.g., 1000, 5100)' },
+                    name: { type: 'string', description: 'Account name' },
+                    type: { 
+                        type: 'string', 
+                        enum: ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'],
+                        description: 'Account type' 
+                    },
+                    subtype: { type: 'string', description: 'Account subtype' },
+                    description: { type: 'string', description: 'Account description' }
+                },
+                required: ['code', 'name', 'type']
             }
         }
     }
@@ -877,6 +990,108 @@ async function executeCopyInvoice(params) {
     }
 }
 
+async function executeCreateCustomer(params) {
+    try {
+        const customerData = {
+            Name: params.name,
+            Email: params.email || null,
+            Phone: params.phone || null,
+            BillingAddress: params.address || null
+        };
+
+        const createResult = await mcp.createRecord('customers', customerData);
+        if (createResult.error) {
+            return { success: false, error: createResult.error };
+        }
+
+        const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+
+        return {
+            success: true,
+            message: `Created customer '${params.name}'`,
+            customer: {
+                id: newId,
+                name: params.name,
+                email: params.email,
+                phone: params.phone,
+                address: params.address,
+                link: `${APP_URL}/customers`
+            }
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeCreateVendor(params) {
+    try {
+        const vendorData = {
+            Name: params.name,
+            Email: params.email || null,
+            Phone: params.phone || null,
+            Address: params.address || null,
+            Is1099Vendor: params.is_1099_vendor || false
+        };
+
+        const createResult = await mcp.createRecord('vendors', vendorData);
+        if (createResult.error) {
+            return { success: false, error: createResult.error };
+        }
+
+        const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+
+        return {
+            success: true,
+            message: `Created vendor '${params.name}'`,
+            vendor: {
+                id: newId,
+                name: params.name,
+                email: params.email,
+                phone: params.phone,
+                address: params.address,
+                is1099: params.is_1099_vendor,
+                link: `${APP_URL}/vendors`
+            }
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeCreateAccount(params) {
+    try {
+        const accountData = {
+            Code: params.code,
+            Name: params.name,
+            Type: params.type,
+            Subtype: params.subtype || null,
+            Description: params.description || null,
+            IsActive: true
+        };
+
+        const createResult = await mcp.createRecord('accounts', accountData);
+        if (createResult.error) {
+            return { success: false, error: createResult.error };
+        }
+
+        const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+
+        return {
+            success: true,
+            message: `Created account ${params.code} - ${params.name}`,
+            account: {
+                id: newId,
+                code: params.code,
+                name: params.name,
+                type: params.type,
+                link: `${APP_URL}/chart-of-accounts`
+            }
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 // ============================================================================
 // Function Dispatcher
 // ============================================================================
@@ -899,6 +1114,12 @@ async function executeFunction(name, args) {
             return executeSearchAll(args);
         case 'copy_invoice':
             return executeCopyInvoice(args);
+        case 'create_customer':
+            return executeCreateCustomer(args);
+        case 'create_vendor':
+            return executeCreateVendor(args);
+        case 'create_account':
+            return executeCreateAccount(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }
@@ -919,16 +1140,104 @@ function detectUncertainty(content) {
 }
 
 // ============================================================================
+// File Processing Helpers
+// ============================================================================
+
+async function extractTextFromImage(filePath) {
+    try {
+        const worker = await createWorker('eng');
+        const { data: { text } } = await worker.recognize(filePath);
+        await worker.terminate();
+        return text;
+    } catch (error) {
+        console.error('OCR error:', error);
+        return null;
+    }
+}
+
+async function processUploadedFile(file) {
+    const result = {
+        fileId: randomUUID(),
+        fileName: file.originalname,
+        fileType: file.mimetype,
+        filePath: file.path,
+        fileSize: file.size,
+        extractedText: null,
+        metadata: {}
+    };
+
+    // Extract text from images using OCR
+    if (file.mimetype.startsWith('image/')) {
+        result.extractedText = await extractTextFromImage(file.path);
+        result.metadata.ocrProcessed = true;
+    }
+
+    // Read file as base64 for vision API
+    if (file.mimetype.startsWith('image/')) {
+        const fileBuffer = await fs.readFile(file.path);
+        result.base64Data = fileBuffer.toString('base64');
+    }
+
+    return result;
+}
+
+// ============================================================================
 // API Endpoints
 // ============================================================================
 
+// File upload endpoint
+app.post('/api/chat/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const fileInfo = await processUploadedFile(req.file);
+        
+        res.json({
+            success: true,
+            file: {
+                fileId: fileInfo.fileId,
+                fileName: fileInfo.fileName,
+                fileType: fileInfo.fileType,
+                fileSize: fileInfo.fileSize,
+                extractedText: fileInfo.extractedText,
+                metadata: fileInfo.metadata
+            }
+        });
+    } catch (error) {
+        console.error('File upload error:', error);
+        res.status(500).json({ error: 'Failed to process file', details: error.message });
+    }
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
-        const { message, history = [] } = req.body;
+        const { message, history = [], attachments = [] } = req.body;
+        
+        // Build user message content
+        let userContent = message;
+        
+        // If there are image attachments, use vision model with multi-modal content
+        const userMessage = { role: 'user', content: userContent };
+        
+        // Add attachment context to message if present
+        if (attachments && attachments.length > 0) {
+            const attachmentContext = attachments.map(att => {
+                let context = `\n\n[Attached file: ${att.fileName} (${att.fileType})]`;
+                if (att.extractedText) {
+                    context += `\nExtracted text:\n${att.extractedText}`;
+                }
+                return context;
+            }).join('');
+            userContent += attachmentContext;
+            userMessage.content = userContent;
+        }
+        
         const messages = [
             { role: 'system', content: systemPrompt },
             ...history.map(msg => ({ role: msg.role, content: msg.content })),
-            { role: 'user', content: message }
+            userMessage
         ];
 
         let response = await client.getChatCompletions(deploymentName, messages, { tools, toolChoice: 'auto' });
@@ -967,7 +1276,11 @@ app.post('/api/chat', async (req, res) => {
         });
     } catch (error) {
         console.error('Chat error:', error);
-        res.status(500).json({ error: 'Failed to process chat request', details: error.message });
+        res.status(500).json({ 
+            error: 'I had trouble processing your request. This might be a temporary issue.',
+            details: error.message,
+            retryable: true 
+        });
     }
 });
 

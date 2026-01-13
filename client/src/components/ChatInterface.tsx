@@ -1,7 +1,7 @@
-import { useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
+import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw, Paperclip, Edit2, RotateCcw, XCircle, FileIcon, Image as ImageIcon } from 'lucide-react';
 import DOMPurify from 'dompurify';
-import { useChat, Insight } from '../contexts/ChatContext';
+import { useChat, Insight, FileAttachment } from '../contexts/ChatContext';
 
 // Configure DOMPurify to allow safe link attributes
 const sanitizeConfig: DOMPurify.Config = {
@@ -117,15 +117,24 @@ export default function ChatInterface() {
     isOpen,
     isLoading,
     insights,
+    pendingAttachments,
     addMessage,
+    updateMessage,
     clearMessages,
     setIsOpen,
     setIsLoading,
     setInsights,
+    addPendingAttachment,
+    removePendingAttachment,
+    clearPendingAttachments,
   } = useChat();
 
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -152,11 +161,81 @@ export default function ChatInterface() {
     }
   }, [isOpen]);
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+  // Handle file upload
+  const uploadFile = async (file: File): Promise<FileAttachment | null> => {
+    const formData = new FormData();
+    formData.append('file', file);
 
-    addMessage({ role: 'user', content: text });
+    try {
+      const response = await fetch('http://localhost:7071/api/chat/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      const data = await response.json();
+      return data.file;
+    } catch (error) {
+      console.error('File upload error:', error);
+      return null;
+    }
+  };
+
+  const handleFileSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileInfo = await uploadFile(file);
+      if (fileInfo) {
+        addPendingAttachment(fileInfo);
+      }
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFileSelect(e.dataTransfer.files);
+  };
+
+  // Clipboard paste handler
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          const fileInfo = await uploadFile(file);
+          if (fileInfo) {
+            addPendingAttachment(fileInfo);
+          }
+        }
+      }
+    }
+  };
+
+  const sendMessage = async (text: string, attachments: FileAttachment[] = []) => {
+    if ((!text.trim() && attachments.length === 0) || isLoading) return;
+
+    addMessage({ role: 'user', content: text, attachments });
     setIsLoading(true);
+    clearPendingAttachments();
 
     try {
       const response = await fetch('http://localhost:7071/api/chat', {
@@ -164,7 +243,8 @@ export default function ChatInterface() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          history: messages.slice(-10), // Send last 10 messages for context
+          history: messages.slice(-10),
+          attachments,
         }),
       });
 
@@ -172,17 +252,28 @@ export default function ChatInterface() {
 
       const data = await response.json();
 
-      addMessage({
-        role: 'assistant',
-        content: data.response || 'Sorry, I encountered an error.',
-        isUncertain: data.isUncertain,
-        toolUsed: data.toolUsed,
-      });
+      if (data.error) {
+        addMessage({
+          role: 'assistant',
+          content: data.error || 'Sorry, I encountered an error.',
+          error: true,
+          retryable: data.retryable || false,
+        });
+      } else {
+        addMessage({
+          role: 'assistant',
+          content: data.response || 'Sorry, I encountered an error.',
+          isUncertain: data.isUncertain,
+          toolUsed: data.toolUsed,
+        });
+      }
     } catch (error) {
       console.error('Chat error:', error);
       addMessage({
         role: 'assistant',
-        content: 'Sorry, I encountered an error connecting to the server. Please try again.',
+        content: 'I had trouble connecting to the server. This might be a temporary issue.',
+        error: true,
+        retryable: true,
       });
     } finally {
       setIsLoading(false);
@@ -192,20 +283,72 @@ export default function ChatInterface() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputRef.current) {
-      sendMessage(inputRef.current.value);
+      sendMessage(inputRef.current.value, pendingAttachments);
       inputRef.current.value = '';
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    // Up arrow to edit last user message
+    if (e.key === 'ArrowUp' && inputRef.current?.value === '') {
+      e.preventDefault();
+      const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+      if (lastUserMessage) {
+        handleEditMessage(lastUserMessage.id, lastUserMessage.content);
+      }
+      return;
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
+  const handleEditMessage = (messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setEditContent(content);
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    if (!editContent.trim()) return;
+
+    // Find the message being edited
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Remove all messages after the edited one (including the AI response)
+    const newMessages = messages.slice(0, messageIndex);
+    
+    // Update the edited message
+    updateMessage(messageId, { content: editContent, originalContent: messages[messageIndex].content });
+    
+    setEditingMessageId(null);
+    setEditContent('');
+
+    // Resubmit with edited content
+    await sendMessage(editContent, messages[messageIndex].attachments || []);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  const handleRetry = async (messageId: string) => {
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1 || messageIndex === 0) return;
+
+    // Get the previous user message
+    const prevUserMessage = messages[messageIndex - 1];
+    if (prevUserMessage.role !== 'user') return;
+
+    // Resubmit
+    await sendMessage(prevUserMessage.content, prevUserMessage.attachments || []);
+  };
+
   const handleQuickAction = (action: string) => {
-    sendMessage(action);
+    sendMessage(action, []);
   };
 
   if (!isOpen) {
@@ -257,11 +400,26 @@ export default function ChatInterface() {
       <QuickActions onAction={handleQuickAction} disabled={isLoading} />
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/50">
+      <div 
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/50"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="fixed inset-0 bg-indigo-500/20 backdrop-blur-sm flex items-center justify-center z-50 pointer-events-none">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+              <Paperclip className="w-12 h-12 text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">Drop files here</p>
+            </div>
+          </div>
+        )}
+
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} group`}
           >
             <div
               className={`max-w-[85%] rounded-lg p-3 ${
@@ -269,33 +427,104 @@ export default function ChatInterface() {
                   ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
                   : `bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-100 dark:border-gray-700 ${
                       message.isUncertain ? 'border-l-4 border-l-amber-400' : ''
-                    }`
+                    } ${message.error ? 'border-l-4 border-l-red-400' : ''}`
               }`}
             >
-              <div
-                className="text-sm leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: sanitizeAndFormatContent(message.content),
-                }}
-              />
-              {message.role === 'assistant' && message.isUncertain && <UncertaintyBadge />}
-              {message.role === 'assistant' && message.toolUsed && (
-                <span className="block text-xs text-gray-400 dark:text-gray-500 mt-2">
-                  Source: {message.toolUsed.replace(/_/g, ' ')}
-                </span>
+              {/* Edit mode */}
+              {editingMessageId === message.id ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    rows={3}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSaveEdit(message.id)}
+                      className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                    >
+                      Save & Resubmit
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded text-sm hover:bg-gray-400 dark:hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* File attachments */}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="mb-2 space-y-1">
+                      {message.attachments.map((att) => (
+                        <div key={att.fileId} className="flex items-center gap-2 text-xs bg-white/10 rounded p-1">
+                          {att.fileType.startsWith('image/') ? (
+                            <ImageIcon className="w-4 h-4" />
+                          ) : (
+                            <FileIcon className="w-4 h-4" />
+                          )}
+                          <span className="truncate">{att.fileName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Message content */}
+                  <div
+                    className="text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeAndFormatContent(message.content),
+                    }}
+                  />
+
+                  {/* Edit button for user messages */}
+                  {message.role === 'user' && !isLoading && (
+                    <button
+                      onClick={() => handleEditMessage(message.id, message.content)}
+                      className="opacity-0 group-hover:opacity-100 mt-2 text-xs flex items-center gap-1 hover:underline transition-opacity"
+                      title="Edit message"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Edit
+                    </button>
+                  )}
+
+                  {/* Retry button for error messages */}
+                  {message.role === 'assistant' && message.error && message.retryable && (
+                    <button
+                      onClick={() => handleRetry(message.id)}
+                      className="mt-2 text-xs flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline"
+                      disabled={isLoading}
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Retry
+                    </button>
+                  )}
+
+                  {message.role === 'assistant' && message.isUncertain && <UncertaintyBadge />}
+                  {message.role === 'assistant' && message.toolUsed && (
+                    <span className="block text-xs text-gray-400 dark:text-gray-500 mt-2">
+                      Source: {message.toolUsed.replace(/_/g, ' ')}
+                    </span>
+                  )}
+                  <p
+                    className={`text-xs mt-2 ${
+                      message.role === 'user'
+                        ? 'text-indigo-200'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </>
               )}
-              <p
-                className={`text-xs mt-2 ${
-                  message.role === 'user'
-                    ? 'text-indigo-200'
-                    : 'text-gray-400 dark:text-gray-500'
-                }`}
-              >
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
             </div>
           </div>
         ))}
@@ -323,18 +552,64 @@ export default function ChatInterface() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="flex gap-2">
+      <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        {/* Pending attachments preview */}
+        {pendingAttachments.length > 0 && (
+          <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-2">
+            {pendingAttachments.map((att) => (
+              <div 
+                key={att.fileId} 
+                className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-xs"
+              >
+                {att.fileType.startsWith('image/') ? (
+                  <ImageIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                ) : (
+                  <FileIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                )}
+                <span className="truncate max-w-[150px]">{att.fileName}</span>
+                <button
+                  type="button"
+                  onClick={() => removePendingAttachment(att.fileId)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="p-4 flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*,.pdf,.csv,.xlsx,.xls"
+            multiple
+            onChange={(e) => handleFileSelect(e.target.files)}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="text-gray-600 dark:text-gray-400 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700
+              disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Attach file"
+            title="Attach file (or drag & drop, or paste)"
+          >
+            <Paperclip className="w-5 h-5" />
+          </button>
           <input
             ref={inputRef}
             type="text"
-            placeholder="Ask me anything..."
+            placeholder="Ask me anything... (↑ to edit last message)"
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2
               focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
               text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
               placeholder-gray-400 dark:placeholder-gray-500"
             disabled={isLoading}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
+            onPaste={handlePaste}
           />
           <button
             type="submit"
