@@ -118,6 +118,7 @@ export default function Invoices() {
 
   const columns: GridColDef[] = [
     { field: 'InvoiceNumber', headerName: 'Invoice #', width: 130, filterable: true },
+    { field: 'CustomerName', headerName: 'Customer', width: 180, filterable: true },
     { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true },
     { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true },
     {
@@ -196,7 +197,7 @@ export default function Invoices() {
       <ServerDataGrid<Invoice>
         key={refreshKey}
         entityName="invoices"
-        queryFields="Id InvoiceNumber CustomerId IssueDate DueDate TotalAmount Status"
+        queryFields="Id InvoiceNumber CustomerId CustomerName IssueDate DueDate TotalAmount Status"
         columns={columns}
         editPath="/invoices/{id}/edit"
         initialPageSize={25}
