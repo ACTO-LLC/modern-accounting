@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw, LogOut, User, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw, LogOut, User, ChevronDown, MessageSquare } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,6 +54,7 @@ export default function Layout() {
     { name: 'Transactions', href: '/transactions', icon: Database },
     { name: 'Reconciliation', href: '/reconciliations', icon: Scale },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
+    { name: 'Feedback', href: '/submissions', icon: MessageSquare },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

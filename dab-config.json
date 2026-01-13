@@ -1013,6 +1013,80 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "submissions": {
+            "source": "dbo.Submissions",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Title": "Title",
+                "Type": "Type",
+                "Priority": "Priority",
+                "Status": "Status",
+                "Description": "Description",
+                "StepsToReproduce": "StepsToReproduce",
+                "ExpectedBehavior": "ExpectedBehavior",
+                "ActualBehavior": "ActualBehavior",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "CreatedBy": "CreatedBy"
+            },
+            "relationships": {
+                "Attachments": {
+                    "target.entity": "submissionattachments",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "SubmissionId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "submissionattachments": {
+            "source": "dbo.SubmissionAttachments",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SubmissionId": "SubmissionId",
+                "FileName": "FileName",
+                "ContentType": "ContentType",
+                "FileData": "FileData",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "Submission": {
+                    "target.entity": "submissions",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "SubmissionId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
