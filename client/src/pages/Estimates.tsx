@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
 import ServerDataGrid from '../components/ServerDataGrid';
 import { formatGuidForOData, isValidUUID } from '../lib/validation';
+import { formatDate } from '../lib/dateUtils';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
 
@@ -131,13 +132,13 @@ export default function Estimates() {
 
   const columns: GridColDef[] = [
     { field: 'EstimateNumber', headerName: 'Estimate #', width: 130, filterable: true },
-    { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true },
+    { field: 'IssueDate', headerName: 'Date', width: 120, filterable: true, renderCell: (params) => formatDate(params.value) },
     {
       field: 'ExpirationDate',
       headerName: 'Expiration',
       width: 120,
       filterable: true,
-      renderCell: (params) => params.value || '-'
+      renderCell: (params) => formatDate(params.value) || '-'
     },
     {
       field: 'TotalAmount',

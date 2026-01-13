@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus, Box, AlertTriangle, TrendingDown, ArrowUpCircle, ArrowDownCircle, RefreshCw } from 'lucide-react';
 import api from '../lib/api';
+import { formatDate } from '../lib/dateUtils';
 
 // Security: Validation utilities for input sanitization
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -565,7 +566,7 @@ export default function Inventory() {
                   transactions?.map((tx) => (
                     <tr key={tx.Id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(tx.TransactionDate).toLocaleDateString()}
+                        {formatDate(tx.TransactionDate)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

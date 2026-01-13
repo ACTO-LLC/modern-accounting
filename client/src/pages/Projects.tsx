@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import ServerDataGrid from '../components/ServerDataGrid';
+import { formatDate } from '../lib/dateUtils';
 
 interface Project {
   Id: string;
@@ -66,8 +67,8 @@ export default function Projects() {
       filterable: false,
       renderCell: (params) => (
         <div className="text-sm text-gray-500">
-          {params.row.StartDate && <div>Start: {new Date(params.row.StartDate).toLocaleDateString()}</div>}
-          {params.row.EndDate && <div>End: {new Date(params.row.EndDate).toLocaleDateString()}</div>}
+          {params.row.StartDate && <div>Start: {formatDate(params.row.StartDate)}</div>}
+          {params.row.EndDate && <div>End: {formatDate(params.row.EndDate)}</div>}
           {!params.row.StartDate && !params.row.EndDate && '-'}
         </div>
       ),

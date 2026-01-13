@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import ServerDataGrid from '../components/ServerDataGrid';
+import { formatDate } from '../lib/dateUtils';
 
 interface Bill {
   Id: string;
@@ -33,8 +34,8 @@ export default function Bills() {
   const columns: GridColDef[] = [
     { field: 'BillNumber', headerName: 'Bill #', width: 120, filterable: true },
     { field: 'VendorName', headerName: 'Vendor', width: 180, filterable: true },
-    { field: 'BillDate', headerName: 'Bill Date', width: 120, filterable: true },
-    { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true },
+    { field: 'BillDate', headerName: 'Bill Date', width: 120, filterable: true, renderCell: (params) => formatDate(params.value) },
+    { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true, renderCell: (params) => formatDate(params.value) },
     {
       field: 'TotalAmount',
       headerName: 'Amount',

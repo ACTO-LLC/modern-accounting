@@ -7,6 +7,7 @@ import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
+import { formatDateTime } from '../lib/dateUtils';
 import ScreenshotUploader, { Attachment } from '../components/ScreenshotUploader';
 import { useToast } from '../hooks/useToast';
 
@@ -335,9 +336,9 @@ export default function EditSubmission() {
 
         {/* Metadata */}
         <div className="border-t pt-4 text-sm text-gray-500">
-          <p>Created: {new Date(submission.CreatedAt).toLocaleString()}</p>
+          <p>Created: {formatDateTime(submission.CreatedAt)}</p>
           {submission.CreatedBy && <p>Created by: {submission.CreatedBy}</p>}
-          <p>Last updated: {new Date(submission.UpdatedAt).toLocaleString()}</p>
+          <p>Last updated: {formatDateTime(submission.UpdatedAt)}</p>
         </div>
 
         {/* Form Actions */}
