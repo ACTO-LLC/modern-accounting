@@ -4,11 +4,11 @@ import DOMPurify from 'dompurify';
 import { useChat, Insight, FileAttachment } from '../contexts/ChatContext';
 
 // Configure DOMPurify to allow safe link attributes
-const sanitizeConfig: DOMPurify.Config = {
+const sanitizeConfig = {
   ALLOWED_TAGS: ['a', 'b', 'i', 'em', 'strong', 'br', 'p', 'span', 'ul', 'li', 'ol'],
   ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
   ALLOW_DATA_ATTR: false,
-};
+} as const;
 
 function sanitizeAndFormatContent(content: string): string {
   // Convert markdown bold to HTML
@@ -21,7 +21,7 @@ function sanitizeAndFormatContent(content: string): string {
   // Convert newlines to breaks
   htmlContent = htmlContent.replace(/\n/g, '<br />');
   // Sanitize the result
-  return DOMPurify.sanitize(htmlContent, sanitizeConfig);
+  return String(DOMPurify.sanitize(htmlContent, sanitizeConfig as any));
 }
 
 // Quick action chips component
@@ -316,9 +316,6 @@ export default function ChatInterface() {
     // Find the message being edited
     const messageIndex = messages.findIndex(m => m.id === messageId);
     if (messageIndex === -1) return;
-
-    // Remove all messages after the edited one (including the AI response)
-    const newMessages = messages.slice(0, messageIndex);
     
     // Update the edited message
     updateMessage(messageId, { content: editContent, originalContent: messages[messageIndex].content });
