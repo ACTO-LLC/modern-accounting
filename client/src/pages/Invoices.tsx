@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
-import { Plus, Copy } from 'lucide-react';
+import { Plus, Copy, Eye } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
@@ -142,11 +142,21 @@ export default function Invoices() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 150,
+      width: 180,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
         <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate('/invoices/' + params.row.Id);
+            }}
+            className="text-gray-600 hover:text-gray-900 inline-flex items-center"
+            title="View invoice"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();

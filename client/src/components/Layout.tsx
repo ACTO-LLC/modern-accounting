@@ -3,6 +3,7 @@ import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload,
 import { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import GlobalSearch from './GlobalSearch';
 
 export default function Layout() {
@@ -11,6 +12,7 @@ export default function Layout() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { user, userRole, logout } = useAuth();
+  const { settings: companySettings } = useCompanySettings();
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -56,14 +58,22 @@ export default function Layout() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-gray-50 flex print:bg-white">
+      {/* Sidebar - Hidden when printing */}
       <div className={clsx(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 print:hidden",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex items-center justify-between h-16 border-b border-gray-200 px-4">
-          <span className="text-xl font-bold text-indigo-600">Modern Books</span>
+          {companySettings.logoUrl ? (
+            <img
+              src={companySettings.logoUrl}
+              alt={companySettings.name}
+              className="h-10 max-w-[140px] object-contain"
+            />
+          ) : (
+            <span className="text-xl font-bold text-indigo-600">{companySettings.name || 'Modern Books'}</span>
+          )}
           {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
             <button
@@ -126,9 +136,17 @@ export default function Layout() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header */}
-        <div className="lg:hidden flex items-center justify-between bg-white border-b border-gray-200 px-4 py-2">
-          <span className="text-lg font-bold text-indigo-600">Modern Books</span>
+        {/* Mobile Header - Hidden when printing */}
+        <div className="lg:hidden flex items-center justify-between bg-white border-b border-gray-200 px-4 py-2 print:hidden">
+          {companySettings.logoUrl ? (
+            <img
+              src={companySettings.logoUrl}
+              alt={companySettings.name}
+              className="h-8 max-w-[120px] object-contain"
+            />
+          ) : (
+            <span className="text-lg font-bold text-indigo-600">{companySettings.name || 'Modern Books'}</span>
+          )}
           <div className="flex items-center gap-2">
             <GlobalSearch />
             <button
@@ -140,7 +158,7 @@ export default function Layout() {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 print:p-0 print:overflow-visible">
           <Outlet />
         </main>
       </div>

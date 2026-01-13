@@ -7,6 +7,7 @@ import { ToastProvider } from './hooks/useToast';
 import { msalConfig } from './lib/authConfig';
 import { initializeApiAuth } from './lib/api';
 import { AuthProvider } from './contexts/AuthContext';
+import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -14,6 +15,8 @@ import Dashboard from './pages/Dashboard';
 import Invoices from './pages/Invoices';
 import NewInvoice from './pages/NewInvoice';
 import EditInvoice from './pages/EditInvoice';
+import InvoiceView from './pages/InvoiceView';
+import CompanySettings from './pages/CompanySettings';
 import Estimates from './pages/Estimates';
 import NewEstimate from './pages/NewEstimate';
 import EditEstimate from './pages/EditEstimate';
@@ -74,6 +77,7 @@ function AppContent() {
             <Route index element={<Dashboard />} />
             <Route path="invoices" element={<Invoices />} />
             <Route path="invoices/new" element={<NewInvoice />} />
+            <Route path="invoices/:id" element={<InvoiceView />} />
             <Route path="invoices/:id/edit" element={<EditInvoice />} />
             <Route path="estimates" element={<Estimates />} />
             <Route path="estimates/new" element={<NewEstimate />} />
@@ -113,7 +117,7 @@ function AppContent() {
             <Route path="reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="reports/trial-balance" element={<TrialBalance />} />
             <Route path="reports/ar-aging" element={<ARAgingSummary />} />
-            <Route path="settings" element={<div>Settings Page</div>} />
+            <Route path="settings" element={<CompanySettings />} />
           </Route>
         </Route>
       </Routes>
@@ -126,11 +130,13 @@ function App() {
   return (
     <MsalProvider instance={msalInstance}>
       <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
-        </QueryClientProvider>
+        <CompanySettingsProvider>
+          <QueryClientProvider client={queryClient}>
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
+          </QueryClientProvider>
+        </CompanySettingsProvider>
       </AuthProvider>
     </MsalProvider>
   );
