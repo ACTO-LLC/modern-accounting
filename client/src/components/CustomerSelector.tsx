@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Search, Loader2, RefreshCw } from 'lucide-react';
+import { ChevronDown, Search, Loader2, RefreshCw, Plus } from 'lucide-react';
 import { customersApi, Customer } from '../lib/api';
+import QuickAddCustomerModal from './QuickAddCustomerModal';
 
 export interface CustomerSelectorProps {
   value: string;
@@ -23,6 +24,7 @@ export default function CustomerSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
@@ -82,6 +84,18 @@ export default function CustomerSelector({
     setIsOpen(false);
     setSearchTerm('');
     setFocusedIndex(-1);
+  };
+
+  const handleCustomerCreated = (customerId: string) => {
+    onChange(customerId);
+    setIsOpen(false);
+    setSearchTerm('');
+    setFocusedIndex(-1);
+  };
+
+  const handleOpenAddModal = () => {
+    setIsAddModalOpen(true);
+    setIsOpen(false);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -231,11 +245,30 @@ export default function CustomerSelector({
               ))
             )}
           </div>
+
+          {/* Add New Customer button */}
+          <div className="border-t border-gray-200 p-2">
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Customer
+            </button>
+          </div>
         </div>
       )}
 
       {/* Error message */}
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+
+      {/* Quick Add Customer Modal */}
+      <QuickAddCustomerModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onCustomerCreated={handleCustomerCreated}
+      />
     </div>
   );
 }
