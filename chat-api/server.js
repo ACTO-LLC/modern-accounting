@@ -35,8 +35,13 @@ async function initializeUploadDir() {
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
         // Ensure directory exists before storing files
-        await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
-        cb(null, uploadDir);
+        try {
+            await fs.mkdir(uploadDir, { recursive: true });
+            cb(null, uploadDir);
+        } catch (error) {
+            console.error('Failed to create upload directory:', error);
+            cb(error, uploadDir);
+        }
     },
     filename: (req, file, cb) => {
         const uniqueName = `${Date.now()}-${randomUUID()}${path.extname(file.originalname)}`;
@@ -46,8 +51,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    limits: { 
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+        files: 5 // Max 5 files per request
+    },
     fileFilter: (req, file, cb) => {
+        // Security: Validate file type by MIME type
+        // NOTE: For production, consider adding:
+        // - Virus scanning (e.g., ClamAV)
+        // - Content validation (verify file headers match MIME type)
+        // - More restrictive file size limits per file type
         const allowedTypes = [
             'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
             'application/pdf',

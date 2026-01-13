@@ -3,6 +3,9 @@ import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw, Paperclip, 
 import DOMPurify from 'dompurify';
 import { useChat, Insight, FileAttachment } from '../contexts/ChatContext';
 
+// API configuration
+const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+
 // Configure DOMPurify to allow safe link attributes
 const sanitizeConfig = {
   ALLOWED_TAGS: ['a', 'b', 'i', 'em', 'strong', 'br', 'p', 'span', 'ul', 'li', 'ol'],
@@ -148,7 +151,7 @@ export default function ChatInterface() {
   // Fetch insights when chat opens
   useEffect(() => {
     if (isOpen) {
-      fetch('http://localhost:7071/api/insights')
+      fetch(`${CHAT_API_BASE_URL}/api/insights`)
         .then((r) => r.json())
         .then((data) => setInsights(data.insights || []))
         .catch(console.error);
@@ -168,7 +171,7 @@ export default function ChatInterface() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:7071/api/chat/upload', {
+      const response = await fetch(`${CHAT_API_BASE_URL}/api/chat/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -239,7 +242,7 @@ export default function ChatInterface() {
     clearPendingAttachments();
 
     try {
-      const response = await fetch('http://localhost:7071/api/chat', {
+      const response = await fetch(`${CHAT_API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
