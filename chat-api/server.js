@@ -21,10 +21,21 @@ app.use(express.json());
 
 // Configure multer for file uploads
 const uploadDir = path.join(__dirname, 'uploads');
-await fs.mkdir(uploadDir, { recursive: true });
+
+// Initialize upload directory
+async function initializeUploadDir() {
+    try {
+        await fs.mkdir(uploadDir, { recursive: true });
+        console.log('Upload directory initialized');
+    } catch (error) {
+        console.error('Failed to create upload directory:', error);
+    }
+}
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
+    destination: async (req, file, cb) => {
+        // Ensure directory exists before storing files
+        await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
@@ -1351,8 +1362,16 @@ app.get('/api/insights', async (req, res) => {
 // ============================================================================
 
 const PORT = process.env.PORT || 7071;
-app.listen(PORT, () => {
-    console.log(`Chat API running on http://localhost:${PORT}`);
-    console.log(`Deployment: ${deploymentName}`);
-    console.log(`DAB MCP URL: ${DAB_MCP_URL}`);
-});
+
+// Initialize and start server
+async function startServer() {
+    await initializeUploadDir();
+    
+    app.listen(PORT, () => {
+        console.log(`Chat API running on http://localhost:${PORT}`);
+        console.log(`Deployment: ${deploymentName}`);
+        console.log(`DAB MCP URL: ${DAB_MCP_URL}`);
+    });
+}
+
+startServer();

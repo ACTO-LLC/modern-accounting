@@ -8,7 +8,7 @@ const sanitizeConfig = {
   ALLOWED_TAGS: ['a', 'b', 'i', 'em', 'strong', 'br', 'p', 'span', 'ul', 'li', 'ol'],
   ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
   ALLOW_DATA_ATTR: false,
-} as const;
+};
 
 function sanitizeAndFormatContent(content: string): string {
   // Convert markdown bold to HTML
@@ -20,8 +20,9 @@ function sanitizeAndFormatContent(content: string): string {
   );
   // Convert newlines to breaks
   htmlContent = htmlContent.replace(/\n/g, '<br />');
-  // Sanitize the result
-  return String(DOMPurify.sanitize(htmlContent, sanitizeConfig as any));
+  // Sanitize the result - DOMPurify.sanitize returns a string in most contexts
+  const sanitized = DOMPurify.sanitize(htmlContent, sanitizeConfig);
+  return typeof sanitized === 'string' ? sanitized : String(sanitized);
 }
 
 // Quick action chips component
