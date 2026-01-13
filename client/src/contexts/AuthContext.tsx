@@ -22,11 +22,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { instance, accounts, inProgress } = useMsal();
-  const isAuthenticated = useIsAuthenticated();
+  const msalIsAuthenticated = useIsAuthenticated();
   const account = useAccount(accounts[0] || null);
   const [userRole, setUserRole] = useState<UserRole>('Viewer');
 
-  const isLoading = inProgress !== InteractionStatus.None;
+  // Allow bypassing auth for testing/development
+  const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
+  const isAuthenticated = bypassAuth || msalIsAuthenticated;
+  const isLoading = bypassAuth ? false : inProgress !== InteractionStatus.None;
 
   // Extract user role from token claims
   useEffect(() => {

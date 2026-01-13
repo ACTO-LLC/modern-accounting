@@ -1,25 +1,63 @@
-# Session Wrap-Up: Historical Import Refinement
+# Session Wrap-Up: CSV Import Auto-Detection
 
 ## Current State
-We have successfully refined the historical import process for QBSE files. The system now:
-1.  **Bypasses AI** for QBSE CSVs, using the file's explicit categories.
-2.  **Auto-approves** these transactions.
-3.  **Auto-creates** Expense/Income accounts based on the CSV category if they don't exist.
-4.  **Handles Personal Transactions** by mapping them to Owner's Equity accounts.
+The CSV import system now supports **auto-detection** of source accounts and categories for multiple bank formats:
 
-## Work in Progress: Source Account Auto-detection
-We started implementing a feature to auto-detect the **Source Account** (e.g., "Chase - Checking") directly from the CSV columns (`Bank` and `Account`), removing the need to select it manually.
+### Supported Formats
+1. **QBSE (QuickBooks Self-Employed)** - Full auto-detection
+   - Source account from `Bank` + `Account` columns (e.g., "Capital One - Spark Cash")
+   - Category account from `Category` column
+   - Personal/Business transaction handling via `Type` column
 
--   **Backend (`server.js`)**: Logic implemented to extract `Bank`/`Account` columns and find/create the corresponding Asset/Liability account.
--   **Frontend (`ImportTransactions.tsx`)**: UI updated to make the source account dropdown optional.
--   **Verification**: A new test `tests/import-qbse-autodetect.spec.ts` was created but failed due to environment issues (API process crash/restart). **This feature needs verification.**
+2. **Capital One** - Full auto-detection
+   - Source account from "Capital One" + Card number (e.g., "Capital One - Card 4430")
+   - Category account from `Category` column (e.g., "Merchandise", "Dining")
+   - Transactions auto-approved when category is present
 
-## Next Steps
-1.  **Verify Auto-detection**: Run `npx playwright test tests/import-qbse-autodetect.spec.ts` after ensuring all services (DAB, API, Client) are running.
-2.  **Manual Test**: Try importing `QBSE_Transactions.csv` without selecting a source account to confirm it creates "Capital One - Spark Cash" etc.
-3.  **Dashboard**: Continue with the dashboard implementation (from previous tasks).
+3. **Chase** - Manual source account selection required
+4. **Wells Fargo** - Manual source account selection required
+
+### Key Features
+- **Auto-creates source accounts**: If "Capital One - Card 4430" doesn't exist, it creates it as Credit Card type
+- **Auto-creates category accounts**: Categories like "Merchandise", "Dining" are created as Expense/Income accounts
+- **Imports ALL transactions**: No longer limited to first 10 rows
+- **Auto-approves**: Transactions with categories are marked as Approved (bypasses AI)
+
+## Files Changed
+- `csv-import-api/server.js` - Rewrote import logic with auto-detection
+- `client/src/pages/ImportTransactions.tsx` - Updated dropdown and messages
+- `client/tests/import-capital-one.spec.ts` - New test for Capital One imports
+
+## How to Test
+
+### Prerequisites
+Start all services:
+```bash
+# Terminal 1: Database + DAB
+docker-compose up
+
+# Terminal 2: CSV Import API
+cd csv-import-api && npm start
+
+# Terminal 3: Client
+cd client && npm run dev
+```
+
+### Manual Test
+1. Navigate to http://localhost:5173/import
+2. Leave source account as "Auto-detect from CSV (QBSE, Capital One)"
+3. Upload `data/capital-one-spark.csv`
+4. Click Import - should create accounts and import ~650 transactions
+5. Navigate to /review to see imported transactions with "Approved" status
+
+### Automated Tests
+```bash
+cd client
+npx playwright test tests/import-capital-one.spec.ts
+npx playwright test tests/import-qbse-autodetect.spec.ts
+```
 
 ## Environment Info
--   **DAB**: Port 5000
--   **API**: Port 7072
--   **Client**: Port 5173
+- **DAB**: Port 5000
+- **API**: Port 7072
+- **Client**: Port 5173

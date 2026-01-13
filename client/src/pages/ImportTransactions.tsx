@@ -79,7 +79,10 @@ export default function ImportTransactions() {
 
       const result = await response.json();
       setImportedTransactions(result.transactions);
-      alert(`Successfully imported ${result.count} transactions!\nFormat: ${result.format}\nTraining data: ${result.trainingDataCount} transactions`);
+      const accountsMsg = result.sourceAccountsCreated || result.categoryAccountsCreated
+        ? `\nAccounts created: ${result.sourceAccountsCreated || 0} source, ${result.categoryAccountsCreated || 0} category`
+        : '';
+      alert(`Successfully imported ${result.count} transactions!\nFormat: ${result.format}${accountsMsg}`);
       navigate('/review');
     } catch (error) {
       console.error('Import error:', error);
@@ -149,7 +152,7 @@ export default function ImportTransactions() {
                 onChange={(e) => setSourceAccountId(e.target.value)}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Auto-detect from CSV (QBSE only)</option>
+                <option value="">Auto-detect from CSV (QBSE, Capital One)</option>
                 {accounts
                   .filter(acc => sourceType === 'Bank' ? acc.Type !== 'Credit Card' : acc.Type === 'Credit Card')
                   .map(acc => (

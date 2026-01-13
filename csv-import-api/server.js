@@ -4,6 +4,7 @@ const multer = require('multer');
 const { parse } = require('csv-parse');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { OpenAIClient, AzureKeyCredential } = require('@azure/openai');
 const axios = require('axios');
 const sql = require('mssql');
@@ -15,12 +16,19 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-const client = new OpenAIClient(
-    process.env.AZURE_OPENAI_ENDPOINT,
-    new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY)
-);
-
+// Azure OpenAI client - optional, only initialized if env vars are set
+let client = null;
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
+
+if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_API_KEY) {
+    client = new OpenAIClient(
+        process.env.AZURE_OPENAI_ENDPOINT,
+        new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY)
+    );
+    console.log('Azure OpenAI client initialized');
+} else {
+    console.log('Azure OpenAI not configured - AI categorization disabled, auto-detection still works');
+}
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
 
 // Load QuickBooks training data
@@ -108,6 +116,9 @@ function parseTransaction(row, format) {
                 description: row[3],
                 originalCategory: row[4],
                 amount: credit > 0 ? credit : -debit,
+                // For Capital One, we extract bank/account for auto-detection
+                bank: 'Capital One',
+                account: `Card ${row[2]}`,
                 rawLine: row.join(',')
             };
         case 'qbse':
@@ -115,6 +126,8 @@ function parseTransaction(row, format) {
             // Type is 'Business' or 'Personal'
             return {
                 transactionDate: row[0],
+                bank: row[1],
+                account: row[2],
                 amount: parseFloat(row[4]),
                 description: row[3],
                 isPersonal: row[5] === 'Personal',
@@ -127,8 +140,101 @@ function parseTransaction(row, format) {
     }
 }
 
+// Find or create source account based on bank/account info
+async function findOrCreateSourceAccount(bank, account, accounts, sqlTransaction) {
+    const accountName = `${bank} - ${account}`;
+
+    // First, check if account already exists
+    let existingAccount = accounts.find(a => a.Name === accountName);
+    if (existingAccount) {
+        return existingAccount;
+    }
+
+    // Create new account - Credit Card if "Card" in name, otherwise Bank
+    const accountType = account.toLowerCase().includes('card') ||
+                        bank.toLowerCase().includes('credit') ? 'Credit Card' : 'Bank';
+
+    // Generate a unique code for the account
+    const accountCode = `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
+
+    const newAccountId = crypto.randomUUID();
+    const request = new sql.Request(sqlTransaction);
+    request.input('Id', sql.UniqueIdentifier, newAccountId);
+    request.input('Code', sql.NVarChar, accountCode);
+    request.input('Name', sql.NVarChar, accountName);
+    request.input('Type', sql.NVarChar, accountType);
+    request.input('AccountNumber', sql.NVarChar, null);
+    request.input('Description', sql.NVarChar, `Auto-created from CSV import`);
+    request.input('IsActive', sql.Bit, 1);
+
+    await request.query(`
+        INSERT INTO Accounts (Id, Code, Name, Type, AccountNumber, Description, IsActive)
+        VALUES (@Id, @Code, @Name, @Type, @AccountNumber, @Description, @IsActive)
+    `);
+
+    console.log(`Created new account: ${accountName} (${accountType}) [${accountCode}]`);
+
+    return {
+        Id: newAccountId,
+        Name: accountName,
+        Type: accountType
+    };
+}
+
+// Find or create category account based on category name
+async function findOrCreateCategoryAccount(categoryName, isExpense, accounts, sqlTransaction) {
+    if (!categoryName || categoryName === 'Unreviewed') {
+        return null;
+    }
+
+    // Check if account already exists
+    let existingAccount = accounts.find(a => a.Name === categoryName);
+    if (existingAccount) {
+        return existingAccount;
+    }
+
+    // Create new account - Expense or Income based on transaction type
+    const accountType = isExpense ? 'Expense' : 'Income';
+
+    // Generate a unique code for the account
+    const accountCode = `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
+
+    const newAccountId = crypto.randomUUID();
+    const request = new sql.Request(sqlTransaction);
+    request.input('Id', sql.UniqueIdentifier, newAccountId);
+    request.input('Code', sql.NVarChar, accountCode);
+    request.input('Name', sql.NVarChar, categoryName);
+    request.input('Type', sql.NVarChar, accountType);
+    request.input('AccountNumber', sql.NVarChar, null);
+    request.input('Description', sql.NVarChar, `Auto-created from CSV category`);
+    request.input('IsActive', sql.Bit, 1);
+
+    await request.query(`
+        INSERT INTO Accounts (Id, Code, Name, Type, AccountNumber, Description, IsActive)
+        VALUES (@Id, @Code, @Name, @Type, @AccountNumber, @Description, @IsActive)
+    `);
+
+    console.log(`Created new category account: ${categoryName} (${accountType}) [${accountCode}]`);
+
+    return {
+        Id: newAccountId,
+        Name: categoryName,
+        Type: accountType
+    };
+}
+
 // AI Categorization with Training Data
 async function categorizeTransaction(transaction, accounts, sourceAccount) {
+    // If Azure OpenAI is not configured, return default response
+    if (!client) {
+        return {
+            accountName: null,
+            category: 'Uncategorized',
+            memo: transaction.description.substring(0, 100),
+            confidence: 0
+        };
+    }
+
     try {
         const similarTransactions = trainingData
             .filter(h => {
@@ -206,10 +312,11 @@ app.post('/api/import-csv', upload.single('file'), async (req, res) => {
         }
 
         const accountsResponse = await axios.get(`${DAB_API_URL}/accounts`);
-        const accounts = accountsResponse.data.value || [];
+        let accounts = accountsResponse.data.value || [];
 
-        const sourceAccount = sourceAccountId ? accounts.find(a => a.Id === sourceAccountId) : null;
-        if (sourceAccountId && !sourceAccount) {
+        // If sourceAccountId provided, validate it exists
+        const manualSourceAccount = sourceAccountId ? accounts.find(a => a.Id === sourceAccountId) : null;
+        if (sourceAccountId && !manualSourceAccount) {
             return res.status(400).json({ error: 'Source account not found' });
         }
 
@@ -234,131 +341,211 @@ app.post('/api/import-csv', upload.single('file'), async (req, res) => {
 
         const startRow = hasHeader ? 1 : 0;
 
+        // Get all records to process (all rows, not just first 10)
         const transactionsToProcess = [];
-        for (let i = startRow; i < Math.min(records.length, startRow + 10); i++) {
+        for (let i = startRow; i < records.length; i++) {
             if (records[i].length === 0 || !records[i][0]) continue;
             transactionsToProcess.push(records[i]);
         }
 
         await sql.connect(process.env.DB_CONNECTION_STRING);
+        const dbTransaction = new sql.Transaction();
+        await dbTransaction.begin();
 
-        const transactions = await Promise.all(transactionsToProcess.map(async (record) => {
-            const parsed = parseTransaction(record, format);
+        try {
+            // Cache for source accounts to avoid repeated lookups
+            const sourceAccountCache = {};
+            // Cache for category accounts
+            const categoryAccountCache = {};
 
-            OriginalCategory: parsed.originalCategory || null,
-                TransactionType: parsed.transactionType || null,
+            const transactions = [];
+
+            for (const record of transactionsToProcess) {
+                const parsed = parseTransaction(record, format);
+
+                // Determine source account
+                let effectiveSourceAccount;
+                let effectiveSourceType;
+                let effectiveSourceName;
+
+                if (manualSourceAccount) {
+                    // User manually selected a source account
+                    effectiveSourceAccount = manualSourceAccount;
+                    effectiveSourceType = sourceType;
+                    effectiveSourceName = sourceName;
+                } else if (parsed.bank && parsed.account) {
+                    // Auto-detect from CSV (QBSE or Capital One with bank/account fields)
+                    const cacheKey = `${parsed.bank}|${parsed.account}`;
+                    if (!sourceAccountCache[cacheKey]) {
+                        sourceAccountCache[cacheKey] = await findOrCreateSourceAccount(
+                            parsed.bank,
+                            parsed.account,
+                            accounts,
+                            dbTransaction
+                        );
+                        // Add to accounts array so subsequent lookups find it
+                        accounts.push(sourceAccountCache[cacheKey]);
+                    }
+                    effectiveSourceAccount = sourceAccountCache[cacheKey];
+                    effectiveSourceType = effectiveSourceAccount.Type === 'Credit Card' ? 'CreditCard' : 'Bank';
+                    effectiveSourceName = effectiveSourceAccount.Name;
+                } else {
+                    // No source account - error
+                    throw new Error('Source account required but not provided and cannot be auto-detected');
+                }
+
+                // For QBSE format with category, auto-create/lookup category account and auto-approve
+                const isQbseWithCategory = format === 'qbse' && parsed.category && parsed.category !== 'Unreviewed';
+                const isCapitalOneWithCategory = format === 'capital-one' && parsed.originalCategory;
+
+                let categoryAccount = null;
+                let status = 'Pending';
+                let approvedAccountId = null;
+                let approvedCategory = null;
+                let approvedMemo = null;
+
+                if (isQbseWithCategory) {
+                    // QBSE with category - bypass AI, auto-approve
+                    const isExpense = parsed.amount < 0;
+                    if (!categoryAccountCache[parsed.category]) {
+                        categoryAccountCache[parsed.category] = await findOrCreateCategoryAccount(
+                            parsed.category,
+                            isExpense,
+                            accounts,
+                            dbTransaction
+                        );
+                        if (categoryAccountCache[parsed.category]) {
+                            accounts.push(categoryAccountCache[parsed.category]);
+                        }
+                    }
+                    categoryAccount = categoryAccountCache[parsed.category];
+                    if (categoryAccount) {
+                        status = 'Approved';
+                        approvedAccountId = categoryAccount.Id;
+                        approvedCategory = parsed.category;
+                        approvedMemo = parsed.notes || parsed.description;
+                    }
+                } else if (isCapitalOneWithCategory) {
+                    // Capital One with category - try to match existing or create
+                    const isExpense = parsed.amount < 0;
+                    if (!categoryAccountCache[parsed.originalCategory]) {
+                        categoryAccountCache[parsed.originalCategory] = await findOrCreateCategoryAccount(
+                            parsed.originalCategory,
+                            isExpense,
+                            accounts,
+                            dbTransaction
+                        );
+                        if (categoryAccountCache[parsed.originalCategory]) {
+                            accounts.push(categoryAccountCache[parsed.originalCategory]);
+                        }
+                    }
+                    categoryAccount = categoryAccountCache[parsed.originalCategory];
+                    if (categoryAccount) {
+                        status = 'Approved';
+                        approvedAccountId = categoryAccount.Id;
+                        approvedCategory = parsed.originalCategory;
+                        approvedMemo = parsed.description;
+                    }
+                }
+
+                // Build transaction object
+                const txn = {
+                    SourceType: effectiveSourceType,
+                    SourceName: effectiveSourceName,
+                    SourceAccountId: effectiveSourceAccount.Id,
+                    TransactionDate: parsed.transactionDate,
+                    PostDate: parsed.postDate || null,
+                    Amount: parsed.amount,
+                    Description: parsed.description,
+                    Merchant: parsed.description.substring(0, 200),
+                    OriginalCategory: parsed.originalCategory || parsed.category || null,
+                    TransactionType: parsed.transactionType || null,
                     CardNumber: parsed.cardNumber || null,
-                        RawCSVLine: parsed.rawLine,
-                            SuggestedAccountId: accountId,
-                                SuggestedCategory: category,
-                                    SuggestedMemo: parsed.notes || parsed.description,
-                                        ConfidenceScore: 100, // Manual/Imported
-                                            Status: 'Approved',
-                                                IsPersonal: isPersonal ? 1 : 0,
-                                                    ApprovedAccountId: accountId,
-                                                        ApprovedCategory: category,
-                                                            ApprovedMemo: parsed.notes || parsed.description
-        };
-    }
+                    RawCSVLine: parsed.rawLine,
+                    SuggestedAccountId: categoryAccount?.Id || null,
+                    SuggestedCategory: parsed.originalCategory || parsed.category || null,
+                    SuggestedMemo: parsed.notes || parsed.description,
+                    ConfidenceScore: categoryAccount ? 100 : 0,
+                    Status: status,
+                    IsPersonal: parsed.isPersonal ? 1 : 0,
+                    ApprovedAccountId: approvedAccountId,
+                    ApprovedCategory: approvedCategory,
+                    ApprovedMemo: approvedMemo
+                };
 
-            const categorization = await categorizeTransaction(
-        parsed,
-        accounts,
-        { type: sourceType, name: sourceName }
-    );
+                // Insert into database
+                const request = new sql.Request(dbTransaction);
+                request.input('Id', sql.UniqueIdentifier, crypto.randomUUID());
+                request.input('SourceType', sql.NVarChar, txn.SourceType);
+                request.input('SourceName', sql.NVarChar, txn.SourceName);
+                request.input('SourceAccountId', sql.UniqueIdentifier, txn.SourceAccountId);
+                request.input('TransactionDate', sql.DateTime2, txn.TransactionDate);
+                request.input('PostDate', sql.DateTime2, txn.PostDate);
+                request.input('Amount', sql.Decimal(19, 4), txn.Amount);
+                request.input('Description', sql.NVarChar, txn.Description);
+                request.input('Merchant', sql.NVarChar, txn.Merchant);
+                request.input('OriginalCategory', sql.NVarChar, txn.OriginalCategory);
+                request.input('TransactionType', sql.NVarChar, txn.TransactionType);
+                request.input('CardNumber', sql.NVarChar, txn.CardNumber);
+                request.input('RawCSVLine', sql.NVarChar, txn.RawCSVLine);
+                request.input('SuggestedAccountId', sql.UniqueIdentifier, txn.SuggestedAccountId);
+                request.input('SuggestedCategory', sql.NVarChar, txn.SuggestedCategory);
+                request.input('SuggestedMemo', sql.NVarChar, txn.SuggestedMemo);
+                request.input('ConfidenceScore', sql.Decimal(5, 2), txn.ConfidenceScore);
+                request.input('Status', sql.NVarChar, txn.Status);
+                request.input('CreatedDate', sql.DateTime2, new Date());
+                request.input('IsPersonal', sql.Bit, txn.IsPersonal);
+                request.input('ApprovedAccountId', sql.UniqueIdentifier, txn.ApprovedAccountId);
+                request.input('ApprovedCategory', sql.NVarChar, txn.ApprovedCategory);
+                request.input('ApprovedMemo', sql.NVarChar, txn.ApprovedMemo);
 
-    const suggestedAccount = accounts.find(a => a.Name === categorization.accountName);
-
-    return {
-        SourceType: sourceType,
-        SourceName: sourceName,
-        SourceAccountId: sourceAccountId,
-        TransactionDate: parsed.transactionDate,
-        PostDate: parsed.postDate || null,
-        Amount: parsed.amount,
-        Description: parsed.description,
-        Merchant: parsed.description.substring(0, 200),
-        OriginalCategory: parsed.originalCategory || null,
-        TransactionType: parsed.transactionType || null,
-        CardNumber: parsed.cardNumber || null,
-        RawCSVLine: parsed.rawLine,
-        SuggestedAccountId: suggestedAccount?.Id || null,
-        SuggestedCategory: categorization.category,
-        SuggestedMemo: categorization.memo,
-        ConfidenceScore: categorization.confidence,
-        Status: 'Pending',
-        IsPersonal: parsed.isPersonal ? 1 : 0,
-        ApprovedCategory: null,
-        ApprovedMemo: null
-    };
-}));
-
-const transaction = new sql.Transaction();
-await transaction.begin();
-
-try {
-    for (const txn of transactions) {
-        const request = new sql.Request(transaction);
-        request.input('Id', sql.UniqueIdentifier, crypto.randomUUID());
-        request.input('SourceType', sql.NVarChar, txn.SourceType);
-        request.input('BankName', sql.NVarChar, txn.SourceName);
-        request.input('SourceAccountId', sql.UniqueIdentifier, txn.SourceAccountId);
-        request.input('TransactionDate', sql.DateTime2, txn.TransactionDate);
-        request.input('PostDate', sql.DateTime2, txn.PostDate);
-        request.input('Amount', sql.Decimal(19, 4), txn.Amount);
-        request.input('Description', sql.NVarChar, txn.Description);
-        request.input('Merchant', sql.NVarChar, txn.Merchant);
-        request.input('OriginalCategory', sql.NVarChar, txn.OriginalCategory);
-        request.input('TransactionType', sql.NVarChar, txn.TransactionType);
-        request.input('CardNumber', sql.NVarChar, txn.CardNumber);
-        request.input('RawCSVLine', sql.NVarChar, txn.RawCSVLine);
-        request.input('SuggestedAccountId', sql.UniqueIdentifier, txn.SuggestedAccountId);
-        request.input('SuggestedCategory', sql.NVarChar, txn.SuggestedCategory);
-        request.input('SuggestedMemo', sql.NVarChar, txn.SuggestedMemo);
-        request.input('ConfidenceScore', sql.Decimal(5, 2), txn.ConfidenceScore);
-        request.input('Status', sql.NVarChar, txn.Status);
-        request.input('CreatedDate', sql.DateTime2, new Date());
-        request.input('IsPersonal', sql.Bit, txn.IsPersonal);
-        request.input('ApprovedCategory', sql.NVarChar, txn.ApprovedCategory);
-        request.input('ApprovedMemo', sql.NVarChar, txn.ApprovedMemo);
-
-        await request.query(`
+                await request.query(`
                     INSERT INTO BankTransactions (
-                        Id, SourceType, BankName, SourceAccountId, TransactionDate, PostDate, 
-                        Amount, Description, Merchant, OriginalCategory, TransactionType, CardNumber, 
-                        RawCSVLine, SuggestedAccountId, SuggestedCategory, SuggestedMemo, ConfidenceScore, 
-                        Status, CreatedDate, IsPersonal, ApprovedCategory, ApprovedMemo
+                        Id, SourceType, SourceName, SourceAccountId, TransactionDate, PostDate,
+                        Amount, Description, Merchant, OriginalCategory, TransactionType, CardNumber,
+                        RawCSVLine, SuggestedAccountId, SuggestedCategory, SuggestedMemo, ConfidenceScore,
+                        Status, CreatedDate, IsPersonal, ApprovedAccountId, ApprovedCategory, ApprovedMemo
                     ) VALUES (
-                        @Id, @SourceType, @BankName, @SourceAccountId, @TransactionDate, @PostDate, 
-                        @Amount, @Description, @Merchant, @OriginalCategory, @TransactionType, @CardNumber, 
-                        @RawCSVLine, @SuggestedAccountId, @SuggestedCategory, @SuggestedMemo, @ConfidenceScore, 
-                        @Status, @CreatedDate, @IsPersonal, @ApprovedCategory, @ApprovedMemo
+                        @Id, @SourceType, @SourceName, @SourceAccountId, @TransactionDate, @PostDate,
+                        @Amount, @Description, @Merchant, @OriginalCategory, @TransactionType, @CardNumber,
+                        @RawCSVLine, @SuggestedAccountId, @SuggestedCategory, @SuggestedMemo, @ConfidenceScore,
+                        @Status, @CreatedDate, @IsPersonal, @ApprovedAccountId, @ApprovedCategory, @ApprovedMemo
                     )
                 `);
-    }
-    await transaction.commit();
-} catch (err) {
-    await transaction.rollback();
-    throw err;
-} finally {
-    await sql.close();
-}
 
-res.json({
-    success: true,
-    count: transactions.length,
-    format,
-    trainingDataCount: trainingData.length,
-    transactions
-});
+                transactions.push(txn);
+            }
+
+            await dbTransaction.commit();
+
+            // Count auto-created accounts
+            const sourceAccountsCreated = Object.keys(sourceAccountCache).length;
+            const categoryAccountsCreated = Object.keys(categoryAccountCache).length;
+
+            res.json({
+                success: true,
+                count: transactions.length,
+                format,
+                trainingDataCount: trainingData.length,
+                sourceAccountsCreated,
+                categoryAccountsCreated,
+                transactions
+            });
+
+        } catch (err) {
+            await dbTransaction.rollback();
+            throw err;
+        } finally {
+            await sql.close();
+        }
 
     } catch (error) {
-    console.error('Import error:', error);
-    res.status(500).json({
-        error: 'Import failed',
-        details: error.message
-    });
-}
+        console.error('Import error:', error);
+        res.status(500).json({
+            error: 'Import failed',
+            details: error.message
+        });
+    }
 });
 
 // Post transactions to journal
