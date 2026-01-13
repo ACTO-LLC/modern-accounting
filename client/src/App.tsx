@@ -54,6 +54,9 @@ import Bills from './pages/Bills';
 import NewBill from './pages/NewBill';
 import EditBill from './pages/EditBill';
 import RecurringTransactions from './pages/RecurringTransactions';
+import Submissions from './pages/Submissions';
+import NewSubmission from './pages/NewSubmission';
+import EditSubmission from './pages/EditSubmission';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -117,6 +120,9 @@ function AppContent() {
             <Route path="reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="reports/trial-balance" element={<TrialBalance />} />
             <Route path="reports/ar-aging" element={<ARAgingSummary />} />
+            <Route path="submissions" element={<Submissions />} />
+            <Route path="submissions/new" element={<NewSubmission />} />
+            <Route path="submissions/:id/edit" element={<EditSubmission />} />
             <Route path="settings" element={<CompanySettings />} />
           </Route>
         </Route>
