@@ -8,6 +8,7 @@ import { msalConfig } from './lib/authConfig';
 import { initializeApiAuth } from './lib/api';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -132,9 +133,11 @@ function App() {
       <AuthProvider>
         <CompanySettingsProvider>
           <QueryClientProvider client={queryClient}>
-            <ToastProvider>
+            <ThemeProvider>
+              <ToastProvider>
               <AppContent />
             </ToastProvider>
+            </ThemeProvider>
           </QueryClientProvider>
         </CompanySettingsProvider>
       </AuthProvider>

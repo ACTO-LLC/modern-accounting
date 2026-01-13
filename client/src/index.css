@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Light mode (default) */
+:root {
+  --datagrid-header-bg: #f9fafb;
+  --datagrid-border: #e5e7eb;
+  --datagrid-text: #111827;
+  --datagrid-text-secondary: #6b7280;
+}
+
+/* Dark mode */
+.dark {
+  --datagrid-header-bg: #1f2937;
+  --datagrid-border: #374151;
+  --datagrid-text: #f9fafb;
+  --datagrid-text-secondary: #9ca3af;
+}
+
+/* MUI DataGrid dark mode overrides */
+.dark .MuiDataGrid-root {
+  color: var(--datagrid-text);
+}
+
+.dark .MuiDataGrid-cell {
+  border-color: var(--datagrid-border);
+}
+
+.dark .MuiDataGrid-columnHeaders {
+  background-color: var(--datagrid-header-bg);
+  border-color: var(--datagrid-border);
+}
+
+.dark .MuiDataGrid-footerContainer {
+  border-color: var(--datagrid-border);
+}
+
+.dark .MuiTablePagination-root {
+  color: var(--datagrid-text);
+}
+
+.dark .MuiIconButton-root {
+  color: var(--datagrid-text-secondary);
+}
+
+.dark .MuiDataGrid-row:hover {
+  background-color: rgba(79, 70, 229, 0.1) !important;
+}

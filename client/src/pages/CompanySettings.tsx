@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react';
-import { Building2, Upload, Save, X } from 'lucide-react';
+import { Building2, Upload, Save, X, Sun, Moon, Monitor } from 'lucide-react';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { useTheme, ThemePreference } from '../contexts/ThemeContext';
 
 export default function CompanySettings() {
   const { settings, updateSettings } = useCompanySettings();
+  const { theme, setTheme } = useTheme();
   const [formData, setFormData] = useState(settings);
   const [logoPreview, setLogoPreview] = useState(settings.logoUrl);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,6 +49,11 @@ export default function CompanySettings() {
     }
   };
 
+  const themeOptions: { value: ThemePreference; label: string; icon: React.ReactNode }[] = [
+    { value: 'light', label: 'Light', icon: <Sun className="h-4 w-4" /> },
+    { value: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" /> },
+    { value: 'system', label: 'System', icon: <Monitor className="h-4 w-4" /> },
+  ];
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -67,17 +74,41 @@ export default function CompanySettings() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Company Settings</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Company Settings</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Configure your company information for invoices and the app header.
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Theme Section */}
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Appearance</h2>
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">Theme</label>
+            <div className="flex flex-wrap gap-3">
+              {themeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTheme(option.value)}
+                  className={}
+                >
+                  {option.icon}
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Choose how the application appears. System will follow your device settings.
+            </p>
+          </div>
+        </div>
+
         {/* Logo Section */}
-        <div className="bg-white shadow-lg rounded-lg p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Company Logo</h2>
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Company Logo</h2>
 
           <div className="flex items-start gap-6">
             {/* Logo Preview */}
@@ -129,8 +160,8 @@ export default function CompanySettings() {
         </div>
 
         {/* Company Information */}
-        <div className="bg-white shadow-lg rounded-lg p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Company Information</h2>
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Company Information</h2>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="sm:col-span-2">
