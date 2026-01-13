@@ -20,7 +20,8 @@ Users can now upload files to the chat interface through multiple methods:
 
 #### File Processing
 - Files are automatically processed on upload
-- Images are processed with OCR (Tesseract.js) to extract text
+- Images are processed with OCR (Scribe.js) to extract text
+- PDFs are processed with Scribe.js (supports both native text and scanned PDFs)
 - Extracted text is sent to the AI along with the user's message
 - File size limit: 10MB per file
 - Maximum files per message: 5
@@ -89,10 +90,17 @@ The AI system prompt has been updated to include:
 #### New Dependencies
 ```json
 {
-  "multer": "^1.4.5-lts.1",
-  "tesseract.js": "^5.0.4"
+  "multer": "^2.0.2",
+  "scribe.js-ocr": "^0.4.0"
 }
 ```
+
+**Why Scribe.js over Tesseract.js?**
+- **Native PDF Support**: Scribe.js can extract text directly from PDFs (both native text and scanned), which is critical for bank statements and invoices
+- **Higher Accuracy**: Generally 1-17% more accurate than Tesseract.js on complex documents (multi-column, rotated, stylized)
+- **Better Layout Analysis**: Handles multi-column layouts, rotated documents, and various font styles better
+- **Font Detection**: Can detect font families and styles, useful for document analysis
+- **Trade-off**: Slightly larger library size and slower processing, but worth it for financial documents where accuracy matters
 
 #### New Endpoints
 - `POST /api/chat/upload`: Upload and process files
@@ -103,7 +111,8 @@ The AI system prompt has been updated to include:
 
 #### New Functions
 - `initializeUploadDir()`: Creates uploads directory on startup
-- `extractTextFromImage()`: Uses Tesseract.js for OCR
+- `extractTextFromImage()`: Uses Scribe.js for OCR on images
+- `extractTextFromPDF()`: Uses Scribe.js for PDF text extraction (native and scanned)
 - `processUploadedFile()`: Processes uploaded files and extracts text
 - `executeCreateCustomer()`: Creates customer records via MCP
 - `executeCreateVendor()`: Creates vendor records via MCP

@@ -5,7 +5,7 @@ import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 import axios from 'axios';
 import { randomUUID } from 'crypto';
 import multer from 'multer';
-import { createWorker } from 'tesseract.js';
+import Scribe from 'scribe.js-ocr';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -1169,12 +1169,52 @@ function detectUncertainty(content) {
 
 async function extractTextFromImage(filePath) {
     try {
-        const worker = await createWorker('eng');
-        const { data: { text } } = await worker.recognize(filePath);
-        await worker.terminate();
+        // Initialize Scribe with default settings
+        const scribe = new Scribe.createScheduler({
+            errorHandler: (err) => console.error('Scribe OCR error:', err)
+        });
+        
+        // Import the image
+        await scribe.importFiles([filePath]);
+        
+        // Recognize text
+        await scribe.recognize();
+        
+        // Extract text
+        const text = await scribe.exportData('text');
+        
+        // Terminate scheduler
+        await scribe.terminate();
+        
         return text;
     } catch (error) {
         console.error('OCR error:', error);
+        return null;
+    }
+}
+
+async function extractTextFromPDF(filePath) {
+    try {
+        // Initialize Scribe for PDF
+        const scribe = new Scribe.createScheduler({
+            errorHandler: (err) => console.error('Scribe PDF error:', err)
+        });
+        
+        // Import the PDF
+        await scribe.importFiles([filePath]);
+        
+        // Recognize text (handles both native text and scanned PDFs)
+        await scribe.recognize();
+        
+        // Extract text
+        const text = await scribe.exportData('text');
+        
+        // Terminate scheduler
+        await scribe.terminate();
+        
+        return text;
+    } catch (error) {
+        console.error('PDF extraction error:', error);
         return null;
     }
 }
@@ -1195,8 +1235,14 @@ async function processUploadedFile(file) {
         result.extractedText = await extractTextFromImage(file.path);
         result.metadata.ocrProcessed = true;
     }
+    
+    // Extract text from PDFs (native text or scanned)
+    if (file.mimetype === 'application/pdf') {
+        result.extractedText = await extractTextFromPDF(file.path);
+        result.metadata.pdfProcessed = true;
+    }
 
-    // Read file as base64 for vision API
+    // Read file as base64 for vision API (images only)
     if (file.mimetype.startsWith('image/')) {
         const fileBuffer = await fs.readFile(file.path);
         result.base64Data = fileBuffer.toString('base64');
