@@ -65,3 +65,81 @@ const [invoice, lines] = await Promise.all([
 3.  **Excessive Iteration Without Debugging**: Spent too many iterations guessing at fixes (CSS changes, timing delays, different cache strategies) before adding `console.log` statements to trace the actual data flow. Once logging was added, the root cause (cache being overwritten) was immediately visible. **Lesson**: When a component "works sometimes but not others," add logging FIRST to trace state changes through render cycles before attempting fixes.
 
 4.  **Playwright Test Selector Timing**: Initial tests checked for UI state immediately after async operations without accounting for React's batched updates. **Lesson**: When testing React apps with Playwright, use explicit `toBeVisible({ timeout: X })` assertions that wait for elements to appear, rather than fixed `waitForTimeout` delays.
+
+## Retrospective: Database Deployment & DAB Schema Refresh (15 min wasted)
+**What went wrong:**
+1.  **CREATE VIEW fails silently when view exists**: The manual deployment script uses `CREATE VIEW` statements which fail with "object already exists" errors but the script continues. The view definition was NOT updated, so new columns (like `CustomerName`) were missing. **Lesson**: When updating views, always use `ALTER VIEW` or `DROP VIEW IF EXISTS` followed by `CREATE VIEW`. The deploy-database-manual.ps1 script needs modification to handle this.
+
+2.  **DAB caches schema at startup**: After updating database views/tables, DAB does not automatically detect schema changes. The GraphQL endpoint continued returning errors for `CustomerName` field until DAB was restarted. **Lesson**: After ANY database schema change (new columns, altered views), always restart DAB: `docker restart accounting-dab`.
+
+3.  **sqlcmd behaves differently in Git Bash vs PowerShell**: The Go-based sqlcmd (v1.8.2) installed in the PATH fails with "Login failed for user 'sa'" when invoked from Git Bash, but works fine when invoked via PowerShell. **Lesson**: Always use PowerShell for sqlcmd commands in this project:
+    ```powershell
+    powershell -ExecutionPolicy Bypass -Command "sqlcmd -S 'localhost,14330' -U sa -P 'StrongPassword123!' -d AccountingDB -Q 'YOUR QUERY' -C -b"
+    ```
+
+4.  **Debugging DAB 400 errors**: When DAB returns 400 Bad Request, the root cause is often a missing field in the underlying view/table, not a query syntax issue. **Lesson**: When GraphQL returns field-not-found errors:
+    - First, check the view/table schema: `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'v_YourView'`
+    - If column is missing, ALTER the view
+    - Then restart DAB
+
+**Quick fix command for refreshing a view:**
+```powershell
+powershell -ExecutionPolicy Bypass -Command "sqlcmd -S 'localhost,14330' -U sa -P 'StrongPassword123!' -d AccountingDB -Q 'ALTER VIEW [dbo].[v_YourView] AS SELECT ... ' -C -b"
+docker restart accounting-dab
+```
+
+## Azure OpenAI Setup
+
+### Provider Registration Required
+**Issue**: Creating an Azure OpenAI resource failed with `MissingSubscriptionRegistration` error.
+**Solution**: Register the Cognitive Services provider first:
+```bash
+az provider register --namespace Microsoft.CognitiveServices --subscription "YOUR-SUBSCRIPTION" --wait
+```
+
+### Region Matters for OpenAI
+**Issue**: Creating Azure OpenAI in `westus2` failed with `SpecialFeatureOrQuotaIdRequired`, but the same command succeeded in `eastus`.
+**Solution**: If one region fails, try `eastus` or `eastus2` - these tend to have broader availability for OpenAI services.
+
+### Azure OpenAI Access is Now Generally Available
+**Update (Jan 2026)**: Azure OpenAI no longer requires a separate access request for basic usage. All Azure customers can create OpenAI resources. The limited access form (https://aka.ms/oai/access) is now only required for:
+- Modified content filters (guardrails)
+- Modified abuse monitoring
+
+### Multi-Tenant Considerations
+**Issue**: When logged into Azure CLI with access to multiple tenants/directories, resources may be created in an unexpected tenant.
+**Solution**: Always verify the tenant before creating resources:
+```bash
+az account show --query "{subscription:name, tenant:tenantDisplayName}" -o table
+```
+
+### Azure OpenAI Resource Setup Commands
+```bash
+# Create the OpenAI resource
+az cognitiveservices account create \
+  --name "acto-dev2-openai" \
+  --resource-group "acto-dev-pss-ai" \
+  --kind "OpenAI" \
+  --sku "S0" \
+  --location "eastus" \
+  --subscription "ACTO DEV 2"
+
+# Deploy a model
+az cognitiveservices account deployment create \
+  --name "acto-dev2-openai" \
+  --resource-group "acto-dev-pss-ai" \
+  --subscription "ACTO DEV 2" \
+  --deployment-name "gpt-4o" \
+  --model-name "gpt-4o" \
+  --model-version "2024-08-06" \
+  --model-format "OpenAI" \
+  --sku-capacity 10 \
+  --sku-name "GlobalStandard"
+
+# Get the API key
+az cognitiveservices account keys list \
+  --name "acto-dev2-openai" \
+  --resource-group "acto-dev-pss-ai" \
+  --subscription "ACTO DEV 2" \
+  --query "key1" -o tsv
+```

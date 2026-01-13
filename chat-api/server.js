@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -16,10 +17,163 @@ const client = new OpenAIClient(
 );
 
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
-const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
+const DAB_MCP_URL = process.env.DAB_MCP_URL || 'http://localhost:5000/mcp';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
-// Enhanced system prompt with accounting knowledge
+// ============================================================================
+// MCP Client for DAB
+// ============================================================================
+
+class DabMcpClient {
+    constructor(mcpUrl) {
+        this.mcpUrl = mcpUrl;
+        this.sessionId = null;
+        this.requestId = 0;
+        this.initialized = false;
+    }
+
+    // Parse SSE response from DAB MCP
+    parseSSEResponse(data) {
+        const lines = data.split('\n');
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                try {
+                    return JSON.parse(line.substring(6));
+                } catch (e) {
+                    console.error('Failed to parse SSE data:', e);
+                }
+            }
+        }
+        return null;
+    }
+
+    async initialize() {
+        if (this.initialized) return true;
+
+        this.requestId++;
+        const payload = {
+            jsonrpc: '2.0',
+            id: this.requestId,
+            method: 'initialize',
+            params: {
+                protocolVersion: '2024-11-05',
+                capabilities: {},
+                clientInfo: { name: 'chat-api', version: '1.0.0' }
+            }
+        };
+
+        try {
+            const response = await axios.post(this.mcpUrl, payload, {
+                headers: { 'Content-Type': 'application/json' },
+                transformResponse: [(data) => data] // Keep as raw string
+            });
+
+            const parsed = this.parseSSEResponse(response.data);
+            if (parsed?.result) {
+                // Get session ID from response headers
+                this.sessionId = response.headers['mcp-session-id'];
+                this.initialized = true;
+                console.log('MCP initialized, session:', this.sessionId);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('MCP initialization failed:', error.message);
+            return false;
+        }
+    }
+
+    async callTool(toolName, args = {}, retryOnSessionError = true) {
+        await this.initialize();
+
+        this.requestId++;
+        const payload = {
+            jsonrpc: '2.0',
+            id: this.requestId,
+            method: 'tools/call',
+            params: {
+                name: toolName,
+                arguments: args
+            }
+        };
+
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.sessionId) {
+                headers['Mcp-Session-Id'] = this.sessionId;
+            }
+
+            const response = await axios.post(this.mcpUrl, payload, {
+                headers,
+                transformResponse: [(data) => data] // Keep as raw string
+            });
+
+            const parsed = this.parseSSEResponse(response.data);
+            if (!parsed) {
+                console.error(`No valid response for ${toolName}`);
+                return { error: 'Invalid response' };
+            }
+
+            if (parsed.error) {
+                // Check for session errors and retry
+                if (parsed.error.code === -32001 && retryOnSessionError) {
+                    console.log('Session expired, reinitializing...');
+                    this.initialized = false;
+                    this.sessionId = null;
+                    return this.callTool(toolName, args, false);
+                }
+                console.error(`MCP error for ${toolName}:`, parsed.error);
+                return { error: parsed.error.message };
+            }
+
+            // Parse the result - DAB returns content array with text
+            const result = parsed.result;
+            if (result?.content?.[0]?.text) {
+                return JSON.parse(result.content[0].text);
+            }
+            return result;
+        } catch (error) {
+            // Also retry on 404 (session not found)
+            if (error.response?.status === 404 && retryOnSessionError) {
+                console.log('Session not found (404), reinitializing...');
+                this.initialized = false;
+                this.sessionId = null;
+                return this.callTool(toolName, args, false);
+            }
+            console.error(`MCP call failed for ${toolName}:`, error.message);
+            return { error: error.message };
+        }
+    }
+
+    // Entity operations
+    async describeEntities(options = {}) {
+        return this.callTool('describe_entities', options);
+    }
+
+    async readRecords(entity, options = {}) {
+        return this.callTool('read_records', { entity, ...options });
+    }
+
+    async createRecord(entity, data) {
+        return this.callTool('create_record', { entity, data });
+    }
+
+    async updateRecord(entity, keys, fields) {
+        return this.callTool('update_record', { entity, keys, fields });
+    }
+
+    async deleteRecord(entity, keys) {
+        return this.callTool('delete_record', { entity, keys });
+    }
+}
+
+// Create MCP client instance
+const mcp = new DabMcpClient(DAB_MCP_URL);
+
+// ============================================================================
+// System Prompt and Tools
+// ============================================================================
+
 const systemPrompt = `You are an expert accounting assistant for a modern accounting application. You help users with:
 
 1. DATA QUERIES: Answer questions about their invoices, customers, vendors, bills, journal entries, bank transactions, and financial reports. Always use the available tools to fetch real data - never make up numbers or records.
@@ -52,13 +206,12 @@ COMMON EXPENSE CATEGORIES:
 - Bank fees -> Bank Service Charges
 - Insurance -> Insurance Expense`;
 
-// Tool definitions
 const tools = [
     {
         type: 'function',
         function: {
             name: 'query_invoices',
-            description: 'Query invoices with optional filters for customer name, status, date range, and amounts. Use this for questions like "show invoices", "what did we bill X", "overdue invoices", etc.',
+            description: 'Query invoices with optional filters for customer name, status, date range, and amounts.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -68,9 +221,7 @@ const tools = [
                     date_to: { type: 'string', description: 'End date (YYYY-MM-DD)' },
                     min_amount: { type: 'number', description: 'Minimum total amount' },
                     max_amount: { type: 'number', description: 'Maximum total amount' },
-                    limit: { type: 'number', description: 'Max results to return (default 10)' },
-                    sort_by: { type: 'string', enum: ['date', 'amount', 'due_date'], description: 'Sort field' },
-                    sort_order: { type: 'string', enum: ['asc', 'desc'], description: 'Sort order' }
+                    limit: { type: 'number', description: 'Max results to return (default 10)' }
                 }
             }
         }
@@ -79,7 +230,7 @@ const tools = [
         type: 'function',
         function: {
             name: 'query_customers',
-            description: 'Query customers with analytics. Use for questions like "who are my top customers", "customers with unpaid invoices", "inactive customers".',
+            description: 'Query customers with analytics. Use for questions like "who are my top customers", "customers with unpaid invoices".',
             parameters: {
                 type: 'object',
                 properties: {
@@ -95,7 +246,7 @@ const tools = [
         type: 'function',
         function: {
             name: 'query_bills',
-            description: 'Query bills/expenses from vendors. Use for questions about expenses, vendor payments, bills due.',
+            description: 'Query bills/expenses from vendors.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -130,7 +281,7 @@ const tools = [
         type: 'function',
         function: {
             name: 'get_overdue_items',
-            description: 'Get overdue invoices and bills, plus items due soon. Use for questions about cash flow, collections, or overdue accounts.',
+            description: 'Get overdue invoices and bills, plus items due soon.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -149,8 +300,7 @@ const tools = [
                 type: 'object',
                 properties: {
                     type: { type: 'string', enum: ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'], description: 'Filter by account type' },
-                    search: { type: 'string', description: 'Search by account name' },
-                    active_only: { type: 'boolean', description: 'Only return active accounts (default true)' }
+                    search: { type: 'string', description: 'Search by account name' }
                 }
             }
         }
@@ -185,10 +335,27 @@ const tools = [
     }
 ];
 
-// Helper functions
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '$0.00';
     return `$${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Use full ISO datetime format for DAB/OData compatibility
+function getTodayDate() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.toISOString();
+}
+
+function getDateInDays(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    date.setHours(0, 0, 0, 0);
+    return date.toISOString();
 }
 
 function getDateRange(period) {
@@ -197,60 +364,39 @@ function getDateRange(period) {
     const month = now.getMonth();
     const quarter = Math.floor(month / 3);
 
+    const toDate = (d) => {
+        d.setHours(0, 0, 0, 0);
+        return d.toISOString();
+    };
+
     switch (period) {
         case 'this_month':
-            return {
-                start: new Date(year, month, 1).toISOString().split('T')[0],
-                end: new Date(year, month + 1, 0).toISOString().split('T')[0]
-            };
+            return { start: toDate(new Date(year, month, 1)), end: toDate(new Date(year, month + 1, 0)) };
         case 'last_month':
-            return {
-                start: new Date(year, month - 1, 1).toISOString().split('T')[0],
-                end: new Date(year, month, 0).toISOString().split('T')[0]
-            };
+            return { start: toDate(new Date(year, month - 1, 1)), end: toDate(new Date(year, month, 0)) };
         case 'this_quarter':
-            return {
-                start: new Date(year, quarter * 3, 1).toISOString().split('T')[0],
-                end: new Date(year, quarter * 3 + 3, 0).toISOString().split('T')[0]
-            };
+            return { start: toDate(new Date(year, quarter * 3, 1)), end: toDate(new Date(year, quarter * 3 + 3, 0)) };
         case 'this_year':
-            return {
-                start: new Date(year, 0, 1).toISOString().split('T')[0],
-                end: new Date(year, 11, 31).toISOString().split('T')[0]
-            };
+            return { start: toDate(new Date(year, 0, 1)), end: toDate(new Date(year, 11, 31)) };
         case 'last_year':
-            return {
-                start: new Date(year - 1, 0, 1).toISOString().split('T')[0],
-                end: new Date(year - 1, 11, 31).toISOString().split('T')[0]
-            };
+            return { start: toDate(new Date(year - 1, 0, 1)), end: toDate(new Date(year - 1, 11, 31)) };
         default:
-            return {
-                start: new Date(year, month, 1).toISOString().split('T')[0],
-                end: now.toISOString().split('T')[0]
-            };
+            return { start: toDate(new Date(year, month, 1)), end: toDate(now) };
     }
 }
 
-function getTodayISO() {
-    return new Date().toISOString().split('T')[0];
-}
+// ============================================================================
+// Tool Execution Functions (using MCP)
+// ============================================================================
 
-function getDateInDays(days) {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
-}
-
-// Tool execution functions
 async function executeQueryInvoices(params) {
     try {
         const filters = [];
-        let orderBy = '$orderby=IssueDate desc';
+        const today = getTodayDate();
 
         if (params.status) {
             if (params.status === 'Overdue') {
-                filters.push(`Status ne 'Paid'`);
-                filters.push(`DueDate lt ${getTodayISO()}`);
+                filters.push(`Status ne 'Paid' and DueDate lt ${today}`);
             } else {
                 filters.push(`Status eq '${params.status}'`);
             }
@@ -259,67 +405,40 @@ async function executeQueryInvoices(params) {
         if (params.date_to) filters.push(`IssueDate le ${params.date_to}`);
         if (params.min_amount) filters.push(`TotalAmount ge ${params.min_amount}`);
         if (params.max_amount) filters.push(`TotalAmount le ${params.max_amount}`);
-
-        if (params.sort_by === 'amount') {
-            orderBy = `$orderby=TotalAmount ${params.sort_order || 'desc'}`;
-        } else if (params.sort_by === 'due_date') {
-            orderBy = `$orderby=DueDate ${params.sort_order || 'asc'}`;
-        }
-
-        let url = `${DAB_API_URL}/invoices`;
-        const queryParams = [];
-        if (filters.length > 0) queryParams.push(`$filter=${filters.join(' and ')}`);
-        queryParams.push(orderBy);
-        queryParams.push(`$top=${params.limit || 10}`);
-        url += '?' + queryParams.join('&');
-
-        const response = await axios.get(url);
-        let invoices = response.data.value || [];
-
-        // If filtering by customer name, we need to fetch customers and filter
         if (params.customer_name) {
-            const custResponse = await axios.get(
-                `${DAB_API_URL}/customers?$filter=contains(tolower(Name), '${params.customer_name.toLowerCase()}')`
-            );
-            const customerIds = (custResponse.data.value || []).map(c => c.Id);
-            if (customerIds.length > 0) {
-                const custFilter = customerIds.map(id => `CustomerId eq ${id}`).join(' or ');
-                const filteredUrl = `${DAB_API_URL}/invoices?$filter=(${custFilter})${filters.length > 0 ? ' and ' + filters.join(' and ') : ''}&${orderBy}&$top=${params.limit || 10}`;
-                const filteredResponse = await axios.get(filteredUrl);
-                invoices = filteredResponse.data.value || [];
-            } else {
-                invoices = [];
-            }
+            filters.push(`contains(CustomerName, '${params.customer_name}')`);
         }
 
-        // Fetch customer names for display
-        const customerIds = [...new Set(invoices.map(inv => inv.CustomerId))];
-        let customerMap = {};
-        if (customerIds.length > 0) {
-            try {
-                const custResponse = await axios.get(`${DAB_API_URL}/customers`);
-                customerMap = (custResponse.data.value || []).reduce((acc, c) => {
-                    acc[c.Id] = c.Name;
-                    return acc;
-                }, {});
-            } catch (e) { /* ignore */ }
+        const mcpOptions = {
+            first: params.limit || 10,
+            orderby: ['IssueDate desc']
+        };
+        if (filters.length > 0) {
+            mcpOptions.filter = filters.join(' and ');
         }
 
-        const today = new Date();
+        const result = await mcp.readRecords('invoices', mcpOptions);
+        if (result.error) {
+            return { success: false, error: result.error };
+        }
+
+        const invoices = result.result?.value || [];
+        const todayDate = new Date();
+
         return {
             success: true,
             count: invoices.length,
             invoices: invoices.map(inv => {
                 const dueDate = new Date(inv.DueDate);
-                const isOverdue = dueDate < today && inv.Status !== 'Paid';
+                const isOverdue = dueDate < todayDate && inv.Status !== 'Paid';
                 return {
                     number: inv.InvoiceNumber,
-                    customer: customerMap[inv.CustomerId] || 'Unknown Customer',
+                    customer: inv.CustomerName || 'Unknown Customer',
                     issueDate: inv.IssueDate,
                     dueDate: inv.DueDate,
                     amount: formatCurrency(inv.TotalAmount),
                     status: isOverdue ? 'Overdue' : inv.Status,
-                    daysOverdue: isOverdue ? Math.floor((today - dueDate) / (1000 * 60 * 60 * 24)) : 0,
+                    daysOverdue: isOverdue ? Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24)) : 0,
                     link: `${APP_URL}/invoices/${inv.Id}/edit`
                 };
             })
@@ -332,23 +451,21 @@ async function executeQueryInvoices(params) {
 
 async function executeQueryCustomers(params) {
     try {
-        let url = `${DAB_API_URL}/customers`;
-        const filters = [];
-
+        const mcpOptions = { first: 100 };
         if (params.name) {
-            filters.push(`contains(tolower(Name), '${params.name.toLowerCase()}')`);
+            mcpOptions.filter = `contains(Name, '${params.name}')`;
         }
 
-        if (filters.length > 0) {
-            url += `?$filter=${filters.join(' and ')}`;
+        const custResult = await mcp.readRecords('customers', mcpOptions);
+        if (custResult.error) {
+            return { success: false, error: custResult.error };
         }
 
-        const response = await axios.get(url);
-        let customers = response.data.value || [];
+        let customers = custResult.result?.value || [];
 
-        // Fetch invoice data for each customer to calculate revenue
-        const invoicesResponse = await axios.get(`${DAB_API_URL}/invoices`);
-        const invoices = invoicesResponse.data.value || [];
+        // Get all invoices to calculate revenue
+        const invResult = await mcp.readRecords('invoices', { first: 1000 });
+        const invoices = invResult.result?.value || [];
 
         // Calculate totals per customer
         const customerStats = {};
@@ -382,7 +499,6 @@ async function executeQueryCustomers(params) {
             customers = customers.slice(0, params.top_by_revenue);
         }
 
-        // Apply general limit
         customers = customers.slice(0, params.limit || 10);
 
         return {
@@ -407,53 +523,43 @@ async function executeQueryCustomers(params) {
 async function executeQueryBills(params) {
     try {
         const filters = [];
+        const today = getTodayDate();
 
         if (params.status) {
             if (params.status === 'Overdue') {
-                filters.push(`Status ne 'Paid'`);
-                filters.push(`DueDate lt ${getTodayISO()}`);
+                filters.push(`Status ne 'Paid' and DueDate lt ${today}`);
             } else {
                 filters.push(`Status eq '${params.status}'`);
             }
         }
         if (params.date_from) filters.push(`BillDate ge ${params.date_from}`);
         if (params.date_to) filters.push(`BillDate le ${params.date_to}`);
-
-        let url = `${DAB_API_URL}/bills`;
-        if (filters.length > 0) {
-            url += `?$filter=${filters.join(' and ')}&$top=${params.limit || 10}`;
-        } else {
-            url += `?$top=${params.limit || 10}`;
-        }
-
-        const response = await axios.get(url);
-        let bills = response.data.value || [];
-
-        // Fetch vendor names
-        const vendorResponse = await axios.get(`${DAB_API_URL}/vendors`);
-        const vendorMap = (vendorResponse.data.value || []).reduce((acc, v) => {
-            acc[v.Id] = v.Name;
-            return acc;
-        }, {});
-
-        // Filter by vendor name if specified
         if (params.vendor_name) {
-            const vendorIds = Object.entries(vendorMap)
-                .filter(([_, name]) => name.toLowerCase().includes(params.vendor_name.toLowerCase()))
-                .map(([id]) => id);
-            bills = bills.filter(b => vendorIds.includes(b.VendorId));
+            filters.push(`contains(VendorName, '${params.vendor_name}')`);
         }
 
-        const today = new Date();
+        const mcpOptions = { first: params.limit || 10 };
+        if (filters.length > 0) {
+            mcpOptions.filter = filters.join(' and ');
+        }
+
+        const result = await mcp.readRecords('bills', mcpOptions);
+        if (result.error) {
+            return { success: false, error: result.error };
+        }
+
+        const bills = result.result?.value || [];
+        const todayDate = new Date();
+
         return {
             success: true,
             count: bills.length,
             bills: bills.map(b => {
                 const dueDate = new Date(b.DueDate);
-                const isOverdue = dueDate < today && b.Status !== 'Paid';
+                const isOverdue = dueDate < todayDate && b.Status !== 'Paid';
                 return {
                     number: b.BillNumber,
-                    vendor: vendorMap[b.VendorId] || 'Unknown Vendor',
+                    vendor: b.VendorName || 'Unknown Vendor',
                     billDate: b.BillDate,
                     dueDate: b.DueDate,
                     amount: formatCurrency(b.TotalAmount),
@@ -475,16 +581,18 @@ async function executeGetFinancialSummary(params) {
         const { start, end } = getDateRange(params.period);
 
         // Get invoices for the period
-        const invoicesResponse = await axios.get(
-            `${DAB_API_URL}/invoices?$filter=IssueDate ge ${start} and IssueDate le ${end}`
-        );
-        const invoices = invoicesResponse.data.value || [];
+        const invResult = await mcp.readRecords('invoices', {
+            filter: `IssueDate ge ${start} and IssueDate le ${end}`,
+            first: 1000
+        });
+        const invoices = invResult.result?.value || [];
 
         // Get bills for the period
-        const billsResponse = await axios.get(
-            `${DAB_API_URL}/bills?$filter=BillDate ge ${start} and BillDate le ${end}`
-        );
-        const bills = billsResponse.data.value || [];
+        const billResult = await mcp.readRecords('bills', {
+            filter: `BillDate ge ${start} and BillDate le ${end}`,
+            first: 1000
+        });
+        const bills = billResult.result?.value || [];
 
         // Calculate totals
         const totalRevenue = invoices.reduce((sum, inv) => sum + (Number(inv.TotalAmount) || 0), 0);
@@ -523,30 +631,27 @@ async function executeGetFinancialSummary(params) {
 
 async function executeGetOverdueItems(params) {
     try {
-        const today = getTodayISO();
+        const today = getTodayDate();
         const results = { overdueInvoices: [], overdueBills: [], upcomingInvoices: [], upcomingBills: [] };
 
         // Get overdue invoices
-        const overdueInvResponse = await axios.get(
-            `${DAB_API_URL}/invoices?$filter=Status ne 'Paid' and DueDate lt ${today}&$orderby=DueDate asc`
-        );
-        const overdueInvoices = overdueInvResponse.data.value || [];
+        const overdueInvResult = await mcp.readRecords('invoices', {
+            filter: `Status ne 'Paid' and DueDate lt ${today}`,
+            orderby: ['DueDate asc'],
+            first: 100
+        });
+        const overdueInvoices = overdueInvResult.result?.value || [];
 
         // Get overdue bills
-        const overdueBillsResponse = await axios.get(
-            `${DAB_API_URL}/bills?$filter=Status ne 'Paid' and DueDate lt ${today}&$orderby=DueDate asc`
-        );
-        const overdueBills = overdueBillsResponse.data.value || [];
+        const overdueBillsResult = await mcp.readRecords('bills', {
+            filter: `Status ne 'Paid' and DueDate lt ${today}`,
+            orderby: ['DueDate asc'],
+            first: 100
+        });
+        const overdueBills = overdueBillsResult.result?.value || [];
 
-        // Filter by days overdue if specified
         const minDaysOverdue = params.days_overdue || 0;
         const todayDate = new Date();
-
-        // Fetch customer and vendor names
-        const custResponse = await axios.get(`${DAB_API_URL}/customers`);
-        const customerMap = (custResponse.data.value || []).reduce((acc, c) => { acc[c.Id] = c.Name; return acc; }, {});
-        const vendorResponse = await axios.get(`${DAB_API_URL}/vendors`);
-        const vendorMap = (vendorResponse.data.value || []).reduce((acc, v) => { acc[v.Id] = v.Name; return acc; }, {});
 
         results.overdueInvoices = overdueInvoices
             .map(inv => {
@@ -554,7 +659,7 @@ async function executeGetOverdueItems(params) {
                 const daysOverdue = Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24));
                 return {
                     number: inv.InvoiceNumber,
-                    customer: customerMap[inv.CustomerId] || 'Unknown',
+                    customer: inv.CustomerName || 'Unknown',
                     amount: formatCurrency(inv.TotalAmount),
                     dueDate: inv.DueDate,
                     daysOverdue,
@@ -569,7 +674,7 @@ async function executeGetOverdueItems(params) {
                 const daysOverdue = Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24));
                 return {
                     number: bill.BillNumber,
-                    vendor: vendorMap[bill.VendorId] || 'Unknown',
+                    vendor: bill.VendorName || 'Unknown',
                     amount: formatCurrency(bill.TotalAmount),
                     dueDate: bill.DueDate,
                     daysOverdue,
@@ -582,23 +687,27 @@ async function executeGetOverdueItems(params) {
         if (params.include_upcoming) {
             const nextWeek = getDateInDays(7);
 
-            const upcomingInvResponse = await axios.get(
-                `${DAB_API_URL}/invoices?$filter=Status eq 'Sent' and DueDate ge ${today} and DueDate le ${nextWeek}&$orderby=DueDate asc`
-            );
-            results.upcomingInvoices = (upcomingInvResponse.data.value || []).map(inv => ({
+            const upcomingInvResult = await mcp.readRecords('invoices', {
+                filter: `Status eq 'Sent' and DueDate ge ${today} and DueDate le ${nextWeek}`,
+                orderby: ['DueDate asc'],
+                first: 100
+            });
+            results.upcomingInvoices = (upcomingInvResult.result?.value || []).map(inv => ({
                 number: inv.InvoiceNumber,
-                customer: customerMap[inv.CustomerId] || 'Unknown',
+                customer: inv.CustomerName || 'Unknown',
                 amount: formatCurrency(inv.TotalAmount),
                 dueDate: inv.DueDate,
                 link: `${APP_URL}/invoices/${inv.Id}/edit`
             }));
 
-            const upcomingBillsResponse = await axios.get(
-                `${DAB_API_URL}/bills?$filter=Status ne 'Paid' and DueDate ge ${today} and DueDate le ${nextWeek}&$orderby=DueDate asc`
-            );
-            results.upcomingBills = (upcomingBillsResponse.data.value || []).map(bill => ({
+            const upcomingBillsResult = await mcp.readRecords('bills', {
+                filter: `Status ne 'Paid' and DueDate ge ${today} and DueDate le ${nextWeek}`,
+                orderby: ['DueDate asc'],
+                first: 100
+            });
+            results.upcomingBills = (upcomingBillsResult.result?.value || []).map(bill => ({
                 number: bill.BillNumber,
-                vendor: vendorMap[bill.VendorId] || 'Unknown',
+                vendor: bill.VendorName || 'Unknown',
                 amount: formatCurrency(bill.TotalAmount),
                 dueDate: bill.DueDate,
                 link: `${APP_URL}/bills/${bill.Id}/edit`
@@ -625,27 +734,29 @@ async function executeGetOverdueItems(params) {
 
 async function executeGetAccountChart(params) {
     try {
-        let url = `${DAB_API_URL}/accounts`;
         const filters = [];
 
         if (params.type) {
             filters.push(`Type eq '${params.type}'`);
         }
-        if (params.active_only !== false) {
-            filters.push(`IsActive eq true`);
-        }
         if (params.search) {
-            filters.push(`contains(tolower(Name), '${params.search.toLowerCase()}')`);
+            filters.push(`contains(Name, '${params.search}')`);
         }
 
+        const mcpOptions = {
+            orderby: ['Code asc'],
+            first: 100
+        };
         if (filters.length > 0) {
-            url += `?$filter=${filters.join(' and ')}&$orderby=Code asc`;
-        } else {
-            url += '?$orderby=Code asc';
+            mcpOptions.filter = filters.join(' and ');
         }
 
-        const response = await axios.get(url);
-        const accounts = response.data.value || [];
+        const result = await mcp.readRecords('accounts', mcpOptions);
+        if (result.error) {
+            return { success: false, error: result.error };
+        }
+
+        const accounts = result.result?.value || [];
 
         return {
             success: true,
@@ -670,43 +781,43 @@ async function executeSearchAll(params) {
         const query = params.query;
         const results = { customers: [], invoices: [], journalEntries: [] };
 
-        try {
-            const custResponse = await axios.get(
-                `${DAB_API_URL}/customers?$filter=contains(tolower(Name), '${query.toLowerCase()}')`
-            );
-            results.customers = (custResponse.data.value || []).map(c => ({
-                id: c.Id,
-                name: c.Name,
-                email: c.Email,
-                link: `${APP_URL}/customers`
-            }));
-        } catch (e) { /* ignore */ }
+        // Search customers
+        const custResult = await mcp.readRecords('customers', {
+            filter: `contains(Name, '${query}')`,
+            first: 10
+        });
+        results.customers = (custResult.result?.value || []).map(c => ({
+            id: c.Id,
+            name: c.Name,
+            email: c.Email,
+            link: `${APP_URL}/customers`
+        }));
 
-        try {
-            const invResponse = await axios.get(
-                `${DAB_API_URL}/invoices?$filter=contains(InvoiceNumber, '${query}')`
-            );
-            results.invoices = (invResponse.data.value || []).map(inv => ({
-                id: inv.Id,
-                number: inv.InvoiceNumber,
-                amount: formatCurrency(inv.TotalAmount),
-                status: inv.Status,
-                link: `${APP_URL}/invoices/${inv.Id}/edit`
-            }));
-        } catch (e) { /* ignore */ }
+        // Search invoices
+        const invResult = await mcp.readRecords('invoices', {
+            filter: `contains(InvoiceNumber, '${query}')`,
+            first: 10
+        });
+        results.invoices = (invResult.result?.value || []).map(inv => ({
+            id: inv.Id,
+            number: inv.InvoiceNumber,
+            amount: formatCurrency(inv.TotalAmount),
+            status: inv.Status,
+            link: `${APP_URL}/invoices/${inv.Id}/edit`
+        }));
 
-        try {
-            const jeResponse = await axios.get(
-                `${DAB_API_URL}/journalentries?$filter=contains(Reference, '${query}') or contains(Description, '${query}')`
-            );
-            results.journalEntries = (jeResponse.data.value || []).map(je => ({
-                id: je.Id,
-                reference: je.Reference,
-                description: je.Description,
-                date: je.TransactionDate,
-                link: `${APP_URL}/journal-entries`
-            }));
-        } catch (e) { /* ignore */ }
+        // Search journal entries
+        const jeResult = await mcp.readRecords('journalentries', {
+            filter: `contains(Reference, '${query}')`,
+            first: 10
+        });
+        results.journalEntries = (jeResult.result?.value || []).map(je => ({
+            id: je.Id,
+            reference: je.Reference,
+            description: je.Description,
+            date: je.TransactionDate,
+            link: `${APP_URL}/journal-entries`
+        }));
 
         const totalResults = results.customers.length + results.invoices.length + results.journalEntries.length;
 
@@ -723,14 +834,19 @@ async function executeSearchAll(params) {
 
 async function executeCopyInvoice(params) {
     try {
-        const response = await axios.get(
-            `${DAB_API_URL}/invoices?$filter=InvoiceNumber eq '${params.invoice_number}'`
-        );
-        if (!response.data.value || response.data.value.length === 0) {
+        // Find the source invoice
+        const findResult = await mcp.readRecords('invoices', {
+            filter: `InvoiceNumber eq '${params.invoice_number}'`,
+            first: 1
+        });
+
+        const invoices = findResult.result?.value || [];
+        if (invoices.length === 0) {
             return { success: false, error: `Invoice ${params.invoice_number} not found` };
         }
-        const source = response.data.value[0];
-        const newInvoice = {
+
+        const source = invoices[0];
+        const newInvoiceData = {
             InvoiceNumber: `${source.InvoiceNumber}-COPY-${Date.now()}`,
             CustomerId: source.CustomerId,
             TotalAmount: source.TotalAmount,
@@ -738,15 +854,21 @@ async function executeCopyInvoice(params) {
             DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             Status: 'Draft'
         };
-        const createResponse = await axios.post(`${DAB_API_URL}/invoices`, newInvoice);
-        const newId = createResponse.data.Id || createResponse.data.value?.[0]?.Id;
+
+        const createResult = await mcp.createRecord('invoices', newInvoiceData);
+        if (createResult.error) {
+            return { success: false, error: createResult.error };
+        }
+
+        const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+
         return {
             success: true,
-            message: `Created ${newInvoice.InvoiceNumber}`,
+            message: `Created ${newInvoiceData.InvoiceNumber}`,
             invoice: {
                 id: newId,
-                number: newInvoice.InvoiceNumber,
-                amount: formatCurrency(newInvoice.TotalAmount),
+                number: newInvoiceData.InvoiceNumber,
+                amount: formatCurrency(newInvoiceData.TotalAmount),
                 link: `${APP_URL}/invoices/${newId}/edit`
             }
         };
@@ -755,7 +877,10 @@ async function executeCopyInvoice(params) {
     }
 }
 
-// Function dispatcher
+// ============================================================================
+// Function Dispatcher
+// ============================================================================
+
 async function executeFunction(name, args) {
     switch (name) {
         case 'query_invoices':
@@ -779,24 +904,24 @@ async function executeFunction(name, args) {
     }
 }
 
-// Uncertainty detection
+// ============================================================================
+// Uncertainty Detection
+// ============================================================================
+
 function detectUncertainty(content) {
     const uncertainPhrases = [
-        "i'm not sure",
-        "i don't have access",
-        "i cannot find",
-        "not entirely certain",
-        "may not be accurate",
-        "could not retrieve",
-        "based on limited data",
-        "no results found",
-        "unable to find"
+        "i'm not sure", "i don't have access", "i cannot find",
+        "not entirely certain", "may not be accurate", "could not retrieve",
+        "based on limited data", "no results found", "unable to find"
     ];
     const lowerContent = content.toLowerCase();
     return uncertainPhrases.some(phrase => lowerContent.includes(phrase));
 }
 
-// Chat endpoint
+// ============================================================================
+// API Endpoints
+// ============================================================================
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history = [] } = req.body;
@@ -810,7 +935,6 @@ app.post('/api/chat', async (req, res) => {
         let responseMessage = response.choices[0].message;
         let toolUsed = null;
 
-        // Handle tool calls (support multiple rounds)
         let iterations = 0;
         const maxIterations = 3;
 
@@ -818,7 +942,6 @@ app.post('/api/chat', async (req, res) => {
             iterations++;
             messages.push(responseMessage);
 
-            // Execute all tool calls
             for (const toolCall of responseMessage.toolCalls) {
                 let functionArgs = {};
                 try {
@@ -848,64 +971,60 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Insights endpoint for proactive alerts
 app.get('/api/insights', async (req, res) => {
     try {
         const insights = [];
-        const today = getTodayISO();
+        const today = getTodayDate();
         const nextThreeDays = getDateInDays(3);
 
         // Check overdue invoices
-        try {
-            const overdueResponse = await axios.get(
-                `${DAB_API_URL}/invoices?$filter=Status ne 'Paid' and DueDate lt ${today}`
-            );
-            const overdueInvoices = overdueResponse.data.value || [];
-            if (overdueInvoices.length > 0) {
-                const totalOverdue = overdueInvoices.reduce((sum, inv) => sum + (Number(inv.TotalAmount) || 0), 0);
-                insights.push({
-                    type: 'overdue_invoices',
-                    severity: 'warning',
-                    title: 'Overdue Invoices',
-                    message: `You have ${overdueInvoices.length} invoice${overdueInvoices.length > 1 ? 's' : ''} overdue totaling ${formatCurrency(totalOverdue)}`,
-                    action: { label: 'View Invoices', path: '/invoices' }
-                });
-            }
-        } catch (e) { /* ignore */ }
+        const overdueResult = await mcp.readRecords('invoices', {
+            filter: `Status ne 'Paid' and DueDate lt ${today}`,
+            first: 100
+        });
+        const overdueInvoices = overdueResult.result?.value || [];
+        if (overdueInvoices.length > 0) {
+            const totalOverdue = overdueInvoices.reduce((sum, inv) => sum + (Number(inv.TotalAmount) || 0), 0);
+            insights.push({
+                type: 'overdue_invoices',
+                severity: 'warning',
+                title: 'Overdue Invoices',
+                message: `You have ${overdueInvoices.length} invoice${overdueInvoices.length > 1 ? 's' : ''} overdue totaling ${formatCurrency(totalOverdue)}`,
+                action: { label: 'View Invoices', path: '/invoices' }
+            });
+        }
 
         // Check upcoming due dates
-        try {
-            const upcomingResponse = await axios.get(
-                `${DAB_API_URL}/invoices?$filter=Status eq 'Sent' and DueDate ge ${today} and DueDate le ${nextThreeDays}`
-            );
-            const upcomingInvoices = upcomingResponse.data.value || [];
-            if (upcomingInvoices.length > 0) {
-                insights.push({
-                    type: 'upcoming_due',
-                    severity: 'info',
-                    title: 'Upcoming Due Dates',
-                    message: `${upcomingInvoices.length} invoice${upcomingInvoices.length > 1 ? 's' : ''} due in the next 3 days`,
-                    action: { label: 'Review', path: '/invoices' }
-                });
-            }
-        } catch (e) { /* ignore */ }
+        const upcomingResult = await mcp.readRecords('invoices', {
+            filter: `Status eq 'Sent' and DueDate ge ${today} and DueDate le ${nextThreeDays}`,
+            first: 100
+        });
+        const upcomingInvoices = upcomingResult.result?.value || [];
+        if (upcomingInvoices.length > 0) {
+            insights.push({
+                type: 'upcoming_due',
+                severity: 'info',
+                title: 'Upcoming Due Dates',
+                message: `${upcomingInvoices.length} invoice${upcomingInvoices.length > 1 ? 's' : ''} due in the next 3 days`,
+                action: { label: 'Review', path: '/invoices' }
+            });
+        }
 
         // Check pending bank transactions
-        try {
-            const pendingResponse = await axios.get(
-                `${DAB_API_URL}/banktransactions?$filter=Status eq 'Pending'`
-            );
-            const pendingTransactions = pendingResponse.data.value || [];
-            if (pendingTransactions.length > 0) {
-                insights.push({
-                    type: 'pending_review',
-                    severity: 'info',
-                    title: 'Transactions Need Review',
-                    message: `${pendingTransactions.length} bank transaction${pendingTransactions.length > 1 ? 's' : ''} awaiting review`,
-                    action: { label: 'Review Now', path: '/review' }
-                });
-            }
-        } catch (e) { /* ignore */ }
+        const pendingResult = await mcp.readRecords('banktransactions', {
+            filter: `Status eq 'Pending'`,
+            first: 100
+        });
+        const pendingTransactions = pendingResult.result?.value || [];
+        if (pendingTransactions.length > 0) {
+            insights.push({
+                type: 'pending_review',
+                severity: 'info',
+                title: 'Transactions Need Review',
+                message: `${pendingTransactions.length} bank transaction${pendingTransactions.length > 1 ? 's' : ''} awaiting review`,
+                action: { label: 'Review Now', path: '/review' }
+            });
+        }
 
         res.json({ insights });
     } catch (error) {
@@ -914,9 +1033,13 @@ app.get('/api/insights', async (req, res) => {
     }
 });
 
+// ============================================================================
+// Start Server
+// ============================================================================
+
 const PORT = process.env.PORT || 7071;
 app.listen(PORT, () => {
     console.log(`Chat API running on http://localhost:${PORT}`);
     console.log(`Deployment: ${deploymentName}`);
-    console.log(`DAB API URL: ${DAB_API_URL}`);
+    console.log(`DAB MCP URL: ${DAB_MCP_URL}`);
 });
