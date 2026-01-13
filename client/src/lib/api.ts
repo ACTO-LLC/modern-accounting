@@ -133,6 +133,7 @@ export interface ProjectInput {
 export interface TimeEntry {
   Id: string;
   ProjectId: string;
+  ProjectName: string;
   CustomerId: string;
   EmployeeName: string;
   EntryDate: string;

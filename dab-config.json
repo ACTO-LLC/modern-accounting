@@ -175,6 +175,7 @@
                 "Id": "Id",
                 "InvoiceNumber": "InvoiceNumber",
                 "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
                 "IssueDate": "IssueDate",
                 "DueDate": "DueDate",
                 "TotalAmount": "TotalAmount",
@@ -454,7 +455,7 @@
             ]
         },
         "projects": {
-            "source": "dbo.Projects",
+            "source": "dbo.v_Projects",
             "permissions": [
                 {
                     "role": "anonymous",
@@ -467,6 +468,7 @@
                 "Id": "Id",
                 "Name": "Name",
                 "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
                 "Description": "Description",
                 "Status": "Status",
                 "StartDate": "StartDate",
@@ -503,7 +505,7 @@
             ]
         },
         "timeentries": {
-            "source": "dbo.TimeEntries",
+            "source": "dbo.v_TimeEntries",
             "permissions": [
                 {
                     "role": "anonymous",
@@ -515,6 +517,7 @@
             "mappings": {
                 "Id": "Id",
                 "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
                 "CustomerId": "CustomerId",
                 "EmployeeName": "EmployeeName",
                 "EntryDate": "EntryDate",
@@ -730,7 +733,7 @@
             ]
         },
         "bills": {
-            "source": "dbo.Bills",
+            "source": "dbo.v_Bills",
             "permissions": [
                 {
                     "role": "anonymous",
@@ -742,11 +745,13 @@
             "mappings": {
                 "Id": "Id",
                 "VendorId": "VendorId",
+                "VendorName": "VendorName",
                 "BillNumber": "BillNumber",
                 "BillDate": "BillDate",
                 "DueDate": "DueDate",
                 "TotalAmount": "TotalAmount",
                 "AmountPaid": "AmountPaid",
+                "BalanceDue": "BalanceDue",
                 "Status": "Status",
                 "Terms": "Terms",
                 "Memo": "Memo",
@@ -838,6 +843,7 @@
                 "Id": "Id",
                 "EstimateNumber": "EstimateNumber",
                 "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
                 "IssueDate": "IssueDate",
                 "ExpirationDate": "ExpirationDate",
                 "TotalAmount": "TotalAmount",

@@ -6,6 +6,7 @@ export interface Invoice {
   Id: string;
   InvoiceNumber: string;
   CustomerId: string;
+  CustomerName?: string;
   IssueDate: string;
   DueDate: string;
   TotalAmount: number;
