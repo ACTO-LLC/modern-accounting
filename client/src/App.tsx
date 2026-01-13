@@ -9,6 +9,7 @@ import { initializeApiAuth } from './lib/api';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ChatProvider } from './contexts/ChatContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -141,8 +142,10 @@ function App() {
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
               <ToastProvider>
-              <AppContent />
-            </ToastProvider>
+                <ChatProvider>
+                  <AppContent />
+                </ChatProvider>
+              </ToastProvider>
             </ThemeProvider>
           </QueryClientProvider>
         </CompanySettingsProvider>
