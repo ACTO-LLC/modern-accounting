@@ -18,7 +18,14 @@ const path = require('path');
 const BASE_DAB_PORT = 5000;
 const BASE_CLIENT_PORT = 5173;
 const SQL_SERVER = process.env.SQL_SERVER || 'localhost';
-const SQL_PORT = parseInt(process.env.SQL_PORT || '14330');
+
+const sqlPort = parseInt(process.env.SQL_PORT || '14330');
+if (isNaN(sqlPort) || sqlPort <= 0 || sqlPort > 65535) {
+    console.error('Invalid SQL_PORT environment variable. Must be a number between 1 and 65535.');
+    process.exit(1);
+}
+const SQL_PORT = sqlPort;
+
 const SQL_USER = process.env.SQL_USER || 'sa';
 const SQL_PASSWORD = process.env.SQL_SA_PASSWORD || 'StrongPassword123!';
 
