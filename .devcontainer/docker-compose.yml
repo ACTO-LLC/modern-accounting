@@ -7,9 +7,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspace:cached
-      - node_modules:/workspace/node_modules
-      - client_node_modules:/workspace/client/node_modules
-      - chat_api_node_modules:/workspace/chat-api/node_modules
     command: sleep infinity
     networks:
       - devnet
@@ -74,9 +71,6 @@ services:
 
 volumes:
   sql-data:
-  node_modules:
-  client_node_modules:
-  chat_api_node_modules:
 
 networks:
   devnet:
