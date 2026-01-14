@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - node_modules:/workspace/node_modules
+      - client_node_modules:/workspace/client/node_modules
+      - chat_api_node_modules:/workspace/chat-api/node_modules
+    command: sleep infinity
+    networks:
+      - devnet
+    depends_on:
+      - database
+      - dab
+
+  database:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=StrongPassword123!
+    ports:
+      - "14330:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+    networks:
+      - devnet
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "StrongPassword123!" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  dab:
+    image: mcr.microsoft.com/azure-databases/data-api-builder:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../dab-config.json:/App/dab-config.json:ro
+    environment:
+      - DAB_CONNECTION_STRING=Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true
+    networks:
+      - devnet
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  sql-data:
+  node_modules:
+  client_node_modules:
+  chat_api_node_modules:
+
+networks:
+  devnet:

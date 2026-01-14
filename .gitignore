@@ -47,9 +47,8 @@ dab_debug_log.txt
 # Chat API uploads
 chat-api/uploads/
 
-# Worktree generated files
-dab-config.worktree.json
-docker-compose.worktree.yml
+# Worktree config (each worktree has its own)
+.worktree.env
 
 tmpclaude*
 nul

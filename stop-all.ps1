@@ -1,63 +1,26 @@
 # Stop All Services for Modern Accounting
-# Usage: .\stop-all.ps1
-# Options:
-#   -KeepDocker    Keep Docker containers running
-
-param(
-    [switch]$KeepDocker
-)
+param([switch]$KeepDocker)
 
 $ErrorActionPreference = "SilentlyContinue"
-$Root = $PSScriptRoot
 
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Modern Accounting - Service Stopper   " -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "Stopping services..." -ForegroundColor Yellow
 
-# Stop Node.js processes on specific ports
-function Stop-NodeOnPort {
-    param([int]$Port, [string]$Name)
-
-    $connection = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue |
-                  Where-Object { $_.State -eq 'Listen' } |
-                  Select-Object -First 1
-
-    if ($connection) {
-        $process = Get-Process -Id $connection.OwningProcess -ErrorAction SilentlyContinue
-        if ($process -and $process.ProcessName -eq 'node') {
-            Stop-Process -Id $process.Id -Force
-            Write-Host "  Stopped $Name (PID: $($process.Id))" -ForegroundColor Green
-            return $true
+# Stop Node processes on dev ports
+@(7071, 5173) | ForEach-Object {
+    $conn = Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue | Where-Object State -eq 'Listen'
+    if ($conn) {
+        $proc = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue
+        if ($proc.ProcessName -eq 'node') {
+            Stop-Process -Id $proc.Id -Force
+            Write-Host "  Stopped port $_" -ForegroundColor Green
         }
     }
-    Write-Host "  $Name not running" -ForegroundColor DarkGray
-    return $false
 }
 
-Write-Host "[1/3] Stopping chat-api (port 7071)..." -ForegroundColor Yellow
-Stop-NodeOnPort -Port 7071 -Name "chat-api"
-
-Write-Host ""
-Write-Host "[2/3] Stopping client (port 5173)..." -ForegroundColor Yellow
-Stop-NodeOnPort -Port 5173 -Name "client"
-
-Write-Host ""
+# Stop Docker
 if (-not $KeepDocker) {
-    Write-Host "[3/3] Stopping Docker services..." -ForegroundColor Yellow
-    Push-Location $Root
-    try {
-        docker compose down
-        Write-Host "  Docker containers stopped" -ForegroundColor Green
-    } finally {
-        Pop-Location
-    }
-} else {
-    Write-Host "[3/3] Keeping Docker services running" -ForegroundColor DarkGray
+    docker compose down 2>$null
+    Write-Host "  Docker stopped" -ForegroundColor Green
 }
 
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  All services stopped!                 " -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "Done." -ForegroundColor Cyan
