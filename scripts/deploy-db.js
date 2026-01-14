@@ -52,55 +52,53 @@ async function deploy() {
             END
         `);
 
-        // Read and Execute Scripts in dependency order
-        // Tables must be created before tables that reference them with foreign keys
+        // Read and Execute Scripts - two-pass approach for foreign key dependencies
         const scriptsDir = path.join(__dirname, '../database/dbo/Tables');
-        const tableOrder = [
-            // Base tables (no foreign key dependencies)
-            'Accounts.sql',
-            'Customers.sql',
-            'Vendors.sql',
-            'Locations.sql',
-            'Classes.sql',
-            'Projects.sql',
-            'ProductsServices.sql',
-            'InventoryLocations.sql',
-            // Tables with dependencies on base tables
-            'JournalEntries.sql',
-            'JournalEntryLines.sql',
-            'Invoices.sql',
-            'InvoiceLines.sql',
-            'Bills.sql',
-            'BillLines.sql',
-            'Estimates.sql',
-            'EstimateLines.sql',
-            'BankReconciliations.sql',
-            'BankTransactions.sql',
-            'ReconciliationItems.sql',
-            'InventoryTransactions.sql',
-            'RecurringTemplates.sql',
-            'RecurringSchedules.sql',
-            'TimeEntries.sql',
-        ];
-
-        // Execute in specified order, then any remaining files
         const allFiles = fs.readdirSync(scriptsDir).filter(f => f.endsWith('.sql'));
-        const orderedFiles = [...tableOrder, ...allFiles.filter(f => !tableOrder.includes(f))];
 
-        for (const file of orderedFiles) {
+        // Regex to extract foreign key constraints
+        const fkRegex = /CONSTRAINT\s+\[?(\w+)\]?\s+FOREIGN\s+KEY\s*\([^)]+\)\s*REFERENCES\s+\[?(\w+)\]?\.\[?(\w+)\]?\s*\([^)]+\)/gi;
+
+        const foreignKeys = [];
+
+        // Pass 1: Create tables without foreign keys
+        console.log('Pass 1: Creating tables...');
+        for (const file of allFiles) {
             const filePath = path.join(scriptsDir, file);
-            if (!fs.existsSync(filePath)) {
-                console.log(`Skipping ${file} (not found)...`);
-                continue;
-            }
             console.log(`Executing ${file}...`);
-            const content = fs.readFileSync(filePath, 'utf8');
+            let content = fs.readFileSync(filePath, 'utf8');
+
+            // Extract and remove foreign key constraints for later
+            let match;
+            const tempContent = content;
+            while ((match = fkRegex.exec(tempContent)) !== null) {
+                const tableName = file.replace('.sql', '');
+                foreignKeys.push({
+                    table: tableName,
+                    constraint: match[0]
+                });
+            }
+
+            // Remove foreign key constraints from CREATE TABLE
+            content = content.replace(/,?\s*CONSTRAINT\s+\[?\w+\]?\s+FOREIGN\s+KEY\s*\([^)]+\)\s*REFERENCES\s+\[?\w+\]?\.\[?\w+\]?\s*\([^)]+\)/gi, '');
+
             // Remove GO statements as they are not T-SQL
             const batches = content.split('GO');
             for (const batch of batches) {
                 if (batch.trim()) {
                     await pool.request().query(batch);
                 }
+            }
+        }
+
+        // Pass 2: Add foreign keys
+        console.log('Pass 2: Adding foreign key constraints...');
+        for (const fk of foreignKeys) {
+            try {
+                console.log(`Adding FK to ${fk.table}...`);
+                await pool.request().query(`ALTER TABLE [dbo].[${fk.table}] ADD ${fk.constraint}`);
+            } catch (err) {
+                console.log(`  Warning: Could not add FK to ${fk.table}: ${err.message}`);
             }
         }
 
