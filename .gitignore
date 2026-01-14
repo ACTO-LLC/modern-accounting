@@ -52,6 +52,7 @@ dab-config.worktree.json
 docker-compose.worktree.yml
 
 tmpclaude*
+nul
 # Local Claude Code settings
 .claude/
 .mcp.json

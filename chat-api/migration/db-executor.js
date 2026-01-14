@@ -6,6 +6,7 @@
  */
 
 import { MigrationMapper, generateAccountCode } from './db-mapper.js';
+import { randomUUID } from 'crypto';
 
 /**
  * Migration result structure
@@ -127,7 +128,8 @@ async function migrateEntities(
             // Create the record
             const createResult = await mcp.createRecord(tableName, mappedEntity);
             if (createResult.error) {
-                throw new Error(createResult.error);
+                const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
+                throw new Error(errMsg);
             }
 
             const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
@@ -190,6 +192,25 @@ export async function migrateVendors(sourceVendors, mcp, sourceSystem = 'QBO', o
         sourceVendors,
         'Vendor',
         'vendors',
+        mapper,
+        mcp,
+        {
+            duplicateField: 'Name',
+            onProgress
+        }
+    );
+}
+
+/**
+ * Migrate products/services from source system to ACTO
+ */
+export async function migrateProducts(sourceItems, mcp, sourceSystem = 'QBO', onProgress = null) {
+    const mapper = new MigrationMapper(mcp, sourceSystem);
+
+    return migrateEntities(
+        sourceItems,
+        'Item',
+        'productsservices',
         mapper,
         mcp,
         {
@@ -317,7 +338,9 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
             }
 
             // Create invoice (without lines first)
+            const newInvoiceId = randomUUID().toUpperCase();
             const invoiceData = {
+                Id: newInvoiceId,
                 InvoiceNumber: mappedInvoice.InvoiceNumber,
                 CustomerId: mappedInvoice.CustomerId,
                 IssueDate: mappedInvoice.IssueDate,
@@ -328,12 +351,13 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
                 SourceId: sourceId
             };
 
-            const createResult = await mcp.createRecord('invoices', invoiceData);
+            const createResult = await mcp.createRecord('invoices_write', invoiceData);
             if (createResult.error) {
-                throw new Error(createResult.error);
+                const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
+                throw new Error(errMsg);
             }
 
-            const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+            const newId = newInvoiceId; // Use the ID we generated
 
             // Create invoice lines
             let linesCreated = 0;
@@ -461,7 +485,9 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
             const amountPaid = total - balance;
 
             // Create bill
+            const newBillId = randomUUID().toUpperCase();
             const billData = {
+                Id: newBillId,
                 VendorId: mappedBill.VendorId,
                 BillNumber: mappedBill.BillNumber,
                 BillDate: mappedBill.BillDate,
@@ -474,12 +500,13 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
                 SourceId: sourceId
             };
 
-            const createResult = await mcp.createRecord('bills', billData);
+            const createResult = await mcp.createRecord('bills_write', billData);
             if (createResult.error) {
-                throw new Error(createResult.error);
+                const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
+                throw new Error(errMsg);
             }
 
-            const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+            const newId = newBillId; // Use the ID we generated
 
             // Create bill lines
             let linesCreated = 0;
@@ -540,6 +567,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
 export default {
     migrateCustomers,
     migrateVendors,
+    migrateProducts,
     migrateAccounts,
     migrateInvoices,
     migrateBills

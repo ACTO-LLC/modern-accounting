@@ -94,7 +94,7 @@ export class MigrationMapper {
     /**
      * Apply transform to a value
      */
-    async applyTransform(value, transform, sourceObj) {
+    async applyTransform(value, transform, sourceObj, fieldMap = null) {
         if (!transform) return value;
 
         const [transformType, transformArg] = transform.split(':');
@@ -133,7 +133,12 @@ export class MigrationMapper {
 
             case 'entity':
                 // Look up entity reference (e.g., CustomerId from QBO customer ID)
-                return await this.lookupEntity(transformArg, String(value));
+                // Also try name-based fallback for records migrated before source tracking
+                let refName = null;
+                if (fieldMap && fieldMap.SourceField) {
+                    refName = this.getNestedValue(sourceObj, fieldMap.SourceField.replace('.value', '.name'));
+                }
+                return await this.lookupEntity(transformArg, String(value), refName);
 
             case 'invoicestatus':
                 // Special logic for invoice status based on Balance and TotalAmt
@@ -168,12 +173,14 @@ export class MigrationMapper {
 
     /**
      * Look up entity ID from MigrationEntityMaps or entity table
+     * Falls back to name-based lookup for records migrated before source tracking
      */
-    async lookupEntity(entityType, sourceId) {
+    async lookupEntity(entityType, sourceId, entityName = null) {
         if (!sourceId) return null;
 
-        // First try the entity table directly (faster)
         const tableName = entityType.toLowerCase() + 's'; // Customer -> customers
+
+        // First try the entity table by SourceSystem/SourceId
         try {
             const result = await this.mcp.readRecords(tableName, {
                 filter: `SourceSystem eq '${this.sourceSystem}' and SourceId eq '${sourceId}'`,
@@ -201,6 +208,25 @@ export class MigrationMapper {
             }
         } catch (e) {
             // Table might not exist yet
+        }
+
+        // Final fallback: lookup by name (for records migrated before source tracking)
+        if (entityName) {
+            try {
+                const escapedName = entityName.replace(/'/g, "''");
+                const result = await this.mcp.readRecords(tableName, {
+                    filter: `Name eq '${escapedName}'`,
+                    select: 'Id',
+                    first: 1
+                });
+
+                if (result.result?.value?.length > 0) {
+                    console.log(`Found ${entityType} by name fallback: ${entityName}`);
+                    return result.result.value[0].Id;
+                }
+            } catch (e) {
+                // Name lookup failed
+            }
         }
 
         return null;
@@ -278,7 +304,7 @@ export class MigrationMapper {
 
             // Apply transform
             if (value !== undefined && value !== null) {
-                value = await this.applyTransform(value, fieldMap.Transform, sourceObj);
+                value = await this.applyTransform(value, fieldMap.Transform, sourceObj, fieldMap);
             }
 
             // Use default if no value

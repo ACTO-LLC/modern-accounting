@@ -171,7 +171,7 @@
                 {
                     "role": "anonymous",
                     "actions": [
-                        "*"
+                        "read"
                     ]
                 }
             ],
@@ -183,7 +183,9 @@
                 "IssueDate": "IssueDate",
                 "DueDate": "DueDate",
                 "TotalAmount": "TotalAmount",
-                "Status": "Status"
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
             },
             "relationships": {
                 "Customer": {
@@ -206,6 +208,33 @@
                         "InvoiceId"
                     ]
                 }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "invoices_write": {
+            "source": "dbo.Invoices",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "InvoiceNumber": "InvoiceNumber",
+                "CustomerId": "CustomerId",
+                "IssueDate": "IssueDate",
+                "DueDate": "DueDate",
+                "TotalAmount": "TotalAmount",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
             },
             "key-fields": [
                 "Id"
@@ -742,7 +771,7 @@
                 {
                     "role": "anonymous",
                     "actions": [
-                        "*"
+                        "read"
                     ]
                 }
             ],
@@ -759,8 +788,8 @@
                 "Status": "Status",
                 "Terms": "Terms",
                 "Memo": "Memo",
-                "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
             },
             "relationships": {
                 "Vendor": {
@@ -783,6 +812,36 @@
                         "BillId"
                     ]
                 }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "bills_write": {
+            "source": "dbo.Bills",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "BillNumber": "BillNumber",
+                "BillDate": "BillDate",
+                "DueDate": "DueDate",
+                "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
+                "Status": "Status",
+                "Terms": "Terms",
+                "Memo": "Memo",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
             },
             "key-fields": [
                 "Id"
@@ -1192,6 +1251,34 @@
                 "ConfigValue": "ConfigValue",
                 "Description": "Description",
                 "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "qboconnections": {
+            "source": "dbo.QBOConnections",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RealmId": "RealmId",
+                "CompanyName": "CompanyName",
+                "AccessToken": "AccessToken",
+                "RefreshToken": "RefreshToken",
+                "TokenExpiry": "TokenExpiry",
+                "RefreshTokenExpiry": "RefreshTokenExpiry",
+                "Environment": "Environment",
+                "IsActive": "IsActive",
+                "LastUsedAt": "LastUsedAt",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },

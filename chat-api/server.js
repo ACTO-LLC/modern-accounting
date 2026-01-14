@@ -12,10 +12,12 @@ import { fileURLToPath } from 'url';
 import {
     migrateCustomers,
     migrateVendors,
+    migrateProducts,
     migrateAccounts,
     migrateInvoices,
     migrateBills
 } from './migration/db-executor.js';
+import { qboAuth } from './qbo-auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,7 +91,6 @@ const client = new OpenAIClient(
 
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const DAB_MCP_URL = process.env.DAB_MCP_URL || 'http://localhost:5000/mcp';
-const QBO_MCP_URL = process.env.QBO_MCP_URL || 'http://localhost:8001';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
 // ============================================================================
@@ -241,194 +242,6 @@ class DabMcpClient {
 
 // Create MCP client instance
 const mcp = new DabMcpClient(DAB_MCP_URL);
-
-// ============================================================================
-// QBO MCP Client
-// ============================================================================
-
-class QboMcpClient {
-    constructor(baseUrl) {
-        this.baseUrl = baseUrl;
-        this.mcpUrl = `${baseUrl}/mcp`;
-        this.sessionId = null;
-        this.requestId = 0;
-        this.initialized = false;
-    }
-
-    // Parse SSE response
-    parseSSEResponse(data) {
-        const lines = data.split('\n');
-        for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                try {
-                    return JSON.parse(line.substring(6));
-                } catch (e) {
-                    console.error('Failed to parse QBO SSE data:', e);
-                }
-            }
-        }
-        return null;
-    }
-
-    async initialize() {
-        if (this.initialized) return true;
-
-        this.requestId++;
-        const payload = {
-            jsonrpc: '2.0',
-            id: this.requestId,
-            method: 'initialize',
-            params: {
-                protocolVersion: '2024-11-05',
-                capabilities: {},
-                clientInfo: { name: 'chat-api-qbo', version: '1.0.0' }
-            }
-        };
-
-        try {
-            const response = await axios.post(this.mcpUrl, payload, {
-                headers: { 'Content-Type': 'application/json' },
-                transformResponse: [(data) => data]
-            });
-
-            const parsed = this.parseSSEResponse(response.data);
-            if (parsed?.result) {
-                this.sessionId = response.headers['mcp-session-id'];
-                this.initialized = true;
-                console.log('QBO MCP initialized, session:', this.sessionId);
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('QBO MCP initialization failed:', error.message);
-            return false;
-        }
-    }
-
-    async callTool(toolName, args = {}, qboSessionId, retryOnSessionError = true) {
-        await this.initialize();
-
-        this.requestId++;
-        const payload = {
-            jsonrpc: '2.0',
-            id: this.requestId,
-            method: 'tools/call',
-            params: { name: toolName, arguments: args }
-        };
-
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (this.sessionId) headers['Mcp-Session-Id'] = this.sessionId;
-            if (qboSessionId) headers['X-QBO-Session-Id'] = qboSessionId;
-
-            const response = await axios.post(this.mcpUrl, payload, {
-                headers,
-                transformResponse: [(data) => data]
-            });
-
-            const parsed = this.parseSSEResponse(response.data);
-            if (!parsed) return { error: 'Invalid response' };
-
-            if (parsed.error) {
-                if (parsed.error.code === -32001 && retryOnSessionError) {
-                    this.initialized = false;
-                    this.sessionId = null;
-                    return this.callTool(toolName, args, qboSessionId, false);
-                }
-                return { error: parsed.error.message };
-            }
-
-            // Parse result
-            const result = parsed.result;
-            if (result?.content?.[0]?.text) {
-                try {
-                    const parsed = JSON.parse(result.content[0].text);
-                    // Include data field if present (for migration)
-                    if (result.data) {
-                        parsed.data = result.data;
-                    }
-                    return parsed;
-                } catch {
-                    // If parsing fails, still include data if present
-                    const response = { text: result.content[0].text };
-                    if (result.data) {
-                        response.data = result.data;
-                    }
-                    return response;
-                }
-            }
-            return result;
-        } catch (error) {
-            if (error.response?.status === 404 && retryOnSessionError) {
-                this.initialized = false;
-                this.sessionId = null;
-                return this.callTool(toolName, args, qboSessionId, false);
-            }
-            return { error: error.message };
-        }
-    }
-
-    // OAuth helpers - call the QBO MCP server's OAuth endpoints
-    async getConnectionStatus(qboSessionId) {
-        try {
-            const response = await axios.get(`${this.baseUrl}/oauth/status/${qboSessionId}`);
-            return response.data;
-        } catch (error) {
-            return { connected: false, error: error.message };
-        }
-    }
-
-    async initiateOAuth(qboSessionId, redirectUrl) {
-        try {
-            const response = await axios.post(`${this.baseUrl}/oauth/connect`, {
-                sessionId: qboSessionId,
-                redirectUrl
-            });
-            return response.data;
-        } catch (error) {
-            return { error: error.message };
-        }
-    }
-
-    async disconnect(qboSessionId) {
-        try {
-            const response = await axios.post(`${this.baseUrl}/oauth/disconnect`, {
-                sessionId: qboSessionId
-            });
-            return response.data;
-        } catch (error) {
-            return { error: error.message };
-        }
-    }
-
-    // QBO-specific tool wrappers
-    async analyzeForMigration(qboSessionId) {
-        return this.callTool('qbo_analyze_for_migration', {}, qboSessionId);
-    }
-
-    async searchCustomers(qboSessionId, criteria = {}) {
-        return this.callTool('qbo_search_customers', criteria, qboSessionId);
-    }
-
-    async searchInvoices(qboSessionId, criteria = {}) {
-        return this.callTool('qbo_search_invoices', criteria, qboSessionId);
-    }
-
-    async searchVendors(qboSessionId, criteria = {}) {
-        return this.callTool('qbo_search_vendors', criteria, qboSessionId);
-    }
-
-    async searchAccounts(qboSessionId, criteria = {}) {
-        return this.callTool('qbo_search_accounts', criteria, qboSessionId);
-    }
-
-    async searchBills(qboSessionId, criteria = {}) {
-        return this.callTool('qbo_search_bills', criteria, qboSessionId);
-    }
-}
-
-// Create QBO MCP client instance
-const qboMcp = new QboMcpClient(QBO_MCP_URL);
 
 // ============================================================================
 // System Prompt and Tools
@@ -841,6 +654,40 @@ const tools = [
                 type: 'object',
                 properties: {
                     limit: { type: 'number', description: 'Limit number of vendors to migrate (for testing). Omit to migrate all.' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_products',
+            description: 'Migrate products and services from QuickBooks Online to ACTO.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of items to migrate (for testing). Omit to migrate all.' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'delete_products',
+            description: 'Delete products/services from ACTO. DANGEROUS: Use preview mode first, then confirm with exact count. Always show user what will be deleted before confirming.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    preview: {
+                        type: 'boolean',
+                        description: 'If true (default), only shows count and sample of products to delete. Set to false to actually delete.',
+                        default: true
+                    },
+                    confirm_count: {
+                        type: 'number',
+                        description: 'Required for actual deletion. Must match exact count of products. User must explicitly confirm this number.'
+                    }
                 }
             }
         }
@@ -1522,24 +1369,11 @@ async function executeCreateAccount(params) {
 // QBO Tool Execution Functions
 // ============================================================================
 
-// Track current QBO session for tool calls (set from chat request context)
-let currentQboSessionId = null;
-
-function setCurrentQboSession(sessionId) {
-    currentQboSessionId = sessionId;
-}
+// QBO Tool Execution - Now uses qboAuth (DB-backed) instead of qboMcp
 
 async function executeQboGetStatus() {
-    if (!currentQboSessionId) {
-        return {
-            success: true,
-            connected: false,
-            message: 'Not connected to QuickBooks Online. Use the "Connect to QuickBooks" button to connect.'
-        };
-    }
-
     try {
-        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        const status = await qboAuth.getStatus();
         return {
             success: true,
             connected: status.connected,
@@ -1555,16 +1389,8 @@ async function executeQboGetStatus() {
 }
 
 async function executeQboAnalyzeMigration() {
-    if (!currentQboSessionId) {
-        return {
-            success: false,
-            error: 'Not connected to QuickBooks Online. Please connect first.',
-            needsAuth: true
-        };
-    }
-
     try {
-        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        const status = await qboAuth.getStatus();
         if (!status.connected) {
             return {
                 success: false,
@@ -1573,7 +1399,7 @@ async function executeQboAnalyzeMigration() {
             };
         }
 
-        const analysis = await qboMcp.analyzeForMigration(currentQboSessionId);
+        const analysis = await qboAuth.analyzeForMigration();
         return {
             success: true,
             ...analysis
@@ -1584,24 +1410,19 @@ async function executeQboAnalyzeMigration() {
 }
 
 async function executeQboSearchCustomers(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        const criteria = {};
-        if (params.display_name) {
-            criteria.criteria = [{ field: 'DisplayName', value: params.display_name, operator: 'LIKE' }];
-        }
-        if (params.active !== undefined) {
-            criteria.criteria = criteria.criteria || [];
-            criteria.criteria.push({ field: 'Active', value: params.active });
-        }
-        if (params.fetch_all) {
-            criteria.fetchAll = true;
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        const result = await qboMcp.searchCustomers(currentQboSessionId, criteria);
+        const criteria = {
+            name: params.display_name,
+            active: params.active,
+            fetchAll: params.fetch_all
+        };
+
+        const result = await qboAuth.searchCustomers(criteria);
         return { success: true, ...result };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1609,17 +1430,19 @@ async function executeQboSearchCustomers(params) {
 }
 
 async function executeQboSearchInvoices(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        const criteria = {};
-        if (params.fetch_all) {
-            criteria.fetchAll = true;
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        const result = await qboMcp.searchInvoices(currentQboSessionId, criteria);
+        const criteria = {
+            fetchAll: params.fetch_all,
+            startDate: params.start_date,
+            endDate: params.end_date
+        };
+
+        const result = await qboAuth.searchInvoices(criteria);
         return { success: true, ...result };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1627,24 +1450,19 @@ async function executeQboSearchInvoices(params) {
 }
 
 async function executeQboSearchVendors(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        const criteria = {};
-        if (params.display_name) {
-            criteria.criteria = [{ field: 'DisplayName', value: params.display_name, operator: 'LIKE' }];
-        }
-        if (params.active !== undefined) {
-            criteria.criteria = criteria.criteria || [];
-            criteria.criteria.push({ field: 'Active', value: params.active });
-        }
-        if (params.fetch_all) {
-            criteria.fetchAll = true;
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        const result = await qboMcp.searchVendors(currentQboSessionId, criteria);
+        const criteria = {
+            name: params.display_name,
+            active: params.active,
+            fetchAll: params.fetch_all
+        };
+
+        const result = await qboAuth.searchVendors(criteria);
         return { success: true, ...result };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1652,24 +1470,19 @@ async function executeQboSearchVendors(params) {
 }
 
 async function executeQboSearchAccounts(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        const criteria = {};
-        if (params.account_type) {
-            criteria.criteria = [{ field: 'AccountType', value: params.account_type }];
-        }
-        if (params.active !== undefined) {
-            criteria.criteria = criteria.criteria || [];
-            criteria.criteria.push({ field: 'Active', value: params.active });
-        }
-        if (params.fetch_all) {
-            criteria.fetchAll = true;
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        const result = await qboMcp.searchAccounts(currentQboSessionId, criteria);
+        const criteria = {
+            type: params.account_type,
+            active: params.active,
+            fetchAll: params.fetch_all
+        };
+
+        const result = await qboAuth.searchAccounts(criteria);
         return { success: true, ...result };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1677,17 +1490,19 @@ async function executeQboSearchAccounts(params) {
 }
 
 async function executeQboSearchBills(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        const criteria = {};
-        if (params.fetch_all) {
-            criteria.fetchAll = true;
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        const result = await qboMcp.searchBills(currentQboSessionId, criteria);
+        const criteria = {
+            fetchAll: params.fetch_all,
+            startDate: params.start_date,
+            endDate: params.end_date
+        };
+
+        const result = await qboAuth.searchBills(criteria);
         return { success: true, ...result };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1698,28 +1513,17 @@ async function executeQboSearchBills(params) {
 // Migration Tool Execution Functions
 // ============================================================================
 
-// Migration now uses database-driven mappings (MigrationEntityMaps table)
-// No in-memory ID maps needed - lookups are done via DB queries
+// Migration now uses database-driven mappings and qboAuth for API calls
 
 async function executeMigrateCustomers(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        // Check QBO connection
-        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        const status = await qboAuth.getStatus();
         if (!status.connected) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
         // Fetch customers from QBO
-        const qboResult = await qboMcp.searchCustomers(currentQboSessionId, { fetchAll: true });
-        if (qboResult.error) {
-            return { success: false, error: `Failed to fetch QBO customers: ${qboResult.error}` };
-        }
-
-        // Use raw data array from response
+        const qboResult = await qboAuth.searchCustomers({ fetchAll: true });
         let qboCustomers = qboResult.data || [];
 
         // Apply limit if specified
@@ -1731,7 +1535,7 @@ async function executeMigrateCustomers(params) {
             return { success: true, message: 'No customers found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven - no in-memory ID maps needed)
+        // Run migration (DB-driven)
         const result = await migrateCustomers(qboCustomers, mcp, 'QBO');
 
         return {
@@ -1750,23 +1554,14 @@ async function executeMigrateCustomers(params) {
 }
 
 async function executeMigrateVendors(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        const status = await qboAuth.getStatus();
         if (!status.connected) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
         // Fetch vendors from QBO
-        const qboResult = await qboMcp.searchVendors(currentQboSessionId, { fetchAll: true });
-        if (qboResult.error) {
-            return { success: false, error: `Failed to fetch QBO vendors: ${qboResult.error}` };
-        }
-
-        // Use raw data array from response
+        const qboResult = await qboAuth.searchVendors({ fetchAll: true });
         let qboVendors = qboResult.data || [];
 
         if (params.limit && params.limit > 0) {
@@ -1795,24 +1590,52 @@ async function executeMigrateVendors(params) {
     }
 }
 
-async function executeMigrateAccounts(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
+async function executeMigrateProducts(params) {
     try {
-        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch items/products from QBO
+        const qboResult = await qboAuth.searchItems({ fetchAll: true });
+        let qboItems = qboResult.data || [];
+
+        if (params.limit && params.limit > 0) {
+            qboItems = qboItems.slice(0, params.limit);
+        }
+
+        if (qboItems.length === 0) {
+            return { success: true, message: 'No products/services found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        // Run migration (DB-driven)
+        const result = await migrateProducts(qboItems, mcp, 'QBO');
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} products/services migrated, ${result.skipped} skipped. [View Products](/products-services)`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            viewUrl: '/products-services',
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeMigrateAccounts(params) {
+    try {
+        const status = await qboAuth.getStatus();
         if (!status.connected) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
         // Fetch accounts from QBO
-        const qboResult = await qboMcp.searchAccounts(currentQboSessionId, { fetchAll: true });
-        if (qboResult.error) {
-            return { success: false, error: `Failed to fetch QBO accounts: ${qboResult.error}` };
-        }
-
-        // Use raw data array from response
+        const qboResult = await qboAuth.searchAccounts({ fetchAll: true });
         let qboAccounts = qboResult.data || [];
 
         if (params.limit && params.limit > 0) {
@@ -1823,7 +1646,7 @@ async function executeMigrateAccounts(params) {
             return { success: true, message: 'No accounts found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven - no in-memory ID maps needed)
+        // Run migration (DB-driven)
         const result = await migrateAccounts(qboAccounts, mcp, 'QBO');
 
         return {
@@ -1842,26 +1665,14 @@ async function executeMigrateAccounts(params) {
 }
 
 async function executeMigrateInvoices(params) {
-    if (!currentQboSessionId) {
-        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-    }
-
     try {
-        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        const status = await qboAuth.getStatus();
         if (!status.connected) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        // No need to check in-memory ID maps - DB-driven mapper will look up customers
-        // If no customers have been migrated, invoices will be skipped with appropriate errors
-
         // Fetch invoices from QBO
-        const qboResult = await qboMcp.searchInvoices(currentQboSessionId, { fetchAll: true });
-        if (qboResult.error) {
-            return { success: false, error: `Failed to fetch QBO invoices: ${qboResult.error}` };
-        }
-
-        // Use raw data array from response
+        const qboResult = await qboAuth.searchInvoices({ fetchAll: true });
         let qboInvoices = qboResult.data || [];
 
         // Filter to unpaid only if requested
@@ -1898,6 +1709,89 @@ async function executeMigrateInvoices(params) {
             errors: result.errors.length,
             errorDetails: result.errors.slice(0, 5),
             details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeDeleteProducts(params) {
+    try {
+        const preview = params.preview !== false; // default true
+        const confirmCount = params.confirm_count;
+
+        // Get all products
+        const productsResult = await mcp.readRecords('productsservices', {
+            select: 'Id,Name',
+            first: 1000
+        });
+        const items = productsResult.result?.value || [];
+
+        if (items.length === 0) {
+            return {
+                success: true,
+                preview: true,
+                count: 0,
+                message: 'No products/services found to delete.'
+            };
+        }
+
+        if (preview) {
+            // Preview mode - show what would be deleted
+            return {
+                success: true,
+                preview: true,
+                count: items.length,
+                sample: items.slice(0, 10).map(p => p.Name),
+                message: `Found ${items.length} product(s)/service(s). To delete ALL of them, you must confirm with the exact count: ${items.length}`,
+                confirmInstruction: `Say "Yes, delete all ${items.length} products" to confirm deletion.`
+            };
+        }
+
+        // Confirm mode - verify count matches exactly
+        if (confirmCount === undefined || confirmCount === null) {
+            return {
+                success: false,
+                error: 'Confirmation required. You must provide confirm_count matching the exact number of products.',
+                count: items.length,
+                hint: `There are ${items.length} products. Call with confirm_count: ${items.length} to proceed.`
+            };
+        }
+
+        if (confirmCount !== items.length) {
+            return {
+                success: false,
+                error: `Count mismatch! You confirmed ${confirmCount} but there are ${items.length} products. Please preview again to get the current count.`,
+                actualCount: items.length,
+                providedCount: confirmCount
+            };
+        }
+
+        // Actually delete all products
+        const deleted = [];
+        const errors = [];
+
+        for (const item of items) {
+            try {
+                const deleteResult = await mcp.deleteRecord('productsservices', { Id: item.Id });
+                if (deleteResult.error) {
+                    errors.push({ name: item.Name, error: deleteResult.error });
+                } else {
+                    deleted.push(item.Name);
+                }
+            } catch (err) {
+                errors.push({ name: item.Name, error: err.message });
+            }
+        }
+
+        return {
+            success: true,
+            preview: false,
+            deleted: deleted.length,
+            failed: errors.length,
+            deletedNames: deleted.slice(0, 10),
+            errors: errors.slice(0, 5),
+            message: `Deleted ${deleted.length} product(s)/service(s).${errors.length > 0 ? ` ${errors.length} failed.` : ''}`
         };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1956,6 +1850,10 @@ async function executeFunction(name, args) {
             return executeMigrateAccounts(args);
         case 'migrate_invoices':
             return executeMigrateInvoices(args);
+        case 'migrate_products':
+            return executeMigrateProducts(args);
+        case 'delete_products':
+            return executeDeleteProducts(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }
@@ -2085,25 +1983,19 @@ function getQboSessionId(req) {
     return sessionId;
 }
 
-// Initiate QBO OAuth flow
+// Initiate QBO OAuth flow (now uses direct OAuth, saves to DB)
 app.post('/api/qbo/connect', async (req, res) => {
     try {
-        const sessionId = getQboSessionId(req);
-        const redirectUrl = req.body.redirectUrl || APP_URL;
+        const state = randomUUID(); // Use as session correlation
+        const authUrl = qboAuth.getAuthorizationUrl(state);
 
-        const result = await qboMcp.initiateOAuth(sessionId, redirectUrl);
-
-        if (result.error) {
-            return res.status(500).json({ error: result.error });
-        }
-
-        // Store session mapping
-        qboSessions.set(sessionId, { createdAt: new Date() });
+        // Store state for callback verification
+        qboSessions.set(state, { createdAt: new Date() });
 
         res.json({
             success: true,
-            authUrl: result.authUrl,
-            sessionId: sessionId
+            authUrl: authUrl,
+            sessionId: state
         });
     } catch (error) {
         console.error('QBO connect error:', error);
@@ -2111,22 +2003,83 @@ app.post('/api/qbo/connect', async (req, res) => {
     }
 });
 
-// QBO OAuth callback (proxy to QBO MCP server)
-app.get('/api/qbo/callback', async (req, res) => {
-    // The QBO MCP server handles the callback directly
-    // This route is here in case we want to handle it in chat-api instead
-    const callbackUrl = `${QBO_MCP_URL}/oauth/callback?${new URLSearchParams(req.query).toString()}`;
-    res.redirect(callbackUrl);
+// QBO OAuth callback - handles token exchange and saves to DB
+app.get('/api/qbo/oauth-callback', async (req, res) => {
+    try {
+        // Construct the full callback URL
+        const protocol = req.headers['x-forwarded-proto'] || 'http';
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        const fullUrl = `${protocol}://${host}${req.originalUrl}`;
+
+        console.log('OAuth callback received:', fullUrl);
+
+        const result = await qboAuth.handleCallback(fullUrl);
+
+        if (result.success) {
+            // Redirect to success page or close popup
+            const successHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>QuickBooks Connected</title>
+                    <style>
+                        body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+                        .card { background: white; padding: 48px; border-radius: 16px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+                        .icon { width: 80px; height: 80px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+                        .icon svg { width: 40px; height: 40px; color: white; }
+                        h1 { color: #1f2937; margin-bottom: 12px; }
+                        p { color: #6b7280; margin-bottom: 24px; }
+                        .btn { background: #667eea; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+                    </style>
+                    <script>
+                        // Notify parent window and close popup
+                        if (window.opener) {
+                            window.opener.postMessage({ type: 'qbo-connected', realmId: '${result.realmId}', companyName: '${result.companyName}' }, '*');
+                            setTimeout(() => window.close(), 2000);
+                        }
+                    </script>
+                </head>
+                <body>
+                    <div class="card">
+                        <div class="icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>
+                        <h1>QuickBooks Connected!</h1>
+                        <p>Connected to: ${result.companyName}</p>
+                        <a href="${APP_URL}" class="btn">Return to Dashboard</a>
+                    </div>
+                </body>
+                </html>
+            `;
+            res.send(successHtml);
+        } else {
+            throw new Error('OAuth callback failed');
+        }
+    } catch (error) {
+        console.error('OAuth callback error:', error);
+        const errorHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head><title>Connection Error</title>
+            <style>body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; } .error { color: #dc2626; }</style>
+            </head>
+            <body><div class="error"><h1>Connection Failed</h1><p>${error.message}</p><a href="${APP_URL}">Return to Dashboard</a></div></body>
+            </html>
+        `;
+        res.status(500).send(errorHtml);
+    }
 });
 
-// Get QBO connection status
+// Legacy callback route - redirect to new one
+app.get('/api/qbo/callback', async (req, res) => {
+    res.redirect('/api/qbo/oauth-callback?' + new URLSearchParams(req.query).toString());
+});
+
+// Get QBO connection status (now uses DB-backed auth)
 app.get('/api/qbo/status', async (req, res) => {
     try {
-        const sessionId = getQboSessionId(req);
-        const status = await qboMcp.getConnectionStatus(sessionId);
+        const status = await qboAuth.getStatus();
 
         res.json({
-            sessionId,
+            sessionId: status.realmId || null,
             ...status
         });
     } catch (error) {
@@ -2135,16 +2088,14 @@ app.get('/api/qbo/status', async (req, res) => {
     }
 });
 
-// Disconnect QBO
+// Disconnect QBO (marks connection as inactive in DB)
 app.post('/api/qbo/disconnect', async (req, res) => {
     try {
-        const sessionId = getQboSessionId(req);
-        const result = await qboMcp.disconnect(sessionId);
-
-        // Clear local session
-        qboSessions.delete(sessionId);
-
-        res.json({ success: true, ...result });
+        const status = await qboAuth.getStatus();
+        if (status.realmId) {
+            await qboAuth.disconnect(status.realmId);
+        }
+        res.json({ success: true });
     } catch (error) {
         console.error('QBO disconnect error:', error);
         res.status(500).json({ error: 'Failed to disconnect QBO' });
@@ -2154,10 +2105,7 @@ app.post('/api/qbo/disconnect', async (req, res) => {
 // Analyze QBO data for migration
 app.get('/api/qbo/analyze', async (req, res) => {
     try {
-        const sessionId = getQboSessionId(req);
-
-        // Check connection first
-        const status = await qboMcp.getConnectionStatus(sessionId);
+        const status = await qboAuth.getStatus();
         if (!status.connected) {
             return res.status(400).json({
                 error: 'Not connected to QuickBooks',
@@ -2165,7 +2113,7 @@ app.get('/api/qbo/analyze', async (req, res) => {
             });
         }
 
-        const analysis = await qboMcp.analyzeForMigration(sessionId);
+        const analysis = await qboAuth.analyzeForMigration();
         res.json(analysis);
     } catch (error) {
         console.error('QBO analyze error:', error);
@@ -2206,10 +2154,6 @@ app.post('/api/chat/upload', upload.single('file'), async (req, res) => {
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history = [], attachments = [] } = req.body;
-
-        // Set QBO session ID for tool execution (from request header)
-        const qboSessionId = getQboSessionId(req);
-        setCurrentQboSession(qboSessionId);
 
         // Build user message content
         let userContent = message;
@@ -2351,7 +2295,17 @@ const PORT = process.env.PORT || 7071;
 // Initialize and start server
 async function startServer() {
     await initializeUploadDir();
-    
+
+    // Load QBO connections from database (for persistent sessions)
+    try {
+        const loadedCount = await qboAuth.loadConnectionsFromDB();
+        if (loadedCount > 0) {
+            console.log(`Loaded ${loadedCount} QBO connection(s) from database`);
+        }
+    } catch (error) {
+        console.warn('Could not load QBO connections:', error.message);
+    }
+
     app.listen(PORT, () => {
         console.log(`Chat API running on http://localhost:${PORT}`);
         console.log(`Deployment: ${deploymentName}`);
