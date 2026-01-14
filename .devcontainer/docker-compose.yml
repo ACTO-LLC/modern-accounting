@@ -32,6 +32,17 @@ services:
       retries: 10
       start_period: 30s
 
+  db-init:
+    image: mcr.microsoft.com/mssql-tools18:latest
+    volumes:
+      - ./init-db.sh:/init-db.sh:ro
+    entrypoint: ["/bin/bash", "/init-db.sh"]
+    networks:
+      - devnet
+    depends_on:
+      database:
+        condition: service_healthy
+
   dab:
     image: mcr.microsoft.com/azure-databases/data-api-builder:latest
     ports:
@@ -43,8 +54,8 @@ services:
     networks:
       - devnet
     depends_on:
-      database:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
 
   email-api:
     build:
