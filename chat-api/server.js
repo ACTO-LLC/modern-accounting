@@ -341,9 +341,19 @@ class QboMcpClient {
             const result = parsed.result;
             if (result?.content?.[0]?.text) {
                 try {
-                    return JSON.parse(result.content[0].text);
+                    const parsed = JSON.parse(result.content[0].text);
+                    // Include data field if present (for migration)
+                    if (result.data) {
+                        parsed.data = result.data;
+                    }
+                    return parsed;
                 } catch {
-                    return { text: result.content[0].text };
+                    // If parsing fails, still include data if present
+                    const response = { text: result.content[0].text };
+                    if (result.data) {
+                        response.data = result.data;
+                    }
+                    return response;
                 }
             }
             return result;
@@ -423,7 +433,7 @@ const qboMcp = new QboMcpClient(QBO_MCP_URL);
 // System Prompt and Tools
 // ============================================================================
 
-const systemPrompt = `You are an expert accounting assistant for a modern accounting application called ACTO. You help users with:
+const systemPrompt = `You are an expert accounting assistant for Modern Accounting (also known as ACTO). When users say "Modern", "Modern Accounting", or "MA", they are referring to this system and its database. When users say "QB", "QBO", or "QuickBooks", they mean QuickBooks Online. You help users with:
 
 1. ONBOARDING NEW USERS: Handle these common onboarding responses:
    - "Yes, from QuickBooks" or mentions QBO: Check qbo_get_status. If not connected, say "Great! Click the 'Connect to QuickBooks' button above to securely link your account. Once connected, I'll analyze your data and help you migrate." If connected, use qbo_analyze_migration to show what can be migrated.
@@ -1740,9 +1750,10 @@ async function executeMigrateCustomers(params) {
 
         return {
             success: true,
-            message: `Migration complete: ${result.migrated} customers migrated, ${result.skipped} skipped`,
+            message: `Migration complete: ${result.migrated} customers migrated, ${result.skipped} skipped. [View Customers](/customers)`,
             migrated: result.migrated,
             skipped: result.skipped,
+            viewUrl: '/customers',
             errors: result.errors.length,
             errorDetails: result.errors.slice(0, 5), // Limit error details
             details: result.details.slice(0, 10) // Limit details shown
@@ -1787,9 +1798,10 @@ async function executeMigrateVendors(params) {
 
         return {
             success: true,
-            message: `Migration complete: ${result.migrated} vendors migrated, ${result.skipped} skipped`,
+            message: `Migration complete: ${result.migrated} vendors migrated, ${result.skipped} skipped. [View Vendors](/vendors)`,
             migrated: result.migrated,
             skipped: result.skipped,
+            viewUrl: '/vendors',
             errors: result.errors.length,
             errorDetails: result.errors.slice(0, 5),
             details: result.details.slice(0, 10)
@@ -1834,9 +1846,10 @@ async function executeMigrateAccounts(params) {
 
         return {
             success: true,
-            message: `Migration complete: ${result.migrated} accounts migrated, ${result.skipped} skipped`,
+            message: `Migration complete: ${result.migrated} accounts migrated, ${result.skipped} skipped. [View Chart of Accounts](/accounts)`,
             migrated: result.migrated,
             skipped: result.skipped,
+            viewUrl: '/accounts',
             errors: result.errors.length,
             errorDetails: result.errors.slice(0, 5),
             details: result.details.slice(0, 10)
@@ -1902,9 +1915,10 @@ async function executeMigrateInvoices(params) {
 
         return {
             success: true,
-            message: `Migration complete: ${result.migrated} invoices migrated, ${result.skipped} skipped`,
+            message: `Migration complete: ${result.migrated} invoices migrated, ${result.skipped} skipped. [View Invoices](/invoices)`,
             migrated: result.migrated,
             skipped: result.skipped,
+            viewUrl: '/invoices',
             totalValue: formatCurrency(totalValue),
             errors: result.errors.length,
             errorDetails: result.errors.slice(0, 5),

@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw, LogOut, User, ChevronDown, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw, LogOut, User, ChevronDown, MessageSquare, Layers } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,6 +47,7 @@ export default function Layout() {
     { name: 'Classes', href: '/classes', icon: Tag },
     { name: 'Locations', href: '/locations', icon: MapPin },
     { name: 'Recurring', href: '/recurring', icon: RefreshCw },
+    { name: 'Chart of Accounts', href: '/accounts', icon: Layers },
     { name: 'Banking', href: '/banking', icon: Building2 },
     { name: 'Journal Entries', href: '/journal-entries', icon: BookOpen },
     { name: 'Import', href: '/import', icon: Upload },

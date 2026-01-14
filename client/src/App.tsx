@@ -39,6 +39,9 @@ import EditProductService from './pages/EditProductService';
 import Vendors from './pages/Vendors';
 import NewVendor from './pages/NewVendor';
 import EditVendor from './pages/EditVendor';
+import ChartOfAccounts from './pages/ChartOfAccounts';
+import NewAccount from './pages/NewAccount';
+import EditAccount from './pages/EditAccount';
 import Reports from './pages/Reports';
 import ProfitAndLoss from './pages/reports/ProfitAndLoss';
 import BalanceSheet from './pages/reports/BalanceSheet';
@@ -101,6 +104,9 @@ function AppContent() {
             <Route path="vendors" element={<Vendors />} />
             <Route path="vendors/new" element={<NewVendor />} />
             <Route path="vendors/:id/edit" element={<EditVendor />} />
+            <Route path="accounts" element={<ChartOfAccounts />} />
+            <Route path="accounts/new" element={<NewAccount />} />
+            <Route path="accounts/:id/edit" element={<EditAccount />} />
             <Route path="bills" element={<Bills />} />
             <Route path="bills/new" element={<NewBill />} />
             <Route path="bills/:id/edit" element={<EditBill />} />

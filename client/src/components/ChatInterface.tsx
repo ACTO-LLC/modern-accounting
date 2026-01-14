@@ -153,17 +153,20 @@ function UncertaintyBadge() {
   );
 }
 
-// Copy button component
-function CopyButton({ text, timestamp, role }: { text: string; timestamp: Date; role: string }) {
+// Copy all messages button component
+function CopyAllButton({ messages }: { messages: Array<{ role: string; content: string; timestamp: Date }> }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    const formattedTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const speaker = role === 'user' ? 'You' : 'Assistant';
-    const copyText = `[${formattedTime}] ${speaker}: ${text}`;
+  const handleCopyAll = async () => {
+    const formattedMessages = messages.map(msg => {
+      const date = msg.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+      const time = msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const speaker = msg.role === 'user' ? 'You' : 'Assistant';
+      return `[${date} ${time}] ${speaker}:\n${msg.content}`;
+    }).join('\n\n---\n\n');
 
     try {
-      await navigator.clipboard.writeText(copyText);
+      await navigator.clipboard.writeText(formattedMessages);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -173,14 +176,15 @@ function CopyButton({ text, timestamp, role }: { text: string; timestamp: Date; 
 
   return (
     <button
-      onClick={handleCopy}
-      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
-      title="Copy message"
+      onClick={handleCopyAll}
+      className="hover:bg-indigo-700 dark:hover:bg-indigo-600 p-1.5 rounded transition-colors"
+      aria-label="Copy conversation"
+      title="Copy conversation"
     >
       {copied ? (
-        <Check className="w-3 h-3 text-green-500" />
+        <Check className="w-4 h-4 text-green-300" />
       ) : (
-        <Copy className="w-3 h-3 text-gray-400" />
+        <Copy className="w-4 h-4" />
       )}
     </button>
   );
@@ -471,6 +475,7 @@ What would you like to do?`
           <h3 className="font-semibold">Accounting Assistant</h3>
         </div>
         <div className="flex items-center gap-1">
+          <CopyAllButton messages={messages} />
           <button
             onClick={clearMessages}
             className="hover:bg-indigo-700 dark:hover:bg-indigo-600 p-1.5 rounded transition-colors"
@@ -623,25 +628,18 @@ What would you like to do?`
                       Source: {message.toolUsed.replace(/_/g, ' ')}
                     </span>
                   )}
-                  <div className="flex items-center justify-between mt-2">
-                    <p
-                      className={`text-xs ${
-                        message.role === 'user'
-                          ? 'text-indigo-200'
-                          : 'text-gray-400 dark:text-gray-500'
-                      }`}
-                    >
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                    <CopyButton
-                      text={message.content}
-                      timestamp={message.timestamp}
-                      role={message.role}
-                    />
-                  </div>
+                  <p
+                    className={`text-xs mt-2 ${
+                      message.role === 'user'
+                        ? 'text-indigo-200'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </>
               )}
             </div>

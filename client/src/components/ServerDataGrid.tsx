@@ -8,6 +8,7 @@ import {
   GridRowParams,
   GridValidRowModel,
 } from '@mui/x-data-grid';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { graphql } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -310,6 +311,45 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
     );
   }
 
+  // Create MUI theme forcing light mode (prevents auto dark mode from system preferences)
+  const dataGridTheme = createTheme({
+    colorSchemes: {
+      light: {
+        palette: {
+          text: {
+            primary: '#111827',
+            secondary: '#374151',
+          },
+        },
+      },
+    },
+    components: {
+      MuiDataGrid: {
+        styleOverrides: {
+          root: {
+            border: 'none',
+            color: '#111827',
+          },
+          cell: {
+            color: '#111827',
+            borderBottom: '1px solid #e5e7eb',
+          },
+          columnHeaders: {
+            backgroundColor: '#f9fafb',
+            borderBottom: '1px solid #e5e7eb',
+          },
+          columnHeaderTitle: {
+            color: '#374151',
+            fontWeight: 600,
+          },
+          footerContainer: {
+            borderTop: '1px solid #e5e7eb',
+          },
+        },
+      },
+    },
+  });
+
   return (
     <div>
       {headerActions && (
@@ -318,51 +358,51 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
         </div>
       )}
       <div style={{ height, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <DataGrid
-          rows={rows}
-          columns={columnsWithActions}
-          getRowId={getRowId}
-          loading={loading}
-          // Pagination
-          paginationMode="server"
-          paginationModel={paginationModel}
-          onPaginationModelChange={handlePaginationModelChange}
-          pageSizeOptions={pageSizeOptions}
-          rowCount={totalRows}
-          // Sorting
-          sortingMode="server"
-          sortModel={sortModel}
-          onSortModelChange={handleSortModelChange}
-          // Filtering
-          filterMode="server"
-          filterModel={filterModel}
-          onFilterModelChange={handleFilterModelChange}
-          // Row interaction
-          onRowClick={handleRowClick}
-          checkboxSelection={checkboxSelection}
-          disableRowSelectionOnClick={disableRowSelectionOnClick}
-          // Styling
-          sx={{
-            border: 'none',
-            '& .MuiDataGrid-cell:focus': {
-              outline: 'none',
-            },
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(79, 70, 229, 0.04)',
-              cursor: editPath || onRowClick ? 'pointer' : 'default',
-            },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: 'var(--datagrid-header-bg, #f9fafb)',
-              borderBottom: '1px solid var(--datagrid-border, #e5e7eb)',
-            },
-            '& .MuiDataGrid-cell': {
-              borderBottom: '1px solid #e5e7eb',
-            },
-          }}
-          localeText={{
-            noRowsLabel: emptyMessage,
-          }}
-        />
+        <ThemeProvider theme={dataGridTheme}>
+          <DataGrid
+            rows={rows}
+            columns={columnsWithActions}
+            getRowId={getRowId}
+            loading={loading}
+            // Pagination
+            paginationMode="server"
+            paginationModel={paginationModel}
+            onPaginationModelChange={handlePaginationModelChange}
+            pageSizeOptions={pageSizeOptions}
+            rowCount={totalRows}
+            // Sorting
+            sortingMode="server"
+            sortModel={sortModel}
+            onSortModelChange={handleSortModelChange}
+            // Filtering
+            filterMode="server"
+            filterModel={filterModel}
+            onFilterModelChange={handleFilterModelChange}
+            // Row interaction
+            onRowClick={handleRowClick}
+            checkboxSelection={checkboxSelection}
+            disableRowSelectionOnClick={disableRowSelectionOnClick}
+            // Styling
+            sx={{
+              '& .MuiDataGrid-cell': {
+                color: '#111827 !important',
+              },
+              '& .MuiDataGrid-columnHeaderTitle': {
+                color: '#374151 !important',
+              },
+              '& .MuiDataGrid-row:hover': {
+                backgroundColor: 'rgba(79, 70, 229, 0.04)',
+                cursor: editPath || onRowClick ? 'pointer' : 'default',
+              },
+              '& .MuiDataGrid-cell:focus': {
+                outline: 'none',
+              },
+            }}
+            localeText={{
+              noRowsLabel: emptyMessage,
+            }}
+          />
+        </ThemeProvider>
       </div>
     </div>
   );
