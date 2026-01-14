@@ -74,7 +74,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getAuthenticatedClient(sessionId);
-                const { criteria = [], ...options } = args.params || {};
+                const { criteria = [], fetchAll, ...options } = args.params || {};
                 const searchCriteria = buildSearchCriteria(criteria, options);
 
                 const result = await new Promise<any>((resolve, reject) => {
@@ -85,10 +85,12 @@ export const tools = [
                 });
 
                 const customers = result?.QueryResponse?.Customer || [];
-                return {
+
+                // For migration, include raw data
+                const response: any = {
                     content: [
                         { type: 'text' as const, text: `Found ${customers.length} customers` },
-                        ...customers.map((c: any) => ({
+                        ...customers.slice(0, 10).map((c: any) => ({
                             type: 'text' as const,
                             text: JSON.stringify({
                                 Id: c.Id,
@@ -102,6 +104,12 @@ export const tools = [
                         }))
                     ]
                 };
+
+                if (fetchAll) {
+                    response.data = customers;
+                }
+
+                return response;
             } catch (error: any) {
                 return {
                     content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
@@ -126,7 +134,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getAuthenticatedClient(sessionId);
-                const { criteria = [], ...options } = args.params || {};
+                const { criteria = [], fetchAll, ...options } = args.params || {};
                 const searchCriteria = buildSearchCriteria(criteria, options);
 
                 const result = await new Promise<any>((resolve, reject) => {
@@ -137,10 +145,11 @@ export const tools = [
                 });
 
                 const invoices = result?.QueryResponse?.Invoice || [];
-                return {
+
+                const response: any = {
                     content: [
                         { type: 'text' as const, text: `Found ${invoices.length} invoices` },
-                        ...invoices.map((inv: any) => ({
+                        ...invoices.slice(0, 10).map((inv: any) => ({
                             type: 'text' as const,
                             text: JSON.stringify({
                                 Id: inv.Id,
@@ -154,6 +163,12 @@ export const tools = [
                         }))
                     ]
                 };
+
+                if (fetchAll) {
+                    response.data = invoices;
+                }
+
+                return response;
             } catch (error: any) {
                 return {
                     content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
@@ -177,7 +192,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getAuthenticatedClient(sessionId);
-                const { criteria = [], ...options } = args.params || {};
+                const { criteria = [], fetchAll, ...options } = args.params || {};
                 const searchCriteria = buildSearchCriteria(criteria, options);
 
                 const result = await new Promise<any>((resolve, reject) => {
@@ -188,10 +203,11 @@ export const tools = [
                 });
 
                 const vendors = result?.QueryResponse?.Vendor || [];
-                return {
+
+                const response: any = {
                     content: [
                         { type: 'text' as const, text: `Found ${vendors.length} vendors` },
-                        ...vendors.map((v: any) => ({
+                        ...vendors.slice(0, 10).map((v: any) => ({
                             type: 'text' as const,
                             text: JSON.stringify({
                                 Id: v.Id,
@@ -206,6 +222,12 @@ export const tools = [
                         }))
                     ]
                 };
+
+                if (fetchAll) {
+                    response.data = vendors;
+                }
+
+                return response;
             } catch (error: any) {
                 return {
                     content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
@@ -229,7 +251,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getAuthenticatedClient(sessionId);
-                const { criteria = [], ...options } = args.params || {};
+                const { criteria = [], fetchAll, ...options } = args.params || {};
                 const searchCriteria = buildSearchCriteria(criteria, options);
 
                 const result = await new Promise<any>((resolve, reject) => {
@@ -240,10 +262,11 @@ export const tools = [
                 });
 
                 const accounts = result?.QueryResponse?.Account || [];
-                return {
+
+                const response: any = {
                     content: [
                         { type: 'text' as const, text: `Found ${accounts.length} accounts` },
-                        ...accounts.map((acc: any) => ({
+                        ...accounts.slice(0, 10).map((acc: any) => ({
                             type: 'text' as const,
                             text: JSON.stringify({
                                 Id: acc.Id,
@@ -257,6 +280,12 @@ export const tools = [
                         }))
                     ]
                 };
+
+                if (fetchAll) {
+                    response.data = accounts;
+                }
+
+                return response;
             } catch (error: any) {
                 return {
                     content: [{ type: 'text' as const, text: `Error: ${error.message}` }],

@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw, Paperclip, Edit2, RotateCcw, XCircle, FileIcon, Image as ImageIcon } from 'lucide-react';
+import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw, Paperclip, Edit2, RotateCcw, XCircle, FileIcon, Image as ImageIcon, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useChat, Insight, FileAttachment } from '../contexts/ChatContext';
 import QBOConnectButton, { getQboSessionId } from './QBOConnectButton';
@@ -29,9 +29,10 @@ function sanitizeAndFormatContent(content: string): string {
   return typeof sanitized === 'string' ? sanitized : String(sanitized);
 }
 
-// Quick action chips component
+// Quick action chips component - collapsible
 function QuickActions({ onAction, disabled, qboConnected, isOnboarding }: { onAction: (text: string) => void; disabled: boolean; qboConnected: boolean; isOnboarding: boolean }) {
-  // Show different actions based on context
+  const [isExpanded, setIsExpanded] = useState(true);
+
   const actions = isOnboarding
     ? [
         { label: 'Yes, from QuickBooks', icon: 'QB', style: 'qbo' },
@@ -46,32 +47,40 @@ function QuickActions({ onAction, disabled, qboConnected, isOnboarding }: { onAc
       ];
 
   return (
-    <div className="flex flex-wrap gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-      <span className="text-xs text-gray-500 dark:text-gray-400 w-full mb-1">
-        {isOnboarding ? 'Quick responses:' : 'Quick actions:'}
-      </span>
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          onClick={() => onAction(action.label)}
-          disabled={disabled}
-          className={`text-xs px-3 py-1.5 rounded-full transition-colors
-            bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300
-            border border-gray-200 dark:border-gray-600
-            hover:bg-indigo-50 dark:hover:bg-indigo-900/30
-            hover:text-indigo-600 dark:hover:text-indigo-400
-            hover:border-indigo-300 dark:hover:border-indigo-700
-            disabled:opacity-50 disabled:cursor-not-allowed
-            ${action.style === 'qbo' ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' : ''}`}
-        >
-          {action.label}
-        </button>
-      ))}
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-3 py-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+      >
+        <span>{isOnboarding ? 'Quick responses' : 'Quick actions'}</span>
+        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+      </button>
+      {isExpanded && (
+        <div className="flex flex-wrap gap-2 px-3 pb-2">
+          {actions.map((action) => (
+            <button
+              key={action.label}
+              onClick={() => onAction(action.label)}
+              disabled={disabled}
+              className={`text-xs px-3 py-1.5 rounded-full transition-colors
+                bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300
+                border border-gray-200 dark:border-gray-600
+                hover:bg-indigo-50 dark:hover:bg-indigo-900/30
+                hover:text-indigo-600 dark:hover:text-indigo-400
+                hover:border-indigo-300 dark:hover:border-indigo-700
+                disabled:opacity-50 disabled:cursor-not-allowed
+                ${action.style === 'qbo' ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' : ''}`}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// Insights panel component
+// Insights panel component - collapsible with badge
 function InsightsPanel({
   insights,
   onAskAbout,
@@ -81,38 +90,55 @@ function InsightsPanel({
   onAskAbout: (title: string) => void;
   disabled: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (!insights || insights.length === 0) return null;
 
+  const warningCount = insights.filter(i => i.severity === 'warning').length;
+
   return (
-    <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
-      <div className="flex items-center gap-2 mb-2 text-sm font-medium text-amber-800 dark:text-amber-300">
-        <Sparkles className="w-4 h-4" />
-        Insights
-      </div>
-      <div className="space-y-2">
-        {insights.slice(0, 3).map((insight, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded text-xs shadow-sm"
-          >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              {insight.severity === 'warning' && (
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-              )}
-              <span className="text-gray-700 dark:text-gray-300 truncate">
-                {insight.message}
-              </span>
-            </div>
-            <button
-              onClick={() => onAskAbout(`Tell me more about ${insight.title.toLowerCase()}`)}
-              disabled={disabled}
-              className="text-indigo-600 dark:text-indigo-400 hover:underline ml-2 flex-shrink-0 disabled:opacity-50"
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-3 py-2 flex items-center justify-between hover:bg-amber-100/50 dark:hover:bg-amber-800/20 transition-colors"
+      >
+        <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+          <Sparkles className="w-4 h-4" />
+          <span>Insights</span>
+          {warningCount > 0 && (
+            <span className="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+              {warningCount}
+            </span>
+          )}
+        </div>
+        {isExpanded ? <ChevronDown className="w-4 h-4 text-amber-600" /> : <ChevronRight className="w-4 h-4 text-amber-600" />}
+      </button>
+      {isExpanded && (
+        <div className="px-3 pb-2 space-y-2">
+          {insights.slice(0, 3).map((insight, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded text-xs shadow-sm"
             >
-              Ask
-            </button>
-          </div>
-        ))}
-      </div>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {insight.severity === 'warning' && (
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                )}
+                <span className="text-gray-700 dark:text-gray-300 truncate">
+                  {insight.message}
+                </span>
+              </div>
+              <button
+                onClick={() => onAskAbout(`Tell me more about ${insight.title.toLowerCase()}`)}
+                disabled={disabled}
+                className="text-indigo-600 dark:text-indigo-400 hover:underline ml-2 flex-shrink-0 disabled:opacity-50"
+              >
+                Ask
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -124,6 +150,39 @@ function UncertaintyBadge() {
       <AlertTriangle className="w-3 h-3" />
       Based on available data - verify for accuracy
     </span>
+  );
+}
+
+// Copy button component
+function CopyButton({ text, timestamp, role }: { text: string; timestamp: Date; role: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const formattedTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const speaker = role === 'user' ? 'You' : 'Assistant';
+    const copyText = `[${formattedTime}] ${speaker}: ${text}`;
+
+    try {
+      await navigator.clipboard.writeText(copyText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+      title="Copy message"
+    >
+      {copied ? (
+        <Check className="w-3 h-3 text-green-500" />
+      ) : (
+        <Copy className="w-3 h-3 text-gray-400" />
+      )}
+    </button>
   );
 }
 
@@ -430,10 +489,10 @@ What would you like to do?`
         </div>
       </div>
 
-      {/* QBO Connection Status */}
-      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      {/* QBO Connection Status - compact */}
+      <div className="px-3 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <QBOConnectButton
-          compact={false}
+          compact={true}
           onStatusChange={(status) => {
             setQboConnected(status.connected);
             setQboCompanyName(status.companyName || null);
@@ -564,18 +623,25 @@ What would you like to do?`
                       Source: {message.toolUsed.replace(/_/g, ' ')}
                     </span>
                   )}
-                  <p
-                    className={`text-xs mt-2 ${
-                      message.role === 'user'
-                        ? 'text-indigo-200'
-                        : 'text-gray-400 dark:text-gray-500'
-                    }`}
-                  >
-                    {message.timestamp.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p
+                      className={`text-xs ${
+                        message.role === 'user'
+                          ? 'text-indigo-200'
+                          : 'text-gray-400 dark:text-gray-500'
+                      }`}
+                    >
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                    <CopyButton
+                      text={message.content}
+                      timestamp={message.timestamp}
+                      role={message.role}
+                    />
+                  </div>
                 </>
               )}
             </div>

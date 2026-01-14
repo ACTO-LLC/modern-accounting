@@ -1719,21 +1719,8 @@ async function executeMigrateCustomers(params) {
             return { success: false, error: `Failed to fetch QBO customers: ${qboResult.error}` };
         }
 
-        // Parse QBO response - the result contains content array with text items
-        let qboCustomers = [];
-        if (qboResult.content) {
-            // Find the count message and individual customer records
-            for (const item of qboResult.content) {
-                if (item.text && !item.text.startsWith('Found')) {
-                    try {
-                        const customer = JSON.parse(item.text);
-                        qboCustomers.push(customer);
-                    } catch (e) {
-                        // Not a JSON customer record
-                    }
-                }
-            }
-        }
+        // Use raw data array from response
+        let qboCustomers = qboResult.data || [];
 
         // Apply limit if specified
         if (params.limit && params.limit > 0) {
@@ -1782,20 +1769,8 @@ async function executeMigrateVendors(params) {
             return { success: false, error: `Failed to fetch QBO vendors: ${qboResult.error}` };
         }
 
-        // Parse QBO response
-        let qboVendors = [];
-        if (qboResult.content) {
-            for (const item of qboResult.content) {
-                if (item.text && !item.text.startsWith('Found')) {
-                    try {
-                        const vendor = JSON.parse(item.text);
-                        qboVendors.push(vendor);
-                    } catch (e) {
-                        // Not a JSON vendor record
-                    }
-                }
-            }
-        }
+        // Use raw data array from response
+        let qboVendors = qboResult.data || [];
 
         if (params.limit && params.limit > 0) {
             qboVendors = qboVendors.slice(0, params.limit);
@@ -1841,20 +1816,8 @@ async function executeMigrateAccounts(params) {
             return { success: false, error: `Failed to fetch QBO accounts: ${qboResult.error}` };
         }
 
-        // Parse QBO response
-        let qboAccounts = [];
-        if (qboResult.content) {
-            for (const item of qboResult.content) {
-                if (item.text && !item.text.startsWith('Found')) {
-                    try {
-                        const account = JSON.parse(item.text);
-                        qboAccounts.push(account);
-                    } catch (e) {
-                        // Not a JSON account record
-                    }
-                }
-            }
-        }
+        // Use raw data array from response
+        let qboAccounts = qboResult.data || [];
 
         if (params.limit && params.limit > 0) {
             qboAccounts = qboAccounts.slice(0, params.limit);
@@ -1909,20 +1872,8 @@ async function executeMigrateInvoices(params) {
             return { success: false, error: `Failed to fetch QBO invoices: ${qboResult.error}` };
         }
 
-        // Parse QBO response
-        let qboInvoices = [];
-        if (qboResult.content) {
-            for (const item of qboResult.content) {
-                if (item.text && !item.text.startsWith('Found')) {
-                    try {
-                        const invoice = JSON.parse(item.text);
-                        qboInvoices.push(invoice);
-                    } catch (e) {
-                        // Not a JSON invoice record
-                    }
-                }
-            }
-        }
+        // Use raw data array from response
+        let qboInvoices = qboResult.data || [];
 
         // Filter to unpaid only if requested
         if (params.unpaid_only) {
