@@ -1,26 +1,22 @@
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
 import ServerDataGrid from '../components/ServerDataGrid';
-import api from '../lib/api';
+import { formatDate } from '../lib/dateUtils';
 
 interface Bill {
   Id: string;
   VendorId: string;
+  VendorName: string;
   BillNumber: string;
   BillDate: string;
   DueDate: string;
   TotalAmount: number;
   AmountPaid: number;
+  BalanceDue: number;
   Status: string;
   Terms: string;
   Memo: string;
-}
-
-interface Vendor {
-  Id: string;
-  Name: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -35,30 +31,11 @@ const getStatusColor = (status: string) => {
 };
 
 export default function Bills() {
-  const { data: vendors } = useQuery({
-    queryKey: ['vendors'],
-    queryFn: async () => {
-      const response = await api.get<{ value: Vendor[] }>('/vendors');
-      return response.data.value;
-    },
-  });
-
-  const vendorMap = vendors?.reduce((acc, vendor) => {
-    acc[vendor.Id] = vendor.Name;
-    return acc;
-  }, {} as Record<string, string>) || {};
-
   const columns: GridColDef[] = [
     { field: 'BillNumber', headerName: 'Bill #', width: 120, filterable: true },
-    {
-      field: 'VendorId',
-      headerName: 'Vendor',
-      width: 180,
-      filterable: true,
-      renderCell: (params) => vendorMap[params.value] || 'Unknown Vendor'
-    },
-    { field: 'BillDate', headerName: 'Bill Date', width: 120, filterable: true },
-    { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true },
+    { field: 'VendorName', headerName: 'Vendor', width: 180, filterable: true },
+    { field: 'BillDate', headerName: 'Bill Date', width: 120, filterable: true, renderCell: (params) => formatDate(params.value) },
+    { field: 'DueDate', headerName: 'Due Date', width: 120, filterable: true, renderCell: (params) => formatDate(params.value) },
     {
       field: 'TotalAmount',
       headerName: 'Amount',
@@ -68,12 +45,12 @@ export default function Bills() {
       renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
     },
     {
-      field: 'balance',
+      field: 'BalanceDue',
       headerName: 'Balance Due',
       width: 120,
-      sortable: false,
-      filterable: false,
-      renderCell: (params) => `$${((params.row.TotalAmount || 0) - (params.row.AmountPaid || 0)).toFixed(2)}`,
+      type: 'number',
+      filterable: true,
+      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
     },
     {
       field: 'Status',
@@ -103,7 +80,7 @@ export default function Bills() {
 
       <ServerDataGrid<Bill>
         entityName="bills"
-        queryFields="Id VendorId BillNumber BillDate DueDate TotalAmount AmountPaid Status Terms Memo"
+        queryFields="Id VendorId VendorName BillNumber BillDate DueDate TotalAmount AmountPaid BalanceDue Status Terms Memo"
         columns={columns}
         editPath="/bills/{id}/edit"
         initialPageSize={25}

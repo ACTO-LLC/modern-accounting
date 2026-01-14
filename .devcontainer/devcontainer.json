@@ -1,0 +1,59 @@
+{
+  "name": "Modern Accounting",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-mssql.mssql",
+        "ms-azuretools.vscode-docker",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "usernamehw.errorlens"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [5173, 7071, 5000, 14330],
+  "portsAttributes": {
+    "5173": { "label": "Client (Vite)", "onAutoForward": "notify" },
+    "7071": { "label": "Chat API", "onAutoForward": "silent" },
+    "5000": { "label": "DAB API", "onAutoForward": "silent" },
+    "14330": { "label": "SQL Server", "onAutoForward": "silent" }
+  },
+
+  "postCreateCommand": "npm install && cd client && npm install && cd ../chat-api && npm install",
+  "postStartCommand": ".devcontainer/start-services.sh",
+
+  "remoteUser": "node",
+
+  "containerEnv": {
+    "SQL_SERVER": "database",
+    "SQL_PORT": "1433",
+    "SQL_USER": "sa",
+    "SQL_PASSWORD": "StrongPassword123!",
+    "SQL_DATABASE": "AccountingDB",
+    "DAB_API_URL": "http://dab:5000/api",
+    "VITE_API_URL": "http://localhost:7071"
+  }
+}

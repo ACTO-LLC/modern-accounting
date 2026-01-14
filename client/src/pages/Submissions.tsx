@@ -2,6 +2,7 @@ import { Plus, Eye, Edit } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GridColDef } from '@mui/x-data-grid';
 import ServerDataGrid from '../components/ServerDataGrid';
+import { formatDate } from '../lib/dateUtils';
 
 interface Submission {
   Id: string;
@@ -81,11 +82,7 @@ export default function Submissions() {
       headerName: 'Created',
       width: 120,
       filterable: true,
-      renderCell: (params) => {
-        if (!params.value) return '';
-        const date = new Date(params.value);
-        return date.toLocaleDateString();
-      },
+      renderCell: (params) => formatDate(params.value),
     },
     {
       field: 'actions',

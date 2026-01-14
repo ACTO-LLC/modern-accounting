@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Edit2, FileText } from 'lucide-react';
+import { formatDate } from '../lib/dateUtils';
 
 interface BankTransaction {
   Id: string;
@@ -368,7 +369,7 @@ export default function ReviewTransactions() {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(txn.TransactionDate).toLocaleDateString()}
+                      {formatDate(txn.TransactionDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {txn.SourceName}

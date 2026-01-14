@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import { formatDate } from '../lib/dateUtils';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -59,7 +60,7 @@ export default function JournalEntries() {
               entries?.map((entry) => (
                 <tr key={entry.Id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{entry.Reference}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.TransactionDate}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(entry.TransactionDate)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.Description}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">

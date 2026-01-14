@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus, ChevronLeft, ChevronRight, Calendar, List, Trash2 } from 'lucide-react';
-import { timeEntriesApi, projectsApi, TimeEntry, Project } from '../lib/api';
+import { timeEntriesApi, TimeEntry } from '../lib/api';
 import clsx from 'clsx';
 
 type ViewMode = 'list' | 'calendar';
@@ -31,13 +31,6 @@ export default function TimeEntries() {
     queryKey: ['timeEntries'],
     queryFn: timeEntriesApi.getAll,
   });
-
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: projectsApi.getAll,
-  });
-
-  const projectsMap = new Map(projects.map(p => [p.Id, p.Name]));
 
   // Filter entries for current week
   const weekEntries = useMemo(() => {
@@ -209,7 +202,7 @@ export default function TimeEntries() {
                           className="text-xs p-1 bg-indigo-50 rounded border-l-2 border-indigo-500"
                         >
                           <div className="font-medium truncate">
-                            {projectsMap.get(entry.ProjectId) || 'Unknown'}
+                            {entry.ProjectName || 'Unknown'}
                           </div>
                           <div className="text-gray-500">{entry.Hours}h</div>
                         </div>
@@ -284,7 +277,7 @@ export default function TimeEntries() {
                         })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {projectsMap.get(entry.ProjectId) || 'Unknown'}
+                        {entry.ProjectName || 'Unknown'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                         {entry.Description || '-'}

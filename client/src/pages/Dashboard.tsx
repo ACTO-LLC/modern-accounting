@@ -18,6 +18,7 @@ import {
   Activity,
   ArrowRight
 } from 'lucide-react';
+import { formatDate } from '../lib/dateUtils';
 
 interface JournalEntry {
   Id: string;
@@ -304,7 +305,7 @@ export default function Dashboard() {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-medium">{entry.Description}</h3>
-                        <p className="text-sm text-gray-500">{new Date(entry.TransactionDate).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-500">{formatDate(entry.TransactionDate)}</p>
                       </div>
                       <p className="text-sm text-gray-500">Journal Entry</p>
                     </div>

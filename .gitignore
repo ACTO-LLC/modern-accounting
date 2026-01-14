@@ -44,8 +44,14 @@ local.settings.json
 # Debug logs
 dab_debug_log.txt
 
-# Worktree generated files
-dab-config.worktree.json
-docker-compose.worktree.yml
+# Chat API uploads
+chat-api/uploads/
+
+# Worktree config (each worktree has its own)
+.worktree.env
 
 tmpclaude*
+nul
+# Local Claude Code settings
+.claude/
+.mcp.json

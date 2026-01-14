@@ -39,8 +39,38 @@ docker-compose up
 # Terminal 2: CSV Import API
 cd csv-import-api && npm start
 
-# Terminal 3: Client
+# Terminal 3: Chat API (AI Assistant)
+cd chat-api && npm install && npm run dev
+
+# Terminal 4: Client
 cd client && npm run dev
+```
+
+### Chat API Environment Setup
+The Chat API requires Azure OpenAI credentials. Create `chat-api/.env`:
+```
+# Using ACTO Dev 2 Subscription for local development
+AZURE_OPENAI_ENDPOINT=https://eastus.api.cognitive.microsoft.com/
+AZURE_OPENAI_API_KEY=<your-api-key>
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+DAB_API_URL=http://localhost:5000/api
+APP_URL=http://localhost:5219
+```
+
+**Azure Resources (ACTO DEV 2):**
+- Subscription: `b9167e1d-d52f-48fe-859d-65bc32b6c2f6`
+- Resource Group: `acto-dev-pss-ai`
+- OpenAI Resource: `acto-dev2-openai`
+- Region: `eastus`
+- Model Deployment: `gpt-4o`
+
+To get the API key:
+```bash
+az cognitiveservices account keys list \
+  --name "acto-dev2-openai" \
+  --resource-group "acto-dev-pss-ai" \
+  --subscription "ACTO DEV 2" \
+  --query "key1" -o tsv
 ```
 
 ### Manual Test
@@ -58,6 +88,8 @@ npx playwright test tests/import-qbse-autodetect.spec.ts
 ```
 
 ## Environment Info
+- **Database**: Port 14330 (SQL Server)
 - **DAB**: Port 5000
-- **API**: Port 7072
-- **Client**: Port 5173
+- **CSV Import API**: Port 7072
+- **Chat API**: Port 7071
+- **Client**: Port 5219

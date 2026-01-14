@@ -3,9 +3,15 @@
   "version": "1.0.0",
   "description": "Modern Double-Entry Accounting System",
   "scripts": {
-    "dev": "concurrently \"npm run dev:client\" \"npm run dev:dab\"",
+    "start": "concurrently -n docker,api,client -c blue,yellow,green \"npm run start:docker\" \"npm run start:api\" \"npm run start:client\"",
+    "start:docker": "docker compose up",
+    "start:api": "cd chat-api && npm start",
+    "start:client": "cd client && npm run dev",
+    "stop": "docker compose down",
+    "dev": "concurrently -n api,client -c yellow,green \"npm run start:api\" \"npm run start:client\"",
     "dev:client": "cd client && npm run dev",
-    "dev:dab": "docker-compose up",
+    "dev:api": "cd chat-api && npm start",
+    "dev:docker": "docker compose up -d",
     "test": "cd client && npx playwright test"
   },
   "keywords": [

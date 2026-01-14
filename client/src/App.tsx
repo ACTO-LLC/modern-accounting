@@ -9,6 +9,7 @@ import { initializeApiAuth } from './lib/api';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ChatProvider } from './contexts/ChatContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -38,6 +39,9 @@ import EditProductService from './pages/EditProductService';
 import Vendors from './pages/Vendors';
 import NewVendor from './pages/NewVendor';
 import EditVendor from './pages/EditVendor';
+import ChartOfAccounts from './pages/ChartOfAccounts';
+import NewAccount from './pages/NewAccount';
+import EditAccount from './pages/EditAccount';
 import Reports from './pages/Reports';
 import ProfitAndLoss from './pages/reports/ProfitAndLoss';
 import BalanceSheet from './pages/reports/BalanceSheet';
@@ -100,6 +104,9 @@ function AppContent() {
             <Route path="vendors" element={<Vendors />} />
             <Route path="vendors/new" element={<NewVendor />} />
             <Route path="vendors/:id/edit" element={<EditVendor />} />
+            <Route path="accounts" element={<ChartOfAccounts />} />
+            <Route path="accounts/new" element={<NewAccount />} />
+            <Route path="accounts/:id/edit" element={<EditAccount />} />
             <Route path="bills" element={<Bills />} />
             <Route path="bills/new" element={<NewBill />} />
             <Route path="bills/:id/edit" element={<EditBill />} />
@@ -141,8 +148,10 @@ function App() {
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
               <ToastProvider>
-              <AppContent />
-            </ToastProvider>
+                <ChatProvider>
+                  <AppContent />
+                </ChatProvider>
+              </ToastProvider>
             </ThemeProvider>
           </QueryClientProvider>
         </CompanySettingsProvider>

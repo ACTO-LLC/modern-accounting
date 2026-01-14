@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
 import ServerDataGrid from '../components/ServerDataGrid';
-import { customersApi, Customer } from '../lib/api';
+import { formatDate } from '../lib/dateUtils';
 
 interface Project {
   Id: string;
   Name: string;
   CustomerId: string;
+  CustomerName: string;
   Description?: string;
   Status: 'Active' | 'Completed' | 'OnHold';
   StartDate?: string;
@@ -32,13 +32,6 @@ const formatCurrency = (amount?: number) => {
 };
 
 export default function Projects() {
-  const { data: customers = [] } = useQuery<Customer[]>({
-    queryKey: ['customers'],
-    queryFn: customersApi.getAll,
-  });
-
-  const customersMap = new Map(customers.map(c => [c.Id, c.Name]));
-
   const columns: GridColDef[] = [
     {
       field: 'Name',
@@ -54,13 +47,7 @@ export default function Projects() {
         </div>
       )
     },
-    {
-      field: 'CustomerId',
-      headerName: 'Customer',
-      width: 150,
-      filterable: true,
-      renderCell: (params) => customersMap.get(params.value) || 'Unknown'
-    },
+    { field: 'CustomerName', headerName: 'Customer', width: 150, filterable: true },
     {
       field: 'Status',
       headerName: 'Status',
@@ -80,8 +67,8 @@ export default function Projects() {
       filterable: false,
       renderCell: (params) => (
         <div className="text-sm text-gray-500">
-          {params.row.StartDate && <div>Start: {new Date(params.row.StartDate).toLocaleDateString()}</div>}
-          {params.row.EndDate && <div>End: {new Date(params.row.EndDate).toLocaleDateString()}</div>}
+          {params.row.StartDate && <div>Start: {formatDate(params.row.StartDate)}</div>}
+          {params.row.EndDate && <div>End: {formatDate(params.row.EndDate)}</div>}
           {!params.row.StartDate && !params.row.EndDate && '-'}
         </div>
       ),
@@ -117,7 +104,7 @@ export default function Projects() {
 
       <ServerDataGrid<Project>
         entityName="projects"
-        queryFields="Id Name CustomerId Description Status StartDate EndDate BudgetedHours BudgetedAmount"
+        queryFields="Id Name CustomerId CustomerName Description Status StartDate EndDate BudgetedHours BudgetedAmount"
         columns={columns}
         editPath="/projects/{id}/edit"
         initialPageSize={25}

@@ -1,0 +1,79 @@
+import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
+import { GridColDef } from '@mui/x-data-grid';
+import ServerDataGrid from '../components/ServerDataGrid';
+
+interface Account {
+  Id: string;
+  Code: string;
+  Name: string;
+  Type: string;
+  Subtype: string;
+  AccountNumber: string;
+  Description: string;
+  IsActive: boolean;
+}
+
+const typeColors: Record<string, string> = {
+  Asset: 'bg-blue-100 text-blue-800',
+  Liability: 'bg-red-100 text-red-800',
+  Equity: 'bg-purple-100 text-purple-800',
+  Revenue: 'bg-green-100 text-green-800',
+  Expense: 'bg-orange-100 text-orange-800',
+};
+
+export default function ChartOfAccounts() {
+  const columns: GridColDef[] = [
+    { field: 'Code', headerName: 'Code', width: 100, filterable: true },
+    { field: 'AccountNumber', headerName: 'Acct #', width: 100, filterable: true },
+    { field: 'Name', headerName: 'Name', width: 250, filterable: true },
+    {
+      field: 'Type',
+      headerName: 'Type',
+      width: 120,
+      filterable: true,
+      renderCell: (params) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
+          {params.value}
+        </span>
+      ),
+    },
+    { field: 'Subtype', headerName: 'Subtype', width: 150, filterable: true },
+    {
+      field: 'IsActive',
+      headerName: 'Status',
+      width: 100,
+      filterable: true,
+      renderCell: (params) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${params.value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+          {params.value ? 'Active' : 'Inactive'}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Chart of Accounts</h1>
+        <Link
+          to="/accounts/new"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          New Account
+        </Link>
+      </div>
+
+      <ServerDataGrid<Account>
+        entityName="accounts"
+        queryFields="Id Code AccountNumber Name Type Subtype IsActive"
+        columns={columns}
+        editPath="/accounts/{id}/edit"
+        initialPageSize={25}
+        emptyMessage="No accounts found. Create your first account to get started."
+        defaultSort={[{ field: 'Code', sort: 'asc' }]}
+      />
+    </div>
+  );
+}

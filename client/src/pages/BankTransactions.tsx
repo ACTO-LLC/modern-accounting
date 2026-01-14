@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { formatDate } from '../lib/dateUtils';
 
 interface BankTransaction {
   Id: string;
@@ -324,7 +325,7 @@ export default function BankTransactions() {
                 {filteredTransactions.map((txn) => (
                   <tr key={txn.Id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(txn.TransactionDate).toLocaleDateString()}
+                      {formatDate(txn.TransactionDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       <div>{txn.SourceName}</div>

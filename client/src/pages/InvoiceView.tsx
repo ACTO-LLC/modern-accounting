@@ -7,6 +7,7 @@ import api from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
 import EmailInvoiceModal from '../components/EmailInvoiceModal';
 import EmailHistory from '../components/EmailHistory';
+import { formatDate } from '../lib/dateUtils';
 
 interface InvoiceLine {
   Id: string;
@@ -232,11 +233,11 @@ export default function InvoiceView() {
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm print:text-xs">
                   <span className="text-gray-500">Invoice Date:</span>
                   <span className="text-gray-900 font-medium">
-                    {new Date(invoice.IssueDate).toLocaleDateString()}
+                    {formatDate(invoice.IssueDate)}
                   </span>
                   <span className="text-gray-500">Due Date:</span>
                   <span className="text-gray-900 font-medium">
-                    {new Date(invoice.DueDate).toLocaleDateString()}
+                    {formatDate(invoice.DueDate)}
                   </span>
                   <span className="text-gray-500">Status:</span>
                   <span className={`font-medium ${invoice.Status === 'Paid' ? 'text-green-600' : invoice.Status === 'Overdue' ? 'text-red-600' : 'text-gray-900'}`}>
