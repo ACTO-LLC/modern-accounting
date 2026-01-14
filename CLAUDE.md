@@ -75,3 +75,15 @@ When users say:
 2. **QBO Migration Data:** When calling QBO search tools, use `fetchAll: true` to get raw data in the `data` field for migration purposes.
 
 3. **Background Tasks:** Windows paths with backslashes can cause issues in bash commands. Use forward slashes or PowerShell.
+
+4. **ID Type Mismatch in Migrations (Jan 2026):** QBO API returns IDs that can be either numbers or strings depending on context. When storing ID mappings (QBO ID → ACTO ID), always use `String()` to normalize keys:
+   ```javascript
+   // WRONG - may fail due to type mismatch
+   idMap[qboCustomer.Id] = actoId;
+   const actoId = idMap[invoice.CustomerRef.value];
+
+   // CORRECT - always use string keys
+   idMap[String(qboCustomer.Id)] = actoId;
+   const actoId = idMap[String(invoice.CustomerRef.value)];
+   ```
+   This ensures `123` (number) and `"123"` (string) both map to the same key.

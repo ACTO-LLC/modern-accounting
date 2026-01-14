@@ -1,6 +1,7 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw, Paperclip, Edit2, RotateCcw, XCircle, FileIcon, Image as ImageIcon, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import { useNavigate } from 'react-router-dom';
 import { useChat, Insight, FileAttachment } from '../contexts/ChatContext';
 import QBOConnectButton, { getQboSessionId } from './QBOConnectButton';
 
@@ -10,17 +11,23 @@ const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost
 // Configure DOMPurify to allow safe link attributes
 const sanitizeConfig = {
   ALLOWED_TAGS: ['a', 'b', 'i', 'em', 'strong', 'br', 'p', 'span', 'ul', 'li', 'ol'],
-  ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-  ALLOW_DATA_ATTR: false,
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'data-internal'],
+  ALLOW_DATA_ATTR: true,
 };
 
 function sanitizeAndFormatContent(content: string): string {
   // Convert markdown bold to HTML
   let htmlContent = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // Convert markdown links to HTML
+  // Convert markdown links to HTML - internal links (starting with /) don't open in new tab
   htmlContent = htmlContent.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300" target="_blank" rel="noopener noreferrer">$1</a>'
+    (match, text, url) => {
+      const isInternal = url.startsWith('/');
+      if (isInternal) {
+        return `<a href="${url}" class="underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300" data-internal="true">${text}</a>`;
+      }
+      return `<a href="${url}" class="underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    }
   );
   // Convert newlines to breaks
   htmlContent = htmlContent.replace(/\n/g, '<br />');
@@ -29,9 +36,16 @@ function sanitizeAndFormatContent(content: string): string {
   return typeof sanitized === 'string' ? sanitized : String(sanitized);
 }
 
-// Quick action chips component - collapsible
+// Quick action chips component - collapsible (starts expanded only during onboarding)
 function QuickActions({ onAction, disabled, qboConnected, isOnboarding }: { onAction: (text: string) => void; disabled: boolean; qboConnected: boolean; isOnboarding: boolean }) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(isOnboarding);
+  const [wasOnboarding, setWasOnboarding] = useState(isOnboarding);
+
+  // Auto-collapse when user moves past onboarding without picking a quick action
+  if (wasOnboarding && !isOnboarding) {
+    setIsExpanded(false);
+    setWasOnboarding(false);
+  }
 
   const actions = isOnboarding
     ? [
@@ -208,6 +222,7 @@ export default function ChatInterface() {
     clearPendingAttachments,
   } = useChat();
 
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -216,6 +231,18 @@ export default function ChatInterface() {
   const [editContent, setEditContent] = useState('');
   const [qboConnected, setQboConnected] = useState(false);
   const [qboCompanyName, setQboCompanyName] = useState<string | null>(null);
+
+  // Handle clicks on internal links in chat messages
+  const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'A' && target.dataset.internal === 'true') {
+      e.preventDefault();
+      const href = target.getAttribute('href');
+      if (href) {
+        navigate(href);
+      }
+    }
+  }, [navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -455,12 +482,14 @@ What would you like to do?`
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg
+        className={`fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg
           hover:bg-indigo-700 transition-all hover:scale-110 z-50
-          dark:bg-indigo-500 dark:hover:bg-indigo-600"
-        aria-label="Open chat"
+          dark:bg-indigo-500 dark:hover:bg-indigo-600
+          ${isLoading ? 'animate-pulse ring-4 ring-indigo-300 dark:ring-indigo-400' : ''}`}
+        aria-label={isLoading ? "AI is thinking..." : "Open chat"}
+        title={isLoading ? "AI is working on a response..." : "Open chat"}
       >
-        <MessageCircle className="w-6 h-6" />
+        <MessageCircle className={`w-6 h-6 ${isLoading ? 'animate-bounce' : ''}`} />
       </button>
     );
   }
@@ -593,6 +622,7 @@ What would you like to do?`
                   {/* Message content */}
                   <div
                     className="text-sm leading-relaxed"
+                    onClick={handleContentClick}
                     dangerouslySetInnerHTML={{
                       __html: sanitizeAndFormatContent(message.content),
                     }}

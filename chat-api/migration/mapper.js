@@ -153,8 +153,9 @@ export function mapAccount(qboAccount, existingCodes = []) {
  */
 export function mapInvoice(qboInvoice, customerIdMap = {}) {
     // Look up ACTO customer ID from QBO customer ID
+    // Use String() to ensure consistent key type (QBO IDs can be numbers or strings)
     const qboCustomerId = qboInvoice.CustomerRef?.value || qboInvoice.CustomerRef;
-    const actoCustomerId = customerIdMap[qboCustomerId];
+    const actoCustomerId = customerIdMap[String(qboCustomerId)];
 
     if (!actoCustomerId) {
         return {
@@ -223,8 +224,9 @@ function mapInvoiceStatus(qboInvoice) {
  * Map QBO Bill to ACTO Bill
  */
 export function mapBill(qboBill, vendorIdMap = {}, accountIdMap = {}) {
+    // Use String() to ensure consistent key type (QBO IDs can be numbers or strings)
     const qboVendorId = qboBill.VendorRef?.value || qboBill.VendorRef;
-    const actoVendorId = vendorIdMap[qboVendorId];
+    const actoVendorId = vendorIdMap[String(qboVendorId)];
 
     if (!actoVendorId) {
         return {
@@ -270,7 +272,7 @@ function mapBillLine(qboLine, accountIdMap = {}) {
     const qboAccountId = detail.AccountRef?.value;
 
     return {
-        AccountId: accountIdMap[qboAccountId] || null,
+        AccountId: qboAccountId ? accountIdMap[String(qboAccountId)] || null : null,
         Description: qboLine.Description || detail.AccountRef?.name || 'Expense',
         Amount: parseFloat(qboLine.Amount) || 0,
         _qboAccountRef: qboAccountId

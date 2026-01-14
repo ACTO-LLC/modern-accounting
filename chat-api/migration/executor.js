@@ -51,8 +51,8 @@ export async function migrateCustomers(qboCustomers, mcp, onProgress = null) {
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
-                // Customer exists, map to existing ID
-                result.idMap[qboCustomer.Id] = existing[0].Id;
+                // Customer exists, map to existing ID (use string key for consistency)
+                result.idMap[String(qboCustomer.Id)] = existing[0].Id;
                 result.skipped++;
                 result.details.push({
                     type: 'customer',
@@ -75,7 +75,7 @@ export async function migrateCustomers(qboCustomers, mcp, onProgress = null) {
             }
 
             const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
-            result.idMap[qboCustomer.Id] = newId;
+            result.idMap[String(qboCustomer.Id)] = newId;
             result.migrated++;
             result.details.push({
                 type: 'customer',
@@ -120,7 +120,7 @@ export async function migrateVendors(qboVendors, mcp, onProgress = null) {
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
-                result.idMap[qboVendor.Id] = existing[0].Id;
+                result.idMap[String(qboVendor.Id)] = existing[0].Id;
                 result.skipped++;
                 result.details.push({
                     type: 'vendor',
@@ -143,7 +143,7 @@ export async function migrateVendors(qboVendors, mcp, onProgress = null) {
             }
 
             const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
-            result.idMap[qboVendor.Id] = newId;
+            result.idMap[String(qboVendor.Id)] = newId;
             result.migrated++;
             result.details.push({
                 type: 'vendor',
@@ -198,7 +198,7 @@ export async function migrateAccounts(qboAccounts, mcp, onProgress = null) {
                 // Check if exists, map ID if so
                 const existingId = existingByName[qboAccount.Name.toLowerCase()];
                 if (existingId) {
-                    result.idMap[qboAccount.Id] = existingId;
+                    result.idMap[String(qboAccount.Id)] = existingId;
                 }
                 result.skipped++;
                 result.details.push({
@@ -213,7 +213,7 @@ export async function migrateAccounts(qboAccounts, mcp, onProgress = null) {
 
             // Check if account with same name exists
             if (existingNames.has(qboAccount.Name.toLowerCase())) {
-                result.idMap[qboAccount.Id] = existingByName[qboAccount.Name.toLowerCase()];
+                result.idMap[String(qboAccount.Id)] = existingByName[qboAccount.Name.toLowerCase()];
                 result.skipped++;
                 result.details.push({
                     type: 'account',
@@ -240,7 +240,7 @@ export async function migrateAccounts(qboAccounts, mcp, onProgress = null) {
             }
 
             const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
-            result.idMap[qboAccount.Id] = newId;
+            result.idMap[String(qboAccount.Id)] = newId;
             existingByName[actoAccount.Name.toLowerCase()] = newId;
             result.migrated++;
             result.details.push({
@@ -305,7 +305,7 @@ export async function migrateInvoices(qboInvoices, mcp, customerIdMap, onProgres
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
-                result.idMap[qboInvoice.Id] = existing[0].Id;
+                result.idMap[String(qboInvoice.Id)] = existing[0].Id;
                 result.skipped++;
                 result.details.push({
                     type: 'invoice',
@@ -333,7 +333,7 @@ export async function migrateInvoices(qboInvoices, mcp, customerIdMap, onProgres
             }
 
             const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
-            result.idMap[qboInvoice.Id] = newId;
+            result.idMap[String(qboInvoice.Id)] = newId;
 
             // Create invoice lines
             let linesCreated = 0;
@@ -415,7 +415,7 @@ export async function migrateBills(qboBills, mcp, vendorIdMap, accountIdMap, onP
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
-                result.idMap[qboBill.Id] = existing[0].Id;
+                result.idMap[String(qboBill.Id)] = existing[0].Id;
                 result.skipped++;
                 result.details.push({
                     type: 'bill',
@@ -446,7 +446,7 @@ export async function migrateBills(qboBills, mcp, vendorIdMap, accountIdMap, onP
             }
 
             const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
-            result.idMap[qboBill.Id] = newId;
+            result.idMap[String(qboBill.Id)] = newId;
 
             // Create bill lines
             let linesCreated = 0;
