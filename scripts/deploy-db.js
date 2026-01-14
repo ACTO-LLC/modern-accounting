@@ -52,20 +52,54 @@ async function deploy() {
             END
         `);
 
-        // Read and Execute Scripts
+        // Read and Execute Scripts in dependency order
+        // Tables must be created before tables that reference them with foreign keys
         const scriptsDir = path.join(__dirname, '../database/dbo/Tables');
-        const files = fs.readdirSync(scriptsDir);
+        const tableOrder = [
+            // Base tables (no foreign key dependencies)
+            'Accounts.sql',
+            'Customers.sql',
+            'Vendors.sql',
+            'Locations.sql',
+            'Classes.sql',
+            'Projects.sql',
+            'ProductsServices.sql',
+            'InventoryLocations.sql',
+            // Tables with dependencies on base tables
+            'JournalEntries.sql',
+            'JournalEntryLines.sql',
+            'Invoices.sql',
+            'InvoiceLines.sql',
+            'Bills.sql',
+            'BillLines.sql',
+            'Estimates.sql',
+            'EstimateLines.sql',
+            'BankReconciliations.sql',
+            'BankTransactions.sql',
+            'ReconciliationItems.sql',
+            'InventoryTransactions.sql',
+            'RecurringTemplates.sql',
+            'RecurringSchedules.sql',
+            'TimeEntries.sql',
+        ];
 
-        for (const file of files) {
-            if (file.endsWith('.sql')) {
-                console.log(`Executing ${file}...`);
-                const content = fs.readFileSync(path.join(scriptsDir, file), 'utf8');
-                // Remove GO statements as they are not T-SQL
-                const batches = content.split('GO');
-                for (const batch of batches) {
-                    if (batch.trim()) {
-                        await pool.request().query(batch);
-                    }
+        // Execute in specified order, then any remaining files
+        const allFiles = fs.readdirSync(scriptsDir).filter(f => f.endsWith('.sql'));
+        const orderedFiles = [...tableOrder, ...allFiles.filter(f => !tableOrder.includes(f))];
+
+        for (const file of orderedFiles) {
+            const filePath = path.join(scriptsDir, file);
+            if (!fs.existsSync(filePath)) {
+                console.log(`Skipping ${file} (not found)...`);
+                continue;
+            }
+            console.log(`Executing ${file}...`);
+            const content = fs.readFileSync(filePath, 'utf8');
+            // Remove GO statements as they are not T-SQL
+            const batches = content.split('GO');
+            for (const batch of batches) {
+                if (batch.trim()) {
+                    await pool.request().query(batch);
                 }
             }
         }
