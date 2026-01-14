@@ -6,7 +6,7 @@ services:
     container_name: accounting-db
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=StrongPassword123!
+      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123!}
     ports:
       - "14330:1433"
     volumes:
@@ -21,6 +21,8 @@ services:
       - "5000:5000"
     volumes:
       - ./dab-config.json:/App/dab-config.json
+    environment:
+      - DAB_CONNECTION_STRING=Server=database,1433;Database=AccountingDB;User Id=sa;Password=$${SQL_SA_PASSWORD:-StrongPassword123!};TrustServerCertificate=true
 
 volumes:
   sql-data:

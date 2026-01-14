@@ -3,10 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 const config = {
-    user: 'sa',
-    password: 'StrongPassword123!',
-    server: 'localhost',
-    port: 14330,
+    user: process.env.SQL_USER || 'sa',
+    password: process.env.SQL_SA_PASSWORD || 'StrongPassword123!',
+    server: process.env.SQL_SERVER || 'localhost',
+    port: parseInt(process.env.SQL_PORT || '14330'),
     database: 'master',
     options: {
         encrypt: true,
