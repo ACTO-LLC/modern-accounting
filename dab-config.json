@@ -1097,6 +1097,107 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "migrationfieldmaps": {
+            "source": "dbo.MigrationFieldMaps",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "EntityType": "EntityType",
+                "SourceField": "SourceField",
+                "TargetField": "TargetField",
+                "Transform": "Transform",
+                "DefaultValue": "DefaultValue",
+                "IsRequired": "IsRequired",
+                "SortOrder": "SortOrder",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "migrationtypemaps": {
+            "source": "dbo.MigrationTypeMaps",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "Category": "Category",
+                "SourceValue": "SourceValue",
+                "TargetValue": "TargetValue",
+                "IsDefault": "IsDefault",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "migrationentitymaps": {
+            "source": "dbo.MigrationEntityMaps",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "EntityType": "EntityType",
+                "SourceId": "SourceId",
+                "TargetId": "TargetId",
+                "SourceData": "SourceData",
+                "MigratedAt": "MigratedAt",
+                "MigratedBy": "MigratedBy"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "migrationconfigs": {
+            "source": "dbo.MigrationConfigs",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "ConfigKey": "ConfigKey",
+                "ConfigValue": "ConfigValue",
+                "Description": "Description",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }

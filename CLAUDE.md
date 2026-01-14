@@ -87,3 +87,38 @@ When users say:
    const actoId = idMap[String(invoice.CustomerRef.value)];
    ```
    This ensures `123` (number) and `"123"` (string) both map to the same key.
+
+---
+
+### DB-Driven Migration Framework (Jan 2026)
+
+Migration mappings are now stored in the database for self-healing without code changes:
+
+**Tables:**
+- `MigrationFieldMaps` - Field name mappings (QBO DisplayName → ACTO Name)
+- `MigrationTypeMaps` - Value mappings (QBO "Bank" → ACTO "Asset")
+- `MigrationEntityMaps` - ID mappings (QBO ID → ACTO UUID)
+- `MigrationConfigs` - Configuration settings
+
+**Self-Healing Examples:**
+```sql
+-- Fix a field mapping without code deploy
+UPDATE MigrationFieldMaps
+SET TargetField = 'CompanyName'
+WHERE SourceSystem = 'QBO' AND EntityType = 'Customer' AND SourceField = 'DisplayName';
+
+-- Add a new account type mapping
+INSERT INTO MigrationTypeMaps (SourceSystem, Category, SourceValue, TargetValue)
+VALUES ('QBO', 'AccountType', 'NewType', 'Asset');
+
+-- Change migration config
+UPDATE MigrationConfigs
+SET ConfigValue = 'update'
+WHERE SourceSystem = 'QBO' AND ConfigKey = 'DuplicateHandling';
+```
+
+**Entity Tracking:**
+Entities now have `SourceSystem` and `SourceId` columns to track their origin:
+- Customers, Vendors, Accounts, Invoices, Bills all have these columns
+- Allows direct lookup without separate mapping table
+- Prevents duplicate migrations automatically

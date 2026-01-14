@@ -13,8 +13,9 @@ import {
     migrateCustomers,
     migrateVendors,
     migrateAccounts,
-    migrateInvoices
-} from './migration/executor.js';
+    migrateInvoices,
+    migrateBills
+} from './migration/db-executor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1697,20 +1698,8 @@ async function executeQboSearchBills(params) {
 // Migration Tool Execution Functions
 // ============================================================================
 
-// Store migration ID maps across tool calls within a session
-const migrationIdMaps = new Map();
-
-function getMigrationIdMap(sessionId) {
-    if (!migrationIdMaps.has(sessionId)) {
-        migrationIdMaps.set(sessionId, {
-            customers: {},
-            vendors: {},
-            accounts: {},
-            invoices: {}
-        });
-    }
-    return migrationIdMaps.get(sessionId);
-}
+// Migration now uses database-driven mappings (MigrationEntityMaps table)
+// No in-memory ID maps needed - lookups are done via DB queries
 
 async function executeMigrateCustomers(params) {
     if (!currentQboSessionId) {
@@ -1742,12 +1731,8 @@ async function executeMigrateCustomers(params) {
             return { success: true, message: 'No customers found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration
-        const result = await migrateCustomers(qboCustomers, mcp);
-
-        // Store ID map for subsequent migrations
-        const idMaps = getMigrationIdMap(currentQboSessionId);
-        Object.assign(idMaps.customers, result.idMap);
+        // Run migration (DB-driven - no in-memory ID maps needed)
+        const result = await migrateCustomers(qboCustomers, mcp, 'QBO');
 
         return {
             success: true,
@@ -1756,8 +1741,8 @@ async function executeMigrateCustomers(params) {
             skipped: result.skipped,
             viewUrl: '/customers',
             errors: result.errors.length,
-            errorDetails: result.errors.slice(0, 5), // Limit error details
-            details: result.details.slice(0, 10) // Limit details shown
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
         };
     } catch (error) {
         return { success: false, error: error.message };
@@ -1792,10 +1777,8 @@ async function executeMigrateVendors(params) {
             return { success: true, message: 'No vendors found to migrate', migrated: 0, skipped: 0 };
         }
 
-        const result = await migrateVendors(qboVendors, mcp);
-
-        const idMaps = getMigrationIdMap(currentQboSessionId);
-        Object.assign(idMaps.vendors, result.idMap);
+        // Run migration (DB-driven - no in-memory ID maps needed)
+        const result = await migrateVendors(qboVendors, mcp, 'QBO');
 
         return {
             success: true,
@@ -1840,10 +1823,8 @@ async function executeMigrateAccounts(params) {
             return { success: true, message: 'No accounts found to migrate', migrated: 0, skipped: 0 };
         }
 
-        const result = await migrateAccounts(qboAccounts, mcp);
-
-        const idMaps = getMigrationIdMap(currentQboSessionId);
-        Object.assign(idMaps.accounts, result.idMap);
+        // Run migration (DB-driven - no in-memory ID maps needed)
+        const result = await migrateAccounts(qboAccounts, mcp, 'QBO');
 
         return {
             success: true,
@@ -1871,14 +1852,8 @@ async function executeMigrateInvoices(params) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        // Check if customers have been migrated
-        const idMaps = getMigrationIdMap(currentQboSessionId);
-        if (Object.keys(idMaps.customers).length === 0) {
-            return {
-                success: false,
-                error: 'Customers must be migrated before invoices. Run migrate_customers first.'
-            };
-        }
+        // No need to check in-memory ID maps - DB-driven mapper will look up customers
+        // If no customers have been migrated, invoices will be skipped with appropriate errors
 
         // Fetch invoices from QBO
         const qboResult = await qboMcp.searchInvoices(currentQboSessionId, { fetchAll: true });
@@ -1905,9 +1880,8 @@ async function executeMigrateInvoices(params) {
             return { success: true, message: 'No invoices found to migrate', migrated: 0, skipped: 0 };
         }
 
-        const result = await migrateInvoices(qboInvoices, mcp, idMaps.customers);
-
-        Object.assign(idMaps.invoices, result.idMap);
+        // Run migration (DB-driven - customer lookups done via database)
+        const result = await migrateInvoices(qboInvoices, mcp, 'QBO');
 
         // Calculate total value migrated
         const totalValue = result.details
