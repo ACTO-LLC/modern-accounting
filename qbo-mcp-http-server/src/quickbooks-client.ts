@@ -67,19 +67,33 @@ export async function handleOAuthCallback(
             expiresIn: tokens.expires_in || 3600
         });
 
-        // Optionally fetch company info
+        // Fetch company info
         try {
             const qb = await getAuthenticatedClient(sessionId);
             const companyInfo = await new Promise<any>((resolve, reject) => {
                 qb.getCompanyInfo(tokens.realmId, (err: any, info: any) => {
-                    if (err) reject(err);
-                    else resolve(info);
+                    if (err) {
+                        console.error('getCompanyInfo error:', err);
+                        reject(err);
+                    } else {
+                        console.log('Company info response:', JSON.stringify(info, null, 2));
+                        resolve(info);
+                    }
                 });
             });
-            session.companyName = companyInfo?.CompanyInfo?.CompanyName || 'Unknown Company';
+            // Handle different response structures from node-quickbooks
+            const companyName = companyInfo?.CompanyInfo?.CompanyName
+                || companyInfo?.QueryResponse?.CompanyInfo?.[0]?.CompanyName
+                || companyInfo?.companyName
+                || companyInfo?.CompanyName;
+            session.companyName = companyName || 'Connected Company';
             sessionStore.update(sessionId, { companyName: session.companyName });
-        } catch (e) {
-            console.log('Could not fetch company name:', e);
+            console.log('Company name set to:', session.companyName);
+        } catch (e: any) {
+            console.error('Could not fetch company name:', e?.message || e);
+            // Still mark as connected, just without company name
+            session.companyName = 'QuickBooks Company';
+            sessionStore.update(sessionId, { companyName: session.companyName });
         }
 
         return session;

@@ -214,15 +214,72 @@ app.get('/oauth/callback', async (req: Request, res: Response) => {
         // Handle OAuth callback
         const session = await handleOAuthCallback(sessionId, callbackUrl);
 
-        // Redirect to success page
-        const successUrl = new URL(redirectUrl || 'http://localhost:5173');
-        successUrl.searchParams.set('qbo_connected', 'true');
-        successUrl.searchParams.set('company', session.companyName || '');
-
-        res.redirect(successUrl.toString());
+        // Return HTML that closes the popup and notifies the parent window
+        const companyName = session.companyName || 'QuickBooks Company';
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Connected to QuickBooks</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #2CA01C 0%, #1E7813 100%);
+                        color: white;
+                    }
+                    .container {
+                        text-align: center;
+                        padding: 40px;
+                    }
+                    .checkmark {
+                        font-size: 64px;
+                        margin-bottom: 20px;
+                    }
+                    h1 { margin: 0 0 10px 0; font-size: 24px; }
+                    p { margin: 0; opacity: 0.9; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="checkmark">✓</div>
+                    <h1>Connected!</h1>
+                    <p>${companyName}</p>
+                    <p style="margin-top: 20px; font-size: 14px;">This window will close automatically...</p>
+                </div>
+                <script>
+                    // Notify parent window of successful connection
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'qbo_connected',
+                            companyName: '${companyName.replace(/'/g, "\\'")}'
+                        }, '*');
+                    }
+                    // Close this popup after a brief delay
+                    setTimeout(() => {
+                        window.close();
+                    }, 1500);
+                </script>
+            </body>
+            </html>
+        `);
     } catch (error: any) {
         console.error('OAuth callback error:', error);
-        res.status(500).send(`OAuth error: ${error.message}`);
+        res.status(500).send(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>Connection Error</title></head>
+            <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+                <h1>Connection Failed</h1>
+                <p>${error.message}</p>
+                <button onclick="window.close()">Close</button>
+            </body>
+            </html>
+        `);
     }
 });
 

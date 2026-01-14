@@ -62,11 +62,20 @@ export default function QBOConnectButton({ onStatusChange, compact = false }: QB
     }
   }, [sessionId, onStatusChange]);
 
-  // Check status on mount and when window regains focus
+  // Check status on mount and listen for OAuth completion
   useEffect(() => {
     checkStatus();
 
-    // Re-check when window regains focus (user may have completed OAuth)
+    // Listen for postMessage from OAuth popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'qbo_connected') {
+        console.log('QBO connected via postMessage:', event.data.companyName);
+        setIsConnecting(false);
+        checkStatus(); // Refresh status from server
+      }
+    };
+
+    // Re-check when window regains focus (backup for popup close)
     const handleFocus = () => {
       if (isConnecting) {
         checkStatus();
@@ -74,8 +83,12 @@ export default function QBOConnectButton({ onStatusChange, compact = false }: QB
       }
     };
 
+    window.addEventListener('message', handleMessage);
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [checkStatus, isConnecting]);
 
   // Listen for OAuth callback via URL params
