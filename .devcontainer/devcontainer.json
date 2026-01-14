@@ -55,6 +55,7 @@
     "SQL_PASSWORD": "StrongPassword123!",
     "SQL_DATABASE": "AccountingDB",
     "DAB_API_URL": "http://dab:5000/api",
-    "VITE_API_URL": "http://localhost:7071"
+    "VITE_API_URL": "http://dab:5000",
+    "VITE_EMAIL_API_URL": "http://email-api:7073"
   }
 }
