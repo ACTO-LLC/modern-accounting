@@ -8,11 +8,11 @@ test.describe('Products & Services Management', () => {
     const sku = `SKU-${timestamp}`;
 
     // 1. Navigate to Products & Services page
-    await page.goto('http://localhost:5173/products-services');
+    await page.goto('/products-services');
     
     // 2. Click "New Product/Service"
     await page.getByRole('link', { name: 'New Product/Service' }).click();
-    await expect(page).toHaveURL('http://localhost:5173/products-services/new');
+    await expect(page).toHaveURL('//products-services/new');
 
     // 3. Fill Form
     await page.getByLabel('Name', { exact: true }).fill(serviceName);
@@ -26,7 +26,7 @@ test.describe('Products & Services Management', () => {
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
 
     // 5. Verify Redirect and List
-    await expect(page).toHaveURL('http://localhost:5173/products-services');
+    await expect(page).toHaveURL('//products-services');
     await expect(page.getByText(serviceName)).toBeVisible();
     await expect(page.getByText(sku)).toBeVisible();
 
@@ -39,12 +39,12 @@ test.describe('Products & Services Management', () => {
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
 
     // 8. Verify Update
-    await expect(page).toHaveURL('http://localhost:5173/products-services');
+    await expect(page).toHaveURL('//products-services');
     await expect(page.getByText(updatedName)).toBeVisible();
   });
 
   test('should filter by type', async ({ page }) => {
-    await page.goto('http://localhost:5173/products-services');
+    await page.goto('/products-services');
 
     // Filter by Service type
     await page.locator('#typeFilter').selectOption('Service');
@@ -61,7 +61,7 @@ test.describe('Products & Services Management', () => {
   });
 
   test('should filter by status', async ({ page }) => {
-    await page.goto('http://localhost:5173/products-services');
+    await page.goto('/products-services');
 
     // Filter by Active status
     await page.locator('#statusFilter').selectOption('Active');
@@ -77,7 +77,7 @@ test.describe('Products & Services Management', () => {
     const timestamp = Date.now();
     const inventoryName = `Test Inventory ${timestamp}`;
 
-    await page.goto('http://localhost:5173/products-services/new');
+    await page.goto('/products-services/new');
 
     await page.getByLabel('Name', { exact: true }).fill(inventoryName);
     await page.getByLabel('Type').selectOption('Inventory');
@@ -91,12 +91,12 @@ test.describe('Products & Services Management', () => {
 
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
 
-    await expect(page).toHaveURL('http://localhost:5173/products-services');
+    await expect(page).toHaveURL('//products-services');
     await expect(page.getByText(inventoryName)).toBeVisible();
   });
 
   test('should validate required fields', async ({ page }) => {
-    await page.goto('http://localhost:5173/products-services/new');
+    await page.goto('/products-services/new');
 
     // Try to save without filling required fields
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
@@ -107,7 +107,7 @@ test.describe('Products & Services Management', () => {
 
   test('should validate negative prices', async ({ page }) => {
     const timestamp = Date.now();
-    await page.goto('http://localhost:5173/products-services/new');
+    await page.goto('/products-services/new');
 
     await page.getByLabel('Name', { exact: true }).fill(`Test Negative ${timestamp}`);
     await page.getByLabel('Sales Price').fill('-10.00');
@@ -119,17 +119,17 @@ test.describe('Products & Services Management', () => {
   });
 
   test('should navigate back using back button', async ({ page }) => {
-    await page.goto('http://localhost:5173/products-services/new');
+    await page.goto('/products-services/new');
 
     // Click back button
     await page.getByRole('button', { name: 'Back to products and services' }).click();
 
     // Verify navigation
-    await expect(page).toHaveURL('http://localhost:5173/products-services');
+    await expect(page).toHaveURL('//products-services');
   });
 
   test('should show type-specific help text', async ({ page }) => {
-    await page.goto('http://localhost:5173/products-services/new');
+    await page.goto('/products-services/new');
 
     // Check Service help text
     await page.getByLabel('Type').selectOption('Service');
@@ -145,7 +145,7 @@ test.describe('Products & Services Management', () => {
   });
 
   test('should display correct type badges', async ({ page }) => {
-    await page.goto('http://localhost:5173/products-services');
+    await page.goto('/products-services');
 
     // Verify table headers are present
     await expect(page.getByRole('columnheader', { name: 'Type' })).toBeVisible();

@@ -8,11 +8,11 @@ test.describe('Customer Management', () => {
     const email = `test${timestamp}@example.com`;
 
     // 1. Navigate to Customers page
-    await page.goto('http://localhost:5173/customers');
+    await page.goto('/customers');
     
     // 2. Click "New Customer"
     await page.getByRole('link', { name: 'New Customer' }).click();
-    await expect(page).toHaveURL('http://localhost:5173/customers/new');
+    await expect(page).toHaveURL('//customers/new');
 
     // 3. Fill Form
     await page.getByLabel('Name').fill(customerName);
@@ -24,7 +24,7 @@ test.describe('Customer Management', () => {
     await page.getByRole('button', { name: 'Save Customer' }).click();
 
     // 5. Verify Redirect and List
-    await expect(page).toHaveURL('http://localhost:5173/customers');
+    await expect(page).toHaveURL('//customers');
     await expect(page.getByText(customerName)).toBeVisible();
     await expect(page.getByText(email)).toBeVisible();
 
@@ -38,7 +38,7 @@ test.describe('Customer Management', () => {
     await page.getByRole('button', { name: 'Save Customer' }).click();
 
     // 8. Verify Update
-    await expect(page).toHaveURL('http://localhost:5173/customers');
+    await expect(page).toHaveURL('//customers');
     await expect(page.getByText(updatedName)).toBeVisible();
     await expect(page.getByText(customerName, { exact: true })).not.toBeVisible();
   });

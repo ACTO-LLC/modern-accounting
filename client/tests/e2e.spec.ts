@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
 test('has title', async ({ page }) => {
-  await page.goto('http://localhost:5173/');
+  await page.goto('/');
   await expect(page).toHaveTitle(/Modern Accounting/);
 });
 
 test('can navigate to invoices and see seeded data', async ({ page }) => {
   // Go to Dashboard
-  await page.goto('http://localhost:5173/');
+  await page.goto('/');
   
   // Click Invoices link
   await page.getByRole('link', { name: 'Invoices' }).click();
@@ -24,7 +24,7 @@ test('can navigate to invoices and see seeded data', async ({ page }) => {
 test('can create a new invoice', async ({ page }) => {
   const invoiceNumber = `INV-E2E-${Date.now()}`;
   
-  await page.goto('http://localhost:5173/invoices');
+  await page.goto('/invoices');
   await page.getByRole('button', { name: 'New Invoice' }).click();
   
   await expect(page).toHaveURL(/.*invoices\/new/);
@@ -47,7 +47,7 @@ test('can create a new invoice', async ({ page }) => {
 });
 
 test('can simulate bank feed', async ({ page }) => {
-  await page.goto('http://localhost:5173/banking');
+  await page.goto('/banking');
   
   // Click Sync button
   await page.getByRole('button', { name: 'Sync Bank Feed' }).click();
@@ -68,7 +68,7 @@ test('can create a balanced journal entry', async ({ page }) => {
   page.on('console', msg => console.log(msg.text()));
   const entryNumber = `JE-E2E-${Date.now()}`;
   
-  await page.goto('http://localhost:5173/journal-entries');
+  await page.goto('/journal-entries');
   await page.getByRole('button', { name: 'New Entry' }).click();
   
   await expect(page).toHaveURL(/.*journal-entries\/new/);
@@ -109,7 +109,7 @@ test('can create a balanced journal entry', async ({ page }) => {
 test('can edit an existing invoice', async ({ page }) => {
   // 1. Create a new invoice first (to ensure we have one to edit)
   const invoiceNumber = `INV-EDIT-${Date.now()}`;
-  await page.goto('http://localhost:5173/invoices/new');
+  await page.goto('/invoices/new');
   await page.getByLabel('Invoice Number').fill(invoiceNumber);
   
   // Select customer from dropdown
@@ -147,7 +147,7 @@ test('can edit an existing invoice', async ({ page }) => {
 
 test('can use AI chat to get invoices', async ({ page }) => {
   // Navigate to app
-  await page.goto('http://localhost:5173');
+  await page.goto('/');
   
   // Open chat
   await page.getByLabel('Open chat').click();

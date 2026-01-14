@@ -31,7 +31,7 @@ test.describe('Invoice Edit', () => {
     console.log(`Created test invoice: ${invoiceId}`);
 
     // 2. Navigate to the edit page
-    await page.goto(`http://localhost:5173/invoices/${invoiceId}/edit`);
+    await page.goto(`//invoices/${invoiceId}/edit`);
 
     // 3. Verify the form loaded
     // Check for the invoice number input to have the correct value

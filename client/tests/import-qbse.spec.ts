@@ -4,7 +4,7 @@ import path from 'path';
 test.describe('Import Historical Data', () => {
   test('should reset database, import QBSE data, and verify IsPersonal flag', async ({ page }) => {
     // 1. Reset Database
-    await page.goto('http://localhost:5173/import');
+    await page.goto('/import');
     
     // Handle dialog
     page.on('dialog', dialog => dialog.accept());

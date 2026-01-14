@@ -14,7 +14,7 @@ test.describe('Banking Module', () => {
 
     try {
       // 2. Navigate to Import Page
-      await page.goto('http://localhost:5173/import');
+      await page.goto('/import');
       await expect(page.getByRole('heading', { name: 'Import Transactions' })).toBeVisible();
 
       // 3. Select Source Account (assuming 'Checking' account exists from seed data or previous tests)
@@ -33,7 +33,7 @@ test.describe('Banking Module', () => {
 
       // 6. Handle Alert (Import Success)
       // Playwright automatically dismisses alerts, but we can verify the navigation to /review
-      await expect(page).toHaveURL('http://localhost:5173/review');
+      await expect(page).toHaveURL('//review');
 
       // 7. Review Transactions
       await expect(page.getByRole('heading', { name: 'Review Imported Transactions' })).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('Banking Module', () => {
       await expect(page.locator('span:text("Posted")').nth(1)).toBeVisible();
 
       // 11. Verify Journal Entries
-      await page.goto('http://localhost:5173/journal-entries');
+      await page.goto('/journal-entries');
       await expect(page.getByText('Bank Txn').first()).toBeVisible();
 
     } finally {

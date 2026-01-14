@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('can view invoices list', async ({ page }) => {
-  await page.goto('http://localhost:5173/invoices');
+  await page.goto('/invoices');
   
   // Verify header
   await expect(page.getByText('Invoices')).toBeVisible();
@@ -20,7 +20,7 @@ test('can view invoices list', async ({ page }) => {
 });
 
 test('can navigate to new invoice page', async ({ page }) => {
-  await page.goto('http://localhost:5173/invoices');
+  await page.goto('/invoices');
   
   await page.getByRole('button', { name: /New Invoice/i }).click();
   

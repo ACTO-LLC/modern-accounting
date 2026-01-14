@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('can create and edit invoice with line items', async ({ page }) => {
   // 1. Create Invoice
-  await page.goto('http://localhost:5173/invoices/new');
+  await page.goto('/invoices/new');
   
   await page.getByLabel('Invoice Number').fill('INV-TEST-LINES-' + Date.now());
   
@@ -30,7 +30,7 @@ test('can create and edit invoice with line items', async ({ page }) => {
   await page.getByRole('button', { name: /Create Invoice/i }).click();
   
   // Wait for navigation
-  await expect(page).toHaveURL('http://localhost:5173/invoices');
+  await expect(page).toHaveURL('//invoices');
   
   // 2. Verify Invoice in List
   // We might need to reload or wait for the list to update
@@ -55,7 +55,7 @@ test('can create and edit invoice with line items', async ({ page }) => {
   await page.getByRole('button', { name: /Save Invoice/i }).click();
   
   // Wait for navigation
-  await expect(page).toHaveURL('http://localhost:5173/invoices');
+  await expect(page).toHaveURL('//invoices');
   
   // 4. Verify Updated Total
   await page.reload();

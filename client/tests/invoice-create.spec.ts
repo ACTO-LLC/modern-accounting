@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('can create invoice with line items', async ({ page }) => {
-  await page.goto('http://localhost:5173/invoices/new');
+  await page.goto('/invoices/new');
   
   await page.getByLabel('Invoice Number').fill('INV-TEST-CREATE-' + Date.now());
   
@@ -20,7 +20,7 @@ test('can create invoice with line items', async ({ page }) => {
   
   await page.getByRole('button', { name: /Create Invoice/i }).click();
   
-  await expect(page).toHaveURL('http://localhost:5173/invoices');
+  await expect(page).toHaveURL('//invoices');
   
   await page.reload();
   await expect(page.getByText('$500.00')).toBeVisible();

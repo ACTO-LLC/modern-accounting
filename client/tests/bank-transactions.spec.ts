@@ -5,7 +5,7 @@ import * as path from 'path';
 // Test CSV Import Flow
 test('can import CSV and see AI categorizations', async ({ page }) => {
   test.setTimeout(120000);
-  await page.goto('http://localhost:5173/import');
+  await page.goto('/import');
   
   // Select source account type
   await page.getByLabel('Account Type').selectOption('Bank');
@@ -40,7 +40,7 @@ test('can import CSV and see AI categorizations', async ({ page }) => {
 
 // Test Review Workflow
 test('can review and approve transactions', async ({ page }) => {
-  await page.goto('http://localhost:5173/review');
+  await page.goto('/review');
   
   // Filter to pending transactions
   await page.getByLabel('Status').selectOption('Pending');
@@ -67,7 +67,7 @@ test('can review and approve transactions', async ({ page }) => {
 
 // Test Posting Transactions
 test('can post approved transactions to journal', async ({ page }) => {
-  await page.goto('http://localhost:5173/review');
+  await page.goto('/review');
   
   // Filter to Approved
   await page.getByLabel('Status').selectOption('Approved');
@@ -105,7 +105,7 @@ test('can post approved transactions to journal', async ({ page }) => {
 
 // Test Individual Transaction Approval
 test('can approve individual transaction', async ({ page }) => {
-  await page.goto('http://localhost:5173/review');
+  await page.goto('/review');
   
   // Filter to pending
   await page.getByLabel('Status').selectOption('Pending');
@@ -128,7 +128,7 @@ test('can approve individual transaction', async ({ page }) => {
 
 // Test Inline Editing in Review
 test('can edit transaction categorization', async ({ page }) => {
-  await page.goto('http://localhost:5173/review');
+  await page.goto('/review');
   
   // Filter to pending
   await page.getByLabel('Status').selectOption('Pending');
@@ -165,7 +165,7 @@ test('can edit transaction categorization', async ({ page }) => {
 
 // Test Bulk Selection and Approval
 test('can select multiple transactions and approve', async ({ page }) => {
-  await page.goto('http://localhost:5173/review');
+  await page.goto('/review');
   
   // Filter to pending
   await page.getByLabel('Status').selectOption('Pending');
@@ -193,7 +193,7 @@ test('can select multiple transactions and approve', async ({ page }) => {
 
 // Test CRUD - List and Search
 test('can search transactions in CRUD interface', async ({ page }) => {
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   
   // Verify table is visible
   await expect(page.getByRole('table')).toBeVisible();
@@ -216,7 +216,7 @@ test('can search transactions in CRUD interface', async ({ page }) => {
 
 // Test CRUD - Create Manual Transaction
 test('can create manual transaction', async ({ page }) => {
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   
   // Click new transaction
   await page.getByRole('button', { name: /New Transaction/i }).click();
@@ -246,7 +246,7 @@ test('can create manual transaction', async ({ page }) => {
 
 // Test CRUD - Edit Transaction
 test('can edit existing transaction', async ({ page }) => {
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   
   // Click edit on first transaction
   const editButton = page.getByRole('button', { name: 'Edit' }).first();
@@ -273,7 +273,7 @@ test('can edit existing transaction', async ({ page }) => {
 
 // Test CRUD - Delete Transaction
 test('can delete pending transaction', async ({ page }) => {
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   
   // Filter to pending only
   await page.getByLabel('Status').selectOption('Pending');
@@ -300,7 +300,7 @@ test('can delete pending transaction', async ({ page }) => {
 
 // Test CRUD - Cannot Delete Posted Transaction
 test('cannot delete posted transaction', async ({ page }) => {
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   
   // Filter to posted
   await page.getByLabel('Status').selectOption('Posted');
@@ -329,7 +329,7 @@ test('cannot delete posted transaction', async ({ page }) => {
 
 // Test Filtering by Confidence
 test('can filter by confidence level', async ({ page }) => {
-  await page.goto('http://localhost:5173/review');
+  await page.goto('/review');
   
   // Filter to high confidence
   await page.getByLabel('Confidence').selectOption('high');
@@ -350,7 +350,7 @@ test('can filter by confidence level', async ({ page }) => {
 // Test Navigation Between Pages
 test('can navigate between import, review, and transactions pages', async ({ page }) => {
   // Start at import
-  await page.goto('http://localhost:5173/import');
+  await page.goto('/import');
   await expect(page.getByText('Import Transactions')).toBeVisible();
   
   // Navigate to review
@@ -370,7 +370,7 @@ test('can navigate between import, review, and transactions pages', async ({ pag
 
 // Test Status Filter in CRUD
 test('can filter transactions by status in CRUD', async ({ page }) => {
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   
   // Filter to each status
   const statuses = ['Pending', 'Approved', 'Rejected', 'Posted'];

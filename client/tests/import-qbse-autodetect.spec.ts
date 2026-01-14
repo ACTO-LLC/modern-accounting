@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Import Historical Data (Auto-detect)', () => {
   test('should auto-detect source account and create new accounts', async ({ page }) => {
     // 1. Reset Database
-    await page.goto('http://localhost:5173/import');
+    await page.goto('/import');
     
     // Handle alert dialogs
     page.on('dialog', async dialog => {
