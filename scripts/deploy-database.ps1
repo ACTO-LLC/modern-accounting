@@ -16,7 +16,7 @@
     SQL Server username. Default: sa
 
 .PARAMETER Password
-    SQL Server password. Default: StrongPassword123!
+    SQL Server password. Default: Value from SQL_SA_PASSWORD environment variable or StrongPassword123!
 
 .PARAMETER Action
     The SqlPackage action: Publish (default), Script, or DacPac
@@ -34,7 +34,7 @@ param(
     [string]$Server = "localhost,14330",
     [string]$Database = "AccountingDB",
     [string]$User = "sa",
-    [string]$Password = "StrongPassword123!",
+    [string]$Password = $(if ($env:SQL_SA_PASSWORD) { $env:SQL_SA_PASSWORD } else { "StrongPassword123!" }),
     [ValidateSet("Publish", "Script", "DacPac")]
     [string]$Action = "Publish"
 )

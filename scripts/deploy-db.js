@@ -2,11 +2,17 @@ const sql = require('mssql');
 const fs = require('fs');
 const path = require('path');
 
+const sqlPort = parseInt(process.env.SQL_PORT || '14330');
+if (isNaN(sqlPort) || sqlPort <= 0 || sqlPort > 65535) {
+    console.error('Invalid SQL_PORT environment variable. Must be a number between 1 and 65535.');
+    process.exit(1);
+}
+
 const config = {
-    user: 'sa',
-    password: 'StrongPassword123!',
-    server: 'localhost',
-    port: 14330,
+    user: process.env.SQL_USER || 'sa',
+    password: process.env.SQL_SA_PASSWORD || 'StrongPassword123!',
+    server: process.env.SQL_SERVER || 'localhost',
+    port: sqlPort,
     database: 'master',
     options: {
         encrypt: true,
