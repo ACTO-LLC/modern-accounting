@@ -44,6 +44,9 @@ local.settings.json
 # Debug logs
 dab_debug_log.txt
 
+# Chat API uploads
+chat-api/uploads/
+
 # Worktree generated files
 dab-config.worktree.json
 docker-compose.worktree.yml
