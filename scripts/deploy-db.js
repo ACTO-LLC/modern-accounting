@@ -105,6 +105,65 @@ async function deploy() {
             }
         }
 
+        // Pass 3: Create views
+        const viewsDir = path.join(__dirname, '../database/dbo/Views');
+        if (fs.existsSync(viewsDir)) {
+            console.log('Pass 3: Creating views...');
+            const viewFiles = fs.readdirSync(viewsDir).filter(f => f.endsWith('.sql'));
+            for (const file of viewFiles) {
+                const filePath = path.join(viewsDir, file);
+                console.log(`Executing ${file}...`);
+                let content = fs.readFileSync(filePath, 'utf8');
+                const batches = content.split('GO');
+                for (const batch of batches) {
+                    if (batch.trim()) {
+                        await pool.request().query(batch);
+                    }
+                }
+            }
+        }
+
+        // Pass 4: Create stored procedures
+        const procsDir = path.join(__dirname, '../database/dbo/StoredProcedures');
+        if (fs.existsSync(procsDir)) {
+            console.log('Pass 4: Creating stored procedures...');
+            const procFiles = fs.readdirSync(procsDir).filter(f => f.endsWith('.sql'));
+            for (const file of procFiles) {
+                const filePath = path.join(procsDir, file);
+                console.log(`Executing ${file}...`);
+                let content = fs.readFileSync(filePath, 'utf8');
+                const batches = content.split('GO');
+                for (const batch of batches) {
+                    if (batch.trim()) {
+                        await pool.request().query(batch);
+                    }
+                }
+            }
+        }
+
+        // Pass 5: Run migrations
+        const migrationsDir = path.join(__dirname, '../database/migrations');
+        if (fs.existsSync(migrationsDir)) {
+            console.log('Pass 5: Running migrations...');
+            const migrationFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+            for (const file of migrationFiles) {
+                const filePath = path.join(migrationsDir, file);
+                console.log(`Executing ${file}...`);
+                let content = fs.readFileSync(filePath, 'utf8');
+                const batches = content.split('GO');
+                for (const batch of batches) {
+                    if (batch.trim()) {
+                        try {
+                            await pool.request().query(batch);
+                        } catch (err) {
+                            // Ignore errors for migrations (they might already be applied)
+                            console.log(`  Warning: ${err.message.split('\n')[0]}`);
+                        }
+                    }
+                }
+            }
+        }
+
         // Post Deployment
         console.log('Running Post-Deployment Script...');
         const postDeployPath = path.join(__dirname, '../database/Script.PostDeployment.sql');

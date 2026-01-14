@@ -20,6 +20,7 @@ CREATE TABLE MigrationFieldMaps (
 
     CONSTRAINT UQ_MigrationFieldMaps UNIQUE (SourceSystem, EntityType, SourceField)
 );
+GO
 
 -- Type/value mappings: converts source values to ACTO values
 CREATE TABLE MigrationTypeMaps (
@@ -35,6 +36,7 @@ CREATE TABLE MigrationTypeMaps (
 
     CONSTRAINT UQ_MigrationTypeMaps UNIQUE (SourceSystem, Category, SourceValue)
 );
+GO
 
 -- Entity mappings: tracks source ID to ACTO ID (replaces in-memory maps)
 CREATE TABLE MigrationEntityMaps (
@@ -49,6 +51,7 @@ CREATE TABLE MigrationEntityMaps (
 
     CONSTRAINT UQ_MigrationEntityMaps UNIQUE (SourceSystem, EntityType, SourceId)
 );
+GO
 
 -- Migration config: general settings
 CREATE TABLE MigrationConfigs (
@@ -63,12 +66,14 @@ CREATE TABLE MigrationConfigs (
 
     CONSTRAINT UQ_MigrationConfigs UNIQUE (SourceSystem, ConfigKey)
 );
+GO
 
 -- Indexes for common queries
 CREATE INDEX IX_MigrationFieldMaps_Lookup ON MigrationFieldMaps (SourceSystem, EntityType, IsActive);
 CREATE INDEX IX_MigrationTypeMaps_Lookup ON MigrationTypeMaps (SourceSystem, Category, IsActive);
 CREATE INDEX IX_MigrationEntityMaps_Lookup ON MigrationEntityMaps (SourceSystem, EntityType, SourceId);
 CREATE INDEX IX_MigrationEntityMaps_Target ON MigrationEntityMaps (TargetId);
+GO
 
 -- ============================================================================
 -- Add SourceSystem and SourceId columns to entity tables
@@ -109,6 +114,7 @@ ALTER TABLE Bills ADD
     SourceId NVARCHAR(100) NULL;
 
 CREATE INDEX IX_Bills_Source ON Bills (SourceSystem, SourceId) WHERE SourceSystem IS NOT NULL;
+GO
 
 -- ============================================================================
 -- Seed default QBO field mappings
@@ -160,6 +166,7 @@ INSERT INTO MigrationFieldMaps (SourceSystem, EntityType, SourceField, TargetFie
 ('QBO', 'Bill', 'TotalAmt', 'TotalAmount', 'float', '0', 0, 5),
 ('QBO', 'Bill', 'Balance', 'Status', 'billstatus', 'Open', 0, 6),
 ('QBO', 'Bill', 'PrivateNote', 'Memo', 'string', NULL, 0, 7);
+GO
 
 -- ============================================================================
 -- Seed default QBO type mappings
@@ -223,6 +230,7 @@ INSERT INTO MigrationTypeMaps (SourceSystem, Category, SourceValue, TargetValue,
 ('QBO', 'BillStatus', 'Paid', 'Paid', 0),
 ('QBO', 'BillStatus', 'Partial', 'Partial', 0),
 ('QBO', 'BillStatus', 'Open', 'Open', 1);  -- Default
+GO
 
 -- ============================================================================
 -- Migration config defaults
@@ -233,5 +241,7 @@ INSERT INTO MigrationConfigs (SourceSystem, ConfigKey, ConfigValue, Description)
 ('QBO', 'DefaultAccountCodeStart', '1000', 'Starting code for auto-generated account codes'),
 ('QBO', 'DuplicateHandling', 'skip', 'How to handle duplicates: skip, update, error'),
 ('QBO', 'MigrateInactiveRecords', 'false', 'Whether to migrate inactive/deleted records');
+GO
 
 PRINT 'Migration framework tables created and seeded successfully';
+GO
