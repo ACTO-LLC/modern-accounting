@@ -74,6 +74,10 @@ const [invoice, lines] = await Promise.all([
 
 3.  **sqlcmd behaves differently in Git Bash vs PowerShell**: The Go-based sqlcmd (v1.8.2) installed in the PATH fails with "Login failed for user 'sa'" when invoked from Git Bash, but works fine when invoked via PowerShell. **Lesson**: Always use PowerShell for sqlcmd commands in this project:
     ```powershell
+    # Use environment variable for password (recommended)
+    powershell -ExecutionPolicy Bypass -Command "sqlcmd -S 'localhost,14330' -U sa -P $env:SQL_SA_PASSWORD -d AccountingDB -Q 'YOUR QUERY' -C -b"
+    
+    # Or use default dev password if not set
     powershell -ExecutionPolicy Bypass -Command "sqlcmd -S 'localhost,14330' -U sa -P 'StrongPassword123!' -d AccountingDB -Q 'YOUR QUERY' -C -b"
     ```
 
@@ -84,6 +88,10 @@ const [invoice, lines] = await Promise.all([
 
 **Quick fix command for refreshing a view:**
 ```powershell
+# Use environment variable for password (recommended)
+powershell -ExecutionPolicy Bypass -Command "sqlcmd -S 'localhost,14330' -U sa -P $env:SQL_SA_PASSWORD -d AccountingDB -Q 'ALTER VIEW [dbo].[v_YourView] AS SELECT ... ' -C -b"
+
+# Or use default dev password if not set
 powershell -ExecutionPolicy Bypass -Command "sqlcmd -S 'localhost,14330' -U sa -P 'StrongPassword123!' -d AccountingDB -Q 'ALTER VIEW [dbo].[v_YourView] AS SELECT ... ' -C -b"
 docker restart accounting-dab
 ```
