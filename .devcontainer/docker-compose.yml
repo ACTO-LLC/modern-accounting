@@ -49,6 +49,23 @@ services:
       database:
         condition: service_healthy
 
+  email-api:
+    build:
+      context: ../email-api
+      dockerfile: Dockerfile
+    ports:
+      - "7073:7073"
+    environment:
+      - DATABASE_URL=Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true
+      - EMAIL_API_PORT=7073
+      - EMAIL_ENCRYPTION_KEY=devcontainer-encryption-key-32ch
+      - APP_BASE_URL=http://localhost:5173
+    networks:
+      - devnet
+    depends_on:
+      database:
+        condition: service_healthy
+
 volumes:
   sql-data:
   node_modules:

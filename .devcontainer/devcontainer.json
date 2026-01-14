@@ -34,10 +34,11 @@
     }
   },
 
-  "forwardPorts": [5173, 7071, 5000, 14330],
+  "forwardPorts": [5173, 7071, 7073, 5000, 14330],
   "portsAttributes": {
     "5173": { "label": "Client (Vite)", "onAutoForward": "notify" },
     "7071": { "label": "Chat API", "onAutoForward": "silent" },
+    "7073": { "label": "Email API", "onAutoForward": "silent" },
     "5000": { "label": "DAB API", "onAutoForward": "silent" },
     "14330": { "label": "SQL Server", "onAutoForward": "silent" }
   },
