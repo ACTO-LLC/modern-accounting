@@ -39,13 +39,8 @@ for i in {1..30}; do
     sleep 2
 done
 
-# Run database migrations if deploy script exists
-if [ -f "/workspace/database/deploy-db.js" ]; then
-    echo ""
-    echo "Running database migrations..."
-    cd /workspace/database
-    node deploy-db.js || echo "  Migration completed (or already up to date)"
-fi
+# Database is already initialized by db-init service
+echo "Database was initialized by db-init service"
 
 echo ""
 echo "========================================="

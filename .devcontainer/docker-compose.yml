@@ -33,10 +33,13 @@ services:
       start_period: 30s
 
   db-init:
-    image: mcr.microsoft.com/mssql-tools18:latest
-    volumes:
-      - ./init-db.sh:/init-db.sh:ro
-    entrypoint: ["/bin/bash", "/init-db.sh"]
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile.db-init
+    environment:
+      - SQL_SERVER=database
+      - SQL_PORT=1433
+      - SQL_SA_PASSWORD=StrongPassword123!
     networks:
       - devnet
     depends_on:
