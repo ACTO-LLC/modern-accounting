@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw, Paperclip, Edit2, RotateCcw, XCircle, FileIcon, Image as ImageIcon } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useChat, Insight, FileAttachment } from '../contexts/ChatContext';
+import QBOConnectButton, { getQboSessionId } from './QBOConnectButton';
 
 // API configuration
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
@@ -29,28 +30,39 @@ function sanitizeAndFormatContent(content: string): string {
 }
 
 // Quick action chips component
-function QuickActions({ onAction, disabled }: { onAction: (text: string) => void; disabled: boolean }) {
-  const actions = [
-    { label: 'Show overdue invoices', icon: '!' },
-    { label: 'Revenue this month', icon: '$' },
-    { label: 'Top customers', icon: '#' },
-  ];
+function QuickActions({ onAction, disabled, qboConnected, isOnboarding }: { onAction: (text: string) => void; disabled: boolean; qboConnected: boolean; isOnboarding: boolean }) {
+  // Show different actions based on context
+  const actions = isOnboarding
+    ? [
+        { label: 'Yes, from QuickBooks', icon: 'QB', style: 'qbo' },
+        { label: 'Yes, from another platform', icon: '↗', style: 'default' },
+        { label: 'Starting fresh', icon: '✨', style: 'default' },
+      ]
+    : [
+        { label: 'Show overdue invoices', icon: '!', style: 'default' },
+        { label: 'Revenue this month', icon: '$', style: 'default' },
+        { label: 'Top customers', icon: '#', style: 'default' },
+        ...(qboConnected ? [{ label: 'Migrate from QuickBooks', icon: 'QB', style: 'qbo' }] : []),
+      ];
 
   return (
     <div className="flex flex-wrap gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-      <span className="text-xs text-gray-500 dark:text-gray-400 w-full mb-1">Quick actions:</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 w-full mb-1">
+        {isOnboarding ? 'Quick responses:' : 'Quick actions:'}
+      </span>
       {actions.map((action) => (
         <button
           key={action.label}
           onClick={() => onAction(action.label)}
           disabled={disabled}
-          className="text-xs px-3 py-1.5 rounded-full transition-colors
+          className={`text-xs px-3 py-1.5 rounded-full transition-colors
             bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300
             border border-gray-200 dark:border-gray-600
             hover:bg-indigo-50 dark:hover:bg-indigo-900/30
             hover:text-indigo-600 dark:hover:text-indigo-400
             hover:border-indigo-300 dark:hover:border-indigo-700
-            disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${action.style === 'qbo' ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' : ''}`}
         >
           {action.label}
         </button>
@@ -139,6 +151,8 @@ export default function ChatInterface() {
   const [isDragging, setIsDragging] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [qboConnected, setQboConnected] = useState(false);
+  const [qboCompanyName, setQboCompanyName] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -164,6 +178,25 @@ export default function ChatInterface() {
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  // Show welcome message when chat opens for the first time (no messages)
+  const hasShownWelcome = useRef(false);
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && !hasShownWelcome.current) {
+      hasShownWelcome.current = true;
+      // Add welcome message from assistant
+      addMessage({
+        role: 'assistant',
+        content: `Welcome to ACTO! I'm your accounting assistant and I'm here to help you get started.
+
+**Are you migrating from another accounting platform** like QuickBooks, Xero, or FreshBooks? I can help import your existing data to make the transition seamless!
+
+Or if you're starting fresh, I can help you set up your chart of accounts and create your first customers.
+
+What would you like to do?`
+      });
+    }
+  }, [isOpen, messages.length, addMessage]);
 
   // Handle file upload
   const uploadFile = async (file: File): Promise<FileAttachment | null> => {
@@ -244,7 +277,10 @@ export default function ChatInterface() {
     try {
       const response = await fetch(`${CHAT_API_BASE_URL}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-QBO-Session-Id': getQboSessionId()
+        },
         body: JSON.stringify({
           message: text,
           history: messages.slice(-10),
@@ -394,11 +430,27 @@ export default function ChatInterface() {
         </div>
       </div>
 
+      {/* QBO Connection Status */}
+      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <QBOConnectButton
+          compact={false}
+          onStatusChange={(status) => {
+            setQboConnected(status.connected);
+            setQboCompanyName(status.companyName || null);
+          }}
+        />
+      </div>
+
       {/* Insights Panel */}
       <InsightsPanel insights={insights} onAskAbout={handleQuickAction} disabled={isLoading} />
 
       {/* Quick Actions */}
-      <QuickActions onAction={handleQuickAction} disabled={isLoading} />
+      <QuickActions
+        onAction={handleQuickAction}
+        disabled={isLoading}
+        qboConnected={qboConnected}
+        isOnboarding={messages.length === 1 && messages[0]?.role === 'assistant'}
+      />
 
       {/* Messages */}
       <div 

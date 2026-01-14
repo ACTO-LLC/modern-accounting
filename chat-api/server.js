@@ -9,6 +9,12 @@ import Scribe from 'scribe.js-ocr';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+    migrateCustomers,
+    migrateVendors,
+    migrateAccounts,
+    migrateInvoices
+} from './migration/executor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,6 +88,7 @@ const client = new OpenAIClient(
 
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const DAB_MCP_URL = process.env.DAB_MCP_URL || 'http://localhost:5000/mcp';
+const QBO_MCP_URL = process.env.QBO_MCP_URL || 'http://localhost:8001';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
 // ============================================================================
@@ -235,16 +242,199 @@ class DabMcpClient {
 const mcp = new DabMcpClient(DAB_MCP_URL);
 
 // ============================================================================
+// QBO MCP Client
+// ============================================================================
+
+class QboMcpClient {
+    constructor(baseUrl) {
+        this.baseUrl = baseUrl;
+        this.mcpUrl = `${baseUrl}/mcp`;
+        this.sessionId = null;
+        this.requestId = 0;
+        this.initialized = false;
+    }
+
+    // Parse SSE response
+    parseSSEResponse(data) {
+        const lines = data.split('\n');
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                try {
+                    return JSON.parse(line.substring(6));
+                } catch (e) {
+                    console.error('Failed to parse QBO SSE data:', e);
+                }
+            }
+        }
+        return null;
+    }
+
+    async initialize() {
+        if (this.initialized) return true;
+
+        this.requestId++;
+        const payload = {
+            jsonrpc: '2.0',
+            id: this.requestId,
+            method: 'initialize',
+            params: {
+                protocolVersion: '2024-11-05',
+                capabilities: {},
+                clientInfo: { name: 'chat-api-qbo', version: '1.0.0' }
+            }
+        };
+
+        try {
+            const response = await axios.post(this.mcpUrl, payload, {
+                headers: { 'Content-Type': 'application/json' },
+                transformResponse: [(data) => data]
+            });
+
+            const parsed = this.parseSSEResponse(response.data);
+            if (parsed?.result) {
+                this.sessionId = response.headers['mcp-session-id'];
+                this.initialized = true;
+                console.log('QBO MCP initialized, session:', this.sessionId);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('QBO MCP initialization failed:', error.message);
+            return false;
+        }
+    }
+
+    async callTool(toolName, args = {}, qboSessionId, retryOnSessionError = true) {
+        await this.initialize();
+
+        this.requestId++;
+        const payload = {
+            jsonrpc: '2.0',
+            id: this.requestId,
+            method: 'tools/call',
+            params: { name: toolName, arguments: args }
+        };
+
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.sessionId) headers['Mcp-Session-Id'] = this.sessionId;
+            if (qboSessionId) headers['X-QBO-Session-Id'] = qboSessionId;
+
+            const response = await axios.post(this.mcpUrl, payload, {
+                headers,
+                transformResponse: [(data) => data]
+            });
+
+            const parsed = this.parseSSEResponse(response.data);
+            if (!parsed) return { error: 'Invalid response' };
+
+            if (parsed.error) {
+                if (parsed.error.code === -32001 && retryOnSessionError) {
+                    this.initialized = false;
+                    this.sessionId = null;
+                    return this.callTool(toolName, args, qboSessionId, false);
+                }
+                return { error: parsed.error.message };
+            }
+
+            // Parse result
+            const result = parsed.result;
+            if (result?.content?.[0]?.text) {
+                try {
+                    return JSON.parse(result.content[0].text);
+                } catch {
+                    return { text: result.content[0].text };
+                }
+            }
+            return result;
+        } catch (error) {
+            if (error.response?.status === 404 && retryOnSessionError) {
+                this.initialized = false;
+                this.sessionId = null;
+                return this.callTool(toolName, args, qboSessionId, false);
+            }
+            return { error: error.message };
+        }
+    }
+
+    // OAuth helpers - call the QBO MCP server's OAuth endpoints
+    async getConnectionStatus(qboSessionId) {
+        try {
+            const response = await axios.get(`${this.baseUrl}/oauth/status/${qboSessionId}`);
+            return response.data;
+        } catch (error) {
+            return { connected: false, error: error.message };
+        }
+    }
+
+    async initiateOAuth(qboSessionId, redirectUrl) {
+        try {
+            const response = await axios.post(`${this.baseUrl}/oauth/connect`, {
+                sessionId: qboSessionId,
+                redirectUrl
+            });
+            return response.data;
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    async disconnect(qboSessionId) {
+        try {
+            const response = await axios.post(`${this.baseUrl}/oauth/disconnect`, {
+                sessionId: qboSessionId
+            });
+            return response.data;
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    // QBO-specific tool wrappers
+    async analyzeForMigration(qboSessionId) {
+        return this.callTool('qbo_analyze_for_migration', {}, qboSessionId);
+    }
+
+    async searchCustomers(qboSessionId, criteria = {}) {
+        return this.callTool('qbo_search_customers', criteria, qboSessionId);
+    }
+
+    async searchInvoices(qboSessionId, criteria = {}) {
+        return this.callTool('qbo_search_invoices', criteria, qboSessionId);
+    }
+
+    async searchVendors(qboSessionId, criteria = {}) {
+        return this.callTool('qbo_search_vendors', criteria, qboSessionId);
+    }
+
+    async searchAccounts(qboSessionId, criteria = {}) {
+        return this.callTool('qbo_search_accounts', criteria, qboSessionId);
+    }
+
+    async searchBills(qboSessionId, criteria = {}) {
+        return this.callTool('qbo_search_bills', criteria, qboSessionId);
+    }
+}
+
+// Create QBO MCP client instance
+const qboMcp = new QboMcpClient(QBO_MCP_URL);
+
+// ============================================================================
 // System Prompt and Tools
 // ============================================================================
 
-const systemPrompt = `You are an expert accounting assistant for a modern accounting application. You help users with:
+const systemPrompt = `You are an expert accounting assistant for a modern accounting application called ACTO. You help users with:
 
-1. DATA QUERIES: Answer questions about their invoices, customers, vendors, bills, journal entries, bank transactions, and financial reports. Always use the available tools to fetch real data - never make up numbers or records.
+1. ONBOARDING NEW USERS: Handle these common onboarding responses:
+   - "Yes, from QuickBooks" or mentions QBO: Check qbo_get_status. If not connected, say "Great! Click the 'Connect to QuickBooks' button above to securely link your account. Once connected, I'll analyze your data and help you migrate." If connected, use qbo_analyze_migration to show what can be migrated.
+   - "Yes, from another platform" or Xero/FreshBooks/Wave: Say "I can help! While I don't have direct integration yet, you can export your data as CSV files and I'll help you import them. What would you like to start with - customers, chart of accounts, or invoices?"
+   - "Starting fresh" or new business: Say "Exciting! Let's set up your books. I recommend starting with your Chart of Accounts. Would you like me to create a standard chart of accounts for your business type, or do you have specific accounts in mind?"
 
-2. ACCOUNTING GUIDANCE: Explain accounting concepts, help categorize expenses, explain the difference between account types, and provide best practices based on GAAP principles.
+2. DATA QUERIES: Answer questions about their invoices, customers, vendors, bills, journal entries, bank transactions, and financial reports. Always use the available tools to fetch real data - never make up numbers or records.
 
-3. PROACTIVE INSIGHTS: When data shows issues (overdue invoices, upcoming due dates, unusual patterns), proactively mention them to help the user.
+3. ACCOUNTING GUIDANCE: Explain accounting concepts, help categorize expenses, explain the difference between account types, and provide best practices based on GAAP principles.
+
+4. PROACTIVE INSIGHTS: When data shows issues (overdue invoices, upcoming due dates, unusual patterns), proactively mention them to help the user.
 
 4. FILE PROCESSING: When users upload images or documents, extract information and take action:
    - Business cards: Extract contact info and offer to create customer/vendor records
@@ -284,7 +474,57 @@ AUTO-CREATION GUIDELINES:
 - Credit cards: Create liability account automatically with last 4 digits
 - Business cards: Always ask "Customer or Vendor?" before creating
 - Receipts: If expense category doesn't exist in COA, offer to create it
-- Do first, confirm after - reduce clicks to zero where possible`;
+- Do first, confirm after - reduce clicks to zero where possible
+
+QUICKBOOKS ONLINE MIGRATION:
+You can help users migrate from QuickBooks Online to this platform. Use the qbo_ tools when users ask about:
+- Migrating from QuickBooks
+- Importing data from QBO
+- Connecting their QuickBooks account
+- Comparing their QBO data with this system
+
+When a user mentions QuickBooks or migration:
+1. First use qbo_get_status to check if they're connected
+2. If not connected, explain they need to click "Connect to QuickBooks" button
+3. Once connected, use qbo_analyze_migration to show what data can be migrated
+4. Guide them through migration in this order: Accounts -> Customers/Vendors -> Invoices/Bills
+
+MIGRATION TOOLS:
+You have access to migration tools to actually migrate data:
+- migrate_accounts: Migrate chart of accounts (DO THIS FIRST)
+- migrate_customers: Migrate customer records
+- migrate_vendors: Migrate vendor records
+- migrate_invoices: Migrate invoices (requires customers first)
+
+MIGRATION BEST PRACTICES:
+1. Always show the analysis first (qbo_analyze_migration) before offering to migrate
+2. Ask for confirmation before running migration tools
+3. Migrate in order: Accounts -> Customers & Vendors -> Invoices
+4. Report results clearly: "Created X, Skipped Y (already exist), Z errors"
+5. If errors occur, explain what went wrong and offer to retry
+6. Celebrate successful migrations with positive feedback!
+
+Migration conversation example:
+User: "I want to migrate from QuickBooks"
+Assistant: [Check qbo_get_status] "I see you're connected to 'ABC Company' on QuickBooks! Let me analyze your data..."
+Assistant: [Call qbo_analyze_migration] "You have:
+- 50 accounts in your chart of accounts
+- 150 customers ($47,000 in unpaid invoices)
+- 25 vendors
+- 533 invoices
+
+Would you like me to start the migration? I recommend starting with your chart of accounts."
+
+User: "Yes, migrate everything"
+Assistant: [Call migrate_accounts] "Chart of accounts migration complete: 48 created, 2 skipped (system defaults).
+Now migrating customers..."
+[Call migrate_customers] "Customers migrated: 150 created.
+Now migrating invoices..."
+[Call migrate_invoices with unpaid_only: true] "Invoices migrated: 23 unpaid invoices worth $47,000 created.
+
+Your QuickBooks data is now in ACTO! You can continue tracking those $47,000 in unpaid invoices right here."`;
+
+
 
 const tools = [
     {
@@ -458,15 +698,165 @@ const tools = [
                 properties: {
                     code: { type: 'string', description: 'Account code (e.g., 1000, 5100)' },
                     name: { type: 'string', description: 'Account name' },
-                    type: { 
-                        type: 'string', 
+                    type: {
+                        type: 'string',
                         enum: ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'],
-                        description: 'Account type' 
+                        description: 'Account type'
                     },
                     subtype: { type: 'string', description: 'Account subtype' },
                     description: { type: 'string', description: 'Account description' }
                 },
                 required: ['code', 'name', 'type']
+            }
+        }
+    },
+    // ========== QuickBooks Online Tools ==========
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_get_status',
+            description: 'Check if connected to QuickBooks Online and get company info. Use this first when user asks about QBO or migration.',
+            parameters: {
+                type: 'object',
+                properties: {}
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_analyze_migration',
+            description: 'Analyze QuickBooks Online data for migration. Returns counts of customers, invoices, vendors, accounts, and bills with migration recommendations.',
+            parameters: {
+                type: 'object',
+                properties: {}
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_search_customers',
+            description: 'Search customers in QuickBooks Online.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    display_name: { type: 'string', description: 'Filter by display name' },
+                    active: { type: 'boolean', description: 'Filter by active status' },
+                    fetch_all: { type: 'boolean', description: 'Fetch all customers (for migration)' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_search_invoices',
+            description: 'Search invoices in QuickBooks Online.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    customer_name: { type: 'string', description: 'Filter by customer name' },
+                    fetch_all: { type: 'boolean', description: 'Fetch all invoices (for migration)' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_search_vendors',
+            description: 'Search vendors in QuickBooks Online.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    display_name: { type: 'string', description: 'Filter by display name' },
+                    active: { type: 'boolean', description: 'Filter by active status' },
+                    fetch_all: { type: 'boolean', description: 'Fetch all vendors (for migration)' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_search_accounts',
+            description: 'Search chart of accounts in QuickBooks Online.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    account_type: { type: 'string', description: 'Filter by account type (Bank, Expense, Income, etc.)' },
+                    active: { type: 'boolean', description: 'Filter by active status' },
+                    fetch_all: { type: 'boolean', description: 'Fetch all accounts (for migration)' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_search_bills',
+            description: 'Search bills in QuickBooks Online.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    vendor_name: { type: 'string', description: 'Filter by vendor name' },
+                    fetch_all: { type: 'boolean', description: 'Fetch all bills (for migration)' }
+                }
+            }
+        }
+    },
+    // ========== Migration Tools ==========
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_customers',
+            description: 'Migrate customers from QuickBooks Online to ACTO. Call this after confirming migration with user.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of customers to migrate (for testing). Omit to migrate all.' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_vendors',
+            description: 'Migrate vendors from QuickBooks Online to ACTO.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of vendors to migrate (for testing). Omit to migrate all.' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_accounts',
+            description: 'Migrate chart of accounts from QuickBooks Online to ACTO. Should be done FIRST before other entities.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of accounts to migrate (for testing). Omit to migrate all.' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_invoices',
+            description: 'Migrate invoices from QuickBooks Online to ACTO. Requires customers to be migrated first.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of invoices to migrate (for testing). Omit to migrate all.' },
+                    unpaid_only: { type: 'boolean', description: 'Only migrate unpaid/open invoices' }
+                }
             }
         }
     }
@@ -1117,6 +1507,464 @@ async function executeCreateAccount(params) {
 }
 
 // ============================================================================
+// QBO Tool Execution Functions
+// ============================================================================
+
+// Track current QBO session for tool calls (set from chat request context)
+let currentQboSessionId = null;
+
+function setCurrentQboSession(sessionId) {
+    currentQboSessionId = sessionId;
+}
+
+async function executeQboGetStatus() {
+    if (!currentQboSessionId) {
+        return {
+            success: true,
+            connected: false,
+            message: 'Not connected to QuickBooks Online. Use the "Connect to QuickBooks" button to connect.'
+        };
+    }
+
+    try {
+        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        return {
+            success: true,
+            connected: status.connected,
+            companyName: status.companyName,
+            realmId: status.realmId,
+            message: status.connected
+                ? `Connected to QuickBooks Online company: ${status.companyName}`
+                : 'Not connected to QuickBooks Online. Use the "Connect to QuickBooks" button to connect.'
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeQboAnalyzeMigration() {
+    if (!currentQboSessionId) {
+        return {
+            success: false,
+            error: 'Not connected to QuickBooks Online. Please connect first.',
+            needsAuth: true
+        };
+    }
+
+    try {
+        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        if (!status.connected) {
+            return {
+                success: false,
+                error: 'Not connected to QuickBooks Online. Please connect first.',
+                needsAuth: true
+            };
+        }
+
+        const analysis = await qboMcp.analyzeForMigration(currentQboSessionId);
+        return {
+            success: true,
+            ...analysis
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeQboSearchCustomers(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const criteria = {};
+        if (params.display_name) {
+            criteria.criteria = [{ field: 'DisplayName', value: params.display_name, operator: 'LIKE' }];
+        }
+        if (params.active !== undefined) {
+            criteria.criteria = criteria.criteria || [];
+            criteria.criteria.push({ field: 'Active', value: params.active });
+        }
+        if (params.fetch_all) {
+            criteria.fetchAll = true;
+        }
+
+        const result = await qboMcp.searchCustomers(currentQboSessionId, criteria);
+        return { success: true, ...result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeQboSearchInvoices(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const criteria = {};
+        if (params.fetch_all) {
+            criteria.fetchAll = true;
+        }
+
+        const result = await qboMcp.searchInvoices(currentQboSessionId, criteria);
+        return { success: true, ...result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeQboSearchVendors(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const criteria = {};
+        if (params.display_name) {
+            criteria.criteria = [{ field: 'DisplayName', value: params.display_name, operator: 'LIKE' }];
+        }
+        if (params.active !== undefined) {
+            criteria.criteria = criteria.criteria || [];
+            criteria.criteria.push({ field: 'Active', value: params.active });
+        }
+        if (params.fetch_all) {
+            criteria.fetchAll = true;
+        }
+
+        const result = await qboMcp.searchVendors(currentQboSessionId, criteria);
+        return { success: true, ...result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeQboSearchAccounts(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const criteria = {};
+        if (params.account_type) {
+            criteria.criteria = [{ field: 'AccountType', value: params.account_type }];
+        }
+        if (params.active !== undefined) {
+            criteria.criteria = criteria.criteria || [];
+            criteria.criteria.push({ field: 'Active', value: params.active });
+        }
+        if (params.fetch_all) {
+            criteria.fetchAll = true;
+        }
+
+        const result = await qboMcp.searchAccounts(currentQboSessionId, criteria);
+        return { success: true, ...result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeQboSearchBills(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const criteria = {};
+        if (params.fetch_all) {
+            criteria.fetchAll = true;
+        }
+
+        const result = await qboMcp.searchBills(currentQboSessionId, criteria);
+        return { success: true, ...result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================================================
+// Migration Tool Execution Functions
+// ============================================================================
+
+// Store migration ID maps across tool calls within a session
+const migrationIdMaps = new Map();
+
+function getMigrationIdMap(sessionId) {
+    if (!migrationIdMaps.has(sessionId)) {
+        migrationIdMaps.set(sessionId, {
+            customers: {},
+            vendors: {},
+            accounts: {},
+            invoices: {}
+        });
+    }
+    return migrationIdMaps.get(sessionId);
+}
+
+async function executeMigrateCustomers(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        // Check QBO connection
+        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch customers from QBO
+        const qboResult = await qboMcp.searchCustomers(currentQboSessionId, { fetchAll: true });
+        if (qboResult.error) {
+            return { success: false, error: `Failed to fetch QBO customers: ${qboResult.error}` };
+        }
+
+        // Parse QBO response - the result contains content array with text items
+        let qboCustomers = [];
+        if (qboResult.content) {
+            // Find the count message and individual customer records
+            for (const item of qboResult.content) {
+                if (item.text && !item.text.startsWith('Found')) {
+                    try {
+                        const customer = JSON.parse(item.text);
+                        qboCustomers.push(customer);
+                    } catch (e) {
+                        // Not a JSON customer record
+                    }
+                }
+            }
+        }
+
+        // Apply limit if specified
+        if (params.limit && params.limit > 0) {
+            qboCustomers = qboCustomers.slice(0, params.limit);
+        }
+
+        if (qboCustomers.length === 0) {
+            return { success: true, message: 'No customers found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        // Run migration
+        const result = await migrateCustomers(qboCustomers, mcp);
+
+        // Store ID map for subsequent migrations
+        const idMaps = getMigrationIdMap(currentQboSessionId);
+        Object.assign(idMaps.customers, result.idMap);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} customers migrated, ${result.skipped} skipped`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5), // Limit error details
+            details: result.details.slice(0, 10) // Limit details shown
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeMigrateVendors(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch vendors from QBO
+        const qboResult = await qboMcp.searchVendors(currentQboSessionId, { fetchAll: true });
+        if (qboResult.error) {
+            return { success: false, error: `Failed to fetch QBO vendors: ${qboResult.error}` };
+        }
+
+        // Parse QBO response
+        let qboVendors = [];
+        if (qboResult.content) {
+            for (const item of qboResult.content) {
+                if (item.text && !item.text.startsWith('Found')) {
+                    try {
+                        const vendor = JSON.parse(item.text);
+                        qboVendors.push(vendor);
+                    } catch (e) {
+                        // Not a JSON vendor record
+                    }
+                }
+            }
+        }
+
+        if (params.limit && params.limit > 0) {
+            qboVendors = qboVendors.slice(0, params.limit);
+        }
+
+        if (qboVendors.length === 0) {
+            return { success: true, message: 'No vendors found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        const result = await migrateVendors(qboVendors, mcp);
+
+        const idMaps = getMigrationIdMap(currentQboSessionId);
+        Object.assign(idMaps.vendors, result.idMap);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} vendors migrated, ${result.skipped} skipped`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeMigrateAccounts(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch accounts from QBO
+        const qboResult = await qboMcp.searchAccounts(currentQboSessionId, { fetchAll: true });
+        if (qboResult.error) {
+            return { success: false, error: `Failed to fetch QBO accounts: ${qboResult.error}` };
+        }
+
+        // Parse QBO response
+        let qboAccounts = [];
+        if (qboResult.content) {
+            for (const item of qboResult.content) {
+                if (item.text && !item.text.startsWith('Found')) {
+                    try {
+                        const account = JSON.parse(item.text);
+                        qboAccounts.push(account);
+                    } catch (e) {
+                        // Not a JSON account record
+                    }
+                }
+            }
+        }
+
+        if (params.limit && params.limit > 0) {
+            qboAccounts = qboAccounts.slice(0, params.limit);
+        }
+
+        if (qboAccounts.length === 0) {
+            return { success: true, message: 'No accounts found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        const result = await migrateAccounts(qboAccounts, mcp);
+
+        const idMaps = getMigrationIdMap(currentQboSessionId);
+        Object.assign(idMaps.accounts, result.idMap);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} accounts migrated, ${result.skipped} skipped`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeMigrateInvoices(params) {
+    if (!currentQboSessionId) {
+        return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+    }
+
+    try {
+        const status = await qboMcp.getConnectionStatus(currentQboSessionId);
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Check if customers have been migrated
+        const idMaps = getMigrationIdMap(currentQboSessionId);
+        if (Object.keys(idMaps.customers).length === 0) {
+            return {
+                success: false,
+                error: 'Customers must be migrated before invoices. Run migrate_customers first.'
+            };
+        }
+
+        // Fetch invoices from QBO
+        const qboResult = await qboMcp.searchInvoices(currentQboSessionId, { fetchAll: true });
+        if (qboResult.error) {
+            return { success: false, error: `Failed to fetch QBO invoices: ${qboResult.error}` };
+        }
+
+        // Parse QBO response
+        let qboInvoices = [];
+        if (qboResult.content) {
+            for (const item of qboResult.content) {
+                if (item.text && !item.text.startsWith('Found')) {
+                    try {
+                        const invoice = JSON.parse(item.text);
+                        qboInvoices.push(invoice);
+                    } catch (e) {
+                        // Not a JSON invoice record
+                    }
+                }
+            }
+        }
+
+        // Filter to unpaid only if requested
+        if (params.unpaid_only) {
+            qboInvoices = qboInvoices.filter(inv => {
+                const balance = parseFloat(inv.Balance) || 0;
+                return balance > 0;
+            });
+        }
+
+        if (params.limit && params.limit > 0) {
+            qboInvoices = qboInvoices.slice(0, params.limit);
+        }
+
+        if (qboInvoices.length === 0) {
+            return { success: true, message: 'No invoices found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        const result = await migrateInvoices(qboInvoices, mcp, idMaps.customers);
+
+        Object.assign(idMaps.invoices, result.idMap);
+
+        // Calculate total value migrated
+        const totalValue = result.details
+            .filter(d => d.status === 'created')
+            .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} invoices migrated, ${result.skipped} skipped`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            totalValue: formatCurrency(totalValue),
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================================================
 // Function Dispatcher
 // ============================================================================
 
@@ -1144,6 +1992,30 @@ async function executeFunction(name, args) {
             return executeCreateVendor(args);
         case 'create_account':
             return executeCreateAccount(args);
+        // QBO Tools
+        case 'qbo_get_status':
+            return executeQboGetStatus();
+        case 'qbo_analyze_migration':
+            return executeQboAnalyzeMigration();
+        case 'qbo_search_customers':
+            return executeQboSearchCustomers(args);
+        case 'qbo_search_invoices':
+            return executeQboSearchInvoices(args);
+        case 'qbo_search_vendors':
+            return executeQboSearchVendors(args);
+        case 'qbo_search_accounts':
+            return executeQboSearchAccounts(args);
+        case 'qbo_search_bills':
+            return executeQboSearchBills(args);
+        // Migration Tools
+        case 'migrate_customers':
+            return executeMigrateCustomers(args);
+        case 'migrate_vendors':
+            return executeMigrateVendors(args);
+        case 'migrate_accounts':
+            return executeMigrateAccounts(args);
+        case 'migrate_invoices':
+            return executeMigrateInvoices(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }
@@ -1255,6 +2127,116 @@ async function processUploadedFile(file) {
 // API Endpoints
 // ============================================================================
 
+// ============================================================================
+// QBO OAuth Endpoints
+// ============================================================================
+
+// Store for QBO sessions (in production, use database)
+const qboSessions = new Map();
+
+// Generate or get QBO session ID from request
+function getQboSessionId(req) {
+    // Use a header or generate a new one based on client identifier
+    let sessionId = req.headers['x-qbo-session-id'];
+    if (!sessionId) {
+        // Could also use cookies or auth token as identifier
+        sessionId = req.headers['x-client-id'] || randomUUID();
+    }
+    return sessionId;
+}
+
+// Initiate QBO OAuth flow
+app.post('/api/qbo/connect', async (req, res) => {
+    try {
+        const sessionId = getQboSessionId(req);
+        const redirectUrl = req.body.redirectUrl || APP_URL;
+
+        const result = await qboMcp.initiateOAuth(sessionId, redirectUrl);
+
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        // Store session mapping
+        qboSessions.set(sessionId, { createdAt: new Date() });
+
+        res.json({
+            success: true,
+            authUrl: result.authUrl,
+            sessionId: sessionId
+        });
+    } catch (error) {
+        console.error('QBO connect error:', error);
+        res.status(500).json({ error: 'Failed to initiate QBO connection' });
+    }
+});
+
+// QBO OAuth callback (proxy to QBO MCP server)
+app.get('/api/qbo/callback', async (req, res) => {
+    // The QBO MCP server handles the callback directly
+    // This route is here in case we want to handle it in chat-api instead
+    const callbackUrl = `${QBO_MCP_URL}/oauth/callback?${new URLSearchParams(req.query).toString()}`;
+    res.redirect(callbackUrl);
+});
+
+// Get QBO connection status
+app.get('/api/qbo/status', async (req, res) => {
+    try {
+        const sessionId = getQboSessionId(req);
+        const status = await qboMcp.getConnectionStatus(sessionId);
+
+        res.json({
+            sessionId,
+            ...status
+        });
+    } catch (error) {
+        console.error('QBO status error:', error);
+        res.status(500).json({ error: 'Failed to get QBO status' });
+    }
+});
+
+// Disconnect QBO
+app.post('/api/qbo/disconnect', async (req, res) => {
+    try {
+        const sessionId = getQboSessionId(req);
+        const result = await qboMcp.disconnect(sessionId);
+
+        // Clear local session
+        qboSessions.delete(sessionId);
+
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('QBO disconnect error:', error);
+        res.status(500).json({ error: 'Failed to disconnect QBO' });
+    }
+});
+
+// Analyze QBO data for migration
+app.get('/api/qbo/analyze', async (req, res) => {
+    try {
+        const sessionId = getQboSessionId(req);
+
+        // Check connection first
+        const status = await qboMcp.getConnectionStatus(sessionId);
+        if (!status.connected) {
+            return res.status(400).json({
+                error: 'Not connected to QuickBooks',
+                needsAuth: true
+            });
+        }
+
+        const analysis = await qboMcp.analyzeForMigration(sessionId);
+        res.json(analysis);
+    } catch (error) {
+        console.error('QBO analyze error:', error);
+        res.status(500).json({ error: 'Failed to analyze QBO data' });
+    }
+});
+
+// ============================================================================
+// File Endpoints
+// ============================================================================
+
 // File upload endpoint
 app.post('/api/chat/upload', upload.single('file'), async (req, res) => {
     try {
@@ -1284,7 +2266,11 @@ app.post('/api/chat/upload', upload.single('file'), async (req, res) => {
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history = [], attachments = [] } = req.body;
-        
+
+        // Set QBO session ID for tool execution (from request header)
+        const qboSessionId = getQboSessionId(req);
+        setCurrentQboSession(qboSessionId);
+
         // Build user message content
         let userContent = message;
         
