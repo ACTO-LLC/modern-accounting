@@ -1285,6 +1285,214 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "payments": {
+            "source": "dbo.Payments",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "CustomerId": "CustomerId",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "DepositAccountId": "DepositAccountId",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Customer": {
+                    "target.entity": "customers",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "CustomerId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "DepositAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "DepositAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Applications": {
+                    "target.entity": "paymentapplications",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "PaymentId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "paymentapplications": {
+            "source": "dbo.PaymentApplications",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentId": "PaymentId",
+                "InvoiceId": "InvoiceId",
+                "AmountApplied": "AmountApplied",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "Payment": {
+                    "target.entity": "payments",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "PaymentId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Invoice": {
+                    "target.entity": "invoices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "InvoiceId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "billpayments": {
+            "source": "dbo.BillPayments",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "VendorId": "VendorId",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Vendor": {
+                    "target.entity": "vendors",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "VendorId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "PaymentAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "PaymentAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Applications": {
+                    "target.entity": "billpaymentapplications",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "BillPaymentId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "billpaymentapplications": {
+            "source": "dbo.BillPaymentApplications",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BillPaymentId": "BillPaymentId",
+                "BillId": "BillId",
+                "AmountApplied": "AmountApplied",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "BillPayment": {
+                    "target.entity": "billpayments",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "BillPaymentId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Bill": {
+                    "target.entity": "bills",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "BillId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }

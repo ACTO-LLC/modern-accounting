@@ -15,7 +15,10 @@ import {
     migrateProducts,
     migrateAccounts,
     migrateInvoices,
-    migrateBills
+    migrateBills,
+    migratePayments,
+    migrateBillPayments,
+    migrateJournalEntries
 } from './migration/db-executor.js';
 import { qboAuth } from './qbo-auth.js';
 
@@ -715,6 +718,59 @@ const tools = [
                 properties: {
                     limit: { type: 'number', description: 'Limit number of invoices to migrate (for testing). Omit to migrate all.' },
                     unpaid_only: { type: 'boolean', description: 'Only migrate unpaid/open invoices' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_bills',
+            description: 'Migrate bills from QuickBooks Online to ACTO. Requires vendors and accounts to be migrated first.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of bills to migrate (for testing). Omit to migrate all.' },
+                    unpaid_only: { type: 'boolean', description: 'Only migrate unpaid/open bills' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_payments',
+            description: 'Migrate customer payments from QuickBooks Online to ACTO. Requires customers and invoices to be migrated first.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of payments to migrate (for testing). Omit to migrate all.' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_bill_payments',
+            description: 'Migrate vendor bill payments from QuickBooks Online to ACTO. Requires vendors, accounts, and bills to be migrated first.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of bill payments to migrate (for testing). Omit to migrate all.' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_journal_entries',
+            description: 'Migrate journal entries from QuickBooks Online to ACTO. Requires accounts to be migrated first.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Limit number of journal entries to migrate (for testing). Omit to migrate all.' }
                 }
             }
         }
@@ -1715,6 +1771,183 @@ async function executeMigrateInvoices(params) {
     }
 }
 
+async function executeMigrateBills(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch bills from QBO
+        const qboResult = await qboAuth.searchBills({ fetchAll: true });
+        let qboBills = qboResult.data || [];
+
+        // Filter to unpaid only if requested
+        if (params.unpaid_only) {
+            qboBills = qboBills.filter(bill => {
+                const balance = parseFloat(bill.Balance) || 0;
+                return balance > 0;
+            });
+        }
+
+        if (params.limit && params.limit > 0) {
+            qboBills = qboBills.slice(0, params.limit);
+        }
+
+        if (qboBills.length === 0) {
+            return { success: true, message: 'No bills found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        // Run migration
+        const result = await migrateBills(qboBills, mcp, 'QBO');
+
+        // Calculate total value migrated
+        const totalValue = result.details
+            .filter(d => d.status === 'created')
+            .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} bills migrated, ${result.skipped} skipped. [View Bills](/bills)`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            viewUrl: '/bills',
+            totalValue: formatCurrency(totalValue),
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeMigratePayments(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch payments from QBO
+        const qboResult = await qboAuth.searchPayments({ fetchAll: true });
+        let qboPayments = qboResult.data || [];
+
+        if (params.limit && params.limit > 0) {
+            qboPayments = qboPayments.slice(0, params.limit);
+        }
+
+        if (qboPayments.length === 0) {
+            return { success: true, message: 'No payments found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        // Run migration
+        const result = await migratePayments(qboPayments, mcp, 'QBO');
+
+        // Calculate total value migrated
+        const totalValue = result.details
+            .filter(d => d.status === 'created')
+            .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} payments migrated, ${result.skipped} skipped.`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            totalValue: formatCurrency(totalValue),
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeMigrateBillPayments(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch bill payments from QBO
+        const qboResult = await qboAuth.searchBillPayments({ fetchAll: true });
+        let qboBillPayments = qboResult.data || [];
+
+        if (params.limit && params.limit > 0) {
+            qboBillPayments = qboBillPayments.slice(0, params.limit);
+        }
+
+        if (qboBillPayments.length === 0) {
+            return { success: true, message: 'No bill payments found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        // Run migration
+        const result = await migrateBillPayments(qboBillPayments, mcp, 'QBO');
+
+        // Calculate total value migrated
+        const totalValue = result.details
+            .filter(d => d.status === 'created')
+            .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} bill payments migrated, ${result.skipped} skipped.`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            totalValue: formatCurrency(totalValue),
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeMigrateJournalEntries(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // Fetch journal entries from QBO
+        const qboResult = await qboAuth.searchJournalEntries({ fetchAll: true });
+        let qboJournalEntries = qboResult.data || [];
+
+        if (params.limit && params.limit > 0) {
+            qboJournalEntries = qboJournalEntries.slice(0, params.limit);
+        }
+
+        if (qboJournalEntries.length === 0) {
+            return { success: true, message: 'No journal entries found to migrate', migrated: 0, skipped: 0 };
+        }
+
+        // Run migration
+        const result = await migrateJournalEntries(qboJournalEntries, mcp, 'QBO');
+
+        // Calculate total debit/credit migrated
+        const totalDebit = result.details
+            .filter(d => d.status === 'created')
+            .reduce((sum, d) => sum + (d.totalDebit || 0), 0);
+
+        return {
+            success: true,
+            message: `Migration complete: ${result.migrated} journal entries migrated, ${result.skipped} skipped.`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            totalDebit: formatCurrency(totalDebit),
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 async function executeDeleteProducts(params) {
     try {
         const preview = params.preview !== false; // default true
@@ -1850,6 +2083,14 @@ async function executeFunction(name, args) {
             return executeMigrateAccounts(args);
         case 'migrate_invoices':
             return executeMigrateInvoices(args);
+        case 'migrate_bills':
+            return executeMigrateBills(args);
+        case 'migrate_payments':
+            return executeMigratePayments(args);
+        case 'migrate_bill_payments':
+            return executeMigrateBillPayments(args);
+        case 'migrate_journal_entries':
+            return executeMigrateJournalEntries(args);
         case 'migrate_products':
             return executeMigrateProducts(args);
         case 'delete_products':

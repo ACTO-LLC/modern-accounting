@@ -172,13 +172,32 @@ export class MigrationMapper {
     }
 
     /**
+     * Get DAB table name for an entity type
+     */
+    getTableName(entityType) {
+        // Handle special cases for table naming
+        const tableNameMap = {
+            'Customer': 'customers',
+            'Vendor': 'vendors',
+            'Account': 'accounts',
+            'Invoice': 'invoices',
+            'Bill': 'bills',
+            'Payment': 'payments',
+            'BillPayment': 'billpayments',
+            'JournalEntry': 'journalentries',
+            'Item': 'productsservices'
+        };
+        return tableNameMap[entityType] || entityType.toLowerCase() + 's';
+    }
+
+    /**
      * Look up entity ID from MigrationEntityMaps or entity table
      * Falls back to name-based lookup for records migrated before source tracking
      */
     async lookupEntity(entityType, sourceId, entityName = null) {
         if (!sourceId) return null;
 
-        const tableName = entityType.toLowerCase() + 's'; // Customer -> customers
+        const tableName = this.getTableName(entityType);
 
         // First try the entity table by SourceSystem/SourceId
         try {
@@ -353,7 +372,7 @@ export class MigrationMapper {
      */
     async wasAlreadyMigrated(entityType, sourceId) {
         // First check entity table
-        const tableName = entityType.toLowerCase() + 's';
+        const tableName = this.getTableName(entityType);
         try {
             const result = await this.mcp.readRecords(tableName, {
                 filter: `SourceSystem eq '${this.sourceSystem}' and SourceId eq '${String(sourceId)}'`,
