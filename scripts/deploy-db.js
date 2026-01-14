@@ -79,8 +79,11 @@ async function deploy() {
                 });
             }
 
-            // Remove foreign key constraints from CREATE TABLE
-            content = content.replace(/,?\s*CONSTRAINT\s+\[?\w+\]?\s+FOREIGN\s+KEY\s*\([^)]+\)\s*REFERENCES\s+\[?\w+\]?\.\[?\w+\]?\s*\([^)]+\)/gi, '');
+            // Remove foreign key constraints from CREATE TABLE (including ON DELETE/UPDATE clauses)
+            content = content.replace(/,?\s*CONSTRAINT\s+\[?\w+\]?\s+FOREIGN\s+KEY\s*\([^)]+\)\s*REFERENCES\s+\[?\w+\]?\.\[?\w+\]?\s*\([^)]+\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|NO ACTION|SET NULL|SET DEFAULT))*/gi, '');
+
+            // Remove trailing comma before closing parenthesis
+            content = content.replace(/,(\s*\))/g, '$1');
 
             // Remove GO statements as they are not T-SQL
             const batches = content.split('GO');
