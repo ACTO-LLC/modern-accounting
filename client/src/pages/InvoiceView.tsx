@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Printer, Edit, Building2 } from 'lucide-react';
+import { ArrowLeft, Printer, Edit, Building2, Mail } from 'lucide-react';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import api from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
+import EmailInvoiceModal from '../components/EmailInvoiceModal';
+import EmailHistory from '../components/EmailHistory';
 
 interface InvoiceLine {
   Id: string;
@@ -40,6 +43,8 @@ export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { settings: company } = useCompanySettings();
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailHistoryRefresh, setEmailHistoryRefresh] = useState(0);
 
   // Fetch invoice
   const { data: invoice, isLoading: invoiceLoading } = useQuery<Invoice>({
@@ -137,6 +142,13 @@ export default function InvoiceView() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowEmailModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <Mail className="h-4 w-4" />
+            Email
+          </button>
           <button
             onClick={handlePrint}
             className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -300,6 +312,23 @@ export default function InvoiceView() {
           </div>
         </div>
       </div>
+
+      {/* Email History - Hidden when printing */}
+      <div className="mt-6 bg-white shadow-lg rounded-lg p-6 print:hidden">
+        <EmailHistory
+          invoiceId={invoice.Id}
+          refreshTrigger={emailHistoryRefresh}
+        />
+      </div>
+
+      {/* Email Invoice Modal */}
+      <EmailInvoiceModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        invoice={invoice}
+        customer={customer || null}
+        onEmailSent={() => setEmailHistoryRefresh(prev => prev + 1)}
+      />
     </div>
   );
 }

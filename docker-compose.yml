@@ -22,5 +22,23 @@ services:
     volumes:
       - ./dab-config.json:/App/dab-config.json
 
+  email-api:
+    build:
+      context: ./email-api
+      dockerfile: Dockerfile
+    container_name: accounting-email-api
+    depends_on:
+      - database
+    ports:
+      - "7073:7073"
+    environment:
+      - DATABASE_URL=Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true
+      - EMAIL_API_PORT=7073
+      - EMAIL_ENCRYPTION_KEY=${EMAIL_ENCRYPTION_KEY:-default-encryption-key-change-me}
+      - APP_BASE_URL=http://localhost:5173
+    volumes:
+      - ./email-api:/app
+      - /app/node_modules
+
 volumes:
   sql-data:
