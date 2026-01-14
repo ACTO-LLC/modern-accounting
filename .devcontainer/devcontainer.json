@@ -46,7 +46,7 @@
   "postCreateCommand": "npm install && cd client && npm install && cd ../chat-api && npm install",
   "postStartCommand": ".devcontainer/start-services.sh",
 
-  "remoteUser": "node",
+  "remoteUser": "vscode",
 
   "containerEnv": {
     "SQL_SERVER": "database",

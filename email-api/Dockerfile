@@ -1,8 +1,9 @@
 FROM node:20-slim
 
-# Install Chromium dependencies for Puppeteer
+# Install Chromium dependencies for Puppeteer and curl for healthcheck
 # Note: libappindicator3-1 is not available on Debian Bookworm, using alternatives
 RUN apt-get update && apt-get install -y \
+    curl \
     chromium \
     fonts-liberation \
     libasound2 \
