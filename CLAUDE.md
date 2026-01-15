@@ -150,3 +150,31 @@ Entities now have `SourceSystem` and `SourceId` columns to track their origin:
 - Customers, Vendors, Accounts, Invoices, Bills all have these columns
 - Allows direct lookup without separate mapping table
 - Prevents duplicate migrations automatically
+
+---
+
+### AI-Driven Feature Addition System (Issue #87)
+
+The system enables administrators to request feature changes through a chat interface. Requests are processed autonomously using Claude AI for planning and code generation.
+
+**Key Components:**
+- **Monitor Agent** (`monitor-agent/`) - Polls for enhancements and processes them
+- **Enhancements API** (`chat-api/src/routes/`) - REST endpoints for managing requests
+- **Database Tables** - `Enhancements` and `Deployments` tables
+
+**Documentation:**
+- [System Overview](docs/ai-feature-system.md) - Architecture and workflow
+- [API Reference](docs/api-reference.md) - Endpoint documentation
+- [Setup Guide](docs/ai-feature-setup.md) - Installation instructions
+
+**Quick Start:**
+```bash
+cd monitor-agent
+npm install
+npm run dev  # Start the monitor agent
+```
+
+**Environment Variables Required:**
+- `ANTHROPIC_API_KEY` - Claude API key
+- `GITHUB_TOKEN` - GitHub personal access token
+- `DB_PASSWORD` - Database password
