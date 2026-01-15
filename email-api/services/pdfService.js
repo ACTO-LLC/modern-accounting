@@ -9,6 +9,10 @@ export async function generateInvoicePdf(invoiceId, baseUrl) {
     try {
         const page = await browser.newPage();
 
+        // Log console messages for debugging
+        page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+        page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
+
         // Navigate to invoice view page with print mode
         const invoiceUrl = `${baseUrl}/invoices/${invoiceId}?print=true`;
         console.log(`Navigating to: ${invoiceUrl}`);
@@ -18,8 +22,16 @@ export async function generateInvoicePdf(invoiceId, baseUrl) {
             timeout: 30000
         });
 
-        // Wait a bit for any dynamic content
-        await page.waitForTimeout(1000);
+        // Wait for the invoice content to render (look for INVOICE heading)
+        try {
+            await page.waitForSelector('h2', { timeout: 10000 });
+            console.log('Invoice content loaded');
+        } catch (e) {
+            console.log('Warning: Could not find h2 element, page content:', await page.content().then(c => c.substring(0, 500)));
+        }
+
+        // Additional wait for React to finish rendering
+        await page.waitForTimeout(2000);
 
         // Hide non-printable elements (buttons, nav, etc.)
         await page.addStyleTag({

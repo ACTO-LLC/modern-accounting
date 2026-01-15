@@ -20,16 +20,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+// Check bypass at module level
+const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
+// Provider for when auth is bypassed (no MSAL)
+function BypassAuthProvider({ children }: { children: ReactNode }) {
+  const value: AuthContextType = {
+    isAuthenticated: true,
+    isLoading: false,
+    user: null,
+    userRole: 'Admin',
+    login: async () => { console.log('Auth bypassed - login skipped'); },
+    logout: async () => { console.log('Auth bypassed - logout skipped'); },
+    getAccessToken: async () => null,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Provider for real MSAL auth
+function MsalAuthProvider({ children }: { children: ReactNode }) {
   const { instance, accounts, inProgress } = useMsal();
   const msalIsAuthenticated = useIsAuthenticated();
   const account = useAccount(accounts[0] || null);
   const [userRole, setUserRole] = useState<UserRole>('Viewer');
 
-  // Allow bypassing auth for testing/development
-  const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
-  const isAuthenticated = bypassAuth || msalIsAuthenticated;
-  const isLoading = bypassAuth ? false : inProgress !== InteractionStatus.None;
+  const isAuthenticated = msalIsAuthenticated;
+  const isLoading = inProgress !== InteractionStatus.None;
 
   // Extract user role from token claims
   useEffect(() => {
@@ -111,6 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+// Export the appropriate provider based on bypass setting
+export function AuthProvider({ children }: { children: ReactNode }) {
+  if (bypassAuth) {
+    return <BypassAuthProvider>{children}</BypassAuthProvider>;
+  }
+  return <MsalAuthProvider>{children}</MsalAuthProvider>;
 }
 
 export function useAuth() {

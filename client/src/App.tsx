@@ -65,12 +65,17 @@ import EditSubmission from './pages/EditSubmission';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
-const msalInstance = new PublicClientApplication(msalConfig);
+
+// Only initialize MSAL if not bypassing auth (for Puppeteer PDF generation compatibility)
+const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
+const msalInstance = bypassAuth ? null : new PublicClientApplication(msalConfig);
 
 function AppContent() {
   useEffect(() => {
-    // Initialize API auth interceptor with MSAL instance
-    initializeApiAuth(msalInstance);
+    // Initialize API auth interceptor with MSAL instance (only if not bypassing)
+    if (msalInstance) {
+      initializeApiAuth(msalInstance);
+    }
   }, []);
 
   return (
@@ -141,21 +146,30 @@ function AppContent() {
 }
 
 function App() {
+  const content = (
+    <AuthProvider>
+      <CompanySettingsProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <ToastProvider>
+              <ChatProvider>
+                <AppContent />
+              </ChatProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </CompanySettingsProvider>
+    </AuthProvider>
+  );
+
+  // Skip MsalProvider when bypassing auth (for Puppeteer compatibility)
+  if (bypassAuth || !msalInstance) {
+    return content;
+  }
+
   return (
     <MsalProvider instance={msalInstance}>
-      <AuthProvider>
-        <CompanySettingsProvider>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <ToastProvider>
-                <ChatProvider>
-                  <AppContent />
-                </ChatProvider>
-              </ToastProvider>
-            </ThemeProvider>
-          </QueryClientProvider>
-        </CompanySettingsProvider>
-      </AuthProvider>
+      {content}
     </MsalProvider>
   );
 }

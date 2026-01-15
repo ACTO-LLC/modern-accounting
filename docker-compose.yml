@@ -40,7 +40,8 @@ services:
       - DATABASE_URL=Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true
       - EMAIL_API_PORT=7073
       - EMAIL_ENCRYPTION_KEY=${EMAIL_ENCRYPTION_KEY:-default-encryption-key-change-me}
-      - APP_BASE_URL=http://localhost:5173
+      - APP_BASE_URL=http://host.docker.internal:5173
+      - DAB_API_URL=http://dab:5000/api
     volumes:
       - ./email-api:/app
       - /app/node_modules

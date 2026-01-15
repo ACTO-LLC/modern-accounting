@@ -219,6 +219,28 @@ export default function RestDataGrid<T extends GridValidRowModel>({
               '& .MuiDataGrid-cell:focus': {
                 outline: 'none',
               },
+              // Footer/pagination styling
+              '& .MuiTablePagination-root': {
+                color: '#374151 !important',
+              },
+              '& .MuiTablePagination-selectLabel': {
+                color: '#374151 !important',
+              },
+              '& .MuiTablePagination-displayedRows': {
+                color: '#374151 !important',
+              },
+              '& .MuiTablePagination-select': {
+                color: '#111827 !important',
+              },
+              '& .MuiTablePagination-selectIcon': {
+                color: '#374151 !important',
+              },
+              '& .MuiIconButton-root': {
+                color: '#374151 !important',
+              },
+              '& .MuiIconButton-root.Mui-disabled': {
+                color: '#9ca3af !important',
+              },
             }}
             localeText={{
               noRowsLabel: emptyMessage,
