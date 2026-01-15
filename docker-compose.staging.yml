@@ -1,0 +1,74 @@
+version: '3.8'
+
+# Staging environment configuration
+# Usage: docker-compose -f docker-compose.staging.yml up -d
+# Ports are offset from development to allow parallel running
+
+services:
+  sql-staging:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: accounting-db-staging
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD_STAGING:-StagingPassword123}
+    ports:
+      - "14331:1433"
+    volumes:
+      - sql-staging-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  dab-staging:
+    image: mcr.microsoft.com/azure-databases/data-api-builder:latest
+    container_name: accounting-dab-staging
+    depends_on:
+      sql-staging:
+        condition: service_healthy
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./dab-config.json:/App/dab-config.json
+    environment:
+      - DAB_CONNECTION_STRING=Server=sql-staging,1433;Database=AccountingDB;User Id=sa;Password=${SQL_SA_PASSWORD_STAGING:-StagingPassword123};TrustServerCertificate=true
+
+  email-api-staging:
+    build:
+      context: ./email-api
+      dockerfile: Dockerfile
+    container_name: accounting-email-api-staging
+    depends_on:
+      sql-staging:
+        condition: service_healthy
+    ports:
+      - "7074:7073"
+    environment:
+      - DATABASE_URL=Server=sql-staging,1433;Database=AccountingDB;User Id=sa;Password=${SQL_SA_PASSWORD_STAGING:-StagingPassword123};TrustServerCertificate=true
+      - EMAIL_API_PORT=7073
+      - EMAIL_ENCRYPTION_KEY=${EMAIL_ENCRYPTION_KEY:-staging-encryption-key}
+      - APP_BASE_URL=http://localhost:3001
+      - DAB_API_URL=http://dab-staging:5000/api
+    volumes:
+      - ./email-api:/app
+      - /app/node_modules
+
+  client-staging:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5001
+    container_name: accounting-client-staging
+    depends_on:
+      - dab-staging
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=staging
+
+volumes:
+  sql-staging-data:
+    name: accounting-sql-staging-data
