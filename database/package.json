@@ -1,0 +1,14 @@
+{
+  "name": "modern-accounting-database-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Database layer tests for Modern Accounting",
+  "scripts": {
+    "test": "vitest run --config tests/vitest.config.js",
+    "test:watch": "vitest --config tests/vitest.config.js"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "mssql": "^10.0.0"
+  }
+}
