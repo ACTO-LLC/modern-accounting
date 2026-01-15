@@ -9,7 +9,11 @@
       "version": "20"
     },
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
   },
 
   "customizations": {
@@ -34,16 +38,17 @@
     }
   },
 
-  "forwardPorts": [5173, 7071, 7073, 5000, 14330],
+  "forwardPorts": [5173, 7071, 7073, 5000, 8001, 14330],
   "portsAttributes": {
     "5173": { "label": "Client (Vite)", "onAutoForward": "notify" },
     "7071": { "label": "Chat API", "onAutoForward": "silent" },
     "7073": { "label": "Email API", "onAutoForward": "silent" },
     "5000": { "label": "DAB API", "onAutoForward": "silent" },
+    "8001": { "label": "QBO MCP", "onAutoForward": "silent" },
     "14330": { "label": "SQL Server", "onAutoForward": "silent" }
   },
 
-  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && npm install && cd client && npm install && cp -n .env.example .env.local 2>/dev/null || true && cd ../chat-api && npm install",
+  "postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
   "postStartCommand": ".devcontainer/start-services.sh",
 
   "remoteUser": "vscode",
