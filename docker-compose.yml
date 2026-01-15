@@ -46,5 +46,39 @@ services:
       - ./email-api:/app
       - /app/node_modules
 
+  # Monitor Agent - AI-driven enhancement processor
+  # Not started by default - enable with: docker compose --profile agent up
+  monitor-agent:
+    build:
+      context: ./monitor-agent
+      dockerfile: Dockerfile
+    container_name: accounting-monitor-agent
+    profiles:
+      - agent
+    depends_on:
+      - database
+    environment:
+      - DB_SERVER=database
+      - DB_PORT=1433
+      - DB_NAME=AccountingDB
+      - DB_USER=sa
+      - DB_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123!}
+      - DB_TRUST_CERT=true
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_OWNER=${GITHUB_OWNER:-modern-accounting}
+      - GITHUB_REPO=${GITHUB_REPO:-modern-accounting}
+      - GITHUB_BASE_BRANCH=${GITHUB_BASE_BRANCH:-main}
+      - GIT_REPO_PATH=/repo
+      - GIT_AUTHOR_NAME=Monitor Agent
+      - GIT_AUTHOR_EMAIL=agent@modern-accounting.local
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS:-300000}
+      - MAX_CONCURRENT_JOBS=${MAX_CONCURRENT_JOBS:-1}
+      - ENABLE_EMAIL_NOTIFICATIONS=${ENABLE_EMAIL_NOTIFICATIONS:-false}
+      - ENABLE_SLACK_NOTIFICATIONS=${ENABLE_SLACK_NOTIFICATIONS:-false}
+      - DRY_RUN=${DRY_RUN:-false}
+    volumes:
+      - .:/repo:rw
+
 volumes:
   sql-data:

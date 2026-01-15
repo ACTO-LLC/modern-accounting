@@ -1,0 +1,26 @@
+{
+  "name": "monitor-agent",
+  "version": "1.0.0",
+  "description": "Monitor agent service for processing AI-driven feature enhancements",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@octokit/rest": "^20.0.0",
+    "simple-git": "^3.22.0",
+    "mssql": "^10.0.0",
+    "nodemailer": "^6.9.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/mssql": "^9.0.0",
+    "@types/nodemailer": "^6.4.0",
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0"
+  }
+}
