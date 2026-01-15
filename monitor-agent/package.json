@@ -7,7 +7,10 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "scheduler": "tsx src/run-scheduler.ts"
+    "scheduler": "tsx src/run-scheduler.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
@@ -22,6 +25,8 @@
     "@types/mssql": "^9.0.0",
     "@types/nodemailer": "^6.4.0",
     "typescript": "^5.0.0",
-    "tsx": "^4.0.0"
+    "tsx": "^4.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0"
   }
 }
