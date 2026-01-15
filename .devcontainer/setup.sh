@@ -15,11 +15,10 @@ npm install -g @anthropic-ai/claude-code
 
 # Install pipx and MCP servers
 echo ""
-echo "[2/6] Installing pipx and MCP servers..."
+echo "[2/6] Installing pipx and SQL Server MCP..."
 pip install --user pipx
-pipx ensurepath
+pipx ensurepath --force
 pipx install mssql-mcp-server
-pipx install azure-mcp
 
 # Install ODBC drivers for SQL Server
 echo ""
@@ -67,10 +66,6 @@ cat > /workspace/.mcp.json << 'MCPEOF'
         "MSSQL_PASSWORD": "StrongPassword123!"
       }
     },
-    "azure": {
-      "type": "stdio",
-      "command": "/home/vscode/.local/bin/azure-mcp"
-    },
     "qbo": {
       "type": "http",
       "url": "http://localhost:8001/mcp"
@@ -86,9 +81,8 @@ echo "========================================="
 echo ""
 echo "  MCP servers configured:"
 echo "    - mssql: SQL Server (database:1433)"
-echo "    - azure: Azure CLI integration"
 echo "    - qbo:   QuickBooks Online (localhost:8001)"
 echo ""
-echo "  To use Azure, run: az login"
+echo "  Azure CLI is available via: az login"
 echo "  To start QBO MCP: cd qbo-mcp-http-server && npm start"
 echo ""
