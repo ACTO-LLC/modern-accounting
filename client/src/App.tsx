@@ -62,6 +62,7 @@ import RecurringTransactions from './pages/RecurringTransactions';
 import Submissions from './pages/Submissions';
 import NewSubmission from './pages/NewSubmission';
 import EditSubmission from './pages/EditSubmission';
+import AdminEnhancements from './pages/AdminEnhancements';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -136,6 +137,7 @@ function AppContent() {
             <Route path="submissions" element={<Submissions />} />
             <Route path="submissions/new" element={<NewSubmission />} />
             <Route path="submissions/:id/edit" element={<EditSubmission />} />
+            <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
           </Route>
         </Route>
