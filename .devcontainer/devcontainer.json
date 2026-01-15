@@ -43,7 +43,7 @@
     "14330": { "label": "SQL Server", "onAutoForward": "silent" }
   },
 
-  "postCreateCommand": "npm install && cd client && npm install && cp -n .env.example .env.local 2>/dev/null || true && cd ../chat-api && npm install",
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && npm install && cd client && npm install && cp -n .env.example .env.local 2>/dev/null || true && cd ../chat-api && npm install",
   "postStartCommand": ".devcontainer/start-services.sh",
 
   "remoteUser": "vscode",
