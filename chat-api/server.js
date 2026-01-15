@@ -21,6 +21,7 @@ import {
     migrateJournalEntries
 } from './migration/db-executor.js';
 import { qboAuth } from './qbo-auth.js';
+import githubRoutes from './src/routes/github.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,9 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// GitHub/PR workflow API routes
+app.use('/api/github', githubRoutes);
 
 // Configure multer for file uploads
 const uploadDir = path.join(__dirname, 'uploads');
