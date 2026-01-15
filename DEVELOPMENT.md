@@ -1,120 +1,114 @@
 # Development Setup
 
-Two ways to develop: **Local** (recommended) or **Dev Container**.
-
-## Option 1: Local Development (Recommended)
-
-Fastest workflow. Docker runs only database services, code runs locally.
-
-### Prerequisites
-- Node.js 20+
-- Docker Desktop
-- Claude Code CLI (`npm install -g @anthropic-ai/claude-code`)
-
-### Start Services
+## Quick Start (Local Development)
 
 ```powershell
-# 1. Start database + DAB (leave running)
+# 1. Start all services
+.\dev.ps1
+
+# 2. Open the URL shown in the output (usually http://localhost:5173)
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────┐
+│  Docker (database services)         │
+│  - SQL Server (14330)               │
+│  - DAB API (5000)                   │
+│  - Email API (7073)                 │
+└─────────────────────────────────────┘
+              ↑
+┌─────────────────────────────────────┐
+│  Local Node.js                      │
+│  - Client/Vite (5173+)              │
+│  - Chat API (7071)                  │
+└─────────────────────────────────────┘
+```
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `.\dev.ps1` | Start everything, show status |
+| `.\dev.ps1 -Stop` | Stop all services |
+| `.\dev.ps1 -Status` | Check what's running |
+| `.\dev.ps1 -Reset` | Full reset (stop, clean, restart) |
+
+## Ports
+
+| Service | Default Port | Notes |
+|---------|--------------|-------|
+| Client (Vite) | 5173 | Auto-increments if busy (5174, 5175...) |
+| Chat API | 7071 | |
+| DAB API | 5000 | GraphQL at /graphql, REST at /api |
+| Email API | 7073 | |
+| SQL Server | 14330 | Connect: `localhost,14330` |
+
+## Manual Commands
+
+```powershell
+# Start Docker services only
 docker compose up -d
 
-# 2. Start app servers (in separate terminals or use start-all.ps1)
+# Start client only
 cd client && npm run dev
+
+# Start chat-api only
 cd chat-api && npm start
 
-# Or use the PowerShell script
-.\start-all.ps1
+# Stop everything
+docker compose down
 ```
-
-### Ports
-| Service | Port | URL |
-|---------|------|-----|
-| Client (Vite) | 5173 | http://localhost:5173 |
-| Chat API | 7071 | http://localhost:7071 |
-| DAB API | 5000 | http://localhost:5000/api |
-| Email API | 7073 | http://localhost:7073 |
-| SQL Server | 14330 | localhost,14330 |
-
-### Stop Services
-```powershell
-.\stop-all.ps1
-# or
-docker compose down  # stops DB + DAB
-```
-
----
-
-## Option 2: Dev Container (Full Isolation)
-
-Everything runs in containers. Slower but fully isolated.
-
-### When to Use
-- CI/CD pipelines
-- Onboarding new developers
-- Need completely isolated environment
-- Testing on different Node/OS versions
-
-### Start
-1. Open VS Code in the project folder
-2. `Cmd+Shift+P` → "Dev Containers: Reopen in Container"
-3. Wait for build (~5-10 min first time, faster on rebuilds)
-
-### Features
-- Claude Code CLI pre-installed
-- Azure CLI available (`az login`)
-- SQL Server MCP configured
-- All services auto-start
-
-### Auth Persistence
-Claude Code auth persists between container rebuilds via the `claude-config` volume.
-
-### Ports (same as local)
-VS Code forwards all ports automatically. Access via localhost in your browser.
-
----
 
 ## Database
 
-Both workflows use the same database schema.
-
-### Run Migrations
-```bash
-cd scripts && node deploy-db.js
-```
-
-### Connect with SQL tools
+### Connection
 - Server: `localhost,14330`
 - Database: `AccountingDB`
 - User: `sa`
 - Password: `StrongPassword123!`
 
----
+### Run Migrations
+```powershell
+cd scripts && node deploy-db.js
+```
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and update as needed:
-- `SQL_SA_PASSWORD` - Database password
-- `EMAIL_ENCRYPTION_KEY` - For email settings encryption
-
-Client env vars go in `client/.env.local` (copy from `client/.env.example`).
-
----
+Copy example files and customize:
+- `.env.example` → `.env` (root)
+- `client/.env.example` → `client/.env.local`
 
 ## Troubleshooting
 
-### Port already in use
+### Port Already in Use
+The `dev.ps1` script handles this automatically. For manual cleanup:
 ```powershell
-# Find and kill process on port
+# Find process on port
 netstat -ano | findstr :5173
+# Kill it
 taskkill /PID <pid> /F
 ```
 
-### Docker issues
+### Docker Issues
 ```powershell
-docker compose down -v  # Remove volumes too
-docker system prune -f  # Clean up
+.\dev.ps1 -Reset   # Full reset
+# or manually:
+docker compose down -v
+docker system prune -f
 ```
 
-### Dev Container won't start
-1. `wsl --shutdown`
-2. Restart Docker Desktop
-3. Try "Rebuild Container" again
+### Client Shows Wrong Port
+Vite auto-selects an available port. Check the terminal output for the actual URL.
+
+---
+
+## Dev Container (Alternative)
+
+For full isolation, use the dev container:
+1. Open VS Code
+2. `Cmd+Shift+P` → "Dev Containers: Reopen in Container"
+3. Wait for build (~5-10 min first time)
+
+Claude Code auth persists between rebuilds via the `claude-config` volume.
