@@ -34,10 +34,11 @@
     }
   },
 
-  "forwardPorts": [5173, 7071, 5000, 14330],
+  "forwardPorts": [5173, 7071, 7073, 5000, 14330],
   "portsAttributes": {
     "5173": { "label": "Client (Vite)", "onAutoForward": "notify" },
     "7071": { "label": "Chat API", "onAutoForward": "silent" },
+    "7073": { "label": "Email API", "onAutoForward": "silent" },
     "5000": { "label": "DAB API", "onAutoForward": "silent" },
     "14330": { "label": "SQL Server", "onAutoForward": "silent" }
   },
@@ -45,7 +46,7 @@
   "postCreateCommand": "npm install && cd client && npm install && cp -n .env.example .env.local 2>/dev/null || true && cd ../chat-api && npm install",
   "postStartCommand": ".devcontainer/start-services.sh",
 
-  "remoteUser": "node",
+  "remoteUser": "vscode",
 
   "containerEnv": {
     "SQL_SERVER": "database",
@@ -54,6 +55,7 @@
     "SQL_PASSWORD": "StrongPassword123!",
     "SQL_DATABASE": "AccountingDB",
     "DAB_API_URL": "http://dab:5000/api",
-    "VITE_API_URL": "http://localhost:7071"
+    "VITE_API_URL": "http://dab:5000",
+    "VITE_EMAIL_API_URL": "http://email-api:7073"
   }
 }

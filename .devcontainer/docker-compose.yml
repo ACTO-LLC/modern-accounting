@@ -7,9 +7,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspace:cached
-      - node_modules:/workspace/node_modules
-      - client_node_modules:/workspace/client/node_modules
-      - chat_api_node_modules:/workspace/chat-api/node_modules
     command: sleep infinity
     networks:
       - devnet
@@ -35,6 +32,20 @@ services:
       retries: 10
       start_period: 30s
 
+  db-init:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile.db-init
+    environment:
+      - SQL_SERVER=database
+      - SQL_PORT=1433
+      - SQL_SA_PASSWORD=StrongPassword123!
+    networks:
+      - devnet
+    depends_on:
+      database:
+        condition: service_healthy
+
   dab:
     image: mcr.microsoft.com/azure-databases/data-api-builder:latest
     ports:
@@ -46,14 +57,34 @@ services:
     networks:
       - devnet
     depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  email-api:
+    build:
+      context: ../email-api
+      dockerfile: Dockerfile
+    ports:
+      - "7073:7073"
+    environment:
+      - DATABASE_URL=Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true
+      - EMAIL_API_PORT=7073
+      - EMAIL_ENCRYPTION_KEY=devcontainer-encryption-key-32ch
+      - APP_BASE_URL=http://localhost:5173
+    networks:
+      - devnet
+    depends_on:
       database:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7073/email-api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   sql-data:
-  node_modules:
-  client_node_modules:
-  chat_api_node_modules:
 
 networks:
   devnet:

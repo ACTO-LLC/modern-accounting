@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
-import { Building2, Upload, Save, X, Sun, Moon, Monitor } from 'lucide-react';
+import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail } from 'lucide-react';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
+import EmailSettingsForm from '../components/EmailSettingsForm';
 
 export default function CompanySettings() {
   const { settings, updateSettings } = useCompanySettings();
@@ -306,6 +307,18 @@ export default function CompanySettings() {
           </button>
         </div>
       </form>
+
+      {/* Email Settings Section */}
+      <div className="mt-8 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+        <div className="flex items-center gap-2 mb-6">
+          <Mail className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Email Settings</h2>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          Configure SMTP settings to send invoices directly to customers via email.
+        </p>
+        <EmailSettingsForm />
+      </div>
     </div>
   );
 }

@@ -52,19 +52,113 @@ async function deploy() {
             END
         `);
 
-        // Read and Execute Scripts
+        // Read and Execute Scripts - two-pass approach for foreign key dependencies
         const scriptsDir = path.join(__dirname, '../database/dbo/Tables');
-        const files = fs.readdirSync(scriptsDir);
+        const allFiles = fs.readdirSync(scriptsDir).filter(f => f.endsWith('.sql'));
 
-        for (const file of files) {
-            if (file.endsWith('.sql')) {
+        // Regex to extract foreign key constraints
+        const fkRegex = /CONSTRAINT\s+\[?(\w+)\]?\s+FOREIGN\s+KEY\s*\([^)]+\)\s*REFERENCES\s+\[?(\w+)\]?\.\[?(\w+)\]?\s*\([^)]+\)/gi;
+
+        const foreignKeys = [];
+
+        // Pass 1: Create tables without foreign keys
+        console.log('Pass 1: Creating tables...');
+        for (const file of allFiles) {
+            const filePath = path.join(scriptsDir, file);
+            console.log(`Executing ${file}...`);
+            let content = fs.readFileSync(filePath, 'utf8');
+
+            // Extract and remove foreign key constraints for later
+            let match;
+            const tempContent = content;
+            while ((match = fkRegex.exec(tempContent)) !== null) {
+                const tableName = file.replace('.sql', '');
+                foreignKeys.push({
+                    table: tableName,
+                    constraint: match[0]
+                });
+            }
+
+            // Remove foreign key constraints from CREATE TABLE (including ON DELETE/UPDATE clauses)
+            content = content.replace(/,?\s*CONSTRAINT\s+\[?\w+\]?\s+FOREIGN\s+KEY\s*\([^)]+\)\s*REFERENCES\s+\[?\w+\]?\.\[?\w+\]?\s*\([^)]+\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|NO ACTION|SET NULL|SET DEFAULT))*/gi, '');
+
+            // Remove trailing comma before closing parenthesis
+            content = content.replace(/,(\s*\))/g, '$1');
+
+            // Remove GO statements as they are not T-SQL
+            const batches = content.split('GO');
+            for (const batch of batches) {
+                if (batch.trim()) {
+                    await pool.request().query(batch);
+                }
+            }
+        }
+
+        // Pass 2: Add foreign keys
+        console.log('Pass 2: Adding foreign key constraints...');
+        for (const fk of foreignKeys) {
+            try {
+                console.log(`Adding FK to ${fk.table}...`);
+                await pool.request().query(`ALTER TABLE [dbo].[${fk.table}] ADD ${fk.constraint}`);
+            } catch (err) {
+                console.log(`  Warning: Could not add FK to ${fk.table}: ${err.message}`);
+            }
+        }
+
+        // Pass 3: Create views
+        const viewsDir = path.join(__dirname, '../database/dbo/Views');
+        if (fs.existsSync(viewsDir)) {
+            console.log('Pass 3: Creating views...');
+            const viewFiles = fs.readdirSync(viewsDir).filter(f => f.endsWith('.sql'));
+            for (const file of viewFiles) {
+                const filePath = path.join(viewsDir, file);
                 console.log(`Executing ${file}...`);
-                const content = fs.readFileSync(path.join(scriptsDir, file), 'utf8');
-                // Remove GO statements as they are not T-SQL
+                let content = fs.readFileSync(filePath, 'utf8');
                 const batches = content.split('GO');
                 for (const batch of batches) {
                     if (batch.trim()) {
                         await pool.request().query(batch);
+                    }
+                }
+            }
+        }
+
+        // Pass 4: Create stored procedures
+        const procsDir = path.join(__dirname, '../database/dbo/StoredProcedures');
+        if (fs.existsSync(procsDir)) {
+            console.log('Pass 4: Creating stored procedures...');
+            const procFiles = fs.readdirSync(procsDir).filter(f => f.endsWith('.sql'));
+            for (const file of procFiles) {
+                const filePath = path.join(procsDir, file);
+                console.log(`Executing ${file}...`);
+                let content = fs.readFileSync(filePath, 'utf8');
+                const batches = content.split('GO');
+                for (const batch of batches) {
+                    if (batch.trim()) {
+                        await pool.request().query(batch);
+                    }
+                }
+            }
+        }
+
+        // Pass 5: Run migrations
+        const migrationsDir = path.join(__dirname, '../database/migrations');
+        if (fs.existsSync(migrationsDir)) {
+            console.log('Pass 5: Running migrations...');
+            const migrationFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+            for (const file of migrationFiles) {
+                const filePath = path.join(migrationsDir, file);
+                console.log(`Executing ${file}...`);
+                let content = fs.readFileSync(filePath, 'utf8');
+                const batches = content.split('GO');
+                for (const batch of batches) {
+                    if (batch.trim()) {
+                        try {
+                            await pool.request().query(batch);
+                        } catch (err) {
+                            // Ignore errors for migrations (they might already be applied)
+                            console.log(`  Warning: ${err.message.split('\n')[0]}`);
+                        }
                     }
                 }
             }
