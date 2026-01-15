@@ -553,32 +553,46 @@ You have access to migration tools to actually migrate data:
 - migrate_invoices: Migrate invoices (requires customers first)
 
 MIGRATION BEST PRACTICES:
-1. Always show the analysis first (qbo_analyze_migration) before offering to migrate
-2. Ask for confirmation before running migration tools
-3. Migrate in order: Accounts -> Customers & Vendors -> Invoices
-4. Report results clearly: "Created X, Skipped Y (already exist), Z errors"
-5. If errors occur, explain what went wrong and offer to retry
-6. Celebrate successful migrations with positive feedback!
+1. CRITICAL: Always use qbo_analyze_migration FIRST - it now shows both QBO data AND what's already imported to ACTO
+2. NEVER suggest importing entities that are already imported - check the "imported" counts in the analysis
+3. Ask for confirmation before running migration tools
+4. Migrate in order: Accounts -> Customers & Vendors -> Products -> Invoices/Bills
+5. Report results clearly: "Created X, Skipped Y (already exist), Z errors"
+6. If errors occur, explain what went wrong and offer to retry
+7. Celebrate successful migrations with positive feedback!
+
+MIGRATION STATUS AWARENESS:
+- qbo_analyze_migration returns: qbo (counts in QuickBooks), imported (already in ACTO), remaining (still need to import)
+- Use get_migration_status to check ACTO import status independently
+- ALWAYS check what's been imported before suggesting what to migrate next
+- Show "X of Y already imported" format to give users clear status
+- If something is fully imported (remaining = 0), do NOT suggest re-importing it
 
 Migration conversation example:
 User: "I want to migrate from QuickBooks"
-Assistant: [Check qbo_get_status] "I see you're connected to 'ABC Company' on QuickBooks! Let me analyze your data..."
-Assistant: [Call qbo_analyze_migration] "You have:
-- 50 accounts in your chart of accounts
-- 150 customers ($47,000 in unpaid invoices)
-- 25 vendors
-- 533 invoices
+Assistant: [Check qbo_get_status] "I see you're connected to 'ABC Company' on QuickBooks! Let me analyze your data and check what's already been imported..."
+Assistant: [Call qbo_analyze_migration] "Here's your migration status:
 
-Would you like me to start the migration? I recommend starting with your chart of accounts."
+**QuickBooks Data:**
+- 50 accounts, 150 customers, 25 vendors, 533 invoices
 
-User: "Yes, migrate everything"
-Assistant: [Call migrate_accounts] "Chart of accounts migration complete: 48 created, 2 skipped (system defaults).
+**Already Imported to ACTO:**
+- 48 accounts (of 50) - almost complete!
+- 0 customers, 0 vendors, 0 invoices
+
+**Remaining to Import:**
+- 2 accounts, 150 customers, 25 vendors, 533 invoices
+
+Your chart of accounts is almost done! Would you like me to finish importing the remaining 2 accounts, then move on to customers and vendors?"
+
+User: "Yes, let's do it"
+Assistant: [Call migrate_accounts] "Chart of accounts complete: 2 more accounts imported (48 were already there).
 Now migrating customers..."
 [Call migrate_customers] "Customers migrated: 150 created.
-Now migrating invoices..."
-[Call migrate_invoices with unpaid_only: true] "Invoices migrated: 23 unpaid invoices worth $47,000 created.
+Now migrating vendors..."
+[Call migrate_vendors] "Vendors migrated: 25 created.
 
-Your QuickBooks data is now in ACTO! You can continue tracking those $47,000 in unpaid invoices right here."`;
+Your master data is now fully imported! Ready to migrate invoices when you are."`;
 
 
 
@@ -782,7 +796,7 @@ const tools = [
         type: 'function',
         function: {
             name: 'qbo_analyze_migration',
-            description: 'Analyze QuickBooks Online data for migration. Returns counts of customers, invoices, vendors, accounts, and bills with migration recommendations.',
+            description: 'Analyze QuickBooks Online data for migration. Returns QBO entity counts, what has ALREADY been imported to ACTO, and what REMAINS to import. ALWAYS use this before suggesting migration steps to avoid re-importing existing data.',
             parameters: {
                 type: 'object',
                 properties: {}
@@ -858,6 +872,24 @@ const tools = [
                 properties: {
                     vendor_name: { type: 'string', description: 'Filter by vendor name' },
                     fetch_all: { type: 'boolean', description: 'Fetch all bills (for migration)' }
+                }
+            }
+        }
+    },
+    // ========== Migration Status Tools ==========
+    {
+        type: 'function',
+        function: {
+            name: 'get_migration_status',
+            description: 'Check what data has been imported from an external system (like QuickBooks) to ACTO. Use this BEFORE suggesting migrations to see what has already been imported vs what remains.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    source_system: {
+                        type: 'string',
+                        enum: ['QBO'],
+                        description: 'Source system to check (default: QBO)'
+                    }
                 }
             }
         }
@@ -1794,12 +1826,89 @@ async function executeQboAnalyzeMigration() {
             };
         }
 
-        const analysis = await qboAuth.analyzeForMigration();
+        // Get QBO data counts
+        const qboAnalysis = await qboAuth.analyzeForMigration();
+
+        // Get ACTO import status
+        const actoStatus = await executeGetMigrationStatus({ source_system: 'QBO' });
+
+        // Calculate what's remaining to import
+        const remaining = {
+            customers: Math.max(0, (qboAnalysis.customers || 0) - (actoStatus.imported?.customers || 0)),
+            vendors: Math.max(0, (qboAnalysis.vendors || 0) - (actoStatus.imported?.vendors || 0)),
+            accounts: Math.max(0, (qboAnalysis.accounts || 0) - (actoStatus.imported?.accounts || 0)),
+            products: Math.max(0, (qboAnalysis.items || 0) - (actoStatus.imported?.products || 0)),
+            invoices: Math.max(0, (qboAnalysis.invoices || 0) - (actoStatus.imported?.invoices || 0)),
+            bills: Math.max(0, (qboAnalysis.bills || 0) - (actoStatus.imported?.bills || 0)),
+            payments: Math.max(0, (qboAnalysis.payments || 0) - (actoStatus.imported?.payments || 0)),
+            billPayments: Math.max(0, (qboAnalysis.billPayments || 0) - (actoStatus.imported?.billPayments || 0)),
+            journalEntries: Math.max(0, (qboAnalysis.journalEntries || 0) - (actoStatus.imported?.journalEntries || 0))
+        };
+
+        const totalRemaining = Object.values(remaining).reduce((sum, n) => sum + n, 0);
+
         return {
             success: true,
-            ...analysis
+            qbo: qboAnalysis,
+            imported: actoStatus.imported || {},
+            remaining,
+            totalRemaining,
+            migrationComplete: totalRemaining === 0 && actoStatus.hasImportedData,
+            summary: actoStatus.hasImportedData
+                ? `Already imported: ${actoStatus.totalRecordsImported} records. Remaining: ${totalRemaining} records.`
+                : 'No data has been imported yet. Ready to begin migration.'
         };
     } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeGetMigrationStatus(params) {
+    try {
+        const sourceSystem = params?.source_system || 'QBO';
+
+        // Query each entity table for counts where SourceSystem matches
+        const filter = `SourceSystem eq '${sourceSystem}'`;
+
+        const [customers, vendors, accounts, invoices, bills, products, payments, billPayments, journalEntries] = await Promise.all([
+            mcp.readRecords('customers', { filter, first: 10000 }),
+            mcp.readRecords('vendors', { filter, first: 10000 }),
+            mcp.readRecords('accounts', { filter, first: 10000 }),
+            mcp.readRecords('invoices', { filter, first: 10000 }),
+            mcp.readRecords('bills', { filter, first: 10000 }),
+            mcp.readRecords('productsservices', { filter, first: 10000 }),
+            mcp.readRecords('payments', { filter, first: 10000 }),
+            mcp.readRecords('billpayments', { filter, first: 10000 }),
+            mcp.readRecords('journalentries', { filter, first: 10000 })
+        ]);
+
+        const imported = {
+            customers: customers.result?.value?.length || 0,
+            vendors: vendors.result?.value?.length || 0,
+            accounts: accounts.result?.value?.length || 0,
+            invoices: invoices.result?.value?.length || 0,
+            bills: bills.result?.value?.length || 0,
+            products: products.result?.value?.length || 0,
+            payments: payments.result?.value?.length || 0,
+            billPayments: billPayments.result?.value?.length || 0,
+            journalEntries: journalEntries.result?.value?.length || 0
+        };
+
+        const totalImported = Object.values(imported).reduce((sum, n) => sum + n, 0);
+        const hasImported = totalImported > 0;
+
+        return {
+            success: true,
+            sourceSystem,
+            hasImportedData: hasImported,
+            totalRecordsImported: totalImported,
+            imported,
+            summary: hasImported
+                ? `Found ${totalImported} records imported from ${sourceSystem}`
+                : `No records have been imported from ${sourceSystem} yet`
+        };
+    } catch (error) {
+        console.error('Error getting migration status:', error);
         return { success: false, error: error.message };
     }
 }
@@ -2785,6 +2894,8 @@ async function executeFunction(name, args) {
             return executeQboGetStatus();
         case 'qbo_analyze_migration':
             return executeQboAnalyzeMigration();
+        case 'get_migration_status':
+            return executeGetMigrationStatus(args);
         case 'qbo_search_customers':
             return executeQboSearchCustomers(args);
         case 'qbo_search_invoices':
