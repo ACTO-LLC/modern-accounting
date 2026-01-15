@@ -94,7 +94,85 @@ const client = new OpenAIClient(
 
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const DAB_MCP_URL = process.env.DAB_MCP_URL || 'http://localhost:5000/mcp';
+const DAB_REST_URL = process.env.DAB_REST_URL || 'http://localhost:5000/api';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+
+// ============================================================================
+// REST Client for DAB (used for onboarding tools - more reliable than MCP)
+// ============================================================================
+
+class DabRestClient {
+    constructor(baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    async get(entity, options = {}) {
+        try {
+            const params = new URLSearchParams();
+            if (options.filter) params.append('$filter', options.filter);
+            if (options.orderby) params.append('$orderby', Array.isArray(options.orderby) ? options.orderby.join(',') : options.orderby);
+            if (options.select) params.append('$select', options.select);
+            if (options.first) params.append('$first', options.first.toString());
+
+            const url = `${this.baseUrl}/${entity}${params.toString() ? '?' + params.toString() : ''}`;
+            const response = await axios.get(url);
+            return { success: true, value: response.data.value || [] };
+        } catch (error) {
+            console.error(`REST GET ${entity} failed:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getById(entity, id) {
+        try {
+            const url = `${this.baseUrl}/${entity}/Id/${id}`;
+            const response = await axios.get(url);
+            return { success: true, value: response.data };
+        } catch (error) {
+            console.error(`REST GET ${entity}/${id} failed:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async create(entity, data) {
+        try {
+            const response = await axios.post(`${this.baseUrl}/${entity}`, data, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            // DAB returns {"value":[{...}]}, extract the first item
+            const created = response.data.value?.[0] || response.data;
+            return { success: true, value: created };
+        } catch (error) {
+            console.error(`REST POST ${entity} failed:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async update(entity, id, data) {
+        try {
+            const response = await axios.patch(`${this.baseUrl}/${entity}/Id/${id}`, data, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            return { success: true, value: response.data };
+        } catch (error) {
+            console.error(`REST PATCH ${entity}/${id} failed:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async delete(entity, id) {
+        try {
+            await axios.delete(`${this.baseUrl}/${entity}/Id/${id}`);
+            return { success: true };
+        } catch (error) {
+            console.error(`REST DELETE ${entity}/${id} failed:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+}
+
+// Create REST client instance for onboarding tools
+const dab = new DabRestClient(DAB_REST_URL);
 
 // ============================================================================
 // MCP Client for DAB
@@ -255,7 +333,21 @@ const systemPrompt = `You are an expert accounting assistant for Modern Accounti
 1. ONBOARDING NEW USERS: Handle these common onboarding responses:
    - "Yes, from QuickBooks" or mentions QBO: Check qbo_get_status. If not connected, say "Great! Click the 'Connect to QuickBooks' button above to securely link your account. Once connected, I'll analyze your data and help you migrate." If connected, use qbo_analyze_migration to show what can be migrated.
    - "Yes, from another platform" or Xero/FreshBooks/Wave: Say "I can help! While I don't have direct integration yet, you can export your data as CSV files and I'll help you import them. What would you like to start with - customers, chart of accounts, or invoices?"
-   - "Starting fresh" or new business: Say "Exciting! Let's set up your books. I recommend starting with your Chart of Accounts. Would you like me to create a standard chart of accounts for your business type, or do you have specific accounts in mind?"
+   - "Starting fresh" or new business: Use create_company to create their company record, then use list_industry_templates to show available industry templates. After they choose, use generate_coa_from_template to create their chart of accounts.
+
+COMPANY SETUP FLOW:
+When helping users set up a new company, follow this conversational flow:
+1. Ask for company name and basic info (business type, industry description)
+2. Use create_company to create the company record
+3. Use list_industry_templates to show template options and ask which matches their business:
+   - "IT Consulting" or "Professional Services" -> it_consulting template
+   - "Online store" or "E-commerce" or "Retail" -> ecommerce_retail template
+   - "Restaurant" or "Food service" or "Cafe" -> restaurant_food template
+   - "Construction" or "Contractor" or "Trades" -> construction template
+   - "Not sure" or "General" -> general_business template
+4. Use generate_coa_from_template to create accounts
+5. Celebrate: "Your chart of accounts is ready with X accounts tailored for your business!"
+6. Offer next steps: "Would you like to set up bank accounts, or import data from another system?"
 
 2. DATA QUERIES: Answer questions about their invoices, customers, vendors, bills, journal entries, bank transactions, and financial reports. Always use the available tools to fetch real data - never make up numbers or records.
 
@@ -772,6 +864,117 @@ const tools = [
                 properties: {
                     limit: { type: 'number', description: 'Limit number of journal entries to migrate (for testing). Omit to migrate all.' }
                 }
+            }
+        }
+    },
+    // ========== Company Onboarding Tools ==========
+    {
+        type: 'function',
+        function: {
+            name: 'list_industry_templates',
+            description: 'Get available industry templates for company setup. Shows template names, descriptions, and categories to help user choose.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    category: {
+                        type: 'string',
+                        description: 'Filter by category (Services, Retail, Food, Construction, General)'
+                    }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'create_company',
+            description: 'Create a new company during onboarding. Use this when user provides their company name to start setup.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string', description: 'Company name' },
+                    legal_name: { type: 'string', description: 'Legal/registered name (if different)' },
+                    industry: { type: 'string', description: 'Industry type' },
+                    business_type: {
+                        type: 'string',
+                        enum: ['Sole Proprietor', 'LLC', 'S-Corp', 'C-Corp', 'Partnership', 'Non-Profit'],
+                        description: 'Business entity type'
+                    },
+                    address: { type: 'string', description: 'Street address' },
+                    city: { type: 'string', description: 'City' },
+                    state: { type: 'string', description: 'State' },
+                    zip_code: { type: 'string', description: 'ZIP code' },
+                    phone: { type: 'string', description: 'Phone number' },
+                    email: { type: 'string', description: 'Email address' }
+                },
+                required: ['name']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_industry_template',
+            description: 'Get details of a specific industry template including all accounts in the COA.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    template_code: {
+                        type: 'string',
+                        description: 'Industry template code (it_consulting, ecommerce_retail, restaurant_food, construction, general_business)'
+                    }
+                },
+                required: ['template_code']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'generate_coa_from_template',
+            description: 'Generate chart of accounts from the selected industry template. Creates all accounts in the database.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    company_id: { type: 'string', description: 'Company ID' },
+                    template_code: { type: 'string', description: 'Industry template code' },
+                    preview_only: { type: 'boolean', description: 'If true, only show what would be created without creating' }
+                },
+                required: ['company_id', 'template_code']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_onboarding_status',
+            description: 'Get the current onboarding status and progress for a company.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    company_id: { type: 'string', description: 'Company ID (optional - uses most recent company if not specified)' }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'update_onboarding_step',
+            description: 'Mark an onboarding step as completed or skipped.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    company_id: { type: 'string', description: 'Company ID' },
+                    step_code: { type: 'string', description: 'Step code (company_info, industry_selection, coa_setup, bank_accounts, migration)' },
+                    status: {
+                        type: 'string',
+                        enum: ['InProgress', 'Completed', 'Skipped'],
+                        description: 'New status'
+                    },
+                    skip_reason: { type: 'string', description: 'Reason for skipping (if status is Skipped)' }
+                },
+                required: ['company_id', 'step_code', 'status']
             }
         }
     }
@@ -2032,6 +2235,388 @@ async function executeDeleteProducts(params) {
 }
 
 // ============================================================================
+// Company Onboarding Functions
+// ============================================================================
+
+async function executeListIndustryTemplates(params) {
+    try {
+        const options = {
+            orderby: 'SortOrder asc',
+            first: 20
+        };
+        if (params.category) {
+            options.filter = `Category eq '${params.category}'`;
+        }
+
+        const result = await dab.get('industrytemplates', options);
+        if (!result.success) {
+            return { success: false, error: result.error };
+        }
+
+        const templates = result.value || [];
+        return {
+            success: true,
+            count: templates.length,
+            templates: templates.map(t => ({
+                code: t.Code,
+                name: t.Name,
+                description: t.Description,
+                category: t.Category,
+                accountCount: JSON.parse(t.COATemplate || '[]').length
+            })),
+            message: `Found ${templates.length} industry templates. Ask the user which one best matches their business.`
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeCreateCompany(params) {
+    try {
+        const companyData = {
+            Name: params.name,
+            LegalName: params.legal_name || null,
+            Industry: params.industry || null,
+            BusinessType: params.business_type || null,
+            Address: params.address || null,
+            City: params.city || null,
+            State: params.state || null,
+            ZipCode: params.zip_code || null,
+            Phone: params.phone || null,
+            Email: params.email || null,
+            OnboardingStatus: 'InProgress'
+        };
+
+        const createResult = await dab.create('companies', companyData);
+        if (!createResult.success) {
+            return { success: false, error: createResult.error };
+        }
+
+        const companyId = createResult.value?.Id;
+
+        // Initialize onboarding steps
+        const steps = [
+            { code: 'company_info', name: 'Company Information', order: 1, status: 'Completed' },
+            { code: 'industry_selection', name: 'Industry Selection', order: 2, status: 'Pending' },
+            { code: 'coa_setup', name: 'Chart of Accounts Setup', order: 3, status: 'Pending' },
+            { code: 'bank_accounts', name: 'Bank Account Setup', order: 4, status: 'Pending' },
+            { code: 'migration', name: 'Data Migration (Optional)', order: 5, status: 'Pending' }
+        ];
+
+        for (const step of steps) {
+            await dab.create('onboardingprogress', {
+                CompanyId: companyId,
+                StepCode: step.code,
+                StepName: step.name,
+                StepOrder: step.order,
+                Status: step.status,
+                StartedAt: step.status === 'Completed' ? new Date().toISOString() : null,
+                CompletedAt: step.status === 'Completed' ? new Date().toISOString() : null
+            });
+        }
+
+        return {
+            success: true,
+            message: `Created company '${params.name}'. Now ask which industry template to use for their chart of accounts.`,
+            company: {
+                id: companyId,
+                name: params.name,
+                onboardingStatus: 'InProgress'
+            },
+            nextStep: 'industry_selection'
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeGetIndustryTemplate(params) {
+    try {
+        const result = await dab.get('industrytemplates', {
+            filter: `Code eq '${params.template_code}'`,
+            first: 1
+        });
+
+        if (!result.success) {
+            return { success: false, error: result.error };
+        }
+
+        const template = result.value?.[0];
+        if (!template) {
+            return { success: false, error: `Template '${params.template_code}' not found` };
+        }
+
+        const accounts = JSON.parse(template.COATemplate || '[]');
+        const accountsByType = {};
+        accounts.forEach(a => {
+            if (!accountsByType[a.type]) accountsByType[a.type] = [];
+            accountsByType[a.type].push({ code: a.code, name: a.name });
+        });
+
+        return {
+            success: true,
+            template: {
+                code: template.Code,
+                name: template.Name,
+                description: template.Description,
+                category: template.Category,
+                totalAccounts: accounts.length
+            },
+            accountsByType,
+            message: `Template '${template.Name}' has ${accounts.length} accounts. Ask user if they want to use this template.`
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeGenerateCOAFromTemplate(params) {
+    try {
+        // Get the template
+        const templateResult = await dab.get('industrytemplates', {
+            filter: `Code eq '${params.template_code}'`,
+            first: 1
+        });
+
+        if (!templateResult.success) {
+            return { success: false, error: templateResult.error };
+        }
+
+        const template = templateResult.value?.[0];
+        if (!template) {
+            return { success: false, error: `Template '${params.template_code}' not found` };
+        }
+
+        const accounts = JSON.parse(template.COATemplate || '[]');
+
+        if (params.preview_only) {
+            return {
+                success: true,
+                preview: true,
+                templateName: template.Name,
+                accountCount: accounts.length,
+                accounts: accounts.map(a => ({
+                    code: a.code,
+                    name: a.name,
+                    type: a.type
+                })),
+                message: `This will create ${accounts.length} accounts. Ask user to confirm.`
+            };
+        }
+
+        // Check for existing accounts with same codes
+        const existingResult = await dab.get('accounts', {
+            select: 'Code',
+            first: 1000
+        });
+        const existingCodes = new Set((existingResult.value || []).map(a => a.Code));
+
+        // Create all accounts
+        let created = 0;
+        let skipped = 0;
+        const errors = [];
+
+        for (const acct of accounts) {
+            // Skip if account code already exists
+            if (existingCodes.has(acct.code)) {
+                skipped++;
+                continue;
+            }
+
+            const result = await dab.create('accounts', {
+                Code: acct.code,
+                Name: acct.name,
+                Type: acct.type,
+                Subtype: acct.subtype || null,
+                Description: acct.description || null,
+                IsActive: true
+            });
+
+            if (!result.success) {
+                errors.push({ code: acct.code, error: result.error });
+            } else {
+                created++;
+            }
+        }
+
+        // Update onboarding steps
+        if (params.company_id) {
+            // Mark industry_selection as completed
+            const industryProgress = await dab.get('onboardingprogress', {
+                filter: `CompanyId eq ${params.company_id} and StepCode eq 'industry_selection'`,
+                first: 1
+            });
+            if (industryProgress.value?.[0]) {
+                await dab.update('onboardingprogress', industryProgress.value[0].Id, {
+                    Status: 'Completed',
+                    CompletedAt: new Date().toISOString(),
+                    StepData: JSON.stringify({ templateCode: params.template_code })
+                });
+            }
+
+            // Mark coa_setup as completed
+            const coaProgress = await dab.get('onboardingprogress', {
+                filter: `CompanyId eq ${params.company_id} and StepCode eq 'coa_setup'`,
+                first: 1
+            });
+            if (coaProgress.value?.[0]) {
+                await dab.update('onboardingprogress', coaProgress.value[0].Id, {
+                    Status: 'Completed',
+                    CompletedAt: new Date().toISOString(),
+                    StepData: JSON.stringify({ accountsCreated: created, accountsSkipped: skipped })
+                });
+            }
+
+            // Update company industry
+            await dab.update('companies', params.company_id, {
+                Industry: template.Name,
+                UpdatedAt: new Date().toISOString()
+            });
+        }
+
+        return {
+            success: true,
+            message: `Created ${created} accounts from '${template.Name}' template.${skipped > 0 ? ` Skipped ${skipped} (already existed).` : ''}`,
+            created,
+            skipped,
+            errors: errors.length > 0 ? errors : undefined,
+            link: '/accounts',
+            nextStep: 'Ask if user wants to set up bank accounts or migrate data from QuickBooks.'
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeGetOnboardingStatus(params) {
+    try {
+        let companyId = params.company_id;
+
+        // If no company ID provided, get the most recent company
+        if (!companyId) {
+            const companiesResult = await dab.get('companies', {
+                orderby: 'CreatedAt desc',
+                first: 1
+            });
+            if (!companiesResult.success) {
+                return { success: false, error: companiesResult.error };
+            }
+            const company = companiesResult.value?.[0];
+            if (!company) {
+                return { success: false, error: 'No companies found. Create a company first.' };
+            }
+            companyId = company.Id;
+        }
+
+        // Get company details
+        const companyResult = await dab.get('companies', {
+            filter: `Id eq ${companyId}`,
+            first: 1
+        });
+        if (!companyResult.success) {
+            return { success: false, error: companyResult.error };
+        }
+        const company = companyResult.value?.[0];
+        if (!company) {
+            return { success: false, error: 'Company not found' };
+        }
+
+        // Get onboarding progress
+        const progressResult = await dab.get('onboardingprogress', {
+            filter: `CompanyId eq ${companyId}`,
+            orderby: 'StepOrder asc'
+        });
+        const steps = progressResult.value || [];
+
+        const completedSteps = steps.filter(s => s.Status === 'Completed').length;
+        const totalSteps = steps.length;
+
+        return {
+            success: true,
+            company: {
+                id: company.Id,
+                name: company.Name,
+                industry: company.Industry,
+                onboardingStatus: company.OnboardingStatus
+            },
+            progress: {
+                completed: completedSteps,
+                total: totalSteps,
+                percentage: totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0
+            },
+            steps: steps.map(s => ({
+                code: s.StepCode,
+                name: s.StepName,
+                status: s.Status,
+                completedAt: s.CompletedAt
+            })),
+            nextStep: steps.find(s => s.Status === 'Pending')?.StepCode || 'complete'
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeUpdateOnboardingStep(params) {
+    try {
+        const progressResult = await dab.get('onboardingprogress', {
+            filter: `CompanyId eq ${params.company_id} and StepCode eq '${params.step_code}'`,
+            first: 1
+        });
+
+        if (!progressResult.success) {
+            return { success: false, error: progressResult.error };
+        }
+
+        const progress = progressResult.value?.[0];
+        if (!progress) {
+            return { success: false, error: `Step '${params.step_code}' not found for this company` };
+        }
+
+        const updateData = {
+            Status: params.status,
+            UpdatedAt: new Date().toISOString()
+        };
+
+        if (params.status === 'InProgress') {
+            updateData.StartedAt = new Date().toISOString();
+        } else if (params.status === 'Completed') {
+            updateData.CompletedAt = new Date().toISOString();
+        } else if (params.status === 'Skipped') {
+            updateData.SkippedAt = new Date().toISOString();
+            if (params.skip_reason) {
+                updateData.SkipReason = params.skip_reason;
+            }
+        }
+
+        await dab.update('onboardingprogress', progress.Id, updateData);
+
+        // Check if all steps are done
+        const allProgressResult = await dab.get('onboardingprogress', {
+            filter: `CompanyId eq ${params.company_id}`,
+            orderby: 'StepOrder asc'
+        });
+        const allSteps = allProgressResult.value || [];
+        const allDone = allSteps.every(s => s.Status === 'Completed' || s.Status === 'Skipped');
+
+        if (allDone) {
+            await dab.update('companies', params.company_id, {
+                OnboardingStatus: 'Completed',
+                OnboardingCompletedAt: new Date().toISOString()
+            });
+        }
+
+        return {
+            success: true,
+            message: `Step '${params.step_code}' marked as ${params.status}`,
+            allComplete: allDone
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================================================
 // Function Dispatcher
 // ============================================================================
 
@@ -2095,6 +2680,19 @@ async function executeFunction(name, args) {
             return executeMigrateProducts(args);
         case 'delete_products':
             return executeDeleteProducts(args);
+        // Company Onboarding Tools
+        case 'list_industry_templates':
+            return executeListIndustryTemplates(args);
+        case 'create_company':
+            return executeCreateCompany(args);
+        case 'get_industry_template':
+            return executeGetIndustryTemplate(args);
+        case 'generate_coa_from_template':
+            return executeGenerateCOAFromTemplate(args);
+        case 'get_onboarding_status':
+            return executeGetOnboardingStatus(args);
+        case 'update_onboarding_step':
+            return executeUpdateOnboardingStep(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }

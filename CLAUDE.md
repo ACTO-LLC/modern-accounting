@@ -88,6 +88,34 @@ When users say:
    ```
    This ensures `123` (number) and `"123"` (string) both map to the same key.
 
+5. **go-sqlcmd Fails with Special Characters in Password (Jan 2026):** The modern go-sqlcmd (`C:\Program Files\SqlCmd\sqlcmd.exe`) fails to authenticate when the password contains `!` (e.g., `StrongPassword123!`), even with proper quoting. The Node.js `mssql` package works fine with the same password.
+
+   **Workaround - Use Node.js to run SQL scripts:**
+   ```javascript
+   // Run SQL migrations via Node.js instead of sqlcmd
+   const sql = require('mssql');
+   const fs = require('fs');
+   const script = fs.readFileSync('./database/migrations/010_Example.sql', 'utf8');
+   // Split by GO statements (batch separator)
+   const batches = script.split(/^GO$/gm).filter(b => b.trim());
+
+   async function runMigration() {
+     const pool = await sql.connect('Server=localhost,14330;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true');
+     for (const batch of batches) {
+       if (batch.trim()) await pool.batch(batch);
+     }
+     console.log('Migration complete!');
+     process.exit(0);
+   }
+   runMigration();
+   ```
+
+   **Alternative - Change the SA password** to avoid special characters:
+   ```yaml
+   # In docker-compose.yml, use a password without !
+   MSSQL_SA_PASSWORD: StrongPassword123
+   ```
+
 ---
 
 ### DB-Driven Migration Framework (Jan 2026)

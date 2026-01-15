@@ -1340,6 +1340,171 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "companies": {
+            "source": "dbo.Companies",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "LegalName": "LegalName",
+                "Industry": "Industry",
+                "BusinessType": "BusinessType",
+                "FiscalYearStart": "FiscalYearStart",
+                "TaxId": "TaxId",
+                "Address": "Address",
+                "City": "City",
+                "State": "State",
+                "ZipCode": "ZipCode",
+                "Country": "Country",
+                "Phone": "Phone",
+                "Email": "Email",
+                "Website": "Website",
+                "LogoUrl": "LogoUrl",
+                "OnboardingStatus": "OnboardingStatus",
+                "OnboardingCompletedAt": "OnboardingCompletedAt",
+                "FeatureFlags": "FeatureFlags",
+                "Settings": "Settings",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "OnboardingProgress": {
+                    "target.entity": "onboardingprogress",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "CompanyId"
+                    ]
+                },
+                "OnboardingConversations": {
+                    "target.entity": "onboardingconversations",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "CompanyId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "onboardingprogress": {
+            "source": "dbo.OnboardingProgress",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "StepCode": "StepCode",
+                "StepName": "StepName",
+                "StepOrder": "StepOrder",
+                "Status": "Status",
+                "StartedAt": "StartedAt",
+                "CompletedAt": "CompletedAt",
+                "SkippedAt": "SkippedAt",
+                "SkipReason": "SkipReason",
+                "StepData": "StepData",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Company": {
+                    "target.entity": "companies",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "CompanyId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "industrytemplates": {
+            "source": "dbo.IndustryTemplates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Code": "Code",
+                "Name": "Name",
+                "Description": "Description",
+                "Category": "Category",
+                "COATemplate": "COATemplate",
+                "DefaultSettings": "DefaultSettings",
+                "FeatureFlags": "FeatureFlags",
+                "SortOrder": "SortOrder",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "onboardingconversations": {
+            "source": "dbo.OnboardingConversations",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "SessionId": "SessionId",
+                "Messages": "Messages",
+                "CurrentStep": "CurrentStep",
+                "LastActivityAt": "LastActivityAt",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "Company": {
+                    "target.entity": "companies",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "CompanyId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
