@@ -29,6 +29,137 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
+// ============================================================================
+// Retry Logic and Validation Helpers for AI API Calls
+// ============================================================================
+
+/**
+ * Sleep utility for exponential backoff
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Execute a function with retry logic and exponential backoff
+ * @param {Function} fn - Async function to execute
+ * @param {Object} options - Retry options
+ * @param {number} options.maxRetries - Maximum number of retries (default: 3)
+ * @param {number} options.baseDelayMs - Base delay in milliseconds (default: 1000)
+ * @param {number} options.maxDelayMs - Maximum delay in milliseconds (default: 10000)
+ * @returns {Promise<any>}
+ */
+async function withRetry(fn, options = {}) {
+    const { maxRetries = 3, baseDelayMs = 1000, maxDelayMs = 10000 } = options;
+    let lastError;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error;
+
+            if (attempt < maxRetries) {
+                // Calculate exponential backoff delay: baseDelay * 2^attempt
+                const delay = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+                console.warn(`AI API call failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, error.message);
+                await sleep(delay);
+            }
+        }
+    }
+
+    // All retries exhausted
+    throw lastError;
+}
+
+/**
+ * Valid values for priority field
+ */
+const VALID_PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
+
+/**
+ * Valid values for featureType field
+ */
+const VALID_FEATURE_TYPES = ['Feature', 'Bug', 'Enhancement', 'Refactor'];
+
+/**
+ * Default values for extracted intent
+ */
+const DEFAULT_INTENT = {
+    priority: 'Medium',
+    featureType: 'Enhancement'
+};
+
+/**
+ * Validate and normalize the extracted intent from AI response
+ * Ensures priority and featureType have valid values
+ * @param {Object|null} intent - Extracted intent object
+ * @returns {Object|null} - Validated intent or null
+ */
+function validateExtractedIntent(intent) {
+    if (!intent || typeof intent !== 'object') {
+        return null;
+    }
+
+    const validated = { ...intent };
+
+    // Validate and normalize priority
+    if (validated.priority) {
+        // Try to match the priority (case-insensitive)
+        const normalizedPriority = validated.priority.toString().trim();
+        const matchedPriority = VALID_PRIORITIES.find(
+            p => p.toLowerCase() === normalizedPriority.toLowerCase()
+        );
+
+        if (matchedPriority) {
+            validated.priority = matchedPriority;
+        } else {
+            console.warn(`Invalid priority value "${validated.priority}", using default: ${DEFAULT_INTENT.priority}`);
+            validated.priority = DEFAULT_INTENT.priority;
+        }
+    } else {
+        validated.priority = DEFAULT_INTENT.priority;
+    }
+
+    // Validate and normalize featureType
+    if (validated.featureType) {
+        // Try to match the featureType (case-insensitive)
+        const normalizedType = validated.featureType.toString().trim();
+        const matchedType = VALID_FEATURE_TYPES.find(
+            t => t.toLowerCase() === normalizedType.toLowerCase()
+        );
+
+        if (matchedType) {
+            validated.featureType = matchedType;
+        } else {
+            // Try mapping common variations
+            const typeMapping = {
+                'new-feature': 'Feature',
+                'new feature': 'Feature',
+                'bug-fix': 'Bug',
+                'bugfix': 'Bug',
+                'fix': 'Bug',
+                'improvement': 'Enhancement',
+                'enhance': 'Enhancement'
+            };
+
+            const mappedType = typeMapping[normalizedType.toLowerCase()];
+            if (mappedType) {
+                validated.featureType = mappedType;
+            } else {
+                console.warn(`Invalid featureType value "${validated.featureType}", using default: ${DEFAULT_INTENT.featureType}`);
+                validated.featureType = DEFAULT_INTENT.featureType;
+            }
+        }
+    } else {
+        validated.featureType = DEFAULT_INTENT.featureType;
+    }
+
+    return validated;
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -3143,15 +3274,18 @@ app.post('/api/enhancements', async (req, res) => {
             return res.status(400).json({ error: 'Description is required' });
         }
 
-        // Use Claude to extract and clarify the intent from the description
+        // Use AI to extract and clarify the intent from the description
+        // Includes retry logic with exponential backoff (3 retries)
         let clarifiedDescription = description;
         let extractedIntent = null;
 
         try {
-            const intentResponse = await client.getChatCompletions(deploymentName, [
-                {
-                    role: 'system',
-                    content: `You are an assistant that helps clarify feature requests for a Modern Accounting software system.
+            // Wrap AI call in retry logic for resilience
+            const intentResponse = await withRetry(async () => {
+                return await client.getChatCompletions(deploymentName, [
+                    {
+                        role: 'system',
+                        content: `You are an assistant that helps clarify feature requests for a Modern Accounting software system.
 Given a user's feature request, extract and clarify:
 1. What feature they want (be specific)
 2. Why they need it (the business value)
@@ -3160,31 +3294,38 @@ Given a user's feature request, extract and clarify:
 Respond in JSON format:
 {
   "clarifiedDescription": "A clear, actionable description of the feature",
-  "featureType": "new-feature|enhancement|bug-fix|improvement",
+  "featureType": "Feature|Bug|Enhancement|Refactor",
   "affectedAreas": ["list", "of", "affected", "modules"],
-  "priority": "low|medium|high"
+  "priority": "Low|Medium|High|Critical"
 }`
-                },
-                {
-                    role: 'user',
-                    content: description
-                }
-            ], {
-                temperature: 0.3,
-                maxTokens: 500
+                    },
+                    {
+                        role: 'user',
+                        content: description
+                    }
+                ], {
+                    temperature: 0.3,
+                    maxTokens: 500
+                });
+            }, {
+                maxRetries: 3,
+                baseDelayMs: 1000,
+                maxDelayMs: 10000
             });
 
             const intentContent = intentResponse.choices[0]?.message?.content;
             if (intentContent) {
                 try {
-                    extractedIntent = JSON.parse(intentContent);
-                    clarifiedDescription = extractedIntent.clarifiedDescription || description;
+                    const parsedIntent = JSON.parse(intentContent);
+                    // Validate and normalize the extracted intent
+                    extractedIntent = validateExtractedIntent(parsedIntent);
+                    clarifiedDescription = extractedIntent?.clarifiedDescription || description;
                 } catch (parseError) {
                     console.warn('Could not parse AI intent response, using original description');
                 }
             }
         } catch (aiError) {
-            console.warn('AI intent extraction failed, using original description:', aiError.message);
+            console.warn('AI intent extraction failed after all retries, using original description:', aiError.message);
         }
 
         // Create the enhancement record using DAB REST API

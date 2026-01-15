@@ -425,6 +425,77 @@ export async function closeIssue(issueNumber: number): Promise<void> {
   console.log(`Closed issue #${issueNumber}`);
 }
 
+/**
+ * Create a branch via GitHub API
+ * Useful when you don't have a local clone but need to create a branch
+ */
+export async function createBranchFromRef(
+  branchName: string,
+  fromRef: string = config.github.baseBranch
+): Promise<{ ref: string; sha: string }> {
+  const gh = getOctokit();
+
+  // Get the SHA of the reference branch
+  const refResponse = await gh.git.getRef({
+    owner: config.github.owner,
+    repo: config.github.repo,
+    ref: `heads/${fromRef}`,
+  });
+
+  const sha = refResponse.data.object.sha;
+
+  // Create the new branch
+  const createResponse = await gh.git.createRef({
+    owner: config.github.owner,
+    repo: config.github.repo,
+    ref: `refs/heads/${branchName}`,
+    sha,
+  });
+
+  console.log(`Created branch ${branchName} from ${fromRef} (${sha})`);
+
+  return {
+    ref: createResponse.data.ref,
+    sha: createResponse.data.object.sha,
+  };
+}
+
+/**
+ * Check if a branch exists on GitHub
+ */
+export async function branchExists(branchName: string): Promise<boolean> {
+  const gh = getOctokit();
+
+  try {
+    await gh.git.getRef({
+      owner: config.github.owner,
+      repo: config.github.repo,
+      ref: `heads/${branchName}`,
+    });
+    return true;
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Delete a branch via GitHub API
+ */
+export async function deleteBranch(branchName: string): Promise<void> {
+  const gh = getOctokit();
+
+  await gh.git.deleteRef({
+    owner: config.github.owner,
+    repo: config.github.repo,
+    ref: `heads/${branchName}`,
+  });
+
+  console.log(`Deleted branch: ${branchName}`);
+}
+
 export default {
   createPullRequest,
   getPullRequest,
@@ -441,4 +512,7 @@ export default {
   addLabels,
   createIssue,
   closeIssue,
+  createBranchFromRef,
+  branchExists,
+  deleteBranch,
 };

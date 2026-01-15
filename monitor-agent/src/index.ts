@@ -40,6 +40,9 @@ import github, {
   postComment,
   addLabels,
   mergePullRequest,
+  createBranchFromRef,
+  branchExists as githubBranchExists,
+  deleteBranch,
 } from './github.js';
 import copilot, {
   requestCopilotReview,

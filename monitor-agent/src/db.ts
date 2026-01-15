@@ -104,7 +104,8 @@ export async function closeConnection(): Promise<void> {
 }
 
 /**
- * Get all pending enhancements ordered by priority
+ * Get all pending or approved enhancements ordered by priority
+ * Polls for both 'pending' and 'approved' status enhancements
  */
 export async function getPendingEnhancements(): Promise<Enhancement[]> {
   const db = await getPool();
@@ -116,7 +117,7 @@ export async function getPendingEnhancements(): Promise<Enhancement[]> {
       pr_number, pr_url, plan_json, error_message, notes,
       created_at, updated_at, started_at, completed_at
     FROM Enhancements
-    WHERE status = 'pending'
+    WHERE status IN ('pending', 'approved')
     ORDER BY priority DESC, created_at ASC
   `);
 
