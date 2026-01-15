@@ -3126,6 +3126,183 @@ app.get('/api/insights', async (req, res) => {
 });
 
 // ============================================================================
+// Enhancement Request API Endpoints (Issue #88)
+// ============================================================================
+
+// POST /api/enhancements - Queue new enhancement request
+app.post('/api/enhancements', async (req, res) => {
+    try {
+        const { description, requestorName } = req.body;
+
+        if (!description || description.trim().length === 0) {
+            return res.status(400).json({ error: 'Description is required' });
+        }
+
+        // Use Claude to extract and clarify the intent from the description
+        let clarifiedDescription = description;
+        let extractedIntent = null;
+
+        try {
+            const intentResponse = await client.getChatCompletions(deploymentName, [
+                {
+                    role: 'system',
+                    content: `You are an assistant that helps clarify feature requests for a Modern Accounting software system.
+Given a user's feature request, extract and clarify:
+1. What feature they want (be specific)
+2. Why they need it (the business value)
+3. Any constraints or requirements mentioned
+
+Respond in JSON format:
+{
+  "clarifiedDescription": "A clear, actionable description of the feature",
+  "featureType": "new-feature|enhancement|bug-fix|improvement",
+  "affectedAreas": ["list", "of", "affected", "modules"],
+  "priority": "low|medium|high"
+}`
+                },
+                {
+                    role: 'user',
+                    content: description
+                }
+            ], {
+                temperature: 0.3,
+                maxTokens: 500
+            });
+
+            const intentContent = intentResponse.choices[0]?.message?.content;
+            if (intentContent) {
+                try {
+                    extractedIntent = JSON.parse(intentContent);
+                    clarifiedDescription = extractedIntent.clarifiedDescription || description;
+                } catch (parseError) {
+                    console.warn('Could not parse AI intent response, using original description');
+                }
+            }
+        } catch (aiError) {
+            console.warn('AI intent extraction failed, using original description:', aiError.message);
+        }
+
+        // Create the enhancement record using DAB REST API
+        const enhancementData = {
+            RequestorName: requestorName || 'Anonymous',
+            Description: clarifiedDescription,
+            Status: 'pending',
+            Notes: extractedIntent ? JSON.stringify({
+                originalDescription: description,
+                extractedIntent: extractedIntent
+            }) : null
+        };
+
+        const result = await dab.create('enhancements', enhancementData);
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to create enhancement');
+        }
+
+        res.status(201).json({
+            success: true,
+            enhancement: result.value,
+            extractedIntent: extractedIntent
+        });
+    } catch (error) {
+        console.error('Create enhancement error:', error);
+        res.status(500).json({ error: 'Failed to create enhancement request', details: error.message });
+    }
+});
+
+// GET /api/enhancements - List enhancements with optional status filter
+app.get('/api/enhancements', async (req, res) => {
+    try {
+        const { status, limit = 50 } = req.query;
+
+        const options = {
+            orderby: 'CreatedAt desc',
+            first: parseInt(limit, 10)
+        };
+
+        if (status) {
+            options.filter = `Status eq '${status}'`;
+        }
+
+        const result = await dab.get('enhancements', options);
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to fetch enhancements');
+        }
+
+        res.json({
+            success: true,
+            enhancements: result.value
+        });
+    } catch (error) {
+        console.error('List enhancements error:', error);
+        res.status(500).json({ error: 'Failed to fetch enhancements', details: error.message });
+    }
+});
+
+// GET /api/enhancements/:id - Get single enhancement by ID
+app.get('/api/enhancements/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await dab.getById('enhancements', id);
+
+        if (!result.success) {
+            return res.status(404).json({ error: 'Enhancement not found' });
+        }
+
+        res.json({
+            success: true,
+            enhancement: result.value
+        });
+    } catch (error) {
+        console.error('Get enhancement error:', error);
+        res.status(500).json({ error: 'Failed to fetch enhancement', details: error.message });
+    }
+});
+
+// PATCH /api/enhancements/:id - Update enhancement status
+app.patch('/api/enhancements/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, branchName, prNumber, notes } = req.body;
+
+        // Validate status if provided
+        const validStatuses = ['pending', 'in-progress', 'deployed', 'reverted', 'failed'];
+        if (status && !validStatuses.includes(status)) {
+            return res.status(400).json({
+                error: 'Invalid status',
+                validStatuses: validStatuses
+            });
+        }
+
+        // Build update data
+        const updateData = {
+            UpdatedAt: new Date().toISOString()
+        };
+
+        if (status) updateData.Status = status;
+        if (branchName !== undefined) updateData.BranchName = branchName;
+        if (prNumber !== undefined) updateData.PrNumber = prNumber;
+        if (notes !== undefined) updateData.Notes = notes;
+
+        const result = await dab.update('enhancements', id, updateData);
+
+        if (!result.success) {
+            return res.status(404).json({ error: 'Enhancement not found or update failed' });
+        }
+
+        res.json({
+            success: true,
+            enhancement: result.value
+        });
+    } catch (error) {
+        console.error('Update enhancement error:', error);
+        res.status(500).json({ error: 'Failed to update enhancement', details: error.message });
+    }
+});
+
+// ============================================================================
 // Start Server
 // ============================================================================
 

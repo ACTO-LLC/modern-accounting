@@ -1505,6 +1505,77 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "enhancements": {
+            "source": "dbo.Enhancements",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RequestorName": "RequestorName",
+                "Description": "Description",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "BranchName": "BranchName",
+                "PrNumber": "PrNumber",
+                "Notes": "Notes"
+            },
+            "relationships": {
+                "Deployments": {
+                    "target.entity": "deployments",
+                    "cardinality": "many",
+                    "source.fields": [
+                        "Id"
+                    ],
+                    "target.fields": [
+                        "EnhancementId"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "deployments": {
+            "source": "dbo.Deployments",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EnhancementId": "EnhancementId",
+                "ScheduledDate": "ScheduledDate",
+                "Status": "Status",
+                "DeployedAt": "DeployedAt",
+                "Notes": "Notes"
+            },
+            "relationships": {
+                "Enhancement": {
+                    "target.entity": "enhancements",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "EnhancementId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
