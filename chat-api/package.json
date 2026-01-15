@@ -6,7 +6,10 @@
     "type": "module",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server.js"
+        "dev": "node server.js",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@azure/openai": "^1.0.0-beta.12",
@@ -19,5 +22,9 @@
         "intuit-oauth": "^4.2.2",
         "multer": "^2.0.2",
         "scribe.js-ocr": "^0.9.3"
+    },
+    "devDependencies": {
+        "vitest": "^1.0.0",
+        "supertest": "^6.0.0"
     }
 }
