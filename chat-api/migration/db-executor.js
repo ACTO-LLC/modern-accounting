@@ -564,11 +564,424 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
     return result;
 }
 
+/**
+ * Migrate customer payments from source system to ACTO
+ */
+export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO', onProgress = null) {
+    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const result = createMigrationResult();
+    const total = sourcePayments.length;
+
+    for (let i = 0; i < sourcePayments.length; i++) {
+        const sourcePayment = sourcePayments[i];
+        const sourceId = String(sourcePayment.Id);
+
+        try {
+            // Check if already migrated
+            const existingId = await mapper.wasAlreadyMigrated('Payment', sourceId);
+            if (existingId) {
+                result.skipped++;
+                result.details.push({
+                    type: 'payment',
+                    sourceId,
+                    targetId: existingId,
+                    status: 'skipped',
+                    reason: 'Already migrated'
+                });
+                continue;
+            }
+
+            // Map payment
+            const mappedPayment = await mapper.mapEntity('Payment', sourcePayment);
+
+            if (mappedPayment._skipped) {
+                result.skipped++;
+                result.details.push({
+                    type: 'payment',
+                    sourceId,
+                    refNumber: sourcePayment.PaymentRefNum,
+                    status: 'skipped',
+                    reason: mappedPayment._reason
+                });
+                continue;
+            }
+
+            // Generate payment number if missing
+            if (!mappedPayment.PaymentNumber) {
+                mappedPayment.PaymentNumber = `${sourceSystem}-PMT-${sourceId}`;
+            }
+
+            // Create payment
+            const newPaymentId = randomUUID().toUpperCase();
+            const paymentData = {
+                Id: newPaymentId,
+                PaymentNumber: mappedPayment.PaymentNumber,
+                CustomerId: mappedPayment.CustomerId,
+                PaymentDate: mappedPayment.PaymentDate,
+                TotalAmount: mappedPayment.TotalAmount || 0,
+                PaymentMethod: mappedPayment.PaymentMethod,
+                DepositAccountId: mappedPayment.DepositAccountId,
+                Memo: mappedPayment.Memo,
+                Status: 'Completed',
+                SourceSystem: sourceSystem,
+                SourceId: sourceId
+            };
+
+            const createResult = await mcp.createRecord('payments', paymentData);
+            if (createResult.error) {
+                const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
+                throw new Error(errMsg);
+            }
+
+            // Create payment applications (link to invoices)
+            let applicationsCreated = 0;
+            const lines = sourcePayment.Line || [];
+
+            for (const line of lines) {
+                try {
+                    // Find linked invoice from the line
+                    const linkedTxn = line.LinkedTxn?.find(lt => lt.TxnType === 'Invoice');
+                    if (linkedTxn && linkedTxn.TxnId) {
+                        const invoiceId = await mapper.lookupEntity('Invoice', String(linkedTxn.TxnId));
+                        if (invoiceId) {
+                            await mcp.createRecord('paymentapplications', {
+                                PaymentId: newPaymentId,
+                                InvoiceId: invoiceId,
+                                AmountApplied: parseFloat(line.Amount) || 0
+                            });
+                            applicationsCreated++;
+                        }
+                    }
+                } catch (appError) {
+                    console.error('Failed to create payment application:', appError.message);
+                }
+            }
+
+            // Record migration
+            await mapper.recordMigration('Payment', sourceId, newPaymentId, sourcePayment);
+
+            result.migrated++;
+            result.details.push({
+                type: 'payment',
+                sourceId,
+                targetId: newPaymentId,
+                refNumber: mappedPayment.PaymentNumber,
+                amount: mappedPayment.TotalAmount,
+                applicationsCreated,
+                status: 'created'
+            });
+
+        } catch (error) {
+            result.errors.push({
+                type: 'payment',
+                sourceId,
+                refNumber: sourcePayment.PaymentRefNum,
+                error: error.message
+            });
+        }
+
+        if (onProgress) {
+            onProgress(i + 1, total);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Migrate vendor bill payments from source system to ACTO
+ */
+export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem = 'QBO', onProgress = null) {
+    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const result = createMigrationResult();
+    const total = sourceBillPayments.length;
+
+    for (let i = 0; i < sourceBillPayments.length; i++) {
+        const sourceBillPayment = sourceBillPayments[i];
+        const sourceId = String(sourceBillPayment.Id);
+
+        try {
+            // Check if already migrated
+            const existingId = await mapper.wasAlreadyMigrated('BillPayment', sourceId);
+            if (existingId) {
+                result.skipped++;
+                result.details.push({
+                    type: 'billpayment',
+                    sourceId,
+                    targetId: existingId,
+                    status: 'skipped',
+                    reason: 'Already migrated'
+                });
+                continue;
+            }
+
+            // Map bill payment
+            const mappedBillPayment = await mapper.mapEntity('BillPayment', sourceBillPayment);
+
+            if (mappedBillPayment._skipped) {
+                result.skipped++;
+                result.details.push({
+                    type: 'billpayment',
+                    sourceId,
+                    docNumber: sourceBillPayment.DocNumber,
+                    status: 'skipped',
+                    reason: mappedBillPayment._reason
+                });
+                continue;
+            }
+
+            // Generate payment number if missing
+            if (!mappedBillPayment.PaymentNumber) {
+                mappedBillPayment.PaymentNumber = `${sourceSystem}-BP-${sourceId}`;
+            }
+
+            // Determine payment account based on PayType
+            let paymentAccountId = mappedBillPayment.PaymentAccountId;
+            if (!paymentAccountId) {
+                // Try to get from CheckPayment or CreditCardPayment
+                if (sourceBillPayment.PayType === 'Check' && sourceBillPayment.CheckPayment?.BankAccountRef?.value) {
+                    paymentAccountId = await mapper.lookupEntity('Account', String(sourceBillPayment.CheckPayment.BankAccountRef.value));
+                } else if (sourceBillPayment.PayType === 'CreditCard' && sourceBillPayment.CreditCardPayment?.CCAccountRef?.value) {
+                    paymentAccountId = await mapper.lookupEntity('Account', String(sourceBillPayment.CreditCardPayment.CCAccountRef.value));
+                }
+            }
+
+            // Create bill payment
+            const newBillPaymentId = randomUUID().toUpperCase();
+            const billPaymentData = {
+                Id: newBillPaymentId,
+                PaymentNumber: mappedBillPayment.PaymentNumber,
+                VendorId: mappedBillPayment.VendorId,
+                PaymentDate: mappedBillPayment.PaymentDate,
+                TotalAmount: mappedBillPayment.TotalAmount || 0,
+                PaymentMethod: mappedBillPayment.PaymentMethod || sourceBillPayment.PayType,
+                PaymentAccountId: paymentAccountId,
+                Memo: mappedBillPayment.Memo,
+                Status: 'Completed',
+                SourceSystem: sourceSystem,
+                SourceId: sourceId
+            };
+
+            const createResult = await mcp.createRecord('billpayments', billPaymentData);
+            if (createResult.error) {
+                const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
+                throw new Error(errMsg);
+            }
+
+            // Create bill payment applications (link to bills)
+            let applicationsCreated = 0;
+            const lines = sourceBillPayment.Line || [];
+
+            for (const line of lines) {
+                try {
+                    // Find linked bill from the line
+                    const linkedTxn = line.LinkedTxn?.find(lt => lt.TxnType === 'Bill');
+                    if (linkedTxn && linkedTxn.TxnId) {
+                        const billId = await mapper.lookupEntity('Bill', String(linkedTxn.TxnId));
+                        if (billId) {
+                            await mcp.createRecord('billpaymentapplications', {
+                                BillPaymentId: newBillPaymentId,
+                                BillId: billId,
+                                AmountApplied: parseFloat(line.Amount) || 0
+                            });
+                            applicationsCreated++;
+                        }
+                    }
+                } catch (appError) {
+                    console.error('Failed to create bill payment application:', appError.message);
+                }
+            }
+
+            // Record migration
+            await mapper.recordMigration('BillPayment', sourceId, newBillPaymentId, sourceBillPayment);
+
+            result.migrated++;
+            result.details.push({
+                type: 'billpayment',
+                sourceId,
+                targetId: newBillPaymentId,
+                docNumber: mappedBillPayment.PaymentNumber,
+                amount: mappedBillPayment.TotalAmount,
+                applicationsCreated,
+                status: 'created'
+            });
+
+        } catch (error) {
+            result.errors.push({
+                type: 'billpayment',
+                sourceId,
+                docNumber: sourceBillPayment.DocNumber,
+                error: error.message
+            });
+        }
+
+        if (onProgress) {
+            onProgress(i + 1, total);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Migrate journal entries from source system to ACTO
+ */
+export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSystem = 'QBO', onProgress = null) {
+    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const result = createMigrationResult();
+    const total = sourceJournalEntries.length;
+
+    // Get config for auto-posting
+    const autoPost = (await mapper.getConfig('AutoPostJournalEntries')) === 'true';
+
+    for (let i = 0; i < sourceJournalEntries.length; i++) {
+        const sourceJE = sourceJournalEntries[i];
+        const sourceId = String(sourceJE.Id);
+
+        try {
+            // Check if already migrated
+            const existingId = await mapper.wasAlreadyMigrated('JournalEntry', sourceId);
+            if (existingId) {
+                result.skipped++;
+                result.details.push({
+                    type: 'journalentry',
+                    sourceId,
+                    targetId: existingId,
+                    status: 'skipped',
+                    reason: 'Already migrated'
+                });
+                continue;
+            }
+
+            // Map journal entry
+            const mappedJE = await mapper.mapEntity('JournalEntry', sourceJE);
+
+            if (mappedJE._skipped) {
+                result.skipped++;
+                result.details.push({
+                    type: 'journalentry',
+                    sourceId,
+                    docNumber: sourceJE.DocNumber,
+                    status: 'skipped',
+                    reason: mappedJE._reason
+                });
+                continue;
+            }
+
+            // Generate description from lines if not present
+            let description = mappedJE.Description;
+            if (!description || description === 'Imported from QuickBooks') {
+                // Try to build description from line descriptions
+                const lineDescs = (sourceJE.Line || [])
+                    .map(l => l.Description)
+                    .filter(d => d)
+                    .slice(0, 2);
+                if (lineDescs.length > 0) {
+                    description = lineDescs.join('; ');
+                } else {
+                    description = `Journal Entry from ${sourceSystem}`;
+                }
+            }
+
+            // Create journal entry
+            const newJEId = randomUUID().toUpperCase();
+            const jeData = {
+                Id: newJEId,
+                TransactionDate: mappedJE.TransactionDate,
+                Description: description,
+                Reference: mappedJE.Reference || sourceJE.DocNumber || `${sourceSystem}-JE-${sourceId}`,
+                Status: autoPost ? 'Posted' : 'Draft',
+                CreatedBy: 'QBO Migration',
+                SourceSystem: sourceSystem,
+                SourceId: sourceId
+            };
+
+            const createResult = await mcp.createRecord('journalentries', jeData);
+            if (createResult.error) {
+                const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
+                throw new Error(errMsg);
+            }
+
+            // Create journal entry lines
+            let linesCreated = 0;
+            let totalDebit = 0;
+            let totalCredit = 0;
+            const lines = sourceJE.Line || [];
+
+            for (const line of lines) {
+                try {
+                    const detail = line.JournalEntryLineDetail || {};
+                    const accountRef = detail.AccountRef?.value;
+                    if (!accountRef) continue;
+
+                    const accountId = await mapper.lookupEntity('Account', String(accountRef));
+                    if (!accountId) {
+                        console.warn(`Account not found for JE line: ${accountRef}`);
+                        continue;
+                    }
+
+                    const postingType = detail.PostingType; // 'Debit' or 'Credit'
+                    const amount = parseFloat(line.Amount) || 0;
+
+                    const lineData = {
+                        JournalEntryId: newJEId,
+                        AccountId: accountId,
+                        Description: line.Description || detail.AccountRef?.name,
+                        Debit: postingType === 'Debit' ? amount : 0,
+                        Credit: postingType === 'Credit' ? amount : 0
+                    };
+
+                    await mcp.createRecord('journalentrylines', lineData);
+                    linesCreated++;
+
+                    if (postingType === 'Debit') totalDebit += amount;
+                    if (postingType === 'Credit') totalCredit += amount;
+
+                } catch (lineError) {
+                    console.error('Failed to create journal entry line:', lineError.message);
+                }
+            }
+
+            // Record migration
+            await mapper.recordMigration('JournalEntry', sourceId, newJEId, sourceJE);
+
+            result.migrated++;
+            result.details.push({
+                type: 'journalentry',
+                sourceId,
+                targetId: newJEId,
+                reference: jeData.Reference,
+                totalDebit,
+                totalCredit,
+                linesCreated,
+                status: 'created'
+            });
+
+        } catch (error) {
+            result.errors.push({
+                type: 'journalentry',
+                sourceId,
+                docNumber: sourceJE.DocNumber,
+                error: error.message
+            });
+        }
+
+        if (onProgress) {
+            onProgress(i + 1, total);
+        }
+    }
+
+    return result;
+}
+
 export default {
     migrateCustomers,
     migrateVendors,
     migrateProducts,
     migrateAccounts,
     migrateInvoices,
-    migrateBills
+    migrateBills,
+    migratePayments,
+    migrateBillPayments,
+    migrateJournalEntries
 };

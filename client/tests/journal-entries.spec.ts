@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Journal Entries', () => {
   test('should load journal entries list', async ({ page }) => {
     // 1. Navigate to Journal Entries page
-    await page.goto('http://localhost:5173/journal-entries');
+    await page.goto('/journal-entries');
 
     // 2. Verify page title
     await expect(page.getByRole('heading', { name: 'General Ledger' })).toBeVisible();

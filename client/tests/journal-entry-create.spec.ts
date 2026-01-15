@@ -7,7 +7,7 @@ test.describe('Journal Entry Creation', () => {
     const description = `Test Entry ${timestamp}`;
 
     // 1. Navigate to New Journal Entry page
-    await page.goto('http://localhost:5173/journal-entries/new');
+    await page.goto('/journal-entries/new');
 
     // 2. Fill Header
     await page.getByLabel('Entry Number').fill(entryNumber);
@@ -34,7 +34,7 @@ test.describe('Journal Entry Creation', () => {
     await page.getByRole('button', { name: 'Post Entry' }).click();
 
     // 6. Verify Redirect and List
-    await expect(page).toHaveURL('http://localhost:5173/journal-entries');
+    await expect(page).toHaveURL('//journal-entries');
     await expect(page.getByText(entryNumber)).toBeVisible();
     await expect(page.getByText(description)).toBeVisible();
   });

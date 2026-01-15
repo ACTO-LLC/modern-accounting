@@ -27,7 +27,7 @@ test.describe('Invoice Add Line Item', () => {
     console.log(`Created test invoice: ${invoiceId}`);
 
     // 2. Navigate to edit page
-    await page.goto(`http://localhost:5173/invoices/${invoiceId}/edit`);
+    await page.goto(`//invoices/${invoiceId}/edit`);
 
     // 3. Add a new line item
     await page.getByRole('button', { name: 'Add Item' }).click();
@@ -45,7 +45,7 @@ test.describe('Invoice Add Line Item', () => {
     await page.getByRole('button', { name: 'Save Invoice' }).click();
 
     // 6. Verify success (should redirect)
-    await expect(page).toHaveURL('http://localhost:5173/invoices');
+    await expect(page).toHaveURL('//invoices');
 
     // 7. Verify in DB
     const verifyLinesResponse = await page.request.get(`http://localhost:5000/api/invoicelines?$filter=InvoiceId eq ${invoiceId}`);

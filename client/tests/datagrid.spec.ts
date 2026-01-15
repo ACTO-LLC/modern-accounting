@@ -4,7 +4,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
 
   test.describe('Invoices Page', () => {
     test('should display invoices in DataGrid with pagination', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
 
       // Wait for the DataGrid to load
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
@@ -22,7 +22,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should sort invoices by clicking column header', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       // Get the Invoice # column header and click to sort
@@ -38,7 +38,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should filter invoices using column filter', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       // Wait for some data to load
@@ -64,7 +64,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should navigate to edit page when clicking a row', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
       await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
 
@@ -77,7 +77,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should have New Invoice button that navigates correctly', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       await page.getByRole('button', { name: /New Invoice/i }).click();
@@ -87,7 +87,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
 
   test.describe('Customers Page', () => {
     test('should display customers in DataGrid', async ({ page }) => {
-      await page.goto('http://localhost:5173/customers');
+      await page.goto('/customers');
 
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
@@ -100,7 +100,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should sort customers by name', async ({ page }) => {
-      await page.goto('http://localhost:5173/customers');
+      await page.goto('/customers');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       const nameHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Name' });
@@ -111,7 +111,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should navigate to edit customer on row click', async ({ page }) => {
-      await page.goto('http://localhost:5173/customers');
+      await page.goto('/customers');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
       await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
 
@@ -124,7 +124,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
 
   test.describe('Estimates Page', () => {
     test('should display estimates in DataGrid', async ({ page }) => {
-      await page.goto('http://localhost:5173/estimates');
+      await page.goto('/estimates');
 
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
@@ -138,7 +138,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should sort estimates by amount', async ({ page }) => {
-      await page.goto('http://localhost:5173/estimates');
+      await page.goto('/estimates');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       const amountHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Amount' });
@@ -150,7 +150,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
 
   test.describe('Pagination', () => {
     test('should be able to change page size on invoices', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       // Find the page size selector
@@ -172,7 +172,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
 
     test('should navigate between pages using pagination controls', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       // Check for next page button
@@ -189,7 +189,7 @@ test.describe('MUI DataGrid - Server-side Features', () => {
 
   test.describe('DataGrid Styling', () => {
     test('should have proper DataGrid styling', async ({ page }) => {
-      await page.goto('http://localhost:5173/invoices');
+      await page.goto('/invoices');
       await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
       // Check that the grid container exists

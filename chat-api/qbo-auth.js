@@ -698,6 +698,135 @@ class QBOAuth {
     }
 
     /**
+     * Search payments (customer payments / receive payments)
+     */
+    async searchPayments(criteria = {}) {
+        let query = 'SELECT * FROM Payment';
+        const conditions = [];
+
+        if (criteria.customerName) {
+            conditions.push(`CustomerRef LIKE '%${criteria.customerName}%'`);
+        }
+        if (criteria.startDate) {
+            conditions.push(`TxnDate >= '${criteria.startDate}'`);
+        }
+        if (criteria.endDate) {
+            conditions.push(`TxnDate <= '${criteria.endDate}'`);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        query += ' ORDERBY TxnDate DESC';
+
+        if (criteria.limit) {
+            query += ` MAXRESULTS ${criteria.limit}`;
+        }
+
+        const response = await this.query(query);
+        const payments = response?.Payment || [];
+
+        return {
+            count: payments.length,
+            data: criteria.fetchAll ? payments : undefined,
+            payments: !criteria.fetchAll ? payments.map(p => ({
+                id: p.Id,
+                refNumber: p.PaymentRefNum,
+                customerName: p.CustomerRef?.name,
+                date: p.TxnDate,
+                total: p.TotalAmt,
+                depositAccount: p.DepositToAccountRef?.name
+            })) : undefined
+        };
+    }
+
+    /**
+     * Search bill payments (vendor payments)
+     */
+    async searchBillPayments(criteria = {}) {
+        let query = 'SELECT * FROM BillPayment';
+        const conditions = [];
+
+        if (criteria.vendorName) {
+            conditions.push(`VendorRef LIKE '%${criteria.vendorName}%'`);
+        }
+        if (criteria.startDate) {
+            conditions.push(`TxnDate >= '${criteria.startDate}'`);
+        }
+        if (criteria.endDate) {
+            conditions.push(`TxnDate <= '${criteria.endDate}'`);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        query += ' ORDERBY TxnDate DESC';
+
+        if (criteria.limit) {
+            query += ` MAXRESULTS ${criteria.limit}`;
+        }
+
+        const response = await this.query(query);
+        const billPayments = response?.BillPayment || [];
+
+        return {
+            count: billPayments.length,
+            data: criteria.fetchAll ? billPayments : undefined,
+            billPayments: !criteria.fetchAll ? billPayments.map(bp => ({
+                id: bp.Id,
+                docNumber: bp.DocNumber,
+                vendorName: bp.VendorRef?.name,
+                date: bp.TxnDate,
+                total: bp.TotalAmt,
+                payType: bp.PayType
+            })) : undefined
+        };
+    }
+
+    /**
+     * Search journal entries
+     */
+    async searchJournalEntries(criteria = {}) {
+        let query = 'SELECT * FROM JournalEntry';
+        const conditions = [];
+
+        if (criteria.startDate) {
+            conditions.push(`TxnDate >= '${criteria.startDate}'`);
+        }
+        if (criteria.endDate) {
+            conditions.push(`TxnDate <= '${criteria.endDate}'`);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        query += ' ORDERBY TxnDate DESC';
+
+        if (criteria.limit) {
+            query += ` MAXRESULTS ${criteria.limit}`;
+        }
+
+        const response = await this.query(query);
+        const journalEntries = response?.JournalEntry || [];
+
+        return {
+            count: journalEntries.length,
+            data: criteria.fetchAll ? journalEntries : undefined,
+            journalEntries: !criteria.fetchAll ? journalEntries.map(je => ({
+                id: je.Id,
+                docNumber: je.DocNumber,
+                date: je.TxnDate,
+                totalDebit: je.Line?.filter(l => l.JournalEntryLineDetail?.PostingType === 'Debit')
+                    .reduce((sum, l) => sum + (l.Amount || 0), 0) || 0,
+                lineCount: je.Line?.length || 0
+            })) : undefined
+        };
+    }
+
+    /**
      * Analyze QBO data for migration
      */
     async analyzeForMigration() {
@@ -707,22 +836,30 @@ class QBOAuth {
         }
 
         // Get counts for each entity type
-        const [customers, vendors, accounts, items, invoices, bills] = await Promise.all([
+        const [customers, vendors, accounts, items, invoices, bills, payments, billPayments, journalEntries] = await Promise.all([
             this.query('SELECT COUNT(*) FROM Customer'),
             this.query('SELECT COUNT(*) FROM Vendor'),
             this.query('SELECT COUNT(*) FROM Account'),
             this.query('SELECT COUNT(*) FROM Item'),
             this.query('SELECT COUNT(*) FROM Invoice'),
-            this.query('SELECT COUNT(*) FROM Bill')
+            this.query('SELECT COUNT(*) FROM Bill'),
+            this.query('SELECT COUNT(*) FROM Payment'),
+            this.query('SELECT COUNT(*) FROM BillPayment'),
+            this.query('SELECT COUNT(*) FROM JournalEntry')
         ]);
 
         return {
+            // Priority 1
             customers: customers?.totalCount || 0,
             vendors: vendors?.totalCount || 0,
             accounts: accounts?.totalCount || 0,
             items: items?.totalCount || 0,
+            // Priority 2
             invoices: invoices?.totalCount || 0,
-            bills: bills?.totalCount || 0
+            bills: bills?.totalCount || 0,
+            payments: payments?.totalCount || 0,
+            billPayments: billPayments?.totalCount || 0,
+            journalEntries: journalEntries?.totalCount || 0
         };
     }
 }

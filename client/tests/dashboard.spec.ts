@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Dashboard', () => {
   test('should load dashboard and display key metrics', async ({ page }) => {
     // 1. Navigate to Dashboard
-    await page.goto('http://localhost:5173/');
+    await page.goto('/');
 
     // 2. Verify Heading
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
@@ -29,8 +29,8 @@ test.describe('Dashboard', () => {
   });
 
   test('should navigate to review page from pending actions', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto('/');
     await page.getByText('Review Now').click();
-    await expect(page).toHaveURL('http://localhost:5173/review');
+    await expect(page).toHaveURL('//review');
   });
 });

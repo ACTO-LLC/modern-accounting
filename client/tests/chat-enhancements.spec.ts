@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Chat Enhancements', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the app
-    await page.goto('http://localhost:5173/');
+    await page.goto('/');
     
     // Wait for the page to load
     await page.waitForSelector('text=Dashboard', { timeout: 5000 });

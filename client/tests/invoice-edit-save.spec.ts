@@ -27,7 +27,7 @@ test.describe('Invoice Edit and Save', () => {
     console.log(`Created test invoice: ${invoiceId}`);
 
     // 2. Navigate to edit page
-    await page.goto(`http://localhost:5173/invoices/${invoiceId}/edit`);
+    await page.goto(`//invoices/${invoiceId}/edit`);
 
     // 3. Modify Invoice Number
     const newInvoiceNumber = `${invoiceData.InvoiceNumber}-UPDATED`;
@@ -45,7 +45,7 @@ test.describe('Invoice Edit and Save', () => {
     await page.getByRole('button', { name: 'Save Invoice' }).click();
 
     // 6. Verify redirection to list (or success message)
-    await expect(page).toHaveURL('http://localhost:5173/invoices');
+    await expect(page).toHaveURL('//invoices');
 
     // 7. Verify changes in DB (or by reloading)
     // Let's check via API for speed/reliability
