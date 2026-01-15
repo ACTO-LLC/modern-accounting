@@ -36,7 +36,9 @@ local.settings.json
 *.jfm
 
 # Editor
-.vscode
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 .idea
 *.suo
 *.user
