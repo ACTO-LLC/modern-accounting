@@ -1,0 +1,63 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug chat-api",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/chat-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "preLaunchTask": "Start Docker (DB + DAB)"
+    },
+    {
+      "name": "Debug chat-api (no Docker)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/chat-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "name": "Debug Client (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/client/src",
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*"
+      },
+      "preLaunchTask": "Start Client"
+    },
+    {
+      "name": "Attach to chat-api",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/chat-api",
+      "remoteRoot": "${workspaceFolder}/chat-api"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": ["Debug chat-api", "Debug Client (Chrome)"],
+      "preLaunchTask": "Start Docker (DB + DAB)",
+      "stopAll": true
+    },
+    {
+      "name": "Full Stack Debug (no Docker)",
+      "configurations": ["Debug chat-api (no Docker)", "Debug Client (Chrome)"],
+      "stopAll": true
+    }
+  ]
+}
