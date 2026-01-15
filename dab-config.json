@@ -198,7 +198,8 @@
                 "TotalAmount": "TotalAmount",
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
-                "SourceId": "SourceId"
+                "SourceId": "SourceId",
+                "ClaimId": "ClaimId"
             }
         },
         "invoices_write": {
@@ -222,7 +223,8 @@
                 "TotalAmount": "TotalAmount",
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
-                "SourceId": "SourceId"
+                "SourceId": "SourceId",
+                "ClaimId": "ClaimId"
             },
             "key-fields": [
                 "Id"

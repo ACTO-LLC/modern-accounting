@@ -9,7 +9,10 @@ SELECT
     i.[TotalAmount],
     i.[Status],
     i.[CreatedAt],
-    i.[UpdatedAt]
+    i.[UpdatedAt],
+    i.[SourceSystem],
+    i.[SourceId],
+    i.[ClaimId]
 FROM
     [dbo].[Invoices] i
     LEFT JOIN [dbo].[Customers] c ON i.[CustomerId] = c.[Id];
