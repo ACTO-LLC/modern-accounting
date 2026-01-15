@@ -4,7 +4,7 @@ import { Plus, FileText, ArrowRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
-import ServerDataGrid from '../components/ServerDataGrid';
+import RestDataGrid from '../components/RestDataGrid';
 import { formatGuidForOData, isValidUUID } from '../lib/validation';
 import { formatDate } from '../lib/dateUtils';
 import ConfirmModal from '../components/ConfirmModal';
@@ -220,10 +220,9 @@ export default function Estimates() {
         </Link>
       </div>
 
-      <ServerDataGrid<Estimate>
+      <RestDataGrid<Estimate>
         key={refreshKey}
-        entityName="estimates"
-        queryFields="Id EstimateNumber CustomerId IssueDate ExpirationDate TotalAmount Status ConvertedToInvoiceId Notes"
+        endpoint="/estimates"
         columns={columns}
         editPath="/estimates/{id}/edit"
         initialPageSize={25}

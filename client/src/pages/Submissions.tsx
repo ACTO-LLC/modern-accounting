@@ -1,7 +1,7 @@
 import { Plus, Eye, Edit } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GridColDef } from '@mui/x-data-grid';
-import ServerDataGrid from '../components/ServerDataGrid';
+import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
 
 interface Submission {
@@ -130,9 +130,8 @@ export default function Submissions() {
         </Link>
       </div>
 
-      <ServerDataGrid<Submission>
-        entityName="submissions"
-        queryFields="Id Title Type Priority Status CreatedAt"
+      <RestDataGrid<Submission>
+        endpoint="/submissions"
         columns={columns}
         editPath="/submissions/{id}/edit"
         initialPageSize={25}

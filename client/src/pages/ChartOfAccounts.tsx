@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
-import ServerDataGrid from '../components/ServerDataGrid';
+import RestDataGrid from '../components/RestDataGrid';
 
 interface Account {
   Id: string;
@@ -65,9 +65,8 @@ export default function ChartOfAccounts() {
         </Link>
       </div>
 
-      <ServerDataGrid<Account>
-        entityName="accounts"
-        queryFields="Id Code AccountNumber Name Type Subtype IsActive"
+      <RestDataGrid<Account>
+        endpoint="/accounts"
         columns={columns}
         editPath="/accounts/{id}/edit"
         initialPageSize={25}

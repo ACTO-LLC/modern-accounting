@@ -4,7 +4,7 @@ import { Plus, Copy, Eye } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
-import ServerDataGrid from '../components/ServerDataGrid';
+import RestDataGrid from '../components/RestDataGrid';
 import {
   generateNextInvoiceNumber,
   calculateInvoiceTotal,
@@ -195,14 +195,14 @@ export default function Invoices() {
         </Link>
       </div>
 
-      <ServerDataGrid<Invoice>
+      <RestDataGrid<Invoice>
         key={refreshKey}
-        entityName="invoices"
-        queryFields="Id InvoiceNumber CustomerId CustomerName IssueDate DueDate TotalAmount Status"
+        endpoint="/invoices"
         columns={columns}
         editPath="/invoices/{id}/edit"
         initialPageSize={25}
         emptyMessage="No invoices found."
+        refreshKey={refreshKey}
       />
     </div>
   );

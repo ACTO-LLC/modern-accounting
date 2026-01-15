@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
-import ServerDataGrid from '../components/ServerDataGrid';
+import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
 
 interface Project {
@@ -102,9 +102,8 @@ export default function Projects() {
         </Link>
       </div>
 
-      <ServerDataGrid<Project>
-        entityName="projects"
-        queryFields="Id Name CustomerId CustomerName Description Status StartDate EndDate BudgetedHours BudgetedAmount"
+      <RestDataGrid<Project>
+        endpoint="/projects"
         columns={columns}
         editPath="/projects/{id}/edit"
         initialPageSize={25}

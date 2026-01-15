@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
-import ServerDataGrid from '../components/ServerDataGrid';
+import RestDataGrid from '../components/RestDataGrid';
 
 interface Vendor {
   Id: string;
@@ -58,9 +58,8 @@ export default function Vendors() {
         </Link>
       </div>
 
-      <ServerDataGrid<Vendor>
-        entityName="vendors"
-        queryFields="Id Name Email Phone PaymentTerms Status Is1099Vendor"
+      <RestDataGrid<Vendor>
+        endpoint="/vendors"
         columns={columns}
         editPath="/vendors/{id}/edit"
         initialPageSize={25}

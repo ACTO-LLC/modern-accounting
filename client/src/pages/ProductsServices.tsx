@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Plus, Wrench, Box, Package } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
-import ServerDataGrid from '../components/ServerDataGrid';
+import RestDataGrid from '../components/RestDataGrid';
 
 interface ProductService {
   Id: string;
@@ -104,9 +104,8 @@ export default function ProductsServices() {
         </Link>
       </div>
 
-      <ServerDataGrid<ProductService>
-        entityName="productsservices"
-        queryFields="Id Name SKU Type Description SalesPrice PurchaseCost Category Taxable Status"
+      <RestDataGrid<ProductService>
+        endpoint="/productsservices"
         columns={columns}
         editPath="/products-services/{id}/edit"
         initialPageSize={25}
