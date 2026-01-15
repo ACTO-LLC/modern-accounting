@@ -44,6 +44,18 @@ export interface EnhancementNotification {
 }
 
 /**
+ * Deployment notification data
+ */
+export interface DeploymentNotification {
+  enhancementId: number;
+  description: string;
+  requestorName: string;
+  status: 'deployed' | 'failed';
+  prNumber?: number;
+  error?: string;
+}
+
+/**
  * Send an email notification
  */
 export async function sendEmail(
@@ -372,6 +384,83 @@ export async function notify(
   }
 }
 
+/**
+ * Send deployment notification (success or failure)
+ */
+export async function sendDeploymentNotification(
+  notification: DeploymentNotification
+): Promise<void> {
+  const { enhancementId, description, requestorName, status, prNumber, error } =
+    notification;
+
+  const isSuccess = status === 'deployed';
+  const statusColor = isSuccess ? '#4CAF50' : '#F44336';
+  const statusEmoji = isSuccess ? 'check_circle' : 'x';
+  const statusText = isSuccess ? 'Deployed' : 'Failed';
+
+  const subject = `[Monitor Agent] Deployment ${statusText}: Enhancement #${enhancementId}`;
+
+  const body = `
+Deployment ${statusText}
+${'='.repeat(statusText.length + 11)}
+
+Enhancement ID: ${enhancementId}
+Description: ${description}
+Requestor: ${requestorName || 'Unknown'}
+Status: ${statusText}
+${prNumber ? `PR Number: #${prNumber}` : ''}
+${error ? `Error: ${error}` : ''}
+
+${isSuccess ? 'The enhancement has been successfully deployed to production.' : 'The deployment failed. Please review the error and take appropriate action.'}
+
+---
+This is an automated message from the Monitor Agent.
+`.trim();
+
+  const html = `
+<h2>Deployment ${statusText}</h2>
+<table style="border-collapse: collapse;">
+  <tr><td style="padding: 8px; font-weight: bold;">Enhancement ID:</td><td style="padding: 8px;">${enhancementId}</td></tr>
+  <tr><td style="padding: 8px; font-weight: bold;">Description:</td><td style="padding: 8px;">${description}</td></tr>
+  <tr><td style="padding: 8px; font-weight: bold;">Requestor:</td><td style="padding: 8px;">${requestorName || 'Unknown'}</td></tr>
+  <tr><td style="padding: 8px; font-weight: bold;">Status:</td><td style="padding: 8px; color: ${statusColor};">${statusText}</td></tr>
+  ${prNumber ? `<tr><td style="padding: 8px; font-weight: bold;">PR Number:</td><td style="padding: 8px;">#${prNumber}</td></tr>` : ''}
+  ${error ? `<tr><td style="padding: 8px; font-weight: bold;">Error:</td><td style="padding: 8px; color: #F44336;">${error}</td></tr>` : ''}
+</table>
+<p>${isSuccess ? 'The enhancement has been successfully deployed to production.' : 'The deployment failed. Please review the error and take appropriate action.'}</p>
+<hr>
+<p style="color: #666; font-size: 12px;">This is an automated message from the Monitor Agent.</p>
+`.trim();
+
+  // Send to requestor if available
+  if (requestorName && requestorName.includes('@')) {
+    await sendEmail(requestorName, subject, body, html);
+  }
+
+  // Send Slack notification if configured
+  if (config.slack.webhookUrl) {
+    const slackMessage = isSuccess
+      ? `:${statusEmoji}: Enhancement #${enhancementId} deployed successfully`
+      : `:${statusEmoji}: Enhancement #${enhancementId} deployment failed`;
+
+    await sendSlack(config.slack.webhookUrl, slackMessage, [
+      {
+        color: statusColor,
+        title: `Enhancement #${enhancementId} - ${statusText}`,
+        text: description,
+        fields: [
+          { title: 'Status', value: statusText, short: true },
+          { title: 'Requestor', value: requestorName || 'Unknown', short: true },
+          ...(prNumber ? [{ title: 'PR', value: `#${prNumber}`, short: true }] : []),
+          ...(error ? [{ title: 'Error', value: error, short: false }] : []),
+        ],
+      },
+    ]);
+  }
+
+  console.log(`Deployment notification sent for enhancement #${enhancementId}: ${statusText}`);
+}
+
 export default {
   sendEmail,
   sendSlack,
@@ -380,4 +469,5 @@ export default {
   notifyEnhancementCompleted,
   notifyEnhancementFailed,
   notify,
+  sendDeploymentNotification,
 };

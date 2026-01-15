@@ -22,6 +22,7 @@ import {
 } from './migration/db-executor.js';
 import { qboAuth } from './qbo-auth.js';
 import githubRoutes from './src/routes/github.js';
+import deploymentsRouter from './src/routes/deployments.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3305,6 +3306,12 @@ app.patch('/api/enhancements/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to update enhancement', details: error.message });
     }
 });
+
+// ============================================================================
+// Deployment Routes (Issue #87 Phase 2)
+// ============================================================================
+
+app.use('/api/deployments', deploymentsRouter);
 
 // ============================================================================
 // Start Server
