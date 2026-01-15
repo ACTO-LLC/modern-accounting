@@ -16,7 +16,7 @@ services:
       - sql-data:/var/opt/mssql
 
   dab:
-    image: mcr.microsoft.com/azure-databases/data-api-builder:latest
+    image: mcr.microsoft.com/azure-databases/data-api-builder:1.7.81-rc
     container_name: accounting-dab
     depends_on:
       - database

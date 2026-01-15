@@ -52,9 +52,6 @@ echo "    - Database:  database:1433 (localhost:14330)"
 echo "    - DAB API:   http://dab:5000/api (localhost:5000)"
 echo "    - Email API: http://email-api:7073/email-api (localhost:7073)"
 echo ""
-echo "  To start development servers:"
-echo "    Terminal 1: cd chat-api && npm start"
-echo "    Terminal 2: cd client && npm run dev"
-echo ""
-echo "  Or use the integrated terminal commands"
-echo ""
+echo "Starting development servers..."
+/workspace/start-dev.sh
+
