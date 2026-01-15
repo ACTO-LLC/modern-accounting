@@ -57,3 +57,5 @@ nul
 # Local Claude Code settings
 .claude/
 .mcp.json
+
+scratch
