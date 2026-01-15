@@ -16,6 +16,7 @@ export type EnhancementStatus =
   | 'planning'
   | 'implementing'
   | 'reviewing'
+  | 'copilot_reviewing'
   | 'pr_created'
   | 'completed'
   | 'failed';
@@ -293,7 +294,7 @@ export async function getProcessingCount(): Promise<number> {
   const result = await db.request().query<{ count: number }>(`
     SELECT COUNT(*) as count
     FROM Enhancements
-    WHERE status IN ('processing', 'planning', 'implementing', 'reviewing')
+    WHERE status IN ('processing', 'planning', 'implementing', 'reviewing', 'copilot_reviewing')
   `);
 
   return result.recordset[0]?.count ?? 0;
