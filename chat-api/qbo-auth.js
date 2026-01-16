@@ -181,13 +181,16 @@ class QBOAuth {
 
     /**
      * Get connection from database by realmId
+     * @param {boolean} activeOnly - If true, only return active connections (default: false for upsert checks)
      */
-    async getConnectionByRealmId(realmId) {
+    async getConnectionByRealmId(realmId, activeOnly = false) {
         try {
             // Get all connections and filter in code (avoids OData issues)
             const response = await axios.get(`${DAB_API_URL}/qboconnections`);
             const items = response.data?.value || [];
-            return items.find(c => c.RealmId === realmId && c.IsActive) || null;
+            // For save/update operations, find ANY record with this realmId (active or not)
+            // For status checks, only return active connections
+            return items.find(c => c.RealmId === realmId && (activeOnly ? c.IsActive : true)) || null;
         } catch (error) {
             console.error('Failed to get QBO connection:', error.message);
             return null;
@@ -221,8 +224,8 @@ class QBOAuth {
         let connection = activeConnections.get(realmId);
 
         if (!connection) {
-            // Load from database
-            const dbConnection = await this.getConnectionByRealmId(realmId);
+            // Load from database (only active connections)
+            const dbConnection = await this.getConnectionByRealmId(realmId, true);
             if (!dbConnection) {
                 throw new Error('No QBO connection found for realmId: ' + realmId);
             }
@@ -301,7 +304,7 @@ class QBOAuth {
             let connection;
 
             if (realmId) {
-                connection = await this.getConnectionByRealmId(realmId);
+                connection = await this.getConnectionByRealmId(realmId, true);  // Only active
             } else {
                 connection = await this.getActiveConnection();
             }
@@ -339,7 +342,7 @@ class QBOAuth {
      */
     async disconnect(realmId) {
         try {
-            const connection = await this.getConnectionByRealmId(realmId);
+            const connection = await this.getConnectionByRealmId(realmId, true);  // Only active
             if (connection) {
                 await axios.patch(
                     `${DAB_API_URL}/qboconnections/Id/${connection.Id}`,

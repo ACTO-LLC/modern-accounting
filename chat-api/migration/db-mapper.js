@@ -17,6 +17,11 @@ export class MigrationMapper {
         this.fieldMapsCache = null;
         this.typeMapsCache = null;
         this.configCache = null;
+
+        // Entity lookup cache - key: "EntityType:SourceId", value: TargetId
+        this.entityLookupCache = new Map();
+        // Already-migrated cache - key: "EntityType:SourceId", value: TargetId or false
+        this.migratedCache = new Map();
     }
 
     /**
@@ -193,11 +198,19 @@ export class MigrationMapper {
     /**
      * Look up entity ID from MigrationEntityMaps or entity table
      * Falls back to name-based lookup for records migrated before source tracking
+     * Results are cached to avoid repeated lookups
      */
     async lookupEntity(entityType, sourceId, entityName = null) {
         if (!sourceId) return null;
 
+        // Check cache first
+        const cacheKey = `${entityType}:${sourceId}`;
+        if (this.entityLookupCache.has(cacheKey)) {
+            return this.entityLookupCache.get(cacheKey);
+        }
+
         const tableName = this.getTableName(entityType);
+        let targetId = null;
 
         // First try the entity table by SourceSystem/SourceId
         try {
@@ -208,29 +221,31 @@ export class MigrationMapper {
             });
 
             if (result.result?.value?.length > 0) {
-                return result.result.value[0].Id;
+                targetId = result.result.value[0].Id;
             }
         } catch (e) {
             // Table might not have SourceSystem/SourceId columns yet
         }
 
         // Fallback to MigrationEntityMaps table
-        try {
-            const result = await this.mcp.readRecords('migrationentitymaps', {
-                filter: `SourceSystem eq '${this.sourceSystem}' and EntityType eq '${entityType}' and SourceId eq '${sourceId}'`,
-                select: 'TargetId',
-                first: 1
-            });
+        if (!targetId) {
+            try {
+                const result = await this.mcp.readRecords('migrationentitymaps', {
+                    filter: `SourceSystem eq '${this.sourceSystem}' and EntityType eq '${entityType}' and SourceId eq '${sourceId}'`,
+                    select: 'TargetId',
+                    first: 1
+                });
 
-            if (result.result?.value?.length > 0) {
-                return result.result.value[0].TargetId;
+                if (result.result?.value?.length > 0) {
+                    targetId = result.result.value[0].TargetId;
+                }
+            } catch (e) {
+                // Table might not exist yet
             }
-        } catch (e) {
-            // Table might not exist yet
         }
 
         // Final fallback: lookup by name (for records migrated before source tracking)
-        if (entityName) {
+        if (!targetId && entityName) {
             try {
                 const escapedName = entityName.replace(/'/g, "''");
                 const result = await this.mcp.readRecords(tableName, {
@@ -241,14 +256,16 @@ export class MigrationMapper {
 
                 if (result.result?.value?.length > 0) {
                     console.log(`Found ${entityType} by name fallback: ${entityName}`);
-                    return result.result.value[0].Id;
+                    targetId = result.result.value[0].Id;
                 }
             } catch (e) {
                 // Name lookup failed
             }
         }
 
-        return null;
+        // Cache the result (even if null, to avoid repeated failed lookups)
+        this.entityLookupCache.set(cacheKey, targetId);
+        return targetId;
     }
 
     /**
@@ -353,6 +370,12 @@ export class MigrationMapper {
      * Record a successful migration in MigrationEntityMaps
      */
     async recordMigration(entityType, sourceId, targetId, sourceData = null) {
+        const cacheKey = `${entityType}:${String(sourceId)}`;
+
+        // Update caches immediately
+        this.migratedCache.set(cacheKey, targetId);
+        this.entityLookupCache.set(cacheKey, targetId);
+
         try {
             await this.mcp.createRecord('migrationentitymaps', {
                 SourceSystem: this.sourceSystem,
@@ -368,11 +391,21 @@ export class MigrationMapper {
     }
 
     /**
-     * Check if entity was already migrated
+     * Check if entity was already migrated (with caching)
      */
     async wasAlreadyMigrated(entityType, sourceId) {
+        const cacheKey = `${entityType}:${String(sourceId)}`;
+
+        // Check cache first
+        if (this.migratedCache.has(cacheKey)) {
+            const cached = this.migratedCache.get(cacheKey);
+            return cached === false ? null : cached;
+        }
+
         // First check entity table
         const tableName = this.getTableName(entityType);
+        let targetId = null;
+
         try {
             const result = await this.mcp.readRecords(tableName, {
                 filter: `SourceSystem eq '${this.sourceSystem}' and SourceId eq '${String(sourceId)}'`,
@@ -381,28 +414,32 @@ export class MigrationMapper {
             });
 
             if (result.result?.value?.length > 0) {
-                return result.result.value[0].Id;
+                targetId = result.result.value[0].Id;
             }
         } catch (e) {
             // Continue to fallback
         }
 
         // Fallback to MigrationEntityMaps
-        try {
-            const result = await this.mcp.readRecords('migrationentitymaps', {
-                filter: `SourceSystem eq '${this.sourceSystem}' and EntityType eq '${entityType}' and SourceId eq '${String(sourceId)}'`,
-                select: 'TargetId',
-                first: 1
-            });
+        if (!targetId) {
+            try {
+                const result = await this.mcp.readRecords('migrationentitymaps', {
+                    filter: `SourceSystem eq '${this.sourceSystem}' and EntityType eq '${entityType}' and SourceId eq '${String(sourceId)}'`,
+                    select: 'TargetId',
+                    first: 1
+                });
 
-            if (result.result?.value?.length > 0) {
-                return result.result.value[0].TargetId;
+                if (result.result?.value?.length > 0) {
+                    targetId = result.result.value[0].TargetId;
+                }
+            } catch (e) {
+                // Table might not exist
             }
-        } catch (e) {
-            // Table might not exist
         }
 
-        return null;
+        // Cache result (false means "checked but not migrated")
+        this.migratedCache.set(cacheKey, targetId || false);
+        return targetId;
     }
 
     /**
@@ -412,6 +449,51 @@ export class MigrationMapper {
         this.fieldMapsCache = null;
         this.typeMapsCache = null;
         this.configCache = null;
+        this.entityLookupCache.clear();
+        this.migratedCache.clear();
+    }
+
+    /**
+     * Preload entity lookups for a batch of source IDs (reduces MCP calls)
+     */
+    async preloadEntityLookups(entityType, sourceIds) {
+        if (!sourceIds || sourceIds.length === 0) return;
+
+        const tableName = this.getTableName(entityType);
+        const uncachedIds = sourceIds.filter(id => !this.entityLookupCache.has(`${entityType}:${id}`));
+
+        if (uncachedIds.length === 0) return;
+
+        // Build OR filter for batch lookup
+        const sourceIdFilter = uncachedIds.map(id => `SourceId eq '${id}'`).join(' or ');
+
+        try {
+            const result = await this.mcp.readRecords(tableName, {
+                filter: `SourceSystem eq '${this.sourceSystem}' and (${sourceIdFilter})`,
+                select: 'Id,SourceId',
+                first: uncachedIds.length
+            });
+
+            const records = result.result?.value || [];
+            for (const record of records) {
+                const cacheKey = `${entityType}:${record.SourceId}`;
+                this.entityLookupCache.set(cacheKey, record.Id);
+                this.migratedCache.set(cacheKey, record.Id);
+            }
+
+            // Mark unfound IDs as null in cache
+            for (const id of uncachedIds) {
+                const cacheKey = `${entityType}:${id}`;
+                if (!this.entityLookupCache.has(cacheKey)) {
+                    this.entityLookupCache.set(cacheKey, null);
+                    this.migratedCache.set(cacheKey, false);
+                }
+            }
+
+            console.log(`Preloaded ${records.length}/${uncachedIds.length} ${entityType} lookups`);
+        } catch (e) {
+            console.warn(`Preload failed for ${entityType}:`, e.message);
+        }
     }
 }
 

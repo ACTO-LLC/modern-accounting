@@ -86,20 +86,70 @@ app.post('/mcp', async (req: Request, res: Response) => {
             }
 
             case 'tools/list': {
+                // Convert zod type to JSON schema type
+                const zodToJsonType = (zodDef: any): any => {
+                    if (!zodDef) return { type: 'string' };
+
+                    const typeName = zodDef.typeName;
+
+                    // Handle optional - unwrap and get inner type
+                    if (typeName === 'ZodOptional') {
+                        return zodToJsonType(zodDef.innerType?._def);
+                    }
+
+                    // Handle array
+                    if (typeName === 'ZodArray') {
+                        return {
+                            type: 'array',
+                            items: zodToJsonType(zodDef.type?._def)
+                        };
+                    }
+
+                    // Handle object
+                    if (typeName === 'ZodObject') {
+                        const shape = zodDef.shape?.();
+                        if (!shape) return { type: 'object' };
+                        return {
+                            type: 'object',
+                            properties: Object.fromEntries(
+                                Object.entries(shape).map(([k, v]: [string, any]) => [
+                                    k,
+                                    zodToJsonType(v._def)
+                                ])
+                            )
+                        };
+                    }
+
+                    // Handle union
+                    if (typeName === 'ZodUnion') {
+                        // For simple unions, just return string
+                        return { type: 'string' };
+                    }
+
+                    // Handle enum
+                    if (typeName === 'ZodEnum') {
+                        return {
+                            type: 'string',
+                            enum: zodDef.values
+                        };
+                    }
+
+                    // Handle primitive types
+                    const typeMap: Record<string, string> = {
+                        'ZodString': 'string',
+                        'ZodNumber': 'number',
+                        'ZodBoolean': 'boolean',
+                        'ZodNull': 'null'
+                    };
+
+                    return { type: typeMap[typeName] || 'string' };
+                };
+
                 // Return available tools
                 const toolList = tools.map(t => ({
                     name: t.name,
                     description: t.description,
-                    inputSchema: {
-                        type: 'object',
-                        properties: t.schema._def?.shape ?
-                            Object.fromEntries(
-                                Object.entries(t.schema._def.shape()).map(([k, v]: [string, any]) => [
-                                    k,
-                                    { type: v._def?.typeName?.replace('Zod', '').toLowerCase() || 'any' }
-                                ])
-                            ) : {}
-                    }
+                    inputSchema: zodToJsonType(t.schema._def)
                 }));
 
                 return sendSSEResponse(res, {

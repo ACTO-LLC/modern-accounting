@@ -16,7 +16,7 @@ services:
       - sql-data:/var/opt/mssql
 
   dab:
-    image: mcr.microsoft.com/azure-databases/data-api-builder:latest
+    image: mcr.microsoft.com/azure-databases/data-api-builder:1.7.81-rc
     container_name: accounting-dab
     depends_on:
       - database
@@ -26,6 +26,20 @@ services:
       - ./dab-config.json:/App/dab-config.json
     environment:
       - DAB_CONNECTION_STRING=Server=database,1433;Database=AccountingDB;User Id=sa;Password=${SQL_SA_PASSWORD:-StrongPassword123!};TrustServerCertificate=true
+
+  qbo-mcp:
+    build:
+      context: ./qbo-mcp-http-server
+      dockerfile: Dockerfile
+    container_name: accounting-qbo-mcp
+    ports:
+      - "8001:8001"
+    environment:
+      - QBO_MCP_PORT=8001
+      - QBO_ENVIRONMENT=${QBO_ENVIRONMENT:-sandbox}
+      - QBO_CLIENT_ID=${QBO_CLIENT_ID}
+      - QBO_CLIENT_SECRET=${QBO_CLIENT_SECRET}
+      - QBO_REDIRECT_URI=${QBO_REDIRECT_URI:-http://localhost:8001/oauth/callback}
 
   email-api:
     build:

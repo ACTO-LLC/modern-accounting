@@ -21,6 +21,7 @@ import {
     migrateJournalEntries
 } from './migration/db-executor.js';
 import { qboAuth } from './qbo-auth.js';
+import { mcpManager } from './mcp-client.js';
 import githubRoutes from './src/routes/github.js';
 import deploymentsRouter from './src/routes/deployments.js';
 
@@ -230,8 +231,16 @@ const client = new OpenAIClient(
 
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const DAB_MCP_URL = process.env.DAB_MCP_URL || 'http://localhost:5000/mcp';
+const QBO_MCP_URL = process.env.QBO_MCP_URL || 'http://localhost:8001/mcp';
 const DAB_REST_URL = process.env.DAB_REST_URL || 'http://localhost:5000/api';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+
+// Initialize MCP servers
+mcpManager.addServer('dab', DAB_MCP_URL);
+mcpManager.addServer('qbo', QBO_MCP_URL);
+
+// Dynamic tools discovered from MCP servers (populated at startup)
+let dynamicTools = [];
 
 // ============================================================================
 // REST Client for DAB (used for onboarding tools - more reliable than MCP)
@@ -592,11 +601,132 @@ Now migrating customers..."
 Now migrating vendors..."
 [Call migrate_vendors] "Vendors migrated: 25 created.
 
-Your master data is now fully imported! Ready to migrate invoices when you are."`;
+Your master data is now fully imported! Ready to migrate invoices when you are."
+
+GENERIC DATABASE ACCESS:
+You have direct database access via these MCP tools - use them for any data queries:
+- dab_describe_entities: Discover available tables and their fields
+- dab_query: Query ANY table with filters (invoices, invoicelines, customers, accounts, journalentries, etc.)
+- dab_create: Create records in any table
+
+IMPORTANT: For specific data lookups (like "show invoice 9126 line items"), use dab_query directly:
+  dab_query({ entity: "invoicelines", filter: "InvoiceId eq 'xxx'" })
+This is MORE EFFICIENT than using legacy tools like query_invoices which don't return line items.
+
+Common DAB entities: invoices, invoicelines, customers, vendors, accounts, journalentries, journalentrylines, bills, billlines, banktransactions, payments, paymentapplications
+
+QUICKBOOKS ONLINE ACCESS:
+You also have direct QBO access via these tools:
+- qbo_query: Run any SQL-like query against QBO (e.g., "SELECT * FROM Invoice WHERE DocNumber = '9126'")
+- qbo_get_invoice: Get a specific invoice with all line items by ID or DocNumber
+
+QBO entities: Customer, Vendor, Invoice, Bill, Payment, BillPayment, JournalEntry, Account, Item
+Note: QBO line items are embedded in parent objects (Invoice.Line), not separate tables.
+
+WHEN TO USE WHICH:
+- For ACTO/Modern Accounting data → use dab_query
+- For QuickBooks Online data → use qbo_query or qbo_get_invoice
+- For migration comparisons → query both systems`;
+
+
 
 
 
 const tools = [
+    // =========================================================================
+    // Generic MCP Tools - Direct database access via DAB MCP
+    // =========================================================================
+    {
+        type: 'function',
+        function: {
+            name: 'dab_describe_entities',
+            description: 'List all available database entities/tables and their fields. Call this first to discover what data is available. Returns entity names, field names, types, and permissions.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    entities: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: 'Optional: specific entity names to describe. Omit to get all entities.'
+                    }
+                }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'dab_query',
+            description: 'Query any database table/entity. Use dab_describe_entities first to discover available entities and fields. Supports OData-style filtering.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    entity: { type: 'string', description: 'Entity name to query (e.g., invoices, invoicelines, customers, accounts, journalentries)' },
+                    filter: { type: 'string', description: 'OData filter expression (e.g., "InvoiceId eq \'abc-123\'", "Status eq \'Pending\'", "Amount gt 100")' },
+                    select: { type: 'string', description: 'Comma-separated field names to return (e.g., "Id,Name,Amount")' },
+                    orderby: { type: 'string', description: 'Field to sort by (e.g., "CreatedAt desc")' },
+                    first: { type: 'number', description: 'Max records to return (default 100)' }
+                },
+                required: ['entity']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'dab_create',
+            description: 'Create a new record in any database table/entity. Use dab_describe_entities first to see required fields.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    entity: { type: 'string', description: 'Entity name (e.g., invoicelines, customers)' },
+                    data: { type: 'object', description: 'Field values for the new record' }
+                },
+                required: ['entity', 'data']
+            }
+        }
+    },
+    // =========================================================================
+    // Generic QBO MCP Tools - Direct QuickBooks Online access
+    // =========================================================================
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_query',
+            description: 'Run a SQL-like query against QuickBooks Online. QBO entities: Customer, Vendor, Invoice, Bill, Payment, BillPayment, JournalEntry, Account, Item. Note: Line items are embedded in parent objects (Invoice.Line, Bill.Line), not separate entities.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: {
+                        type: 'string',
+                        description: 'SQL-like query (e.g., "SELECT * FROM Invoice WHERE DocNumber = \'9126\'", "SELECT * FROM Customer WHERE DisplayName LIKE \'%Smith%\'")'
+                    },
+                    fetchAll: {
+                        type: 'boolean',
+                        description: 'If true, returns full raw data including line items. If false, returns summarized data.'
+                    }
+                },
+                required: ['query']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_get_invoice',
+            description: 'Get a specific QBO invoice by ID or DocNumber, including all line items.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string', description: 'Invoice ID' },
+                    docNumber: { type: 'string', description: 'Invoice number (e.g., "9126")' }
+                }
+            }
+        }
+    },
+    // =========================================================================
+    // Legacy Custom Tools (kept for backwards compatibility)
+    // =========================================================================
     {
         type: 'function',
         function: {
@@ -1035,6 +1165,20 @@ const tools = [
             }
         }
     },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_invoice_lines',
+            description: 'PREFERRED TOOL for importing/migrating invoice line items from QuickBooks Online to Modern Accounting. Use this when a user asks to import, migrate, or sync line items for a specific invoice. This tool uses the stored QBO connection - no separate QBO session needed.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    invoice_number: { type: 'string', description: 'The invoice number (e.g., "5117")' }
+                },
+                required: ['invoice_number']
+            }
+        }
+    },
     // ========== Company Onboarding Tools ==========
     {
         type: 'function',
@@ -1199,7 +1343,176 @@ function getDateRange(period) {
 }
 
 // ============================================================================
-// Tool Execution Functions (using MCP)
+// Generic MCP Tool Execution Functions
+// ============================================================================
+
+async function executeDabDescribeEntities(params) {
+    try {
+        const result = await mcp.describeEntities(params.entities ? { entities: params.entities } : {});
+        if (result.error) {
+            return { success: false, error: result.error };
+        }
+        // Simplify the response for the AI - just entity names and key fields
+        const entities = result.result?.entities || result.entities || [];
+        const simplified = entities.map(e => ({
+            name: e.name,
+            fields: (e.fields || []).map(f => ({ name: f.name, type: f.type })).slice(0, 20),
+            permissions: e.permissions
+        }));
+        return { success: true, entities: simplified };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeDabQuery(params) {
+    try {
+        const options = {};
+        if (params.filter) options.filter = params.filter;
+        if (params.select) options.select = params.select;
+        if (params.orderby) options.orderby = [params.orderby];
+        options.first = params.first || 100;
+
+        const result = await mcp.readRecords(params.entity, options);
+        if (result.error) {
+            return { success: false, error: result.error, entity: params.entity };
+        }
+        const records = result.result?.value || [];
+        return {
+            success: true,
+            entity: params.entity,
+            count: records.length,
+            records: records.slice(0, 50) // Limit to prevent token overflow
+        };
+    } catch (error) {
+        return { success: false, error: error.message, entity: params.entity };
+    }
+}
+
+async function executeDabCreate(params) {
+    try {
+        const result = await mcp.createRecord(params.entity, params.data);
+        if (result.error) {
+            return { success: false, error: result.error, entity: params.entity };
+        }
+        return {
+            success: true,
+            entity: params.entity,
+            created: result.result || result
+        };
+    } catch (error) {
+        return { success: false, error: error.message, entity: params.entity };
+    }
+}
+
+// ============================================================================
+// Generic QBO Tool Execution Functions
+// ============================================================================
+
+async function executeQboQuery(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks. Please connect first.', needsAuth: true };
+        }
+
+        const result = await qboAuth.query(params.query);
+
+        // QBO returns results keyed by entity type (e.g., { Invoice: [...], Customer: [...] })
+        const entityTypes = Object.keys(result || {}).filter(k => k !== 'startPosition' && k !== 'maxResults' && k !== 'totalCount');
+
+        if (entityTypes.length === 0) {
+            return { success: true, count: 0, data: [] };
+        }
+
+        const entityType = entityTypes[0];
+        const records = result[entityType] || [];
+
+        // If fetchAll, return full data (including line items), otherwise summarize
+        if (params.fetchAll) {
+            return {
+                success: true,
+                entityType,
+                count: records.length,
+                data: records.slice(0, 20) // Limit to prevent token overflow
+            };
+        }
+
+        // Return summarized data
+        const summarized = records.slice(0, 50).map(r => ({
+            Id: r.Id,
+            Name: r.DisplayName || r.Name || r.DocNumber,
+            Type: r.AccountType || r.Type,
+            Date: r.TxnDate || r.MetaData?.CreateTime,
+            Amount: r.TotalAmt || r.Balance || r.CurrentBalance,
+            Status: r.Balance > 0 ? 'Open' : 'Paid',
+            LineCount: r.Line?.length || 0
+        }));
+
+        return {
+            success: true,
+            entityType,
+            count: records.length,
+            data: summarized
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeQboGetInvoice(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks. Please connect first.', needsAuth: true };
+        }
+
+        let query;
+        if (params.id) {
+            query = `SELECT * FROM Invoice WHERE Id = '${params.id}'`;
+        } else if (params.docNumber) {
+            query = `SELECT * FROM Invoice WHERE DocNumber = '${params.docNumber}'`;
+        } else {
+            return { success: false, error: 'Please provide either id or docNumber' };
+        }
+
+        const result = await qboAuth.query(query);
+        const invoices = result?.Invoice || [];
+
+        if (invoices.length === 0) {
+            return { success: false, error: 'Invoice not found' };
+        }
+
+        const inv = invoices[0];
+        return {
+            success: true,
+            invoice: {
+                id: inv.Id,
+                docNumber: inv.DocNumber,
+                customerName: inv.CustomerRef?.name,
+                customerId: inv.CustomerRef?.value,
+                date: inv.TxnDate,
+                dueDate: inv.DueDate,
+                total: inv.TotalAmt,
+                balance: inv.Balance,
+                status: inv.Balance > 0 ? 'Open' : 'Paid',
+                lineCount: inv.Line?.length || 0,
+                lines: (inv.Line || []).filter(l => l.DetailType === 'SalesItemLineDetail').map(l => ({
+                    description: l.Description,
+                    quantity: l.SalesItemLineDetail?.Qty,
+                    unitPrice: l.SalesItemLineDetail?.UnitPrice,
+                    amount: l.Amount,
+                    itemName: l.SalesItemLineDetail?.ItemRef?.name
+                }))
+            }
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================================================
+// Legacy Tool Execution Functions (using MCP)
 // ============================================================================
 
 async function executeQueryInvoices(params) {
@@ -2131,6 +2444,100 @@ async function executeMigrateProducts(params) {
     }
 }
 
+async function executeMigrateInvoiceLines(params) {
+    try {
+        const { invoice_number } = params;
+        if (!invoice_number) {
+            return { success: false, error: 'Invoice number is required' };
+        }
+
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        // 1. Find the invoice in ACTO by invoice number
+        const maInvoicesResult = await mcp.readRecords('invoices', {
+            filter: `InvoiceNumber eq '${invoice_number}'`,
+            first: 1
+        });
+
+        const maInvoice = maInvoicesResult.result?.value?.[0];
+        if (!maInvoice) {
+            return { success: false, error: `Invoice ${invoice_number} not found in Modern Accounting` };
+        }
+
+        if (maInvoice.SourceSystem !== 'QBO') {
+            return { success: false, error: `Invoice ${invoice_number} is not from QBO` };
+        }
+
+        // 2. Check if invoice already has line items
+        const existingLinesResult = await mcp.readRecords('invoicelines', {
+            filter: `InvoiceId eq '${maInvoice.Id}'`,
+            first: 100
+        });
+
+        const existingLines = existingLinesResult.result?.value || [];
+        if (existingLines.length > 0) {
+            return { success: false, error: `Invoice ${invoice_number} already has ${existingLines.length} line items` };
+        }
+
+        // 3. Fetch the invoice from QBO using SourceId
+        const qboInvoice = await qboAuth.makeApiCall(
+            await qboAuth.getActiveRealmId(),
+            'GET',
+            `/invoice/${maInvoice.SourceId}`
+        );
+
+        if (!qboInvoice?.Invoice) {
+            return { success: false, error: `Invoice not found in QBO with ID ${maInvoice.SourceId}` };
+        }
+
+        const invoice = qboInvoice.Invoice;
+
+        // 4. Create line items in ACTO
+        const salesLines = (invoice.Line || []).filter(l => l.DetailType === 'SalesItemLineDetail');
+        let linesCreated = 0;
+        const createdLines = [];
+
+        for (const line of salesLines) {
+            try {
+                const detail = line.SalesItemLineDetail || {};
+                const qty = parseFloat(detail.Qty) || 1;
+                const unitPrice = parseFloat(detail.UnitPrice) || parseFloat(line.Amount) || 0;
+
+                await mcp.createRecord('invoicelines', {
+                    InvoiceId: maInvoice.Id,
+                    Description: line.Description || detail.ItemRef?.name || 'Line Item',
+                    Quantity: qty,
+                    UnitPrice: unitPrice
+                    // Amount is a computed column (Quantity * UnitPrice)
+                });
+
+                linesCreated++;
+                createdLines.push({
+                    description: line.Description || detail.ItemRef?.name || 'Line Item',
+                    amount: (qty * unitPrice).toFixed(2)
+                });
+            } catch (lineError) {
+                console.error('Failed to create invoice line:', lineError.message);
+            }
+        }
+
+        return {
+            success: true,
+            message: `Successfully created ${linesCreated} line items for invoice ${invoice_number}`,
+            invoiceNumber: invoice_number,
+            invoiceId: maInvoice.Id,
+            qboInvoiceId: maInvoice.SourceId,
+            linesCreated,
+            lines: createdLines
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 async function executeMigrateAccounts(params) {
     try {
         const status = await qboAuth.getStatus();
@@ -2175,8 +2582,12 @@ async function executeMigrateInvoices(params) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        // Fetch invoices from QBO
-        const qboResult = await qboAuth.searchInvoices({ fetchAll: true });
+        // Fetch invoices from QBO (with limit if specified to avoid fetching all 500+)
+        const searchOpts = { fetchAll: true };
+        if (params.limit && params.limit > 0) {
+            searchOpts.limit = params.limit * 2; // Fetch extra in case some are skipped
+        }
+        const qboResult = await qboAuth.searchInvoices(searchOpts);
         let qboInvoices = qboResult.data || [];
 
         // Filter to unpaid only if requested
@@ -2226,8 +2637,12 @@ async function executeMigrateBills(params) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        // Fetch bills from QBO
-        const qboResult = await qboAuth.searchBills({ fetchAll: true });
+        // Fetch bills from QBO (with limit if specified to avoid fetching all)
+        const searchOpts = { fetchAll: true };
+        if (params.limit && params.limit > 0) {
+            searchOpts.limit = params.limit * 2; // Fetch extra in case some are skipped
+        }
+        const qboResult = await qboAuth.searchBills(searchOpts);
         let qboBills = qboResult.data || [];
 
         // Filter to unpaid only if requested
@@ -2865,8 +3280,61 @@ async function executeUpdateOnboardingStep(params) {
 // Function Dispatcher
 // ============================================================================
 
+/**
+ * Get all available tools - dynamic MCP tools + static fallback tools
+ */
+function getAllTools() {
+    // If we have dynamic tools from MCP, prioritize them
+    if (dynamicTools.length > 0) {
+        // Filter out QBO MCP tools that overlap with native functionality
+        // The QBO MCP uses a separate session that may not be connected
+        const filteredDynamicTools = dynamicTools.filter(t => {
+            const name = t.function.name;
+            // Exclude QBO connection status (chat-api has its own connection)
+            if (name.includes('qbo_get_connection_status')) return false;
+            // Exclude QBO analyze for migration (use native migrate_ tools instead)
+            if (name.includes('qbo_analyze_for_migration')) return false;
+            return true;
+        });
+
+        // Combine dynamic tools with essential static tools (migration, etc.)
+        const essentialStaticTools = tools.filter(t =>
+            t.function.name.startsWith('migrate_') ||
+            t.function.name.startsWith('create_') ||
+            t.function.name.startsWith('get_onboarding') ||
+            t.function.name.startsWith('update_onboarding') ||
+            t.function.name.startsWith('list_') ||
+            t.function.name.startsWith('generate_')
+        );
+        // Put essential static tools FIRST so AI prefers them for migration tasks
+        return [...essentialStaticTools, ...filteredDynamicTools];
+    }
+    // Fallback to static tools if MCP discovery failed
+    return tools;
+}
+
 async function executeFunction(name, args) {
+    // Check if this is a dynamically discovered MCP tool
+    const isDynamicTool = dynamicTools.some(t => t.function.name === name);
+    if (isDynamicTool) {
+        console.log(`Executing MCP tool: ${name}`);
+        const result = await mcpManager.callTool(name, args);
+        return result;
+    }
+
+    // Fall through to static tool handlers
     switch (name) {
+        // Legacy static tools - these don't go through MCP
+        case 'dab_describe_entities':
+            return executeDabDescribeEntities(args);
+        case 'dab_query':
+            return executeDabQuery(args);
+        case 'dab_create':
+            return executeDabCreate(args);
+        case 'qbo_query':
+            return executeQboQuery(args);
+        case 'qbo_get_invoice':
+            return executeQboGetInvoice(args);
         case 'query_invoices':
             return executeQueryInvoices(args);
         case 'query_customers':
@@ -2925,6 +3393,8 @@ async function executeFunction(name, args) {
             return executeMigrateJournalEntries(args);
         case 'migrate_products':
             return executeMigrateProducts(args);
+        case 'migrate_invoice_lines':
+            return executeMigrateInvoiceLines(args);
         case 'delete_products':
             return executeDeleteProducts(args);
         // Company Onboarding Tools
@@ -3266,7 +3736,7 @@ app.post('/api/chat', async (req, res) => {
             userMessage
         ];
 
-        let response = await client.getChatCompletions(deploymentName, messages, { tools, toolChoice: 'auto' });
+        let response = await client.getChatCompletions(deploymentName, messages, { tools: getAllTools(), toolChoice: 'auto' });
         let responseMessage = response.choices[0].message;
         let toolUsed = null;
 
@@ -3290,7 +3760,7 @@ app.post('/api/chat', async (req, res) => {
                 messages.push({ role: 'tool', toolCallId: toolCall.id, content: JSON.stringify(functionResult) });
             }
 
-            response = await client.getChatCompletions(deploymentName, messages, { tools, toolChoice: 'auto' });
+            response = await client.getChatCompletions(deploymentName, messages, { tools: getAllTools(), toolChoice: 'auto' });
             responseMessage = response.choices[0].message;
         }
 
@@ -3585,10 +4055,21 @@ async function startServer() {
         console.warn('Could not load QBO connections:', error.message);
     }
 
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
         console.log(`Chat API running on http://localhost:${PORT}`);
         console.log(`Deployment: ${deploymentName}`);
         console.log(`DAB MCP URL: ${DAB_MCP_URL}`);
+        console.log(`QBO MCP URL: ${QBO_MCP_URL}`);
+
+        // Discover tools from MCP servers
+        console.log('\nDiscovering MCP tools...');
+        try {
+            dynamicTools = await mcpManager.discoverAllTools();
+            console.log(`Discovered ${dynamicTools.length} tools from MCP servers`);
+        } catch (error) {
+            console.warn('MCP tool discovery failed:', error.message);
+            console.warn('Using fallback static tools');
+        }
     });
 }
 

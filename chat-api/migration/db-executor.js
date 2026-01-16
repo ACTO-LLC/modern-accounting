@@ -276,6 +276,21 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
     const result = createMigrationResult();
     const total = sourceInvoices.length;
 
+    // Batch preload: check which invoices are already migrated
+    const invoiceSourceIds = sourceInvoices.map(inv => String(inv.Id));
+    await mapper.preloadEntityLookups('Invoice', invoiceSourceIds);
+
+    // Batch preload: preload customer lookups for all invoices
+    const customerSourceIds = [...new Set(
+        sourceInvoices
+            .map(inv => inv.CustomerRef?.value)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (customerSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Customer', customerSourceIds);
+    }
+
     for (let i = 0; i < sourceInvoices.length; i++) {
         const sourceInvoice = sourceInvoices[i];
         const sourceId = String(sourceInvoice.Id);
@@ -359,25 +374,28 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
 
             const newId = newInvoiceId; // Use the ID we generated
 
-            // Create invoice lines
-            let linesCreated = 0;
+            // Create invoice lines (in parallel for speed)
             const lines = (sourceInvoice.Line || []).filter(l => l.DetailType === 'SalesItemLineDetail');
 
-            for (const line of lines) {
+            const linePromises = lines.map(async (line) => {
                 try {
                     const detail = line.SalesItemLineDetail || {};
                     await mcp.createRecord('invoicelines', {
                         InvoiceId: newId,
                         Description: line.Description || detail.ItemRef?.name || 'Line Item',
                         Quantity: parseFloat(detail.Qty) || 1,
-                        UnitPrice: parseFloat(detail.UnitPrice) || parseFloat(line.Amount) || 0,
-                        Amount: parseFloat(line.Amount) || 0
+                        UnitPrice: parseFloat(detail.UnitPrice) || parseFloat(line.Amount) || 0
+                        // Amount is a computed column (Quantity * UnitPrice)
                     });
-                    linesCreated++;
+                    return true;
                 } catch (lineError) {
                     console.error('Failed to create invoice line:', lineError.message);
+                    return false;
                 }
-            }
+            });
+
+            const lineResults = await Promise.all(linePromises);
+            const linesCreated = lineResults.filter(Boolean).length;
 
             // Record migration
             await mapper.recordMigration('Invoice', sourceId, newId, sourceInvoice);
@@ -417,6 +435,33 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
     const mapper = new MigrationMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceBills.length;
+
+    // Batch preload: check which bills are already migrated
+    const billSourceIds = sourceBills.map(bill => String(bill.Id));
+    await mapper.preloadEntityLookups('Bill', billSourceIds);
+
+    // Batch preload: preload vendor lookups for all bills
+    const vendorSourceIds = [...new Set(
+        sourceBills
+            .map(bill => bill.VendorRef?.value)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (vendorSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Vendor', vendorSourceIds);
+    }
+
+    // Batch preload: preload account lookups for all bill lines
+    const accountSourceIds = [...new Set(
+        sourceBills
+            .flatMap(bill => (bill.Line || []))
+            .map(line => line.AccountBasedExpenseLineDetail?.AccountRef?.value)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (accountSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Account', accountSourceIds);
+    }
 
     for (let i = 0; i < sourceBills.length; i++) {
         const sourceBill = sourceBills[i];
@@ -508,11 +553,10 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
 
             const newId = newBillId; // Use the ID we generated
 
-            // Create bill lines
-            let linesCreated = 0;
+            // Create bill lines (in parallel for speed)
             const lines = (sourceBill.Line || []).filter(l => l.DetailType === 'AccountBasedExpenseLineDetail');
 
-            for (const line of lines) {
+            const linePromises = lines.map(async (line) => {
                 try {
                     const detail = line.AccountBasedExpenseLineDetail || {};
                     const accountId = detail.AccountRef?.value
@@ -526,12 +570,17 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
                             Description: line.Description || detail.AccountRef?.name || 'Expense',
                             Amount: parseFloat(line.Amount) || 0
                         });
-                        linesCreated++;
+                        return true;
                     }
+                    return false;
                 } catch (lineError) {
                     console.error('Failed to create bill line:', lineError.message);
+                    return false;
                 }
-            }
+            });
+
+            const lineResults = await Promise.all(linePromises);
+            const linesCreated = lineResults.filter(Boolean).length;
 
             // Record migration
             await mapper.recordMigration('Bill', sourceId, newId, sourceBill);
@@ -571,6 +620,35 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
     const mapper = new MigrationMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourcePayments.length;
+
+    // Batch preload: check which payments are already migrated
+    const paymentSourceIds = sourcePayments.map(pmt => String(pmt.Id));
+    await mapper.preloadEntityLookups('Payment', paymentSourceIds);
+
+    // Batch preload: preload customer lookups for all payments
+    const customerSourceIds = [...new Set(
+        sourcePayments
+            .map(pmt => pmt.CustomerRef?.value)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (customerSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Customer', customerSourceIds);
+    }
+
+    // Batch preload: preload invoice lookups for all payment applications
+    const invoiceSourceIds = [...new Set(
+        sourcePayments
+            .flatMap(pmt => (pmt.Line || []))
+            .flatMap(line => (line.LinkedTxn || []))
+            .filter(lt => lt.TxnType === 'Invoice')
+            .map(lt => lt.TxnId)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (invoiceSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Invoice', invoiceSourceIds);
+    }
 
     for (let i = 0; i < sourcePayments.length; i++) {
         const sourcePayment = sourcePayments[i];
@@ -633,11 +711,10 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
                 throw new Error(errMsg);
             }
 
-            // Create payment applications (link to invoices)
-            let applicationsCreated = 0;
+            // Create payment applications (link to invoices) - in parallel for speed
             const lines = sourcePayment.Line || [];
 
-            for (const line of lines) {
+            const appPromises = lines.map(async (line) => {
                 try {
                     // Find linked invoice from the line
                     const linkedTxn = line.LinkedTxn?.find(lt => lt.TxnType === 'Invoice');
@@ -649,13 +726,18 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
                                 InvoiceId: invoiceId,
                                 AmountApplied: parseFloat(line.Amount) || 0
                             });
-                            applicationsCreated++;
+                            return true;
                         }
                     }
+                    return false;
                 } catch (appError) {
                     console.error('Failed to create payment application:', appError.message);
+                    return false;
                 }
-            }
+            });
+
+            const appResults = await Promise.all(appPromises);
+            const applicationsCreated = appResults.filter(Boolean).length;
 
             // Record migration
             await mapper.recordMigration('Payment', sourceId, newPaymentId, sourcePayment);
@@ -695,6 +777,50 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
     const mapper = new MigrationMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceBillPayments.length;
+
+    // Batch preload: check which bill payments are already migrated
+    const billPaymentSourceIds = sourceBillPayments.map(bp => String(bp.Id));
+    await mapper.preloadEntityLookups('BillPayment', billPaymentSourceIds);
+
+    // Batch preload: preload vendor lookups for all bill payments
+    const vendorSourceIds = [...new Set(
+        sourceBillPayments
+            .map(bp => bp.VendorRef?.value)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (vendorSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Vendor', vendorSourceIds);
+    }
+
+    // Batch preload: preload bill lookups for all bill payment applications
+    const billSourceIds = [...new Set(
+        sourceBillPayments
+            .flatMap(bp => (bp.Line || []))
+            .flatMap(line => (line.LinkedTxn || []))
+            .filter(lt => lt.TxnType === 'Bill')
+            .map(lt => lt.TxnId)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (billSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Bill', billSourceIds);
+    }
+
+    // Batch preload: preload account lookups for payment accounts
+    const accountSourceIds = [...new Set(
+        sourceBillPayments
+            .map(bp => {
+                if (bp.PayType === 'Check') return bp.CheckPayment?.BankAccountRef?.value;
+                if (bp.PayType === 'CreditCard') return bp.CreditCardPayment?.CCAccountRef?.value;
+                return null;
+            })
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (accountSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Account', accountSourceIds);
+    }
 
     for (let i = 0; i < sourceBillPayments.length; i++) {
         const sourceBillPayment = sourceBillPayments[i];
@@ -768,11 +894,10 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
                 throw new Error(errMsg);
             }
 
-            // Create bill payment applications (link to bills)
-            let applicationsCreated = 0;
+            // Create bill payment applications (link to bills) - in parallel for speed
             const lines = sourceBillPayment.Line || [];
 
-            for (const line of lines) {
+            const appPromises = lines.map(async (line) => {
                 try {
                     // Find linked bill from the line
                     const linkedTxn = line.LinkedTxn?.find(lt => lt.TxnType === 'Bill');
@@ -784,13 +909,18 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
                                 BillId: billId,
                                 AmountApplied: parseFloat(line.Amount) || 0
                             });
-                            applicationsCreated++;
+                            return true;
                         }
                     }
+                    return false;
                 } catch (appError) {
                     console.error('Failed to create bill payment application:', appError.message);
+                    return false;
                 }
-            }
+            });
+
+            const appResults = await Promise.all(appPromises);
+            const applicationsCreated = appResults.filter(Boolean).length;
 
             // Record migration
             await mapper.recordMigration('BillPayment', sourceId, newBillPaymentId, sourceBillPayment);
@@ -830,6 +960,22 @@ export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSys
     const mapper = new MigrationMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceJournalEntries.length;
+
+    // Batch preload: check which journal entries are already migrated
+    const jeSourceIds = sourceJournalEntries.map(je => String(je.Id));
+    await mapper.preloadEntityLookups('JournalEntry', jeSourceIds);
+
+    // Batch preload: preload account lookups for all journal entry lines
+    const accountSourceIds = [...new Set(
+        sourceJournalEntries
+            .flatMap(je => (je.Line || []))
+            .map(line => line.JournalEntryLineDetail?.AccountRef?.value)
+            .filter(Boolean)
+            .map(String)
+    )];
+    if (accountSourceIds.length > 0) {
+        await mapper.preloadEntityLookups('Account', accountSourceIds);
+    }
 
     // Get config for auto-posting
     const autoPost = (await mapper.getConfig('AutoPostJournalEntries')) === 'true';
@@ -902,22 +1048,19 @@ export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSys
                 throw new Error(errMsg);
             }
 
-            // Create journal entry lines
-            let linesCreated = 0;
-            let totalDebit = 0;
-            let totalCredit = 0;
+            // Create journal entry lines (in parallel for speed)
             const lines = sourceJE.Line || [];
 
-            for (const line of lines) {
+            const linePromises = lines.map(async (line) => {
                 try {
                     const detail = line.JournalEntryLineDetail || {};
                     const accountRef = detail.AccountRef?.value;
-                    if (!accountRef) continue;
+                    if (!accountRef) return null;
 
                     const accountId = await mapper.lookupEntity('Account', String(accountRef));
                     if (!accountId) {
                         console.warn(`Account not found for JE line: ${accountRef}`);
-                        continue;
+                        return null;
                     }
 
                     const postingType = detail.PostingType; // 'Debit' or 'Credit'
@@ -932,15 +1075,23 @@ export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSys
                     };
 
                     await mcp.createRecord('journalentrylines', lineData);
-                    linesCreated++;
-
-                    if (postingType === 'Debit') totalDebit += amount;
-                    if (postingType === 'Credit') totalCredit += amount;
+                    return { success: true, postingType, amount };
 
                 } catch (lineError) {
                     console.error('Failed to create journal entry line:', lineError.message);
+                    return null;
                 }
-            }
+            });
+
+            const lineResults = await Promise.all(linePromises);
+            const successfulLines = lineResults.filter(r => r !== null && r.success);
+            const linesCreated = successfulLines.length;
+            const totalDebit = successfulLines
+                .filter(r => r.postingType === 'Debit')
+                .reduce((sum, r) => sum + r.amount, 0);
+            const totalCredit = successfulLines
+                .filter(r => r.postingType === 'Credit')
+                .reduce((sum, r) => sum + r.amount, 0);
 
             // Record migration
             await mapper.recordMigration('JournalEntry', sourceId, newJEId, sourceJE);
