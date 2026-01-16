@@ -21,6 +21,9 @@ import {
     migrateJournalEntries
 } from './migration/db-executor.js';
 import { qboAuth } from './qbo-auth.js';
+import { plaidService } from './plaid-service.js';
+import { plaidSync } from './plaid-sync.js';
+import { plaidScheduler } from './plaid-scheduler.js';
 import { mcpManager } from './mcp-client.js';
 import githubRoutes from './src/routes/github.js';
 import deploymentsRouter from './src/routes/deployments.js';
@@ -224,10 +227,19 @@ const upload = multer({
     }
 });
 
-const client = new OpenAIClient(
-    process.env.AZURE_OPENAI_ENDPOINT,
-    new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY)
-);
+// Azure OpenAI client - only initialize if credentials are available
+const client = process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_API_KEY
+    ? new OpenAIClient(
+        process.env.AZURE_OPENAI_ENDPOINT,
+        new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY)
+    )
+    : null;
+
+if (client) {
+    console.log('Azure OpenAI client initialized');
+} else {
+    console.warn('Azure OpenAI not configured. AI features will be limited.');
+}
 
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const DAB_MCP_URL = process.env.DAB_MCP_URL || 'http://localhost:5000/mcp';
@@ -3678,6 +3690,223 @@ app.get('/api/qbo/analyze', async (req, res) => {
 });
 
 // ============================================================================
+// Plaid Bank Feed Endpoints
+// ============================================================================
+
+// Create Plaid Link token for initializing Plaid Link
+app.post('/api/plaid/link-token', async (req, res) => {
+    try {
+        const userId = req.body.userId || 'default-user';
+        const result = await plaidService.createLinkToken(userId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid link token error:', error);
+        res.status(500).json({ error: error.message || 'Failed to create link token' });
+    }
+});
+
+// Exchange public token for access token (called after Plaid Link success)
+app.post('/api/plaid/exchange-token', async (req, res) => {
+    try {
+        const { publicToken, metadata } = req.body;
+        if (!publicToken) {
+            return res.status(400).json({ error: 'Missing publicToken' });
+        }
+
+        const result = await plaidService.exchangePublicToken(publicToken, metadata);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid token exchange error:', error);
+        res.status(500).json({ error: error.message || 'Failed to exchange token' });
+    }
+});
+
+// Get all Plaid connections
+app.get('/api/plaid/connections', async (req, res) => {
+    try {
+        const connections = await plaidService.getActiveConnections();
+
+        // For each connection, get account count
+        const connectionsWithAccounts = await Promise.all(
+            connections.map(async (conn) => {
+                const accounts = await plaidService.getAccountsByConnectionId(conn.Id);
+                return {
+                    id: conn.Id,
+                    itemId: conn.ItemId,
+                    institutionId: conn.InstitutionId,
+                    institutionName: conn.InstitutionName,
+                    lastSyncAt: conn.LastSyncAt,
+                    syncStatus: conn.SyncStatus,
+                    syncErrorMessage: conn.SyncErrorMessage,
+                    accountCount: accounts.length,
+                    createdAt: conn.CreatedAt,
+                };
+            })
+        );
+
+        res.json({ connections: connectionsWithAccounts });
+    } catch (error) {
+        console.error('Plaid connections error:', error);
+        res.status(500).json({ error: 'Failed to get connections' });
+    }
+});
+
+// Disconnect a Plaid connection
+app.post('/api/plaid/connections/:itemId/disconnect', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const result = await plaidService.disconnect(itemId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid disconnect error:', error);
+        res.status(500).json({ error: 'Failed to disconnect' });
+    }
+});
+
+// Get all Plaid accounts
+app.get('/api/plaid/accounts', async (req, res) => {
+    try {
+        const accounts = await plaidService.getAllAccounts();
+
+        // Get connection info for each account
+        const connections = await plaidService.getActiveConnections();
+        const connectionMap = new Map(connections.map(c => [c.Id, c]));
+
+        const accountsWithInfo = accounts.map(account => {
+            const connection = connectionMap.get(account.PlaidConnectionId);
+            return {
+                id: account.Id,
+                plaidAccountId: account.PlaidAccountId,
+                accountName: account.AccountName,
+                officialName: account.OfficialName,
+                accountType: account.AccountType,
+                accountSubtype: account.AccountSubtype,
+                mask: account.Mask,
+                linkedAccountId: account.LinkedAccountId,
+                currentBalance: account.CurrentBalance,
+                availableBalance: account.AvailableBalance,
+                institutionName: connection?.InstitutionName || 'Unknown',
+            };
+        });
+
+        res.json({ accounts: accountsWithInfo });
+    } catch (error) {
+        console.error('Plaid accounts error:', error);
+        res.status(500).json({ error: 'Failed to get accounts' });
+    }
+});
+
+// Link a Plaid account to a chart of accounts entry
+app.post('/api/plaid/accounts/:id/link', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { ledgerAccountId } = req.body;
+
+        if (!ledgerAccountId) {
+            return res.status(400).json({ error: 'Missing ledgerAccountId' });
+        }
+
+        const result = await plaidService.linkAccountToLedger(id, ledgerAccountId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid link account error:', error);
+        res.status(500).json({ error: error.message || 'Failed to link account' });
+    }
+});
+
+// Validate a Plaid connection
+app.get('/api/plaid/connections/:itemId/validate', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const result = await plaidService.validateConnection(itemId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid validate error:', error);
+        res.status(500).json({ error: 'Failed to validate connection' });
+    }
+});
+
+// Sync transactions for a specific Plaid connection
+app.post('/api/plaid/connections/:itemId/sync', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const result = await plaidSync.syncConnection(itemId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid sync error:', error);
+        res.status(500).json({ error: error.message || 'Failed to sync transactions' });
+    }
+});
+
+// Sync all active Plaid connections
+app.post('/api/plaid/sync-all', async (req, res) => {
+    try {
+        const results = await plaidSync.syncAllConnections();
+        res.json({ results });
+    } catch (error) {
+        console.error('Plaid sync-all error:', error);
+        res.status(500).json({ error: 'Failed to sync connections' });
+    }
+});
+
+// Update account balances for a Plaid connection
+app.post('/api/plaid/connections/:itemId/balances', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const result = await plaidSync.updateBalances(itemId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid balances error:', error);
+        res.status(500).json({ error: error.message || 'Failed to update balances' });
+    }
+});
+
+// Get scheduler status
+app.get('/api/plaid/scheduler/status', async (req, res) => {
+    try {
+        const status = plaidScheduler.getStatus();
+        res.json(status);
+    } catch (error) {
+        console.error('Scheduler status error:', error);
+        res.status(500).json({ error: 'Failed to get scheduler status' });
+    }
+});
+
+// Start the scheduler
+app.post('/api/plaid/scheduler/start', async (req, res) => {
+    try {
+        plaidScheduler.start();
+        res.json({ success: true, message: 'Scheduler started' });
+    } catch (error) {
+        console.error('Scheduler start error:', error);
+        res.status(500).json({ error: 'Failed to start scheduler' });
+    }
+});
+
+// Stop the scheduler
+app.post('/api/plaid/scheduler/stop', async (req, res) => {
+    try {
+        plaidScheduler.stop();
+        res.json({ success: true, message: 'Scheduler stopped' });
+    } catch (error) {
+        console.error('Scheduler stop error:', error);
+        res.status(500).json({ error: 'Failed to stop scheduler' });
+    }
+});
+
+// Run a specific scheduled job immediately
+app.post('/api/plaid/scheduler/run/:jobName', async (req, res) => {
+    try {
+        const { jobName } = req.params;
+        const result = await plaidScheduler.runNow(jobName);
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('Scheduler run error:', error);
+        res.status(500).json({ error: error.message || 'Failed to run job' });
+    }
+});
+
+// ============================================================================
 // File Endpoints
 // ============================================================================
 
@@ -4053,6 +4282,25 @@ async function startServer() {
         }
     } catch (error) {
         console.warn('Could not load QBO connections:', error.message);
+    }
+
+    // Load Plaid connections from database
+    try {
+        const loadedCount = await plaidService.loadConnectionsFromDB();
+        if (loadedCount > 0) {
+            console.log(`Loaded ${loadedCount} Plaid connection(s) from database`);
+        }
+    } catch (error) {
+        console.warn('Could not load Plaid connections:', error.message);
+    }
+
+    // Start Plaid scheduler for background sync (optional - can be controlled via API)
+    if (process.env.PLAID_AUTO_SYNC !== 'false') {
+        try {
+            plaidScheduler.start();
+        } catch (error) {
+            console.warn('Could not start Plaid scheduler:', error.message);
+        }
     }
 
     app.listen(PORT, async () => {

@@ -86,7 +86,9 @@
                 "ApprovedMemo": "ApprovedMemo",
                 "JournalEntryId": "JournalEntryId",
                 "CreatedDate": "CreatedDate",
-                "IsPersonal": "IsPersonal"
+                "IsPersonal": "IsPersonal",
+                "PlaidTransactionId": "PlaidTransactionId",
+                "PlaidAccountId": "PlaidAccountId"
             },
             "relationships": {
                 "SourceAccount": {
@@ -1150,6 +1152,87 @@
                 "LastUsedAt": "LastUsedAt",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "plaidconnections": {
+            "source": "dbo.PlaidConnections",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ItemId": "ItemId",
+                "InstitutionId": "InstitutionId",
+                "InstitutionName": "InstitutionName",
+                "AccessToken": "AccessToken",
+                "LastSyncCursor": "LastSyncCursor",
+                "LastSyncAt": "LastSyncAt",
+                "SyncStatus": "SyncStatus",
+                "SyncErrorMessage": "SyncErrorMessage",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "plaidaccounts": {
+            "source": "dbo.PlaidAccounts",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PlaidConnectionId": "PlaidConnectionId",
+                "PlaidAccountId": "PlaidAccountId",
+                "AccountName": "AccountName",
+                "OfficialName": "OfficialName",
+                "AccountType": "AccountType",
+                "AccountSubtype": "AccountSubtype",
+                "Mask": "Mask",
+                "LinkedAccountId": "LinkedAccountId",
+                "CurrentBalance": "CurrentBalance",
+                "AvailableBalance": "AvailableBalance",
+                "CurrencyCode": "CurrencyCode",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "PlaidConnection": {
+                    "target.entity": "plaidconnections",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "PlaidConnectionId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "LinkedAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "LinkedAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
             },
             "key-fields": [
                 "Id"
