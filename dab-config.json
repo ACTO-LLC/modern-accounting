@@ -1590,7 +1590,7 @@
             },
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "read"
                     ]
@@ -1629,7 +1629,7 @@
             "source": "dbo.Employees",
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "create",
                         "update",
@@ -1680,7 +1680,7 @@
             },
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "read"
                     ]
@@ -1709,7 +1709,7 @@
             "source": "dbo.PayRuns",
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "create",
                         "update",
@@ -1748,7 +1748,7 @@
             },
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "read"
                     ]
@@ -1794,7 +1794,7 @@
             "source": "dbo.PayStubs",
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "create",
                         "update",

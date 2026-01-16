@@ -486,14 +486,14 @@ BEGIN
     INSERT INTO [dbo].[TaxRates] ([TaxType], [BracketMin], [BracketMax], [Rate], [FlatAmount], [EffectiveYear])
     VALUES
         ('SocialSecurity', 0, 168600, 0.062, 0, 2024),  -- 6.2% up to wage base
-        ('Medicare', 0, 200000, 0.0145, 0, 2024),       -- 1.45% standard
+        ('Medicare', 0, NULL, 0.0145, 0, 2024),         -- 1.45% standard, no wage cap
         ('MedicareAdditional', 200000, NULL, 0.009, 0, 2024);  -- 0.9% additional over $200k
 
     -- Social Security & Medicare (2025)
     INSERT INTO [dbo].[TaxRates] ([TaxType], [BracketMin], [BracketMax], [Rate], [FlatAmount], [EffectiveYear])
     VALUES
         ('SocialSecurity', 0, 176100, 0.062, 0, 2025),  -- 6.2% up to wage base
-        ('Medicare', 0, 200000, 0.0145, 0, 2025),       -- 1.45% standard
+        ('Medicare', 0, NULL, 0.0145, 0, 2025),         -- 1.45% standard, no wage cap
         ('MedicareAdditional', 200000, NULL, 0.009, 0, 2025);  -- 0.9% additional over $200k
 
     -- =============================================

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
@@ -44,11 +44,11 @@ export default function NewPayRun() {
   };
 
   // Initialize period dates
-  useState(() => {
+  useEffect(() => {
     const { start, end } = calculatePayPeriodDates(new Date(payDate), payFrequency);
     setPeriodStart(start.toISOString().split('T')[0]);
     setPeriodEnd(end.toISOString().split('T')[0]);
-  });
+  }, []);
 
   const mutation = useMutation({
     mutationFn: async () => {
