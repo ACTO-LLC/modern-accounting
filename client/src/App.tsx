@@ -71,6 +71,7 @@ import NewPayRun from './pages/NewPayRun';
 import PayRunDetail from './pages/PayRunDetail';
 import PayStubView from './pages/PayStubView';
 import PayrollSummary from './pages/reports/PayrollSummary';
+import PlaidConnections from './pages/PlaidConnections';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -105,6 +106,7 @@ function AppContent() {
             <Route path="estimates/new" element={<NewEstimate />} />
             <Route path="estimates/:id/edit" element={<EditEstimate />} />
             <Route path="banking" element={<Banking />} />
+            <Route path="plaid-connections" element={<PlaidConnections />} />
             <Route path="journal-entries" element={<JournalEntries />} />
             <Route path="journal-entries/new" element={<NewJournalEntry />} />
             <Route path="import" element={<ImportTransactions />} />
