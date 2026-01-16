@@ -1661,6 +1661,288 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "employees": {
+            "source": {
+                "object": "dbo.v_Employees",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeNumber": "EmployeeNumber",
+                "FirstName": "FirstName",
+                "LastName": "LastName",
+                "FullName": "FullName",
+                "Email": "Email",
+                "Phone": "Phone",
+                "SSNMasked": "SSNMasked",
+                "DateOfBirth": "DateOfBirth",
+                "HireDate": "HireDate",
+                "TerminationDate": "TerminationDate",
+                "PayType": "PayType",
+                "PayRate": "PayRate",
+                "PayFrequency": "PayFrequency",
+                "FederalFilingStatus": "FederalFilingStatus",
+                "FederalAllowances": "FederalAllowances",
+                "StateCode": "StateCode",
+                "StateFilingStatus": "StateFilingStatus",
+                "StateAllowances": "StateAllowances",
+                "Address": "Address",
+                "City": "City",
+                "State": "State",
+                "ZipCode": "ZipCode",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "employees_write": {
+            "source": "dbo.Employees",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeNumber": "EmployeeNumber",
+                "FirstName": "FirstName",
+                "LastName": "LastName",
+                "Email": "Email",
+                "Phone": "Phone",
+                "SSNLast4": "SSNLast4",
+                "DateOfBirth": "DateOfBirth",
+                "HireDate": "HireDate",
+                "TerminationDate": "TerminationDate",
+                "PayType": "PayType",
+                "PayRate": "PayRate",
+                "PayFrequency": "PayFrequency",
+                "FederalFilingStatus": "FederalFilingStatus",
+                "FederalAllowances": "FederalAllowances",
+                "StateCode": "StateCode",
+                "StateFilingStatus": "StateFilingStatus",
+                "StateAllowances": "StateAllowances",
+                "BankRoutingNumber": "BankRoutingNumber",
+                "BankAccountNumber": "BankAccountNumber",
+                "BankAccountType": "BankAccountType",
+                "Address": "Address",
+                "City": "City",
+                "State": "State",
+                "ZipCode": "ZipCode",
+                "Status": "Status"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "payruns": {
+            "source": {
+                "object": "dbo.v_PayRuns",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunNumber": "PayRunNumber",
+                "PayPeriodStart": "PayPeriodStart",
+                "PayPeriodEnd": "PayPeriodEnd",
+                "PayDate": "PayDate",
+                "Status": "Status",
+                "TotalGrossPay": "TotalGrossPay",
+                "TotalDeductions": "TotalDeductions",
+                "TotalNetPay": "TotalNetPay",
+                "EmployeeCount": "EmployeeCount",
+                "ProcessedAt": "ProcessedAt",
+                "ProcessedBy": "ProcessedBy",
+                "ApprovedAt": "ApprovedAt",
+                "ApprovedBy": "ApprovedBy",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "payruns_write": {
+            "source": "dbo.PayRuns",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunNumber": "PayRunNumber",
+                "PayPeriodStart": "PayPeriodStart",
+                "PayPeriodEnd": "PayPeriodEnd",
+                "PayDate": "PayDate",
+                "Status": "Status",
+                "TotalGrossPay": "TotalGrossPay",
+                "TotalDeductions": "TotalDeductions",
+                "TotalNetPay": "TotalNetPay",
+                "EmployeeCount": "EmployeeCount",
+                "ProcessedAt": "ProcessedAt",
+                "ProcessedBy": "ProcessedBy",
+                "ApprovedAt": "ApprovedAt",
+                "ApprovedBy": "ApprovedBy"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "paystubs": {
+            "source": {
+                "object": "dbo.v_PayStubs",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunId": "PayRunId",
+                "EmployeeId": "EmployeeId",
+                "EmployeeNumber": "EmployeeNumber",
+                "EmployeeName": "EmployeeName",
+                "PayRunNumber": "PayRunNumber",
+                "PayPeriodStart": "PayPeriodStart",
+                "PayPeriodEnd": "PayPeriodEnd",
+                "PayDate": "PayDate",
+                "RegularHours": "RegularHours",
+                "OvertimeHours": "OvertimeHours",
+                "RegularPay": "RegularPay",
+                "OvertimePay": "OvertimePay",
+                "OtherEarnings": "OtherEarnings",
+                "GrossPay": "GrossPay",
+                "FederalWithholding": "FederalWithholding",
+                "StateWithholding": "StateWithholding",
+                "SocialSecurity": "SocialSecurity",
+                "Medicare": "Medicare",
+                "OtherDeductions": "OtherDeductions",
+                "TotalDeductions": "TotalDeductions",
+                "NetPay": "NetPay",
+                "YTDGrossPay": "YTDGrossPay",
+                "YTDFederalWithholding": "YTDFederalWithholding",
+                "YTDStateWithholding": "YTDStateWithholding",
+                "YTDSocialSecurity": "YTDSocialSecurity",
+                "YTDMedicare": "YTDMedicare",
+                "YTDNetPay": "YTDNetPay",
+                "PaymentMethod": "PaymentMethod",
+                "CheckNumber": "CheckNumber",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "paystubs_write": {
+            "source": "dbo.PayStubs",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunId": "PayRunId",
+                "EmployeeId": "EmployeeId",
+                "RegularHours": "RegularHours",
+                "OvertimeHours": "OvertimeHours",
+                "RegularPay": "RegularPay",
+                "OvertimePay": "OvertimePay",
+                "OtherEarnings": "OtherEarnings",
+                "GrossPay": "GrossPay",
+                "FederalWithholding": "FederalWithholding",
+                "StateWithholding": "StateWithholding",
+                "SocialSecurity": "SocialSecurity",
+                "Medicare": "Medicare",
+                "OtherDeductions": "OtherDeductions",
+                "TotalDeductions": "TotalDeductions",
+                "NetPay": "NetPay",
+                "YTDGrossPay": "YTDGrossPay",
+                "YTDFederalWithholding": "YTDFederalWithholding",
+                "YTDStateWithholding": "YTDStateWithholding",
+                "YTDSocialSecurity": "YTDSocialSecurity",
+                "YTDMedicare": "YTDMedicare",
+                "YTDNetPay": "YTDNetPay",
+                "PaymentMethod": "PaymentMethod",
+                "CheckNumber": "CheckNumber",
+                "Status": "Status"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "taxrates": {
+            "source": "dbo.TaxRates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "TaxType": "TaxType",
+                "StateCode": "StateCode",
+                "FilingStatus": "FilingStatus",
+                "BracketMin": "BracketMin",
+                "BracketMax": "BracketMax",
+                "Rate": "Rate",
+                "FlatAmount": "FlatAmount",
+                "EffectiveYear": "EffectiveYear",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
