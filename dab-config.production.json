@@ -14,6 +14,387 @@
                     "issuer": "@env('AZURE_AD_ISSUER')"
                 }
             }
+        },
+        "rest": {
+            "enabled": true,
+            "path": "/api"
+        },
+        "graphql": {
+            "enabled": true,
+            "path": "/graphql"
+        }
+    },
+    "entities": {
+        "customers": {
+            "source": "dbo.Customers",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "vendors": {
+            "source": "dbo.Vendors",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "accounts": {
+            "source": "dbo.Accounts",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "invoices": {
+            "source": "dbo.Invoices",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "invoicelines": {
+            "source": "dbo.InvoiceLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update", "delete"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "bills": {
+            "source": "dbo.Bills",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "billlines": {
+            "source": "dbo.BillLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update", "delete"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "journalentries": {
+            "source": "dbo.JournalEntries",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "journalentrylines": {
+            "source": "dbo.JournalEntryLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update", "delete"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "banktransactions": {
+            "source": "dbo.BankTransactions",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "productsservices": {
+            "source": "dbo.ProductsServices",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "projects": {
+            "source": "dbo.Projects",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "timeentries": {
+            "source": "dbo.TimeEntries",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Employee",
+                    "actions": ["create", "read", "update"],
+                    "fields": {
+                        "include": ["*"],
+                        "exclude": []
+                    }
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "payments": {
+            "source": "dbo.Payments",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "billpayments": {
+            "source": "dbo.BillPayments",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "tenants": {
+            "source": "dbo.Tenants",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": ["read"]
+                }
+            ]
+        },
+        "users": {
+            "source": "dbo.Users",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "roles": {
+            "source": "dbo.Roles",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "userroles": {
+            "source": "dbo.UserRoles",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "enhancements": {
+            "source": "dbo.Enhancements",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "deployments": {
+            "source": "dbo.Deployments",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
         }
     }
 }
