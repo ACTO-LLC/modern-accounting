@@ -1161,7 +1161,7 @@
             "source": "dbo.PlaidConnections",
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "*"
                     ]
@@ -1189,7 +1189,7 @@
             "source": "dbo.PlaidAccounts",
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "*"
                     ]

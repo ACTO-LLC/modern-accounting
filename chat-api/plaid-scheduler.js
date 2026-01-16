@@ -167,7 +167,7 @@ class PlaidScheduler {
      */
     getStatus() {
         const status = [];
-        for (const [name, job] of this.jobs) {
+        for (const name of this.jobs.keys()) {
             status.push({
                 name,
                 running: this.isRunning,
@@ -184,7 +184,7 @@ class PlaidScheduler {
 export const plaidScheduler = new PlaidScheduler();
 
 // Auto-start scheduler if this file is run directly
-if (process.argv[1].includes('plaid-scheduler')) {
+if (process.argv[1].endsWith('plaid-scheduler.js')) {
     console.log('Starting Plaid Scheduler standalone...');
     plaidScheduler.start();
 

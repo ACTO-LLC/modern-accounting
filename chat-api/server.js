@@ -228,12 +228,14 @@ const upload = multer({
 });
 
 // Azure OpenAI client - only initialize if credentials are available
-let client = null;
-if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_API_KEY) {
-    client = new OpenAIClient(
+const client = process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_API_KEY
+    ? new OpenAIClient(
         process.env.AZURE_OPENAI_ENDPOINT,
         new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY)
-    );
+    )
+    : null;
+
+if (client) {
     console.log('Azure OpenAI client initialized');
 } else {
     console.warn('Azure OpenAI not configured. AI features will be limited.');

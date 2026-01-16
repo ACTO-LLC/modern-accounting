@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
-import { RefreshCw, Download, CheckCircle, Clock, Building2, Settings } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, Clock, Settings } from 'lucide-react';
 import PlaidLinkButton from '../components/PlaidLinkButton';
 
 interface BankTransaction {
