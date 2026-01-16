@@ -383,7 +383,7 @@ Respond in JSON format:
 
         // Determine account type
         const type = accountType === 'credit' ? 'Credit Card' : 'Bank';
-        const code = `PLAID-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
+        const code = `PLAID-${crypto.randomUUID()}`.toUpperCase();
 
         // Create new account
         const newId = crypto.randomUUID();
