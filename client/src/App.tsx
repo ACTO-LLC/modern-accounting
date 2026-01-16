@@ -63,6 +63,14 @@ import Submissions from './pages/Submissions';
 import NewSubmission from './pages/NewSubmission';
 import EditSubmission from './pages/EditSubmission';
 import AdminEnhancements from './pages/AdminEnhancements';
+import Employees from './pages/Employees';
+import NewEmployee from './pages/NewEmployee';
+import EditEmployee from './pages/EditEmployee';
+import PayRuns from './pages/PayRuns';
+import NewPayRun from './pages/NewPayRun';
+import PayRunDetail from './pages/PayRunDetail';
+import PayStubView from './pages/PayStubView';
+import PayrollSummary from './pages/reports/PayrollSummary';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -137,6 +145,14 @@ function AppContent() {
             <Route path="submissions" element={<Submissions />} />
             <Route path="submissions/new" element={<NewSubmission />} />
             <Route path="submissions/:id/edit" element={<EditSubmission />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="employees/new" element={<NewEmployee />} />
+            <Route path="employees/:id/edit" element={<EditEmployee />} />
+            <Route path="payruns" element={<PayRuns />} />
+            <Route path="payruns/new" element={<NewPayRun />} />
+            <Route path="payruns/:id" element={<PayRunDetail />} />
+            <Route path="paystubs/:id" element={<PayStubView />} />
+            <Route path="reports/payroll-summary" element={<PayrollSummary />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
           </Route>

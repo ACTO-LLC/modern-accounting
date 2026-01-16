@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw, LogOut, User, ChevronDown, MessageSquare, Layers, Sparkles } from 'lucide-react';
+import { LayoutDashboard, FileText, BookOpen, Settings, Menu, Building2, Upload, CheckCircle, Database, Users, Package, Scale, Truck, BarChart3, FolderOpen, Clock, Tag, MapPin, Warehouse, Receipt, ClipboardList, RefreshCw, LogOut, User, ChevronDown, MessageSquare, Layers, Sparkles, UserCheck, DollarSign } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +41,8 @@ export default function Layout() {
     { name: 'Products & Services', href: '/products-services', icon: Package },
     { name: 'Inventory', href: '/inventory', icon: Warehouse },
     { name: 'Vendors', href: '/vendors', icon: Truck },
+    { name: 'Employees', href: '/employees', icon: UserCheck },
+    { name: 'Payroll', href: '/payruns', icon: DollarSign },
     { name: 'Bills', href: '/bills', icon: Receipt },
     { name: 'Projects', href: '/projects', icon: FolderOpen },
     { name: 'Time Tracking', href: '/time-entries', icon: Clock },

@@ -96,3 +96,5 @@ services:
 
 volumes:
   sql-data:
+    external: true
+    name: modern-accounting-bank-feeds_sql-data

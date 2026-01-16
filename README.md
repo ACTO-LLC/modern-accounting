@@ -54,10 +54,11 @@ Copilot reviews → Merge → Auto-deploy to staging
 |---------|-------------|
 | **Invoicing & Estimates** | Create, edit, email invoices with PDF generation |
 | **Bills & Payments** | Vendor payables with payment tracking |
+| **Payroll** | Employee management, pay runs, tax calculations (Federal + all 50 US states), pay stubs |
 | **Bank Reconciliation** | Import transactions, AI-assisted categorization |
 | **Journal Entries** | Direct GL entries for complex transactions |
 | **Chart of Accounts** | Standard double-entry account structure |
-| **Reporting** | P&L, Balance Sheet, Trial Balance, AR Aging |
+| **Reporting** | P&L, Balance Sheet, Trial Balance, AR Aging, Payroll Summary |
 
 ### AI-Driven Features
 | Feature | Description |
@@ -170,8 +171,8 @@ modern-accounting/
 ├── csv-import-api/        # Bank statement import
 ├── qbo-mcp-http-server/   # QuickBooks MCP
 ├── database/              # SQL schema & migrations
-│   ├── migrations/        # 22+ migration scripts
-│   └── dbo/Tables/        # 23+ table definitions
+│   ├── migrations/        # 23+ migration scripts
+│   └── dbo/Tables/        # 27+ table definitions
 ├── scripts/               # DevOps utilities
 └── docs/                  # Documentation
 ```

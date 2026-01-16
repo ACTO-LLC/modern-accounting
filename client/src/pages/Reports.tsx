@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, DollarSign } from 'lucide-react';
 
 const reports = [
   {
@@ -29,6 +29,13 @@ const reports = [
     href: '/reports/ar-aging',
     icon: Clock,
     color: 'bg-orange-100 text-orange-600',
+  },
+  {
+    name: 'Payroll Summary',
+    description: 'Summary of payroll runs, gross pay, deductions, and net pay',
+    href: '/reports/payroll-summary',
+    icon: DollarSign,
+    color: 'bg-teal-100 text-teal-600',
   },
 ];
 
