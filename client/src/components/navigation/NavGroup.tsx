@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { ChevronRight, LucideIcon } from 'lucide-react';
@@ -16,6 +16,22 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
   const location = useLocation();
   const { isCollapsed, isGroupExpanded, toggleGroup } = useSidebar();
   const [showFlyout, setShowFlyout] = useState(false);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Open flyout immediately, but delay close to allow mouse to travel to flyout
+  const openFlyout = useCallback(() => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setShowFlyout(true);
+  }, []);
+
+  const closeFlyout = useCallback(() => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setShowFlyout(false);
+    }, 100); // 100ms delay allows mouse to travel to flyout
+  }, []);
 
   const isExpanded = isGroupExpanded(id);
 
@@ -48,14 +64,10 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
           />
         </button>
 
-        {/* Expanded children */}
-        <div
-          className={clsx(
-            "overflow-hidden transition-all duration-200",
-            isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-          )}
-        >
-          {items.map(item => {
+        {/* Expanded children - only render when expanded for cleaner DOM */}
+        {isExpanded && (
+          <div className="overflow-hidden">
+            {items.map(item => {
             const ItemIcon = item.icon;
             const isActive = location.pathname === item.href ||
               (item.href !== '/' && location.pathname.startsWith(item.href));
@@ -76,35 +88,42 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
               </Link>
             );
           })}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
 
   // Collapsed sidebar mode - show flyout on hover
+  // Use a group wrapper that spans both button and flyout for seamless hover
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setShowFlyout(true)}
-      onMouseLeave={() => setShowFlyout(false)}
-    >
-      <button
-        className={clsx(
-          "w-full flex items-center justify-center px-2 py-2 rounded-md transition-colors",
-          hasActiveChild
-            ? "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300"
-            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
-        )}
+    <div className="relative group">
+      <div
+        onMouseEnter={openFlyout}
+        onMouseLeave={closeFlyout}
       >
-        <Icon className="h-5 w-5" />
-      </button>
+        <button
+          className={clsx(
+            "w-full flex items-center justify-center px-2 py-2 rounded-md transition-colors",
+            hasActiveChild
+              ? "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300"
+              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </button>
+      </div>
 
-      {/* Flyout menu with bridge element to prevent hover gap */}
+      {/* Flyout menu - separate hover zone that also controls visibility */}
       {showFlyout && (
-        <>
-          {/* Invisible bridge to maintain hover between icon and flyout */}
-          <div className="absolute left-full top-0 w-3 h-full" />
-          <div className="absolute left-full top-0 ml-3 z-50 min-w-48 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+        <div
+          className="absolute left-full top-0 z-50 flex"
+          onMouseEnter={openFlyout}
+          onMouseLeave={closeFlyout}
+        >
+          {/* Invisible bridge to span the gap */}
+          <div className="w-2 h-full" />
+          <div className="min-w-48 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
             <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {name}
             </div>
@@ -132,7 +151,7 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
             {/* Arrow pointer */}
             <div className="absolute left-0 top-3 -translate-x-full border-8 border-transparent border-r-white dark:border-r-gray-800" />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

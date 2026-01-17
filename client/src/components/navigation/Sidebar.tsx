@@ -41,6 +41,8 @@ export default function Sidebar({ isMobileMenuOpen }: SidebarProps) {
 
   return (
     <div
+      data-testid="sidebar"
+      data-collapsed={isCollapsed}
       className={clsx(
         "fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 print:hidden flex flex-col",
         isCollapsed ? "w-16" : "w-64",
