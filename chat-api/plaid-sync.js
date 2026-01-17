@@ -155,6 +155,13 @@ class PlaidSync {
                     );
                 }
 
+                // Check for potential duplicate from other sources (CSV, etc.)
+                const duplicateCandidate = await this.checkForDuplicates(
+                    plaidTx.date,
+                    this.normalizeAmount(plaidTx.amount),
+                    plaidTx.name
+                );
+
                 // Map Plaid transaction to BankTransaction
                 const bankTransaction = await this.mapPlaidTransaction(plaidTx, {
                     connection,
@@ -162,6 +169,13 @@ class PlaidSync {
                     sourceAccountId,
                     accounts,
                 });
+
+                // Mark as potential duplicate if found
+                if (duplicateCandidate) {
+                    bankTransaction.IsPotentialDuplicate = true;
+                    bankTransaction.DuplicateOfId = duplicateCandidate.Id;
+                    console.log(`Potential duplicate detected: ${plaidTx.name} (${plaidTx.date}, $${Math.abs(plaidTx.amount)})`);
+                }
 
                 // Save to database
                 await this.saveBankTransaction(bankTransaction);
@@ -247,14 +261,22 @@ class PlaidSync {
         // Normalize amount: Plaid uses positive for debits (spending), we use negative
         const amount = this.normalizeAmount(plaidTx.amount);
 
-        // Get category suggestion from AI
+        // Get category suggestion - check rules first, then AI
         let suggestedAccountId = null;
         let suggestedCategory = plaidTx.personal_finance_category?.primary || null;
         let suggestedMemo = plaidTx.name;
         let confidenceScore = 0;
 
-        // Try AI categorization if available
-        if (openaiClient) {
+        // STEP 1: Check learned categorization rules first (faster + higher accuracy)
+        const ruleMatch = await this.checkCategorizationRules(plaidTx.name, plaidTx.merchant_name);
+        if (ruleMatch) {
+            suggestedAccountId = ruleMatch.AccountId;
+            suggestedCategory = ruleMatch.Category || suggestedCategory;
+            confidenceScore = 100;  // Rules are 100% confidence (user-verified)
+            console.log(`Rule match: "${plaidTx.name}" -> ${ruleMatch.Category}`);
+        }
+        // STEP 2: Try AI categorization if no rule match and AI is available
+        else if (openaiClient) {
             try {
                 const categorization = await this.categorizeTransaction({
                     description: plaidTx.name,
@@ -356,7 +378,11 @@ Respond in JSON format:
                 max_tokens: 200,
             });
 
-            const content = response.choices[0]?.message?.content?.trim() || '{}';
+            let content = response.choices[0]?.message?.content?.trim() || '{}';
+            // Strip markdown code blocks if present
+            if (content.startsWith('```')) {
+                content = content.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+            }
             return JSON.parse(content);
         } catch (error) {
             console.error('AI categorization error:', error.message);
@@ -366,6 +392,57 @@ Respond in JSON format:
                 memo: transaction.description?.substring(0, 100) || '',
                 confidence: 0,
             };
+        }
+    }
+
+    /**
+     * Check categorization rules for a transaction
+     * Returns matching rule or null if no match
+     */
+    async checkCategorizationRules(description, merchant) {
+        try {
+            // Get active rules ordered by priority
+            const response = await axios.get(
+                `${DAB_API_URL}/categorizationrules?$filter=IsActive eq true&$orderby=Priority`
+            );
+            const rules = response.data?.value || [];
+
+            for (const rule of rules) {
+                const valueToCheck = rule.MatchField === 'Merchant' ? merchant : description;
+                if (!valueToCheck) continue;
+
+                let matches = false;
+                const lowerValue = valueToCheck.toLowerCase();
+                const lowerMatch = rule.MatchValue.toLowerCase();
+
+                switch (rule.MatchType) {
+                    case 'exact':
+                        matches = lowerValue === lowerMatch;
+                        break;
+                    case 'contains':
+                        matches = lowerValue.includes(lowerMatch);
+                        break;
+                    case 'startswith':
+                        matches = lowerValue.startsWith(lowerMatch);
+                        break;
+                    default:
+                        matches = lowerValue.includes(lowerMatch);
+                }
+
+                if (matches) {
+                    // Increment hit count (fire and forget)
+                    axios.patch(`${DAB_API_URL}/categorizationrules/Id/${rule.Id}`, {
+                        HitCount: (rule.HitCount || 0) + 1
+                    }).catch(() => {});
+
+                    return rule;
+                }
+            }
+
+            return null;
+        } catch (error) {
+            console.warn('Rule check error:', error.message);
+            return null;
         }
     }
 
@@ -414,6 +491,51 @@ Respond in JSON format:
             return transactions.find(t => t.PlaidTransactionId === plaidTransactionId) || null;
         } catch (error) {
             console.error('Failed to get transaction:', error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Check for potential duplicate transactions (across different sources)
+     * Returns matching transaction if found, null otherwise
+     */
+    async checkForDuplicates(date, amount, description) {
+        try {
+            // Build filter for same date and amount
+            const filter = `TransactionDate eq '${date}' and Amount eq ${amount}`;
+            const response = await axios.get(`${DAB_API_URL}/banktransactions?$filter=${encodeURIComponent(filter)}`);
+            const candidates = response.data?.value || [];
+
+            if (candidates.length === 0) return null;
+
+            // Check for description similarity
+            const descLower = (description || '').toLowerCase();
+            for (const candidate of candidates) {
+                const candDesc = (candidate.Description || '').toLowerCase();
+
+                // Exact description match
+                if (candDesc === descLower) {
+                    return candidate;
+                }
+
+                // Fuzzy match: check if significant words overlap
+                const descWords = descLower.split(/\s+/).filter(w => w.length > 3);
+                const candWords = candDesc.split(/\s+/).filter(w => w.length > 3);
+
+                if (descWords.length > 0 && candWords.length > 0) {
+                    const overlap = descWords.filter(w => candWords.includes(w));
+                    const similarity = overlap.length / Math.max(descWords.length, candWords.length);
+
+                    // If more than 50% word overlap, consider it a potential duplicate
+                    if (similarity >= 0.5) {
+                        return candidate;
+                    }
+                }
+            }
+
+            return null;
+        } catch (error) {
+            console.warn('Duplicate check error:', error.message);
             return null;
         }
     }
