@@ -6,16 +6,41 @@ import {
   SilentRequest
 } from '@azure/msal-browser';
 import { useMsal, useIsAuthenticated, useAccount } from '@azure/msal-react';
-import { loginRequest, apiRequest, UserRole } from '../lib/authConfig';
+import { loginRequest, apiRequest, UserRole, roleHierarchy } from '../lib/authConfig';
+import { setCurrentTenantId } from '../lib/api';
+
+/**
+ * Extended user claims from Entra ID / B2C tokens
+ */
+interface UserClaims {
+  roles?: string[];
+  groups?: string[];
+  tid?: string;           // Tenant ID from token
+  oid?: string;           // Object ID
+  email?: string;
+  preferred_username?: string;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  amr?: string[];         // Authentication methods reference (includes 'mfa' if MFA was used)
+  tfp?: string;           // Trust framework policy (B2C)
+  acr?: string;           // Authentication context class reference (B2C)
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: AccountInfo | null;
   userRole: UserRole;
+  userRoles: UserRole[];
+  tenantId: string | null;
+  mfaCompleted: boolean;
+  authProvider: 'EntraID' | 'B2C';
   login: () => Promise<void>;
   logout: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
+  hasRole: (role: UserRole) => boolean;
+  hasAnyRole: (...roles: UserRole[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,9 +55,15 @@ function BypassAuthProvider({ children }: { children: ReactNode }) {
     isLoading: false,
     user: null,
     userRole: 'Admin',
+    userRoles: ['Admin'],
+    tenantId: null,
+    mfaCompleted: true,
+    authProvider: 'EntraID',
     login: async () => { console.log('Auth bypassed - login skipped'); },
     logout: async () => { console.log('Auth bypassed - logout skipped'); },
     getAccessToken: async () => null,
+    hasRole: () => true,
+    hasAnyRole: () => true,
   };
 
   return (
@@ -48,23 +79,57 @@ function MsalAuthProvider({ children }: { children: ReactNode }) {
   const msalIsAuthenticated = useIsAuthenticated();
   const account = useAccount(accounts[0] || null);
   const [userRole, setUserRole] = useState<UserRole>('Viewer');
+  const [userRoles, setUserRoles] = useState<UserRole[]>(['Viewer']);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [mfaCompleted, setMfaCompleted] = useState(false);
+  const [authProvider, setAuthProvider] = useState<'EntraID' | 'B2C'>('EntraID');
 
   const isAuthenticated = msalIsAuthenticated;
   const isLoading = inProgress !== InteractionStatus.None;
 
-  // Extract user role from token claims
+  // Extract user claims from token
   useEffect(() => {
     if (account) {
-      const claims = account.idTokenClaims as Record<string, unknown> | undefined;
-      const roles = claims?.roles as string[] | undefined;
+      const claims = account.idTokenClaims as UserClaims | undefined;
 
-      if (roles?.includes('Admin')) {
-        setUserRole('Admin');
-      } else if (roles?.includes('Accountant')) {
-        setUserRole('Accountant');
+      // Extract roles
+      const tokenRoles = claims?.roles || [];
+      const mappedRoles: UserRole[] = [];
+
+      if (tokenRoles.includes('Admin')) mappedRoles.push('Admin');
+      if (tokenRoles.includes('Accountant')) mappedRoles.push('Accountant');
+      if (tokenRoles.includes('Employee')) mappedRoles.push('Employee');
+      if (tokenRoles.includes('Viewer') || mappedRoles.length === 0) mappedRoles.push('Viewer');
+
+      // Sort by hierarchy (highest first)
+      mappedRoles.sort((a, b) => roleHierarchy.indexOf(b) - roleHierarchy.indexOf(a));
+
+      setUserRoles(mappedRoles);
+      setUserRole(mappedRoles[0] || 'Viewer');
+
+      // Extract tenant ID
+      const tid = claims?.tid || null;
+      setTenantId(tid);
+      // Update API tenant header
+      setCurrentTenantId(tid);
+
+      // Check MFA status
+      const amr = claims?.amr || [];
+      setMfaCompleted(amr.includes('mfa'));
+
+      // Detect auth provider (B2C has tfp or acr claims)
+      if (claims?.tfp || claims?.acr) {
+        setAuthProvider('B2C');
       } else {
-        setUserRole('Viewer');
+        setAuthProvider('EntraID');
       }
+    } else {
+      setUserRoles(['Viewer']);
+      setUserRole('Viewer');
+      setTenantId(null);
+      setCurrentTenantId(null);
+      setMfaCompleted(false);
+      setAuthProvider('EntraID');
     }
   }, [account]);
 
@@ -117,14 +182,34 @@ function MsalAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [instance, account]);
 
+  // Check if user has a specific role
+  const hasRole = useCallback((role: UserRole): boolean => {
+    // Admin has access to everything
+    if (userRoles.includes('Admin')) return true;
+    return userRoles.includes(role);
+  }, [userRoles]);
+
+  // Check if user has any of the specified roles
+  const hasAnyRole = useCallback((...roles: UserRole[]): boolean => {
+    // Admin has access to everything
+    if (userRoles.includes('Admin')) return true;
+    return roles.some(role => userRoles.includes(role));
+  }, [userRoles]);
+
   const value: AuthContextType = {
     isAuthenticated,
     isLoading,
     user: account,
     userRole,
+    userRoles,
+    tenantId,
+    mfaCompleted,
+    authProvider,
     login,
     logout,
     getAccessToken,
+    hasRole,
+    hasAnyRole,
   };
 
   return (
@@ -162,6 +247,7 @@ export function usePermission(requiredPermission: string): boolean {
     Admin: ['read', 'write', 'delete', 'manage_users'],
     Accountant: ['read', 'write'],
     Viewer: ['read'],
+    Employee: ['time_entry', 'expense_submit', 'read_own'],
   };
 
   return rolePermissions[userRole]?.includes(requiredPermission) ?? false;

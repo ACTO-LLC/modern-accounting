@@ -12,14 +12,32 @@ const api = axios.create({
 // Store the MSAL instance for use in interceptors
 let msalInstance: PublicClientApplication | null = null;
 
+// Store the current tenant ID for multi-tenant requests
+let currentTenantId: string | null = null;
+
 // Initialize the API with MSAL instance for token injection
 export function initializeApiAuth(instance: PublicClientApplication) {
   msalInstance = instance;
 }
 
-// Request interceptor to add auth token
+// Set the current tenant ID for API requests
+export function setCurrentTenantId(tenantId: string | null) {
+  currentTenantId = tenantId;
+}
+
+// Get the current tenant ID
+export function getCurrentTenantId(): string | null {
+  return currentTenantId;
+}
+
+// Request interceptor to add auth token and tenant header
 api.interceptors.request.use(
   async (config) => {
+    // Add tenant ID header if available
+    if (currentTenantId) {
+      config.headers['X-Tenant-Id'] = currentTenantId;
+    }
+
     if (msalInstance) {
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) {

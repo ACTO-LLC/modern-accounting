@@ -27,6 +27,9 @@ import { plaidScheduler } from './plaid-scheduler.js';
 import { mcpManager } from './mcp-client.js';
 import githubRoutes from './src/routes/github.js';
 import deploymentsRouter from './src/routes/deployments.js';
+import usersRouter from './src/routes/users.js';
+import { validateJWT, optionalJWT, requireRole, requirePermission, requireMFA } from './src/middleware/auth.js';
+import { resolveTenant, optionalTenant } from './src/middleware/tenant.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -167,6 +170,21 @@ function validateExtractedIntent(intent) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ============================================================================
+// Authentication & Authorization Middleware
+// ============================================================================
+// Public routes (no auth required):
+// - Health checks, OAuth callbacks, webhook endpoints
+// Protected routes use validateJWT + resolveTenant middleware
+
+// Health check endpoint (no auth)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// User management API routes (auth required)
+app.use('/api/users', validateJWT, resolveTenant, usersRouter);
 
 // GitHub/PR workflow API routes
 app.use('/api/github', githubRoutes);
