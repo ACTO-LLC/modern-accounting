@@ -80,6 +80,8 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
       <div className="space-y-0.5">
         <button
           onClick={() => toggleGroup(id)}
+          aria-expanded={isExpanded}
+          aria-controls={`nav-group-${id}`}
           className={clsx(
             "w-full flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
             hasActiveChild
@@ -97,10 +99,15 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
           />
         </button>
 
-        {/* Expanded children - only render when expanded for cleaner DOM */}
-        {isExpanded && (
-          <div className="overflow-hidden">
-            {items.map(item => {
+        {/* Expanded children with animation */}
+        <div
+          id={`nav-group-${id}`}
+          className={clsx(
+            "overflow-hidden transition-all duration-200",
+            isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
+          {items.map(item => {
             const ItemIcon = item.icon;
             const isActive = location.pathname === item.href ||
               (item.href !== '/' && location.pathname.startsWith(item.href));
@@ -121,8 +128,7 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
               </Link>
             );
           })}
-          </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -141,6 +147,8 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
             updateFlyoutPosition();
             setShowFlyout(!showFlyout);
           }}
+          aria-expanded={showFlyout}
+          aria-haspopup="true"
           className={clsx(
             "w-full flex items-center justify-center px-2 py-2 rounded-md transition-colors",
             hasActiveChild
@@ -188,7 +196,10 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
               );
             })}
             {/* Arrow pointer */}
-            <div className="absolute left-0 top-3 -translate-x-full border-8 border-transparent border-r-white dark:border-r-gray-800" />
+            <div
+              className="absolute left-0 top-3 -translate-x-full border-8 border-transparent border-r-white dark:border-r-gray-800"
+              aria-hidden="true"
+            />
           </div>
         </div>
       )}

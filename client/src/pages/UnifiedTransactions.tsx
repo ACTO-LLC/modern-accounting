@@ -7,13 +7,14 @@ import {
   GridRowSelectionModel,
   GridRenderCellParams,
 } from '@mui/x-data-grid';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
 import BulkActionsBar from '../components/transactions/BulkActionsBar';
 import PlaidLinkButton from '../components/PlaidLinkButton';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface BankTransaction {
   Id: string;
@@ -54,31 +55,6 @@ const initialFilters: TransactionFiltersState = {
   search: '',
 };
 
-// MUI DataGrid theme forcing light mode
-const dataGridTheme = createTheme({
-  colorSchemes: {
-    light: {
-      palette: {
-        text: {
-          primary: '#111827',
-          secondary: '#374151',
-        },
-      },
-    },
-  },
-  components: {
-    MuiDataGrid: {
-      styleOverrides: {
-        root: { border: 'none', color: '#111827' },
-        cell: { color: '#111827', borderBottom: '1px solid #e5e7eb' },
-        columnHeaders: { backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' },
-        columnHeaderTitle: { color: '#374151', fontWeight: 600 },
-        footerContainer: { borderTop: '1px solid #e5e7eb' },
-      },
-    },
-  },
-});
-
 export default function UnifiedTransactions() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -92,13 +68,14 @@ export default function UnifiedTransactions() {
     };
   });
 
-  const [selectedIds, setSelectedIds] = useState<GridRowSelectionModel>([]);
+  const [selectedIds, setSelectedIds] = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ accountId: string; memo: string; isPersonal: boolean }>({
     accountId: '',
     memo: '',
     isPersonal: false,
   });
+  const [showPostConfirm, setShowPostConfirm] = useState(false);
 
   // Fetch transactions
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
@@ -119,7 +96,8 @@ export default function UnifiedTransactions() {
         filterParts.push(`TransactionDate le ${filters.dateTo}`);
       }
 
-      const queryParams = filterParts.length > 0 ? `?$filter=${filterParts.join(' and ')}` : '';
+      const filterExpression = filterParts.join(' and ');
+      const queryParams = filterExpression ? `?$filter=${encodeURIComponent(filterExpression)}` : '';
       const response = await api.get<{ value: BankTransaction[] }>(`/banktransactions${queryParams}`);
       return response.data.value;
     },
@@ -205,7 +183,7 @@ export default function UnifiedTransactions() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
       setEditingId(null);
-      setSelectedIds([]);
+      setSelectedIds({ type: 'include', ids: new Set() });
     },
   });
 
@@ -226,7 +204,7 @@ export default function UnifiedTransactions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
-      setSelectedIds([]);
+      setSelectedIds({ type: 'include', ids: new Set() });
     },
   });
 
@@ -238,30 +216,25 @@ export default function UnifiedTransactions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
-      setSelectedIds([]);
+      setSelectedIds({ type: 'include', ids: new Set() });
     },
   });
 
   // Post transactions to journal
   const postMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const response = await fetch('http://localhost:7072/api/post-transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionIds: ids }),
+      const response = await api.post('/post-transactions', {
+        transactionIds: ids,
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.details || 'Failed to post transactions');
-      }
-      return response.json();
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
-      alert(`Successfully posted ${data.count} transactions to the journal!`);
+      toast.success(`Successfully posted ${data.count} transactions to the journal!`);
+      setShowPostConfirm(false);
     },
     onError: (error: Error) => {
-      alert(`Error posting transactions: ${error.message}`);
+      toast.error(`Error posting transactions: ${error.message}`);
     },
   });
 
@@ -312,11 +285,11 @@ export default function UnifiedTransactions() {
   }, [editForm, updateMutation]);
 
   const handleBulkApprove = useCallback(() => {
-    bulkApproveMutation.mutate(selectedIds as string[]);
+    bulkApproveMutation.mutate(Array.from(selectedIds.ids) as string[]);
   }, [selectedIds, bulkApproveMutation]);
 
   const handleBulkReject = useCallback(() => {
-    bulkRejectMutation.mutate(selectedIds as string[]);
+    bulkRejectMutation.mutate(Array.from(selectedIds.ids) as string[]);
   }, [selectedIds, bulkRejectMutation]);
 
   const handleApproveHighConfidence = useCallback(() => {
@@ -329,12 +302,15 @@ export default function UnifiedTransactions() {
   const handlePostApproved = useCallback(() => {
     const approvedIds = transactions.filter(t => t.Status === 'Approved').map(t => t.Id);
     if (approvedIds.length === 0) {
-      alert('No approved transactions to post');
+      toast.error('No approved transactions to post');
       return;
     }
-    if (confirm(`Are you sure you want to post ${approvedIds.length} transactions to the General Ledger?`)) {
-      postMutation.mutate(approvedIds);
-    }
+    setShowPostConfirm(true);
+  }, [transactions]);
+
+  const confirmPostApproved = useCallback(() => {
+    const approvedIds = transactions.filter(t => t.Status === 'Approved').map(t => t.Id);
+    postMutation.mutate(approvedIds);
   }, [transactions, postMutation]);
 
   // Helper functions
@@ -604,13 +580,13 @@ export default function UnifiedTransactions() {
 
       {/* Bulk Actions Bar */}
       <BulkActionsBar
-        selectedCount={selectedIds.length}
+        selectedCount={selectedIds.ids.size}
         highConfidenceCount={highConfidenceCount}
         onApproveSelected={handleBulkApprove}
         onRejectSelected={handleBulkReject}
         onApproveHighConfidence={handleApproveHighConfidence}
         onCategorizeSelected={() => {/* TODO: Open categorize modal */}}
-        onClearSelection={() => setSelectedIds([])}
+        onClearSelection={() => setSelectedIds({ type: 'include', ids: new Set() })}
         isLoading={isLoading}
       />
 
@@ -630,41 +606,38 @@ export default function UnifiedTransactions() {
 
       {/* DataGrid */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow" style={{ height: 600, width: '100%' }}>
-        <ThemeProvider theme={dataGridTheme}>
-          <DataGrid
-            rows={transactions}
-            columns={columns}
-            getRowId={(row) => row.Id}
-            loading={transactionsLoading}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={selectedIds}
-            onRowSelectionModelChange={setSelectedIds}
-            pageSizeOptions={[10, 25, 50, 100]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 25 } },
-              sorting: { sortModel: [{ field: 'TransactionDate', sort: 'desc' }] },
-            }}
-            sx={{
-              '& .MuiDataGrid-cell': {
-                color: '#111827 !important',
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                color: '#374151 !important',
-              },
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: 'rgba(79, 70, 229, 0.04)',
-              },
-              '& .MuiDataGrid-cell:focus': {
-                outline: 'none',
-              },
-            }}
-            localeText={{
-              noRowsLabel: 'No transactions found. Sync your bank feed or import a CSV to get started.',
-            }}
-          />
-        </ThemeProvider>
+        <DataGrid
+          rows={transactions}
+          columns={columns}
+          getRowId={(row) => row.Id}
+          loading={transactionsLoading}
+          checkboxSelection
+          disableRowSelectionOnClick
+          rowSelectionModel={selectedIds}
+          onRowSelectionModelChange={setSelectedIds}
+          pageSizeOptions={[10, 25, 50, 100]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 25 } },
+            sorting: { sortModel: [{ field: 'TransactionDate', sort: 'desc' }] },
+          }}
+          localeText={{
+            noRowsLabel: 'No transactions found. Sync your bank feed or import a CSV to get started.',
+          }}
+        />
       </div>
+
+      {/* Post Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showPostConfirm}
+        onClose={() => setShowPostConfirm(false)}
+        onConfirm={confirmPostApproved}
+        title="Post Transactions to General Ledger"
+        message={`Are you sure you want to post ${transactions.filter(t => t.Status === 'Approved').length} approved transactions to the General Ledger? This action cannot be undone.`}
+        confirmText="Post Transactions"
+        cancelText="Cancel"
+        isLoading={postMutation.isPending}
+        variant="default"
+      />
     </div>
   );
 }
