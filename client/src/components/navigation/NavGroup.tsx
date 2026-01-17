@@ -99,36 +99,40 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
         <Icon className="h-5 w-5" />
       </button>
 
-      {/* Flyout menu */}
+      {/* Flyout menu with bridge element to prevent hover gap */}
       {showFlyout && (
-        <div className="absolute left-full top-0 ml-2 z-50 min-w-48 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            {name}
-          </div>
-          {items.map(item => {
-            const ItemIcon = item.icon;
-            const isActive = location.pathname === item.href ||
-              (item.href !== '/' && location.pathname.startsWith(item.href));
+        <>
+          {/* Invisible bridge to maintain hover between icon and flyout */}
+          <div className="absolute left-full top-0 w-3 h-full" />
+          <div className="absolute left-full top-0 ml-3 z-50 min-w-48 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              {name}
+            </div>
+            {items.map(item => {
+              const ItemIcon = item.icon;
+              const isActive = location.pathname === item.href ||
+                (item.href !== '/' && location.pathname.startsWith(item.href));
 
-            return (
-              <Link
-                key={item.id}
-                to={item.href}
-                className={clsx(
-                  "flex items-center px-3 py-2 text-sm transition-colors",
-                  isActive
-                    ? "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                )}
-              >
-                <ItemIcon className="mr-3 h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{item.name}</span>
-              </Link>
-            );
-          })}
-          {/* Arrow pointer */}
-          <div className="absolute left-0 top-3 -translate-x-full border-8 border-transparent border-r-white dark:border-r-gray-800" />
-        </div>
+              return (
+                <Link
+                  key={item.id}
+                  to={item.href}
+                  className={clsx(
+                    "flex items-center px-3 py-2 text-sm transition-colors",
+                    isActive
+                      ? "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  )}
+                >
+                  <ItemIcon className="mr-3 h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+            {/* Arrow pointer */}
+            <div className="absolute left-0 top-3 -translate-x-full border-8 border-transparent border-r-white dark:border-r-gray-800" />
+          </div>
+        </>
       )}
     </div>
   );
