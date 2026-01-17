@@ -50,6 +50,7 @@ const initialFilters: TransactionFiltersState = {
   status: 'Pending',
   confidence: 'all',
   account: 'all',
+  source: 'all',
   dateFrom: '',
   dateTo: '',
   search: '',
@@ -88,6 +89,9 @@ export default function UnifiedTransactions() {
       }
       if (filters.account !== 'all') {
         filterParts.push(`SourceAccountId eq '${filters.account}'`);
+      }
+      if (filters.source !== 'all') {
+        filterParts.push(`SourceType eq '${filters.source}'`);
       }
       if (filters.dateFrom) {
         filterParts.push(`TransactionDate ge ${filters.dateFrom}`);

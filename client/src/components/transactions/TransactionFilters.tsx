@@ -4,6 +4,7 @@ export interface TransactionFiltersState {
   status: string;
   confidence: string;
   account: string;
+  source: string;
   dateFrom: string;
   dateTo: string;
   search: string;
@@ -30,7 +31,7 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
         {/* Search */}
         <div className="lg:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -101,8 +102,25 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
           </select>
         </div>
 
-        {/* Date Range */}
+        {/* Source */}
         <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Source
+          </label>
+          <select
+            value={filters.source}
+            onChange={(e) => updateFilter('source', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">All Sources</option>
+            <option value="BankFeed">Bank Feed</option>
+            <option value="Import">CSV Import</option>
+            <option value="Manual">Manual Entry</option>
+          </select>
+        </div>
+
+        {/* Date Range */}
+        <div className="lg:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Date Range
           </label>

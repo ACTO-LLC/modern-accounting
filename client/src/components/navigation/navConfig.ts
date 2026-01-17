@@ -82,14 +82,12 @@ export const navigationConfig: NavEntry[] = [
     ],
   },
 
-  // Expenses group
+  // Projects - standalone
   {
-    id: 'expenses',
-    name: 'Expenses',
-    icon: DollarSign,
-    items: [
-      { id: 'projects', name: 'Projects', href: '/projects', icon: FolderOpen },
-    ],
+    id: 'projects',
+    name: 'Projects',
+    href: '/projects',
+    icon: FolderOpen,
   },
 
   // Transactions - standalone
