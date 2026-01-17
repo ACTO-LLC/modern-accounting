@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '../lib/api';
-import { RefreshCw, Download, CheckCircle, Clock } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, Clock, Settings } from 'lucide-react';
+import PlaidLinkButton from '../components/PlaidLinkButton';
 
 interface BankTransaction {
   Id: string;
@@ -66,12 +68,20 @@ export default function Banking() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Banking</h1>
-        <div className="flex space-x-3">
-          <button 
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Banking</h1>
+        <div className="flex items-center space-x-3">
+          <Link
+            to="/plaid-connections"
+            className="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+          >
+            <Settings className="w-4 h-4 mr-1" />
+            Manage Connections
+          </Link>
+          <PlaidLinkButton compact />
+          <button
             onClick={() => simulateFeedMutation.mutate()}
             disabled={simulateFeedMutation.isPending}
-            className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${simulateFeedMutation.isPending ? 'animate-spin' : ''}`} />
             {simulateFeedMutation.isPending ? 'Syncing...' : 'Sync Bank Feed'}

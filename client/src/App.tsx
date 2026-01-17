@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { useEffect } from 'react';
+import { Toaster } from 'sonner';
 import { ToastProvider } from './hooks/useToast';
 import { msalConfig } from './lib/authConfig';
 import { initializeApiAuth } from './lib/api';
@@ -22,12 +23,9 @@ import CompanySettings from './pages/CompanySettings';
 import Estimates from './pages/Estimates';
 import NewEstimate from './pages/NewEstimate';
 import EditEstimate from './pages/EditEstimate';
-import Banking from './pages/Banking';
 import JournalEntries from './pages/JournalEntries';
 import NewJournalEntry from './pages/NewJournalEntry';
 import ImportTransactions from './pages/ImportTransactions';
-import ReviewTransactions from './pages/ReviewTransactions';
-import BankTransactions from './pages/BankTransactions';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
 import EditCustomer from './pages/EditCustomer';
@@ -63,6 +61,16 @@ import Submissions from './pages/Submissions';
 import NewSubmission from './pages/NewSubmission';
 import EditSubmission from './pages/EditSubmission';
 import AdminEnhancements from './pages/AdminEnhancements';
+import Employees from './pages/Employees';
+import NewEmployee from './pages/NewEmployee';
+import EditEmployee from './pages/EditEmployee';
+import PayRuns from './pages/PayRuns';
+import NewPayRun from './pages/NewPayRun';
+import PayRunDetail from './pages/PayRunDetail';
+import PayStubView from './pages/PayStubView';
+import PayrollSummary from './pages/reports/PayrollSummary';
+import PlaidConnections from './pages/PlaidConnections';
+import UnifiedTransactions from './pages/UnifiedTransactions';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -96,11 +104,12 @@ function AppContent() {
             <Route path="estimates" element={<Estimates />} />
             <Route path="estimates/new" element={<NewEstimate />} />
             <Route path="estimates/:id/edit" element={<EditEstimate />} />
-            <Route path="banking" element={<Banking />} />
+            <Route path="banking" element={<Navigate to="/transactions" replace />} />
+            <Route path="plaid-connections" element={<PlaidConnections />} />
             <Route path="journal-entries" element={<JournalEntries />} />
             <Route path="journal-entries/new" element={<NewJournalEntry />} />
             <Route path="import" element={<ImportTransactions />} />
-            <Route path="review" element={<ReviewTransactions />} />
+            <Route path="review" element={<Navigate to="/transactions?view=review" replace />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
@@ -125,7 +134,7 @@ function AppContent() {
             <Route path="locations" element={<Locations />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="recurring" element={<RecurringTransactions />} />
-            <Route path="transactions" element={<BankTransactions />} />
+            <Route path="transactions" element={<UnifiedTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
             <Route path="reconciliations/:id" element={<NewReconciliation />} />
@@ -137,6 +146,14 @@ function AppContent() {
             <Route path="submissions" element={<Submissions />} />
             <Route path="submissions/new" element={<NewSubmission />} />
             <Route path="submissions/:id/edit" element={<EditSubmission />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="employees/new" element={<NewEmployee />} />
+            <Route path="employees/:id/edit" element={<EditEmployee />} />
+            <Route path="payruns" element={<PayRuns />} />
+            <Route path="payruns/new" element={<NewPayRun />} />
+            <Route path="payruns/:id" element={<PayRunDetail />} />
+            <Route path="paystubs/:id" element={<PayStubView />} />
+            <Route path="reports/payroll-summary" element={<PayrollSummary />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
           </Route>
@@ -153,6 +170,7 @@ function App() {
       <CompanySettingsProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
+            <Toaster position="top-right" richColors />
             <ToastProvider>
               <ChatProvider>
                 <AppContent />

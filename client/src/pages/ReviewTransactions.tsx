@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, XCircle, Edit2, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Edit2, FileText, AlertTriangle } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
+
+const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
 
 interface BankTransaction {
   Id: string;
@@ -24,6 +26,8 @@ interface BankTransaction {
   ApprovedMemo?: string;
   JournalEntryId?: string;
   IsPersonal: boolean;
+  IsPotentialDuplicate?: boolean;
+  DuplicateOfId?: string;
 }
 
 interface Account {
@@ -35,9 +39,13 @@ interface Account {
 export default function ReviewTransactions() {
   const [statusFilter, setStatusFilter] = useState<string>('Pending');
   const [confidenceFilter, setConfidenceFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [institutionFilter, setInstitutionFilter] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ accountId: string; memo: string; isPersonal: boolean }>({ accountId: '', memo: '', isPersonal: false });
+  const [editForm, setEditForm] = useState<{ accountId: string; category: string; memo: string; isPersonal: boolean }>({ accountId: '', category: '', memo: '', isPersonal: false });
 
   const queryClient = useQueryClient();
 
@@ -66,19 +74,63 @@ export default function ReviewTransactions() {
     }
   });
 
+  // Fetch institutions for filtering
+  const { data: institutionsData } = useQuery({
+    queryKey: ['plaid-connections'],
+    queryFn: async () => {
+      const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.connections || [];
+    }
+  });
+
   const accounts = accountsData || [];
   const transactions = transactionsData || [];
+  const institutions = institutionsData || [];
 
-  // Filter by confidence
+  // Apply all filters
   const filteredTransactions = transactions.filter(txn => {
-    if (confidenceFilter === 'all') return true;
-    if (confidenceFilter === 'high') return txn.ConfidenceScore >= 80;
-    if (confidenceFilter === 'medium') return txn.ConfidenceScore >= 60 && txn.ConfidenceScore < 80;
-    if (confidenceFilter === 'low') return txn.ConfidenceScore < 60;
+    // Confidence filter
+    if (confidenceFilter === 'high' && txn.ConfidenceScore < 80) return false;
+    if (confidenceFilter === 'medium' && (txn.ConfidenceScore < 60 || txn.ConfidenceScore >= 80)) return false;
+    if (confidenceFilter === 'low' && txn.ConfidenceScore >= 60) return false;
+
+    // Source filter
+    if (sourceFilter !== 'all' && txn.SourceType !== sourceFilter) return false;
+
+    // Institution filter
+    if (institutionFilter !== 'all' && txn.SourceName !== institutionFilter) return false;
+
+    // Date range filter
+    if (startDate && txn.TransactionDate < startDate) return false;
+    if (endDate && txn.TransactionDate > endDate) return false;
+
     return true;
   });
 
-  // Update transaction mutation
+  // Approve transaction mutation (with learning)
+  const approveMutation = useMutation({
+    mutationFn: async ({ id, accountId, category, memo }: { id: string; accountId: string; category: string; memo: string }) => {
+      const response = await fetch(`${CHAT_API_BASE_URL}/api/transactions/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId, category, memo })
+      });
+      if (!response.ok) throw new Error('Failed to approve transaction');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
+      setEditingId(null);
+      setSelectedIds(new Set());
+      if (data.learned) {
+        console.log('Rule learned from this approval');
+      }
+    }
+  });
+
+  // Update transaction mutation (for reject and other updates)
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<BankTransaction> }) => {
       const response = await fetch(`/api/banktransactions/Id/${id}`, {
@@ -96,24 +148,26 @@ export default function ReviewTransactions() {
     }
   });
 
-  // Bulk approve mutation
+  // Bulk approve mutation (with learning)
   const bulkApproveMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(
-        ids.map(id => {
-          const txn = transactions.find(t => t.Id === id);
-          return fetch(`/api/banktransactions/Id/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              Status: 'Approved',
-              ApprovedAccountId: txn?.SuggestedAccountId,
-              ApprovedCategory: txn?.SuggestedCategory,
-              ApprovedMemo: txn?.SuggestedMemo
-            })
-          });
-        })
-      );
+      const txnList = ids.map(id => {
+        const txn = transactions.find(t => t.Id === id);
+        return {
+          id,
+          accountId: txn?.SuggestedAccountId || '',
+          category: txn?.SuggestedCategory || '',
+          memo: txn?.SuggestedMemo || ''
+        };
+      });
+
+      const response = await fetch(`${CHAT_API_BASE_URL}/api/transactions/batch-approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: txnList })
+      });
+      if (!response.ok) throw new Error('Failed to batch approve');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
@@ -124,15 +178,12 @@ export default function ReviewTransactions() {
   const handleApprove = (id: string) => {
     const txn = transactions.find(t => t.Id === id);
     if (!txn) return;
-    
-    updateMutation.mutate({
+
+    approveMutation.mutate({
       id,
-      data: {
-        Status: 'Approved',
-        ApprovedAccountId: txn.SuggestedAccountId,
-        ApprovedCategory: txn.SuggestedCategory,
-        ApprovedMemo: txn.SuggestedMemo
-      }
+      accountId: txn.SuggestedAccountId || '',
+      category: txn.SuggestedCategory,
+      memo: txn.SuggestedMemo
     });
   };
 
@@ -144,22 +195,29 @@ export default function ReviewTransactions() {
     setEditingId(txn.Id);
     setEditForm({
       accountId: txn.SuggestedAccountId || '',
+      category: txn.SuggestedCategory || '',
       memo: txn.SuggestedMemo,
       isPersonal: txn.IsPersonal
     });
   };
 
   const handleSaveEdit = (id: string) => {
-    updateMutation.mutate({
+    // First update IsPersonal if changed, then approve with learning
+    const txn = transactions.find(t => t.Id === id);
+    if (txn && editForm.isPersonal !== txn.IsPersonal) {
+      // Update IsPersonal flag separately
+      updateMutation.mutate({
+        id,
+        data: { IsPersonal: editForm.isPersonal }
+      });
+    }
+
+    // Approve with learning (this triggers rule creation if category changed)
+    approveMutation.mutate({
       id,
-      data: {
-        SuggestedAccountId: editForm.accountId,
-        SuggestedMemo: editForm.memo,
-        Status: 'Approved',
-        ApprovedAccountId: editForm.accountId,
-        ApprovedMemo: editForm.memo,
-        IsPersonal: editForm.isPersonal
-      }
+      accountId: editForm.accountId,
+      category: editForm.category,
+      memo: editForm.memo
     });
   };
 
@@ -274,7 +332,7 @@ export default function ReviewTransactions() {
 
       {/* Filters and Actions */}
       <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
             <select
@@ -302,6 +360,59 @@ export default function ReviewTransactions() {
               <option value="medium">Medium (60-79%)</option>
               <option value="low">Low (&lt;60%)</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Source</label>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="all">All Sources</option>
+              <option value="Plaid">Plaid</option>
+              <option value="CSV">CSV Import</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Institution</label>
+            <select
+              value={institutionFilter}
+              onChange={(e) => setInstitutionFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="all">All Institutions</option>
+              {institutions.map((inst: { InstitutionName: string }) => (
+                <option key={inst.InstitutionName} value={inst.InstitutionName}>
+                  {inst.InstitutionName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <div className="relative">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <div className="relative">
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
         </div>
 
@@ -376,7 +487,15 @@ export default function ReviewTransactions() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <div className="max-w-xs">
-                        <div className="font-medium">{txn.Description}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {txn.Description}
+                          {txn.IsPotentialDuplicate && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800" title="Potential duplicate transaction">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Duplicate?
+                            </span>
+                          )}
+                        </div>
                         {txn.OriginalCategory && (
                           <div className="text-xs text-gray-500">Bank: {txn.OriginalCategory}</div>
                         )}
@@ -407,6 +526,13 @@ export default function ReviewTransactions() {
                               <option key={acc.Id} value={acc.Id}>{acc.Name}</option>
                             ))}
                           </select>
+                          <input
+                            type="text"
+                            value={editForm.category}
+                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                            placeholder="Category"
+                          />
                           <input
                             type="text"
                             value={editForm.memo}
