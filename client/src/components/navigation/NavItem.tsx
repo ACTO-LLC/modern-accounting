@@ -46,7 +46,10 @@ export default function NavItem({ name, href, icon: Icon, isNested = false }: Na
       {isCollapsed && showTooltip && (
         <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-2 py-1 text-sm text-white bg-gray-900 dark:bg-gray-700 rounded shadow-lg whitespace-nowrap">
           {name}
-          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700" />
+          <div 
+            className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700"
+            aria-hidden="true"
+          />
         </div>
       )}
     </div>

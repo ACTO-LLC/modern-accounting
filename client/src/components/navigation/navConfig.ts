@@ -40,6 +40,14 @@ export const navigationConfig: NavEntry[] = [
     ],
   },
 
+  // Bills - standalone
+  {
+    id: 'bills',
+    name: 'Bills',
+    href: '/bills',
+    icon: Receipt,
+  },
+
   // People group
   {
     id: 'people',
@@ -78,10 +86,28 @@ export const navigationConfig: NavEntry[] = [
   {
     id: 'expenses',
     name: 'Expenses',
-    icon: Receipt,
+    icon: DollarSign,
     items: [
-      { id: 'bills', name: 'Bills', href: '/bills', icon: Receipt },
       { id: 'projects', name: 'Projects', href: '/projects', icon: FolderOpen },
+    ],
+  },
+
+  // Transactions - standalone
+  {
+    id: 'transactions',
+    name: 'Transactions',
+    href: '/transactions',
+    icon: Database,
+  },
+
+  // Import & Sync group
+  {
+    id: 'import-sync',
+    name: 'Import & Sync',
+    icon: Building2,
+    items: [
+      { id: 'banking', name: 'Bank Connections', href: '/plaid-connections', icon: Building2 },
+      { id: 'import', name: 'Import CSV', href: '/import', icon: Upload },
     ],
   },
 
@@ -96,18 +122,6 @@ export const navigationConfig: NavEntry[] = [
       { id: 'classes', name: 'Classes', href: '/classes', icon: Tag },
       { id: 'locations', name: 'Locations', href: '/locations', icon: MapPin },
       { id: 'recurring', name: 'Recurring', href: '/recurring', icon: RefreshCw },
-    ],
-  },
-
-  // Import & Sync group
-  {
-    id: 'import-sync',
-    name: 'Import & Sync',
-    icon: Building2,
-    items: [
-      { id: 'transactions', name: 'Transactions', href: '/transactions', icon: Database },
-      { id: 'banking', name: 'Bank Connections', href: '/plaid-connections', icon: Building2 },
-      { id: 'import', name: 'Import CSV', href: '/import', icon: Upload },
     ],
   },
 

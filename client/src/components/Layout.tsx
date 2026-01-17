@@ -37,7 +37,6 @@ function LayoutContent() {
           "flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-200",
           isCollapsed ? "lg:ml-16" : "lg:ml-64"
         )}
-        style={{ marginLeft: 0 }} // Reset for mobile, CSS handles lg:
       >
         {/* Mobile Header - Hidden when printing */}
         <div className="lg:hidden flex items-center justify-between bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 print:hidden">

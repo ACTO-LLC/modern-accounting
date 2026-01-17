@@ -31,6 +31,8 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
       <div className="space-y-0.5">
         <button
           onClick={() => toggleGroup(id)}
+          aria-expanded={isExpanded}
+          aria-controls={`nav-group-${id}`}
           className={clsx(
             "w-full flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
             hasActiveChild
@@ -50,9 +52,10 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
 
         {/* Expanded children */}
         <div
+          id={`nav-group-${id}`}
           className={clsx(
             "overflow-hidden transition-all duration-200",
-            isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
           )}
         >
           {items.map(item => {
@@ -89,6 +92,11 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
       onMouseLeave={() => setShowFlyout(false)}
     >
       <button
+        onClick={() => setShowFlyout(prev => !prev)}
+        onFocus={() => setShowFlyout(true)}
+        onBlur={() => setShowFlyout(false)}
+        aria-expanded={showFlyout}
+        aria-haspopup="true"
         className={clsx(
           "w-full flex items-center justify-center px-2 py-2 rounded-md transition-colors",
           hasActiveChild
@@ -127,7 +135,10 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
             );
           })}
           {/* Arrow pointer */}
-          <div className="absolute left-0 top-3 -translate-x-full border-8 border-transparent border-r-white dark:border-r-gray-800" />
+          <div 
+            className="absolute left-0 top-3 -translate-x-full border-8 border-transparent border-r-white dark:border-r-gray-800"
+            aria-hidden="true"
+          />
         </div>
       )}
     </div>

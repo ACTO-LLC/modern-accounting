@@ -48,9 +48,15 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => getStoredState().isCollapsed);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => getStoredState().expandedGroups);
 
-  // Persist state changes
+  // Persist state changes (debounced to avoid excessive localStorage writes)
   useEffect(() => {
-    saveState({ isCollapsed, expandedGroups });
+    const timeoutId = window.setTimeout(() => {
+      saveState({ isCollapsed, expandedGroups });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [isCollapsed, expandedGroups]);
 
   const toggleCollapsed = useCallback(() => {

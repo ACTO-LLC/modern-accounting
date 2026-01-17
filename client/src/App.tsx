@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { useEffect } from 'react';
+import { Toaster } from 'sonner';
 import { ToastProvider } from './hooks/useToast';
 import { msalConfig } from './lib/authConfig';
 import { initializeApiAuth } from './lib/api';
@@ -169,6 +170,7 @@ function App() {
       <CompanySettingsProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
+            <Toaster position="top-right" richColors />
             <ToastProvider>
               <ChatProvider>
                 <AppContent />
