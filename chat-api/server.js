@@ -4094,6 +4094,137 @@ app.get('/api/categorization-rules', async (req, res) => {
     }
 });
 
+// Post approved transactions to General Ledger (create journal entries)
+app.post('/api/post-transactions', async (req, res) => {
+    try {
+        const { transactionIds } = req.body;
+
+        if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
+            return res.status(400).json({ error: 'transactionIds array is required' });
+        }
+
+        const results = { posted: 0, failed: 0, errors: [] };
+
+        for (const txnId of transactionIds) {
+            try {
+                // Get the transaction
+                const txnResponse = await axios.get(`${DAB_REST_URL}/banktransactions/Id/${txnId}`);
+                const txn = txnResponse.data?.value?.[0];
+
+                if (!txn) {
+                    results.failed++;
+                    results.errors.push({ id: txnId, error: 'Transaction not found' });
+                    continue;
+                }
+
+                if (txn.Status !== 'Approved') {
+                    results.failed++;
+                    results.errors.push({ id: txnId, error: `Transaction status is ${txn.Status}, not Approved` });
+                    continue;
+                }
+
+                if (!txn.ApprovedAccountId || !txn.SourceAccountId) {
+                    results.failed++;
+                    results.errors.push({ id: txnId, error: 'Missing ApprovedAccountId or SourceAccountId' });
+                    continue;
+                }
+
+                // Create journal entry
+                const journalEntryId = crypto.randomUUID();
+                const amount = Math.abs(parseFloat(txn.Amount));
+                const isOutflow = parseFloat(txn.Amount) < 0;
+
+                // Create the journal entry header
+                await axios.post(`${DAB_REST_URL}/journalentries`, {
+                    Id: journalEntryId,
+                    TransactionDate: txn.TransactionDate,
+                    Description: txn.ApprovedMemo || txn.Description,
+                    Reference: `BANK-${txnId.substring(0, 8)}`,
+                    Status: 'Posted',
+                    CreatedAt: new Date().toISOString(),
+                    CreatedBy: 'system',
+                    PostedAt: new Date().toISOString(),
+                    PostedBy: 'system',
+                    SourceSystem: 'BankTransaction',
+                    SourceId: txnId
+                });
+
+                // Create journal entry lines (double-entry)
+                // For outflow (negative amount): Debit expense/asset, Credit bank
+                // For inflow (positive amount): Debit bank, Credit income/liability
+                const line1Id = crypto.randomUUID();
+                const line2Id = crypto.randomUUID();
+
+                if (isOutflow) {
+                    // Debit the expense/asset account
+                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                        Id: line1Id,
+                        JournalEntryId: journalEntryId,
+                        AccountId: txn.ApprovedAccountId,
+                        Description: txn.ApprovedMemo || txn.Description,
+                        Debit: amount,
+                        Credit: 0,
+                        CreatedAt: new Date().toISOString()
+                    });
+                    // Credit the bank account
+                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                        Id: line2Id,
+                        JournalEntryId: journalEntryId,
+                        AccountId: txn.SourceAccountId,
+                        Description: txn.ApprovedMemo || txn.Description,
+                        Debit: 0,
+                        Credit: amount,
+                        CreatedAt: new Date().toISOString()
+                    });
+                } else {
+                    // Debit the bank account
+                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                        Id: line1Id,
+                        JournalEntryId: journalEntryId,
+                        AccountId: txn.SourceAccountId,
+                        Description: txn.ApprovedMemo || txn.Description,
+                        Debit: amount,
+                        Credit: 0,
+                        CreatedAt: new Date().toISOString()
+                    });
+                    // Credit the income/liability account
+                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                        Id: line2Id,
+                        JournalEntryId: journalEntryId,
+                        AccountId: txn.ApprovedAccountId,
+                        Description: txn.ApprovedMemo || txn.Description,
+                        Debit: 0,
+                        Credit: amount,
+                        CreatedAt: new Date().toISOString()
+                    });
+                }
+
+                // Update the bank transaction status and link to journal entry
+                await axios.patch(`${DAB_REST_URL}/banktransactions/Id/${txnId}`, {
+                    Status: 'Posted',
+                    JournalEntryId: journalEntryId
+                });
+
+                results.posted++;
+            } catch (txnError) {
+                results.failed++;
+                results.errors.push({ id: txnId, error: txnError.message });
+                console.error(`Error posting transaction ${txnId}:`, txnError.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            count: results.posted,
+            failed: results.failed,
+            errors: results.errors.length > 0 ? results.errors : undefined
+        });
+    } catch (error) {
+        console.error('Post transactions error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to post transactions' });
+    }
+});
+
 // ============================================================================
 // File Endpoints
 // ============================================================================

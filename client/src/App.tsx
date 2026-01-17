@@ -8,6 +8,7 @@ import { ToastProvider } from './hooks/useToast';
 import { msalConfig } from './lib/authConfig';
 import { initializeApiAuth } from './lib/api';
 import { AuthProvider } from './contexts/AuthContext';
+import { TenantProvider } from './contexts/TenantContext';
 import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ChatProvider } from './contexts/ChatContext';
@@ -167,18 +168,20 @@ function AppContent() {
 function App() {
   const content = (
     <AuthProvider>
-      <CompanySettingsProvider>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider>
-            <Toaster position="top-right" richColors />
-            <ToastProvider>
-              <ChatProvider>
-                <AppContent />
-              </ChatProvider>
-            </ToastProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
-      </CompanySettingsProvider>
+      <TenantProvider>
+        <CompanySettingsProvider>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+              <Toaster position="top-right" richColors />
+              <ToastProvider>
+                <ChatProvider>
+                  <AppContent />
+                </ChatProvider>
+              </ToastProvider>
+            </ThemeProvider>
+          </QueryClientProvider>
+        </CompanySettingsProvider>
+      </TenantProvider>
     </AuthProvider>
   );
 
