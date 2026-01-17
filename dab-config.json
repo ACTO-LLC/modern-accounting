@@ -1238,6 +1238,42 @@
                 "Id"
             ]
         },
+        "categorizationrules": {
+            "source": "dbo.CategorizationRules",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "MatchType": "MatchType",
+                "MatchField": "MatchField",
+                "MatchValue": "MatchValue",
+                "AccountId": "AccountId",
+                "Category": "Category",
+                "Priority": "Priority",
+                "HitCount": "HitCount",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "CreatedBy": "CreatedBy"
+            },
+            "relationships": {
+                "Account": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "AccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            }
+        },
         "payments": {
             "source": "dbo.Payments",
             "permissions": [

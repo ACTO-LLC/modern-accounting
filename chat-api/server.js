@@ -3861,6 +3861,47 @@ app.post('/api/plaid/connections/:itemId/balances', async (req, res) => {
     }
 });
 
+// Sandbox: Fire webhook to simulate new transactions
+app.post('/api/plaid/sandbox/fire-webhook/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const { webhookCode } = req.body;
+        const result = await plaidService.fireSandboxWebhook(itemId, webhookCode || 'SYNC_UPDATES_AVAILABLE');
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('Sandbox webhook error:', error);
+        res.status(500).json({ error: error.message || 'Failed to fire webhook' });
+    }
+});
+
+// Sandbox: Reset sync cursor and re-fetch all transactions
+app.post('/api/plaid/sandbox/reset-sync/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+
+        // Clear the sync cursor to re-fetch all transactions
+        const connection = await plaidService.getConnectionByItemId(itemId);
+        if (connection) {
+            await axios.patch(`${DAB_REST_URL}/plaidconnections/Id/${connection.Id}`, {
+                LastSyncCursor: null,
+                LastSyncAt: null
+            });
+        }
+
+        // Now sync to re-fetch all transactions
+        const syncResult = await plaidSync.syncConnection(itemId);
+
+        res.json({
+            success: true,
+            message: 'Sync cursor reset and transactions re-fetched',
+            ...syncResult
+        });
+    } catch (error) {
+        console.error('Sandbox reset error:', error);
+        res.status(500).json({ error: error.message || 'Failed to reset sync' });
+    }
+});
+
 // Get scheduler status
 app.get('/api/plaid/scheduler/status', async (req, res) => {
     try {
@@ -3903,6 +3944,135 @@ app.post('/api/plaid/scheduler/run/:jobName', async (req, res) => {
     } catch (error) {
         console.error('Scheduler run error:', error);
         res.status(500).json({ error: error.message || 'Failed to run job' });
+    }
+});
+
+// ============================================================================
+// Transaction Learning Endpoints
+// ============================================================================
+
+// Approve transaction and learn from correction
+app.post('/api/transactions/:id/approve', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { accountId, category, memo } = req.body;
+
+        if (!accountId) {
+            return res.status(400).json({ error: 'accountId is required' });
+        }
+
+        // Get the original transaction
+        const txnResponse = await axios.get(`${DAB_REST_URL}/banktransactions/Id/${id}`);
+        const transaction = txnResponse.data?.value?.[0];
+
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        // Check if the approved category differs from AI suggestion (learning opportunity)
+        const suggestedAccountId = transaction.SuggestedAccountId;
+        const shouldLearn = suggestedAccountId && suggestedAccountId.toLowerCase() !== accountId.toLowerCase();
+
+        // Update the transaction
+        await axios.patch(`${DAB_REST_URL}/banktransactions/Id/${id}`, {
+            ApprovedAccountId: accountId,
+            ApprovedCategory: category || transaction.SuggestedCategory,
+            ApprovedMemo: memo || transaction.SuggestedMemo,
+            Status: 'Approved',
+            ReviewedDate: new Date().toISOString()
+        });
+
+        // Learn from the correction - create a rule if different from AI suggestion
+        let ruleCreated = false;
+        if (shouldLearn && transaction.Description) {
+            // Extract a pattern from the description (use merchant if available, otherwise first significant word)
+            const pattern = transaction.Merchant ||
+                transaction.Description.split(' ').filter(w => w.length > 3)[0] ||
+                transaction.Description.substring(0, 50);
+
+            if (pattern) {
+                try {
+                    // Check if rule already exists
+                    const existingRules = await axios.get(
+                        `${DAB_REST_URL}/categorizationrules?$filter=MatchValue eq '${pattern.replace(/'/g, "''")}'`
+                    );
+
+                    if (!existingRules.data?.value?.length) {
+                        // Create new rule
+                        await axios.post(`${DAB_REST_URL}/categorizationrules`, {
+                            MatchType: 'contains',
+                            MatchField: 'Description',
+                            MatchValue: pattern,
+                            AccountId: accountId,
+                            Category: category || transaction.SuggestedCategory,
+                            Priority: 50,  // User-learned rules have higher priority
+                            CreatedBy: 'user-feedback'
+                        });
+                        ruleCreated = true;
+                        console.log(`Learning: Created rule for "${pattern}" -> ${category}`);
+                    }
+                } catch (ruleError) {
+                    console.warn('Failed to create learning rule:', ruleError.message);
+                }
+            }
+        }
+
+        res.json({
+            success: true,
+            transactionId: id,
+            learned: ruleCreated,
+            message: ruleCreated ? 'Transaction approved and rule learned' : 'Transaction approved'
+        });
+    } catch (error) {
+        console.error('Transaction approval error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to approve transaction' });
+    }
+});
+
+// Batch approve transactions
+app.post('/api/transactions/batch-approve', async (req, res) => {
+    try {
+        const { transactions } = req.body;  // Array of { id, accountId, category }
+
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+            return res.status(400).json({ error: 'transactions array is required' });
+        }
+
+        const results = [];
+        for (const txn of transactions) {
+            try {
+                await axios.patch(`${DAB_REST_URL}/banktransactions/Id/${txn.id}`, {
+                    ApprovedAccountId: txn.accountId,
+                    ApprovedCategory: txn.category,
+                    Status: 'Approved',
+                    ReviewedDate: new Date().toISOString()
+                });
+                results.push({ id: txn.id, success: true });
+            } catch (err) {
+                results.push({ id: txn.id, success: false, error: err.message });
+            }
+        }
+
+        res.json({
+            success: true,
+            approved: results.filter(r => r.success).length,
+            failed: results.filter(r => !r.success).length,
+            results
+        });
+    } catch (error) {
+        console.error('Batch approval error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to batch approve' });
+    }
+});
+
+// Get categorization rules
+app.get('/api/categorization-rules', async (req, res) => {
+    try {
+        const response = await axios.get(`${DAB_REST_URL}/categorizationrules?$orderby=Priority,HitCount desc`);
+        res.json({ rules: response.data?.value || [] });
+    } catch (error) {
+        console.error('Get rules error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to get rules' });
     }
 });
 

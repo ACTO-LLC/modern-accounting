@@ -511,6 +511,70 @@ class PlaidService {
             return 0;
         }
     }
+
+    /**
+     * Create sandbox test transactions (Sandbox only)
+     * Requires the Item to be created with user_transactions_dynamic
+     */
+    async createSandboxTransactions(accessToken, transactions) {
+        if (this.env !== 'sandbox') {
+            throw new Error('Sandbox transactions can only be created in sandbox environment');
+        }
+
+        if (!this.client) {
+            throw new Error('Plaid client not initialized');
+        }
+
+        const response = await this.client.sandboxItemFireWebhook({
+            access_token: accessToken,
+            webhook_code: 'SYNC_UPDATES_AVAILABLE',
+        });
+
+        return response.data;
+    }
+
+    /**
+     * Fire a sandbox webhook to simulate new transactions
+     */
+    async fireSandboxWebhook(itemId, webhookCode = 'SYNC_UPDATES_AVAILABLE') {
+        if (this.env !== 'sandbox') {
+            throw new Error('Sandbox webhooks can only be fired in sandbox environment');
+        }
+
+        if (!this.client) {
+            throw new Error('Plaid client not initialized');
+        }
+
+        const accessToken = await this.getAccessToken(itemId);
+
+        const response = await this.client.sandboxItemFireWebhook({
+            access_token: accessToken,
+            webhook_code: webhookCode,
+        });
+
+        return response.data;
+    }
+
+    /**
+     * Reset sandbox item to get fresh transactions
+     */
+    async resetSandboxItem(itemId) {
+        if (this.env !== 'sandbox') {
+            throw new Error('Sandbox reset can only be done in sandbox environment');
+        }
+
+        if (!this.client) {
+            throw new Error('Plaid client not initialized');
+        }
+
+        const accessToken = await this.getAccessToken(itemId);
+
+        const response = await this.client.sandboxItemResetLogin({
+            access_token: accessToken,
+        });
+
+        return response.data;
+    }
 }
 
 export const plaidService = new PlaidService();
