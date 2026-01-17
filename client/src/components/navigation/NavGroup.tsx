@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { ChevronRight, LucideIcon } from 'lucide-react';
@@ -16,7 +16,21 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
   const location = useLocation();
   const { isCollapsed, isGroupExpanded, toggleGroup } = useSidebar();
   const [showFlyout, setShowFlyout] = useState(false);
+  const [flyoutPosition, setFlyoutPosition] = useState({ top: 0, left: 0 });
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
+
+  // Calculate flyout position based on button location
+  const updateFlyoutPosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setFlyoutPosition({
+        top: rect.top,
+        left: rect.right + 12, // 12px gap for the bridge
+      });
+    }
+  }, []);
 
   // Open flyout immediately, but delay close to allow mouse to travel to flyout
   const openFlyout = useCallback(() => {
@@ -24,14 +38,33 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
+    updateFlyoutPosition();
     setShowFlyout(true);
-  }, []);
+  }, [updateFlyoutPosition]);
 
   const closeFlyout = useCallback(() => {
     closeTimeoutRef.current = setTimeout(() => {
       setShowFlyout(false);
-    }, 100); // 100ms delay allows mouse to travel to flyout
+    }, 150); // 150ms delay allows mouse to travel to flyout
   }, []);
+
+  // Handle click outside to close flyout
+  useEffect(() => {
+    if (!showFlyout) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        buttonRef.current && !buttonRef.current.contains(target) &&
+        flyoutRef.current && !flyoutRef.current.contains(target)
+      ) {
+        setShowFlyout(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFlyout]);
 
   const isExpanded = isGroupExpanded(id);
 
@@ -94,15 +127,20 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
     );
   }
 
-  // Collapsed sidebar mode - show flyout on hover
-  // Use a group wrapper that spans both button and flyout for seamless hover
+  // Collapsed sidebar mode - show flyout on hover or click
   return (
-    <div className="relative group">
+    <>
       <div
+        className="relative"
         onMouseEnter={openFlyout}
         onMouseLeave={closeFlyout}
       >
         <button
+          ref={buttonRef}
+          onClick={() => {
+            updateFlyoutPosition();
+            setShowFlyout(!showFlyout);
+          }}
           className={clsx(
             "w-full flex items-center justify-center px-2 py-2 rounded-md transition-colors",
             hasActiveChild
@@ -114,15 +152,15 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
         </button>
       </div>
 
-      {/* Flyout menu - separate hover zone that also controls visibility */}
+      {/* Flyout menu - using fixed position to escape overflow:hidden */}
       {showFlyout && (
         <div
-          className="absolute left-full top-0 z-50 flex"
+          ref={flyoutRef}
+          className="fixed z-[100]"
+          style={{ top: flyoutPosition.top, left: flyoutPosition.left }}
           onMouseEnter={openFlyout}
           onMouseLeave={closeFlyout}
         >
-          {/* Invisible bridge to span the gap */}
-          <div className="w-2 h-full" />
           <div className="min-w-48 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
             <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {name}
@@ -136,6 +174,7 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
                 <Link
                   key={item.id}
                   to={item.href}
+                  onClick={() => setShowFlyout(false)}
                   className={clsx(
                     "flex items-center px-3 py-2 text-sm transition-colors",
                     isActive
@@ -153,6 +192,6 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
