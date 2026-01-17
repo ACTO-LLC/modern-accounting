@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
@@ -22,12 +22,9 @@ import CompanySettings from './pages/CompanySettings';
 import Estimates from './pages/Estimates';
 import NewEstimate from './pages/NewEstimate';
 import EditEstimate from './pages/EditEstimate';
-import Banking from './pages/Banking';
 import JournalEntries from './pages/JournalEntries';
 import NewJournalEntry from './pages/NewJournalEntry';
 import ImportTransactions from './pages/ImportTransactions';
-import ReviewTransactions from './pages/ReviewTransactions';
-import BankTransactions from './pages/BankTransactions';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
 import EditCustomer from './pages/EditCustomer';
@@ -72,6 +69,7 @@ import PayRunDetail from './pages/PayRunDetail';
 import PayStubView from './pages/PayStubView';
 import PayrollSummary from './pages/reports/PayrollSummary';
 import PlaidConnections from './pages/PlaidConnections';
+import UnifiedTransactions from './pages/UnifiedTransactions';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -105,12 +103,12 @@ function AppContent() {
             <Route path="estimates" element={<Estimates />} />
             <Route path="estimates/new" element={<NewEstimate />} />
             <Route path="estimates/:id/edit" element={<EditEstimate />} />
-            <Route path="banking" element={<Banking />} />
+            <Route path="banking" element={<Navigate to="/transactions" replace />} />
             <Route path="plaid-connections" element={<PlaidConnections />} />
             <Route path="journal-entries" element={<JournalEntries />} />
             <Route path="journal-entries/new" element={<NewJournalEntry />} />
             <Route path="import" element={<ImportTransactions />} />
-            <Route path="review" element={<ReviewTransactions />} />
+            <Route path="review" element={<Navigate to="/transactions?view=review" replace />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
@@ -135,7 +133,7 @@ function AppContent() {
             <Route path="locations" element={<Locations />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="recurring" element={<RecurringTransactions />} />
-            <Route path="transactions" element={<BankTransactions />} />
+            <Route path="transactions" element={<UnifiedTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
             <Route path="reconciliations/:id" element={<NewReconciliation />} />
