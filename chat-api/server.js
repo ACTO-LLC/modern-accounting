@@ -4371,10 +4371,16 @@ function validatePaymentApplications(applications, idField) {
 
     // Validate each application has required fields
     for (const app of applications) {
-        if (!app[idField] || !app.amountApplied) {
+        if (app[idField] === null || app[idField] === undefined || app[idField] === '') {
             return { 
                 isValid: false, 
-                error: `Invalid application: each must have ${idField} and amountApplied` 
+                error: `Invalid application: each must have ${idField}` 
+            };
+        }
+        if (app.amountApplied === null || app.amountApplied === undefined) {
+            return { 
+                isValid: false, 
+                error: 'Invalid application: each must have amountApplied' 
             };
         }
         const appAmount = parseFloat(app.amountApplied);
