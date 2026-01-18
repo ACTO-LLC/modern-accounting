@@ -24,6 +24,7 @@ import { qboAuth } from './qbo-auth.js';
 import { plaidService } from './plaid-service.js';
 import { plaidSync } from './plaid-sync.js';
 import { plaidScheduler } from './plaid-scheduler.js';
+import { journalEntryService, ACCOUNT_TYPES } from './journal-entry-service.js';
 import { mcpManager } from './mcp-client.js';
 import githubRoutes from './src/routes/github.js';
 import deploymentsRouter from './src/routes/deployments.js';
@@ -4222,6 +4223,255 @@ app.post('/api/post-transactions', async (req, res) => {
     } catch (error) {
         console.error('Post transactions error:', error.message);
         res.status(500).json({ error: error.message || 'Failed to post transactions' });
+    }
+});
+
+// ============================================================================
+// Automatic Journal Entry Endpoints (Issue #131)
+// ============================================================================
+
+// Get all account defaults
+app.get('/api/account-defaults', async (req, res) => {
+    try {
+        const defaults = await journalEntryService.getAccountDefaults();
+        res.json({
+            success: true,
+            defaults,
+            accountTypes: ACCOUNT_TYPES
+        });
+    } catch (error) {
+        console.error('Get account defaults error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to get account defaults' });
+    }
+});
+
+// Set an account default
+app.put('/api/account-defaults/:type', async (req, res) => {
+    try {
+        const { type } = req.params;
+        const { accountId, description } = req.body;
+
+        if (!accountId) {
+            return res.status(400).json({ error: 'accountId is required' });
+        }
+
+        // Validate account type
+        const validTypes = Object.values(ACCOUNT_TYPES);
+        if (!validTypes.includes(type)) {
+            return res.status(400).json({
+                error: `Invalid account type. Valid types: ${validTypes.join(', ')}`
+            });
+        }
+
+        const result = await journalEntryService.setAccountDefault(type, accountId, description);
+        res.json({
+            success: true,
+            ...result,
+            accountType: type
+        });
+    } catch (error) {
+        console.error('Set account default error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to set account default' });
+    }
+});
+
+// Post an invoice (create journal entry)
+app.post('/api/invoices/:id/post', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.body.userId || 'system';
+
+        const result = await journalEntryService.postInvoice(id, userId);
+        res.json({
+            success: true,
+            message: 'Invoice posted successfully',
+            ...result
+        });
+    } catch (error) {
+        console.error('Post invoice error:', error.message);
+        res.status(error.message.includes('not found') ? 404 : 400).json({
+            error: error.message || 'Failed to post invoice'
+        });
+    }
+});
+
+// Void an invoice (create reversing journal entry)
+app.post('/api/invoices/:id/void', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.body.userId || 'system';
+
+        const result = await journalEntryService.voidInvoice(id, userId);
+        res.json({
+            success: true,
+            message: 'Invoice voided successfully',
+            ...result
+        });
+    } catch (error) {
+        console.error('Void invoice error:', error.message);
+        res.status(error.message.includes('not found') ? 404 : 400).json({
+            error: error.message || 'Failed to void invoice'
+        });
+    }
+});
+
+// Post a bill (create journal entry)
+app.post('/api/bills/:id/post', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.body.userId || 'system';
+
+        const result = await journalEntryService.postBill(id, userId);
+        res.json({
+            success: true,
+            message: 'Bill posted successfully',
+            ...result
+        });
+    } catch (error) {
+        console.error('Post bill error:', error.message);
+        res.status(error.message.includes('not found') ? 404 : 400).json({
+            error: error.message || 'Failed to post bill'
+        });
+    }
+});
+
+// Void a bill (create reversing journal entry)
+app.post('/api/bills/:id/void', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.body.userId || 'system';
+
+        const result = await journalEntryService.voidBill(id, userId);
+        res.json({
+            success: true,
+            message: 'Bill voided successfully',
+            ...result
+        });
+    } catch (error) {
+        console.error('Void bill error:', error.message);
+        res.status(error.message.includes('not found') ? 404 : 400).json({
+            error: error.message || 'Failed to void bill'
+        });
+    }
+});
+
+/**
+ * Validate payment application data
+ * @param {Array} applications - Array of application objects
+ * @param {string} idField - Field name for ID (e.g., 'invoiceId' or 'billId')
+ * @returns {Object} Validation result with isValid and error properties
+ */
+function validatePaymentApplications(applications, idField) {
+    if (!Array.isArray(applications)) {
+        return { 
+            isValid: false, 
+            error: 'Invalid applications: must be an array' 
+        };
+    }
+
+    // Validate each application has required fields
+    for (const app of applications) {
+        if (app[idField] === null || app[idField] === undefined || app[idField] === '') {
+            return { 
+                isValid: false, 
+                error: `Invalid application: each must have ${idField}` 
+            };
+        }
+        if (app.amountApplied === null || app.amountApplied === undefined) {
+            return { 
+                isValid: false, 
+                error: 'Invalid application: each must have amountApplied' 
+            };
+        }
+        const appAmount = parseFloat(app.amountApplied);
+        if (isNaN(appAmount) || appAmount <= 0) {
+            return { 
+                isValid: false, 
+                error: 'Invalid application: amountApplied must be a positive number' 
+            };
+        }
+    }
+
+    return { isValid: true };
+}
+
+// Create a customer payment with journal entry
+app.post('/api/payments', async (req, res) => {
+    try {
+        // Validate input
+        const totalAmount = parseFloat(req.body.totalAmount);
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+            return res.status(400).json({ 
+                error: 'Invalid totalAmount: must be a positive number' 
+            });
+        }
+
+        const applications = req.body.applications || [];
+        const validationResult = validatePaymentApplications(applications, 'invoiceId');
+        if (!validationResult.isValid) {
+            return res.status(400).json({ error: validationResult.error });
+        }
+
+        const userId = req.body.userId || 'system';
+        const paymentData = {
+            customerId: req.body.customerId,
+            paymentDate: req.body.paymentDate,
+            totalAmount: totalAmount,
+            paymentMethod: req.body.paymentMethod,
+            depositAccountId: req.body.depositAccountId,
+            memo: req.body.memo,
+            applications: applications
+        };
+
+        const result = await journalEntryService.recordInvoicePayment(paymentData, userId);
+        res.json({
+            success: true,
+            message: 'Payment recorded successfully',
+            ...result
+        });
+    } catch (error) {
+        console.error('Record payment error:', error.message);
+        res.status(400).json({ error: error.message || 'Failed to record payment' });
+    }
+});
+
+// Create a bill payment with journal entry
+app.post('/api/billpayments', async (req, res) => {
+    try {
+        // Validate input
+        const totalAmount = parseFloat(req.body.totalAmount);
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+            return res.status(400).json({ 
+                error: 'Invalid totalAmount: must be a positive number' 
+            });
+        }
+
+        const applications = req.body.applications || [];
+        const validationResult = validatePaymentApplications(applications, 'billId');
+        if (!validationResult.isValid) {
+            return res.status(400).json({ error: validationResult.error });
+        }
+
+        const userId = req.body.userId || 'system';
+        const paymentData = {
+            vendorId: req.body.vendorId,
+            paymentDate: req.body.paymentDate,
+            totalAmount: totalAmount,
+            paymentMethod: req.body.paymentMethod,
+            paymentAccountId: req.body.paymentAccountId,
+            memo: req.body.memo,
+            applications: applications
+        };
+
+        const result = await journalEntryService.recordBillPayment(paymentData, userId);
+        res.json({
+            success: true,
+            message: 'Bill payment recorded successfully',
+            ...result
+        });
+    } catch (error) {
+        console.error('Record bill payment error:', error.message);
+        res.status(400).json({ error: error.message || 'Failed to record bill payment' });
     }
 });
 
