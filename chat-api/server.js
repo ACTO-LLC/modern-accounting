@@ -4358,15 +4358,45 @@ app.post('/api/bills/:id/void', async (req, res) => {
 // Create a customer payment with journal entry
 app.post('/api/payments', async (req, res) => {
     try {
+        // Validate input
+        const totalAmount = parseFloat(req.body.totalAmount);
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+            return res.status(400).json({ 
+                error: 'Invalid totalAmount: must be a positive number' 
+            });
+        }
+
+        const applications = req.body.applications || [];
+        if (!Array.isArray(applications)) {
+            return res.status(400).json({ 
+                error: 'Invalid applications: must be an array' 
+            });
+        }
+
+        // Validate each application has required fields
+        for (const app of applications) {
+            if (!app.invoiceId || !app.amountApplied) {
+                return res.status(400).json({ 
+                    error: 'Invalid application: each must have invoiceId and amountApplied' 
+                });
+            }
+            const appAmount = parseFloat(app.amountApplied);
+            if (isNaN(appAmount) || appAmount <= 0) {
+                return res.status(400).json({ 
+                    error: 'Invalid application: amountApplied must be a positive number' 
+                });
+            }
+        }
+
         const userId = req.body.userId || 'system';
         const paymentData = {
             customerId: req.body.customerId,
             paymentDate: req.body.paymentDate,
-            totalAmount: req.body.totalAmount,
+            totalAmount: totalAmount,
             paymentMethod: req.body.paymentMethod,
             depositAccountId: req.body.depositAccountId,
             memo: req.body.memo,
-            applications: req.body.applications || []
+            applications: applications
         };
 
         const result = await journalEntryService.recordInvoicePayment(paymentData, userId);
@@ -4384,15 +4414,45 @@ app.post('/api/payments', async (req, res) => {
 // Create a bill payment with journal entry
 app.post('/api/billpayments', async (req, res) => {
     try {
+        // Validate input
+        const totalAmount = parseFloat(req.body.totalAmount);
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+            return res.status(400).json({ 
+                error: 'Invalid totalAmount: must be a positive number' 
+            });
+        }
+
+        const applications = req.body.applications || [];
+        if (!Array.isArray(applications)) {
+            return res.status(400).json({ 
+                error: 'Invalid applications: must be an array' 
+            });
+        }
+
+        // Validate each application has required fields
+        for (const app of applications) {
+            if (!app.billId || !app.amountApplied) {
+                return res.status(400).json({ 
+                    error: 'Invalid application: each must have billId and amountApplied' 
+                });
+            }
+            const appAmount = parseFloat(app.amountApplied);
+            if (isNaN(appAmount) || appAmount <= 0) {
+                return res.status(400).json({ 
+                    error: 'Invalid application: amountApplied must be a positive number' 
+                });
+            }
+        }
+
         const userId = req.body.userId || 'system';
         const paymentData = {
             vendorId: req.body.vendorId,
             paymentDate: req.body.paymentDate,
-            totalAmount: req.body.totalAmount,
+            totalAmount: totalAmount,
             paymentMethod: req.body.paymentMethod,
             paymentAccountId: req.body.paymentAccountId,
             memo: req.body.memo,
-            applications: req.body.applications || []
+            applications: applications
         };
 
         const result = await journalEntryService.recordBillPayment(paymentData, userId);
