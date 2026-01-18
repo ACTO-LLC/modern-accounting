@@ -4355,18 +4355,72 @@ app.post('/api/bills/:id/void', async (req, res) => {
     }
 });
 
+/**
+ * Validate payment application data
+ * @param {Array} applications - Array of application objects
+ * @param {string} idField - Field name for ID (e.g., 'invoiceId' or 'billId')
+ * @returns {Object} Validation result with isValid and error properties
+ */
+function validatePaymentApplications(applications, idField) {
+    if (!Array.isArray(applications)) {
+        return { 
+            isValid: false, 
+            error: 'Invalid applications: must be an array' 
+        };
+    }
+
+    // Validate each application has required fields
+    for (const app of applications) {
+        if (app[idField] === null || app[idField] === undefined || app[idField] === '') {
+            return { 
+                isValid: false, 
+                error: `Invalid application: each must have ${idField}` 
+            };
+        }
+        if (app.amountApplied === null || app.amountApplied === undefined) {
+            return { 
+                isValid: false, 
+                error: 'Invalid application: each must have amountApplied' 
+            };
+        }
+        const appAmount = parseFloat(app.amountApplied);
+        if (isNaN(appAmount) || appAmount <= 0) {
+            return { 
+                isValid: false, 
+                error: 'Invalid application: amountApplied must be a positive number' 
+            };
+        }
+    }
+
+    return { isValid: true };
+}
+
 // Create a customer payment with journal entry
 app.post('/api/payments', async (req, res) => {
     try {
+        // Validate input
+        const totalAmount = parseFloat(req.body.totalAmount);
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+            return res.status(400).json({ 
+                error: 'Invalid totalAmount: must be a positive number' 
+            });
+        }
+
+        const applications = req.body.applications || [];
+        const validationResult = validatePaymentApplications(applications, 'invoiceId');
+        if (!validationResult.isValid) {
+            return res.status(400).json({ error: validationResult.error });
+        }
+
         const userId = req.body.userId || 'system';
         const paymentData = {
             customerId: req.body.customerId,
             paymentDate: req.body.paymentDate,
-            totalAmount: req.body.totalAmount,
+            totalAmount: totalAmount,
             paymentMethod: req.body.paymentMethod,
             depositAccountId: req.body.depositAccountId,
             memo: req.body.memo,
-            applications: req.body.applications || []
+            applications: applications
         };
 
         const result = await journalEntryService.recordInvoicePayment(paymentData, userId);
@@ -4384,15 +4438,29 @@ app.post('/api/payments', async (req, res) => {
 // Create a bill payment with journal entry
 app.post('/api/billpayments', async (req, res) => {
     try {
+        // Validate input
+        const totalAmount = parseFloat(req.body.totalAmount);
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+            return res.status(400).json({ 
+                error: 'Invalid totalAmount: must be a positive number' 
+            });
+        }
+
+        const applications = req.body.applications || [];
+        const validationResult = validatePaymentApplications(applications, 'billId');
+        if (!validationResult.isValid) {
+            return res.status(400).json({ error: validationResult.error });
+        }
+
         const userId = req.body.userId || 'system';
         const paymentData = {
             vendorId: req.body.vendorId,
             paymentDate: req.body.paymentDate,
-            totalAmount: req.body.totalAmount,
+            totalAmount: totalAmount,
             paymentMethod: req.body.paymentMethod,
             paymentAccountId: req.body.paymentAccountId,
             memo: req.body.memo,
-            applications: req.body.applications || []
+            applications: applications
         };
 
         const result = await journalEntryService.recordBillPayment(paymentData, userId);

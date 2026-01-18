@@ -111,8 +111,10 @@ class JournalEntryService {
      */
     async _findExistingDefault(accountType) {
         try {
+            // Escape single quotes to prevent OData injection
+            const safeAccountType = String(accountType).replace(/'/g, "''");
             const response = await axios.get(
-                `${DAB_API_URL}/accountdefaults?$filter=AccountType eq '${accountType}'`
+                `${DAB_API_URL}/accountdefaults?$filter=AccountType eq '${safeAccountType}'`
             );
             if (response.data.value && response.data.value.length > 0) {
                 return response.data.value[0];
@@ -127,6 +129,10 @@ class JournalEntryService {
      * Post an invoice and create the corresponding journal entry
      * DR: Accounts Receivable
      * CR: Revenue account(s) per line
+     *
+     * NOTE: This operation performs multiple API calls without transaction support.
+     * If an operation fails midway, data may be left in an inconsistent state.
+     * Consider implementing application-level rollback logic if this becomes an issue.
      *
      * @param {string} invoiceId - Invoice UUID
      * @param {string} userId - User performing the action
@@ -152,9 +158,10 @@ class JournalEntryService {
             throw new Error(`Invoice ${invoiceId} is already posted`);
         }
 
-        // Get invoice lines
+        // Get invoice lines - escape invoiceId for OData filter
+        const safeInvoiceId = String(invoiceId).replace(/'/g, "''");
         const linesResp = await axios.get(
-            `${DAB_API_URL}/invoicelines?$filter=InvoiceId eq '${invoiceId}'`
+            `${DAB_API_URL}/invoicelines?$filter=InvoiceId eq '${safeInvoiceId}'`
         );
         const lines = linesResp.data.value || [];
 
@@ -198,17 +205,18 @@ class JournalEntryService {
             Credit: 0
         });
 
-        // CR: Revenue accounts per line
-        for (const line of lines) {
+        // CR: Revenue accounts per line - batch create for performance
+        const revenueLinePromises = lines.map((line) => {
             const revenueAccountId = line.RevenueAccountId || revenueDefault.accountId;
-            await axios.post(`${DAB_API_URL}/journalentrylines`, {
+            return axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: journalEntryId,
                 AccountId: revenueAccountId,
                 Description: line.Description || `Invoice line`,
                 Debit: 0,
                 Credit: line.Amount
             });
-        }
+        });
+        await Promise.all(revenueLinePromises);
 
         // Update invoice with journal entry link
         await axios.patch(`${DAB_API_URL}/invoices_write/Id/${invoiceId}`, {
@@ -257,9 +265,10 @@ class JournalEntryService {
             throw new Error(`Invoice ${invoiceId} is already voided`);
         }
 
-        // Get original journal entry lines
+        // Get original journal entry lines - escape JournalEntryId for OData filter
+        const safeJournalEntryId = String(invoice.JournalEntryId).replace(/'/g, "''");
         const originalLinesResp = await axios.get(
-            `${DAB_API_URL}/journalentrylines?$filter=JournalEntryId eq '${invoice.JournalEntryId}'`
+            `${DAB_API_URL}/journalentrylines?$filter=JournalEntryId eq '${safeJournalEntryId}'`
         );
         const originalLines = originalLinesResp.data.value || [];
 
@@ -278,16 +287,17 @@ class JournalEntryService {
             PostedBy: userId
         });
 
-        // Create reversing lines (swap debits and credits)
-        for (const line of originalLines) {
-            await axios.post(`${DAB_API_URL}/journalentrylines`, {
+        // Create reversing lines (swap debits and credits) - batch create for performance
+        const reversingLinePromises = originalLines.map((line) =>
+            axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: reversingJeId,
                 AccountId: line.AccountId,
                 Description: `VOID: ${line.Description || ''}`,
                 Debit: line.Credit,  // Swap
                 Credit: line.Debit   // Swap
-            });
-        }
+            })
+        );
+        await Promise.all(reversingLinePromises);
 
         // Update original journal entry status
         await axios.patch(`${DAB_API_URL}/journalentries/Id/${invoice.JournalEntryId}`, {
@@ -335,9 +345,10 @@ class JournalEntryService {
             throw new Error(`Bill ${billId} is already posted`);
         }
 
-        // Get bill lines
+        // Get bill lines - escape billId for OData filter
+        const safeBillId = String(billId).replace(/'/g, "''");
         const linesResp = await axios.get(
-            `${DAB_API_URL}/billlines?$filter=BillId eq '${billId}'`
+            `${DAB_API_URL}/billlines?$filter=BillId eq '${safeBillId}'`
         );
         const lines = linesResp.data.value || [];
 
@@ -368,19 +379,24 @@ class JournalEntryService {
         });
 
         // Create journal entry lines
-        // DR: Expense accounts per line (bill lines already have AccountId)
+        // Validate all lines have AccountId before creating
         for (const line of lines) {
             if (!line.AccountId) {
                 throw new Error(`Bill line ${line.Id} is missing an expense account`);
             }
-            await axios.post(`${DAB_API_URL}/journalentrylines`, {
+        }
+
+        // DR: Expense accounts per line (bill lines already have AccountId) - batch create for performance
+        const expenseLinePromises = lines.map((line) =>
+            axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: journalEntryId,
                 AccountId: line.AccountId,
                 Description: line.Description || `Bill expense`,
                 Debit: line.Amount,
                 Credit: 0
-            });
-        }
+            })
+        );
+        await Promise.all(expenseLinePromises);
 
         // CR: Accounts Payable for total amount
         await axios.post(`${DAB_API_URL}/journalentrylines`, {
@@ -438,9 +454,10 @@ class JournalEntryService {
             throw new Error(`Bill ${billId} is already voided`);
         }
 
-        // Get original journal entry lines
+        // Get original journal entry lines - escape JournalEntryId for OData filter
+        const safeBillJournalEntryId = String(bill.JournalEntryId).replace(/'/g, "''");
         const originalLinesResp = await axios.get(
-            `${DAB_API_URL}/journalentrylines?$filter=JournalEntryId eq '${bill.JournalEntryId}'`
+            `${DAB_API_URL}/journalentrylines?$filter=JournalEntryId eq '${safeBillJournalEntryId}'`
         );
         const originalLines = originalLinesResp.data.value || [];
 
@@ -459,16 +476,17 @@ class JournalEntryService {
             PostedBy: userId
         });
 
-        // Create reversing lines (swap debits and credits)
-        for (const line of originalLines) {
-            await axios.post(`${DAB_API_URL}/journalentrylines`, {
+        // Create reversing lines (swap debits and credits) - batch create for performance
+        const reversingLinePromises = originalLines.map((line) =>
+            axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: reversingJeId,
                 AccountId: line.AccountId,
                 Description: `VOID: ${line.Description || ''}`,
                 Debit: line.Credit,
                 Credit: line.Debit
-            });
-        }
+            })
+        );
+        await Promise.all(reversingLinePromises);
 
         // Update original journal entry status
         await axios.patch(`${DAB_API_URL}/journalentries/Id/${bill.JournalEntryId}`, {
@@ -547,14 +565,15 @@ class JournalEntryService {
             Status: 'Completed'
         });
 
-        // Create payment applications
-        for (const app of applications) {
-            await axios.post(`${DAB_API_URL}/paymentapplications`, {
+        // Create payment applications - batch create for performance
+        const applicationPromises = applications.map((app) =>
+            axios.post(`${DAB_API_URL}/paymentapplications`, {
                 PaymentId: paymentId,
                 InvoiceId: app.invoiceId,
                 AmountApplied: app.amountApplied
-            });
-        }
+            })
+        );
+        await Promise.all(applicationPromises);
 
         // Create journal entry
         const journalEntryId = randomUUID();
@@ -670,14 +689,15 @@ class JournalEntryService {
             Status: 'Completed'
         });
 
-        // Create bill payment applications
-        for (const app of applications) {
-            await axios.post(`${DAB_API_URL}/billpaymentapplications`, {
+        // Create bill payment applications - batch create for performance
+        const applicationPromises = applications.map((app) =>
+            axios.post(`${DAB_API_URL}/billpaymentapplications`, {
                 BillPaymentId: billPaymentId,
                 BillId: app.billId,
                 AmountApplied: app.amountApplied
-            });
-        }
+            })
+        );
+        await Promise.all(applicationPromises);
 
         // Create journal entry
         const journalEntryId = randomUUID();
