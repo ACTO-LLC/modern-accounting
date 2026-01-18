@@ -4355,6 +4355,40 @@ app.post('/api/bills/:id/void', async (req, res) => {
     }
 });
 
+/**
+ * Validate payment application data
+ * @param {Array} applications - Array of application objects
+ * @param {string} idField - Field name for ID (e.g., 'invoiceId' or 'billId')
+ * @returns {Object} Validation result with isValid and error properties
+ */
+function validatePaymentApplications(applications, idField) {
+    if (!Array.isArray(applications)) {
+        return { 
+            isValid: false, 
+            error: 'Invalid applications: must be an array' 
+        };
+    }
+
+    // Validate each application has required fields
+    for (const app of applications) {
+        if (!app[idField] || !app.amountApplied) {
+            return { 
+                isValid: false, 
+                error: `Invalid application: each must have ${idField} and amountApplied` 
+            };
+        }
+        const appAmount = parseFloat(app.amountApplied);
+        if (isNaN(appAmount) || appAmount <= 0) {
+            return { 
+                isValid: false, 
+                error: 'Invalid application: amountApplied must be a positive number' 
+            };
+        }
+    }
+
+    return { isValid: true };
+}
+
 // Create a customer payment with journal entry
 app.post('/api/payments', async (req, res) => {
     try {
@@ -4367,25 +4401,9 @@ app.post('/api/payments', async (req, res) => {
         }
 
         const applications = req.body.applications || [];
-        if (!Array.isArray(applications)) {
-            return res.status(400).json({ 
-                error: 'Invalid applications: must be an array' 
-            });
-        }
-
-        // Validate each application has required fields
-        for (const app of applications) {
-            if (!app.invoiceId || !app.amountApplied) {
-                return res.status(400).json({ 
-                    error: 'Invalid application: each must have invoiceId and amountApplied' 
-                });
-            }
-            const appAmount = parseFloat(app.amountApplied);
-            if (isNaN(appAmount) || appAmount <= 0) {
-                return res.status(400).json({ 
-                    error: 'Invalid application: amountApplied must be a positive number' 
-                });
-            }
+        const validationResult = validatePaymentApplications(applications, 'invoiceId');
+        if (!validationResult.isValid) {
+            return res.status(400).json({ error: validationResult.error });
         }
 
         const userId = req.body.userId || 'system';
@@ -4423,25 +4441,9 @@ app.post('/api/billpayments', async (req, res) => {
         }
 
         const applications = req.body.applications || [];
-        if (!Array.isArray(applications)) {
-            return res.status(400).json({ 
-                error: 'Invalid applications: must be an array' 
-            });
-        }
-
-        // Validate each application has required fields
-        for (const app of applications) {
-            if (!app.billId || !app.amountApplied) {
-                return res.status(400).json({ 
-                    error: 'Invalid application: each must have billId and amountApplied' 
-                });
-            }
-            const appAmount = parseFloat(app.amountApplied);
-            if (isNaN(appAmount) || appAmount <= 0) {
-                return res.status(400).json({ 
-                    error: 'Invalid application: amountApplied must be a positive number' 
-                });
-            }
+        const validationResult = validatePaymentApplications(applications, 'billId');
+        if (!validationResult.isValid) {
+            return res.status(400).json({ error: validationResult.error });
         }
 
         const userId = req.body.userId || 'system';

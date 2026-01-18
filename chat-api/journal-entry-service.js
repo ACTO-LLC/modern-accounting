@@ -379,19 +379,23 @@ class JournalEntryService {
         });
 
         // Create journal entry lines
-        // DR: Expense accounts per line (bill lines already have AccountId) - batch create for performance
-        const expenseLinePromises = lines.map((line) => {
+        // Validate all lines have AccountId before creating
+        for (const line of lines) {
             if (!line.AccountId) {
                 throw new Error(`Bill line ${line.Id} is missing an expense account`);
             }
-            return axios.post(`${DAB_API_URL}/journalentrylines`, {
+        }
+
+        // DR: Expense accounts per line (bill lines already have AccountId) - batch create for performance
+        const expenseLinePromises = lines.map((line) =>
+            axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: journalEntryId,
                 AccountId: line.AccountId,
                 Description: line.Description || `Bill expense`,
                 Debit: line.Amount,
                 Credit: 0
-            });
-        });
+            })
+        );
         await Promise.all(expenseLinePromises);
 
         // CR: Accounts Payable for total amount
