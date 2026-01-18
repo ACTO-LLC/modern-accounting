@@ -226,7 +226,22 @@
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
-                "ClaimId": "ClaimId"
+                "ClaimId": "ClaimId",
+                "JournalEntryId": "JournalEntryId",
+                "PostedAt": "PostedAt",
+                "PostedBy": "PostedBy"
+            },
+            "relationships": {
+                "JournalEntry": {
+                    "target.entity": "journalentries",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
             },
             "key-fields": [
                 "Id"
@@ -249,8 +264,21 @@
                 "Quantity": "Quantity",
                 "UnitPrice": "UnitPrice",
                 "Amount": "Amount",
+                "RevenueAccountId": "RevenueAccountId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "RevenueAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "RevenueAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
             },
             "key-fields": [
                 "Id"
@@ -760,7 +788,22 @@
                 "Terms": "Terms",
                 "Memo": "Memo",
                 "SourceSystem": "SourceSystem",
-                "SourceId": "SourceId"
+                "SourceId": "SourceId",
+                "JournalEntryId": "JournalEntryId",
+                "PostedAt": "PostedAt",
+                "PostedBy": "PostedBy"
+            },
+            "relationships": {
+                "JournalEntry": {
+                    "target.entity": "journalentries",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
             },
             "key-fields": [
                 "Id"
@@ -1296,6 +1339,7 @@
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
+                "JournalEntryId": "JournalEntryId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
@@ -1328,6 +1372,16 @@
                     ],
                     "target.fields": [
                         "PaymentId"
+                    ]
+                },
+                "JournalEntry": {
+                    "target.entity": "journalentries",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
                     ]
                 }
             },
@@ -1390,6 +1444,7 @@
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
+                "JournalEntryId": "JournalEntryId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
@@ -1422,6 +1477,16 @@
                     ],
                     "target.fields": [
                         "BillPaymentId"
+                    ]
+                },
+                "JournalEntry": {
+                    "target.entity": "journalentries",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
                     ]
                 }
             },
@@ -1975,6 +2040,41 @@
                 "IsActive": "IsActive",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "accountdefaults": {
+            "source": "dbo.AccountDefaults",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "AccountType": "AccountType",
+                "AccountId": "AccountId",
+                "Description": "Description",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "Account": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "AccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
             },
             "key-fields": [
                 "Id"
