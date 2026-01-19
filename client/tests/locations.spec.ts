@@ -6,7 +6,7 @@ test.describe('Locations Management', () => {
     const locationName = `Test Location ${timestamp}`;
 
     // 1. Navigate to Locations page
-    await page.goto('http://localhost:5178/locations');
+    await page.goto('/locations');
     await expect(page.getByRole('heading', { name: 'Locations' })).toBeVisible();
 
     // 2. Click "New Location" button
@@ -33,7 +33,7 @@ test.describe('Locations Management', () => {
     const childLocationName = `Child Location ${timestamp}`;
 
     // 1. Navigate to Locations page
-    await page.goto('http://localhost:5178/locations');
+    await page.goto('/locations');
 
     // 2. Create parent location first
     await page.getByRole('button', { name: 'New Location' }).click();
@@ -60,7 +60,7 @@ test.describe('Locations Management', () => {
     const updatedName = `${locationName} Updated`;
 
     // 1. Navigate to Locations page
-    await page.goto('http://localhost:5178/locations');
+    await page.goto('/locations');
 
     // 2. Create a location to edit
     await page.getByRole('button', { name: 'New Location' }).click();
@@ -86,40 +86,47 @@ test.describe('Locations Management', () => {
 
   test('should filter locations by status', async ({ page }) => {
     const timestamp = Date.now();
-    const activeLocationName = `Active Location ${timestamp}`;
-    const inactiveLocationName = `Inactive Location ${timestamp}`;
+    // Use completely different names to avoid any matching issues
+    const activeLocationName = `ActiveTestLocation-${timestamp}`;
+    const inactiveLocationName = `InactiveTestLocation-${timestamp + 1}`;
 
     // 1. Navigate to Locations page
-    await page.goto('http://localhost:5178/locations');
+    await page.goto('/locations');
 
     // 2. Create an Active location
     await page.getByRole('button', { name: 'New Location' }).click();
     await page.getByLabel('Name *').fill(activeLocationName);
-    await page.getByLabel('Status').selectOption('Active');
+    await page.locator('form').getByLabel('Status').selectOption('Active');
     await page.getByRole('button', { name: 'Create Location' }).click();
-    await expect(page.getByRole('cell', { name: activeLocationName })).toBeVisible();
+    await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toBeVisible();
 
     // 3. Create an Inactive location
     await page.getByRole('button', { name: 'New Location' }).click();
     await page.getByLabel('Name *').fill(inactiveLocationName);
-    await page.getByLabel('Status').selectOption('Inactive');
+    await page.locator('form').getByLabel('Status').selectOption('Inactive');
     await page.getByRole('button', { name: 'Create Location' }).click();
-    await expect(page.getByRole('cell', { name: inactiveLocationName })).toBeVisible();
+    await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toBeVisible();
 
-    // 4. Filter by Active status
-    await page.locator('select').filter({ hasText: 'All Status' }).selectOption('Active');
-    await expect(page.getByRole('cell', { name: activeLocationName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: inactiveLocationName })).not.toBeVisible();
+    // Wait for form to close
+    await expect(page.getByRole('heading', { name: 'New Location' })).not.toBeVisible();
+
+    // 4. Filter by Active status - use the status filter dropdown
+    const statusFilter = page.getByTestId('status-filter');
+    await statusFilter.selectOption('Active');
+    await expect(statusFilter).toHaveValue('Active');
+    await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toHaveCount(0);
 
     // 5. Filter by Inactive status
-    await page.locator('select').filter({ hasText: 'Active' }).selectOption('Inactive');
-    await expect(page.getByRole('cell', { name: inactiveLocationName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: activeLocationName })).not.toBeVisible();
+    await statusFilter.selectOption('Inactive');
+    await expect(statusFilter).toHaveValue('Inactive');
+    await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toHaveCount(0);
 
     // 6. Show all
-    await page.locator('select').filter({ hasText: 'Inactive' }).selectOption('all');
-    await expect(page.getByRole('cell', { name: activeLocationName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: inactiveLocationName })).toBeVisible();
+    await statusFilter.selectOption('all');
+    await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toBeVisible();
   });
 
   test('should delete a location', async ({ page }) => {
@@ -127,7 +134,7 @@ test.describe('Locations Management', () => {
     const locationName = `Delete Test Location ${timestamp}`;
 
     // 1. Navigate to Locations page
-    await page.goto('http://localhost:5178/locations');
+    await page.goto('/locations');
 
     // 2. Create a location to delete
     await page.getByRole('button', { name: 'New Location' }).click();

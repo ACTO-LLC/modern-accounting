@@ -413,6 +413,7 @@ export default function Locations() {
           />
         </div>
         <select
+          data-testid="status-filter"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"

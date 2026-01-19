@@ -12,7 +12,7 @@ test.describe('Products & Services Management', () => {
     
     // 2. Click "New Product/Service"
     await page.getByRole('link', { name: 'New Product/Service' }).click();
-    await expect(page).toHaveURL('//products-services/new');
+    await expect(page).toHaveURL(/\/products-services\/new/);
 
     // 3. Fill Form
     await page.getByLabel('Name', { exact: true }).fill(serviceName);
@@ -26,7 +26,7 @@ test.describe('Products & Services Management', () => {
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
 
     // 5. Verify Redirect and List
-    await expect(page).toHaveURL('//products-services');
+    await expect(page).toHaveURL(/\/products-services$/);
     await expect(page.getByText(serviceName)).toBeVisible();
     await expect(page.getByText(sku)).toBeVisible();
 
@@ -39,7 +39,7 @@ test.describe('Products & Services Management', () => {
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
 
     // 8. Verify Update
-    await expect(page).toHaveURL('//products-services');
+    await expect(page).toHaveURL(/\/products-services$/);
     await expect(page.getByText(updatedName)).toBeVisible();
   });
 
@@ -91,7 +91,7 @@ test.describe('Products & Services Management', () => {
 
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
 
-    await expect(page).toHaveURL('//products-services');
+    await expect(page).toHaveURL(/\/products-services$/);
     await expect(page.getByText(inventoryName)).toBeVisible();
   });
 
@@ -125,7 +125,7 @@ test.describe('Products & Services Management', () => {
     await page.getByRole('button', { name: 'Back to products and services' }).click();
 
     // Verify navigation
-    await expect(page).toHaveURL('//products-services');
+    await expect(page).toHaveURL(/\/products-services$/);
   });
 
   test('should show type-specific help text', async ({ page }) => {

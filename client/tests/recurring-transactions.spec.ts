@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Recurring Transactions', () => {
   test('should navigate to Recurring Transactions page', async ({ page }) => {
     // Navigate to Recurring Transactions page
-    await page.goto('http://localhost:5177/recurring');
+    await page.goto('/recurring');
 
     // Verify page header is visible
     await expect(page.getByRole('heading', { name: 'Recurring Transactions' })).toBeVisible();
@@ -21,7 +21,7 @@ test.describe('Recurring Transactions', () => {
     const startDate = new Date().toISOString().split('T')[0];
 
     // 1. Navigate to Recurring Transactions page
-    await page.goto('http://localhost:5177/recurring');
+    await page.goto('/recurring');
 
     // 2. Click "New Recurring Template" button
     await page.getByRole('button', { name: 'New Recurring Template' }).click();
@@ -52,7 +52,7 @@ test.describe('Recurring Transactions', () => {
     const startDate = new Date().toISOString().split('T')[0];
 
     // 1. Navigate to Recurring Transactions page
-    await page.goto('http://localhost:5177/recurring');
+    await page.goto('/recurring');
 
     // 2. Create a template first
     await page.getByRole('button', { name: 'New Recurring Template' }).click();
@@ -89,7 +89,7 @@ test.describe('Recurring Transactions', () => {
     const startDate = new Date().toISOString().split('T')[0];
 
     // 1. Navigate to Recurring Transactions page
-    await page.goto('http://localhost:5177/recurring');
+    await page.goto('/recurring');
 
     // 2. Create a template first
     await page.getByRole('button', { name: 'New Recurring Template' }).click();
@@ -130,7 +130,7 @@ test.describe('Recurring Transactions', () => {
     const startDate = new Date().toISOString().split('T')[0];
 
     // 1. Navigate to Recurring Transactions page
-    await page.goto('http://localhost:5177/recurring');
+    await page.goto('/recurring');
 
     // 2. Create a template first
     await page.getByRole('button', { name: 'New Recurring Template' }).click();

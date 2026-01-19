@@ -6,7 +6,7 @@ test.describe('Classes Management', () => {
     const className = `Test Class ${timestamp}`;
 
     // 1. Navigate to Classes page
-    await page.goto('http://localhost:5178/classes');
+    await page.goto('/classes');
     await expect(page.getByRole('heading', { name: 'Classes' })).toBeVisible();
 
     // 2. Click "New Class" button
@@ -32,7 +32,7 @@ test.describe('Classes Management', () => {
     const childClassName = `Child Class ${timestamp}`;
 
     // 1. Navigate to Classes page
-    await page.goto('http://localhost:5178/classes');
+    await page.goto('/classes');
 
     // 2. Create parent class first
     await page.getByRole('button', { name: 'New Class' }).click();
@@ -59,7 +59,7 @@ test.describe('Classes Management', () => {
     const updatedName = `${className} Updated`;
 
     // 1. Navigate to Classes page
-    await page.goto('http://localhost:5178/classes');
+    await page.goto('/classes');
 
     // 2. Create a class to edit
     await page.getByRole('button', { name: 'New Class' }).click();
@@ -85,40 +85,54 @@ test.describe('Classes Management', () => {
 
   test('should filter classes by status', async ({ page }) => {
     const timestamp = Date.now();
-    const activeClassName = `Active Class ${timestamp}`;
-    const inactiveClassName = `Inactive Class ${timestamp}`;
+    // Use completely different names to avoid any matching issues
+    const activeClassName = `ActiveTestClass-${timestamp}`;
+    const inactiveClassName = `InactiveTestClass-${timestamp + 1}`;
 
     // 1. Navigate to Classes page
-    await page.goto('http://localhost:5178/classes');
+    await page.goto('/classes');
 
     // 2. Create an Active class
     await page.getByRole('button', { name: 'New Class' }).click();
     await page.getByLabel('Name *').fill(activeClassName);
-    await page.getByLabel('Status').selectOption('Active');
+    // Form status dropdown (not the filter)
+    await page.locator('form').getByLabel('Status').selectOption('Active');
     await page.getByRole('button', { name: 'Create Class' }).click();
-    await expect(page.getByRole('cell', { name: activeClassName })).toBeVisible();
+    // Verify class was created
+    await expect(page.getByRole('cell', { name: activeClassName, exact: true })).toBeVisible();
 
     // 3. Create an Inactive class
     await page.getByRole('button', { name: 'New Class' }).click();
     await page.getByLabel('Name *').fill(inactiveClassName);
-    await page.getByLabel('Status').selectOption('Inactive');
+    await page.locator('form').getByLabel('Status').selectOption('Inactive');
     await page.getByRole('button', { name: 'Create Class' }).click();
-    await expect(page.getByRole('cell', { name: inactiveClassName })).toBeVisible();
+    // Verify class was created
+    await expect(page.getByRole('cell', { name: inactiveClassName, exact: true })).toBeVisible();
 
-    // 4. Filter by Active status
-    await page.locator('select').filter({ hasText: 'All Status' }).selectOption('Active');
-    await expect(page.getByRole('cell', { name: activeClassName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: inactiveClassName })).not.toBeVisible();
+    // Wait for form to close (form should not be visible after successful creation)
+    await expect(page.getByRole('heading', { name: 'New Class' })).not.toBeVisible();
+
+    // 4. Filter by Active status - use the status filter dropdown
+    const statusFilter = page.getByTestId('status-filter');
+    await statusFilter.selectOption('Active');
+    await expect(statusFilter).toHaveValue('Active');
+
+    // Verify active class is visible, inactive is not
+    await expect(page.getByRole('cell', { name: activeClassName, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: inactiveClassName, exact: true })).toHaveCount(0);
 
     // 5. Filter by Inactive status
-    await page.locator('select').filter({ hasText: 'Active' }).selectOption('Inactive');
-    await expect(page.getByRole('cell', { name: inactiveClassName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: activeClassName })).not.toBeVisible();
+    await statusFilter.selectOption('Inactive');
+    await expect(statusFilter).toHaveValue('Inactive');
+
+    // Verify inactive class is visible, active is not
+    await expect(page.getByRole('cell', { name: inactiveClassName, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: activeClassName, exact: true })).toHaveCount(0);
 
     // 6. Show all
-    await page.locator('select').filter({ hasText: 'Inactive' }).selectOption('all');
-    await expect(page.getByRole('cell', { name: activeClassName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: inactiveClassName })).toBeVisible();
+    await statusFilter.selectOption('all');
+    await expect(page.getByRole('cell', { name: activeClassName, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: inactiveClassName, exact: true })).toBeVisible();
   });
 
   test('should delete a class', async ({ page }) => {
@@ -126,7 +140,7 @@ test.describe('Classes Management', () => {
     const className = `Delete Test Class ${timestamp}`;
 
     // 1. Navigate to Classes page
-    await page.goto('http://localhost:5178/classes');
+    await page.goto('/classes');
 
     // 2. Create a class to delete
     await page.getByRole('button', { name: 'New Class' }).click();
