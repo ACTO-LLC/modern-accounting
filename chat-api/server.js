@@ -31,6 +31,12 @@ import deploymentsRouter from './src/routes/deployments.js';
 import usersRouter from './src/routes/users.js';
 import { validateJWT, optionalJWT, requireRole, requirePermission, requireMFA } from './src/middleware/auth.js';
 import { resolveTenant, optionalTenant } from './src/middleware/tenant.js';
+import {
+    extractFromBusinessCard,
+    extractFromEmailSignature,
+    checkForDuplicates,
+    formatContactForCreation
+} from './src/services/contact-extractor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -272,6 +278,9 @@ mcpManager.addServer('qbo', QBO_MCP_URL);
 
 // Dynamic tools discovered from MCP servers (populated at startup)
 let dynamicTools = [];
+
+// File storage map for tracking uploaded files (fileId -> file metadata)
+const fileStorage = new Map();
 
 // ============================================================================
 // REST Client for DAB (used for onboarding tools - more reliable than MCP)
@@ -531,12 +540,40 @@ When helping users set up a new company, follow this conversational flow:
 
 4. PROACTIVE INSIGHTS: When data shows issues (overdue invoices, upcoming due dates, unusual patterns), proactively mention them to help the user.
 
-4. FILE PROCESSING: When users upload images or documents, extract information and take action:
-   - Business cards: Extract contact info and offer to create customer/vendor records
-   - Receipts: Extract merchant, amount, date, and suggest categorization
-   - Bank statements: Identify account info and offer to create accounts in COA
-   - Credit card statements: Auto-detect card issuer and create liability accounts
-   - Invoices from vendors: Extract vendor info and amounts
+5. FILE PROCESSING & CONTACT EXTRACTION: When users upload images, paste text, or ask about extracting contacts:
+
+   BUSINESS CARDS:
+   - When user uploads a business card image, use extract_from_business_card with the file ID
+   - AI will extract: Company Name, Contact Name, Title/Role, Email, Phone, Address, Website
+   - Show the extracted information and check for duplicates
+   - If duplicates found, show them and ask user if it's a new contact or existing one
+   - If no duplicates, ask "Is this a customer or vendor?"
+   - Use create_customer_from_contact or create_vendor_from_contact to create the record
+   - Success example: "✓ Created customer 'Acme Corporation' with contact John Smith (john@acme.com, 555-123-4567)"
+   
+   EMAIL SIGNATURES:
+   - When user pastes an email signature, use extract_from_email_signature
+   - AI will parse patterns to extract: Name, Company, Title, Email, Phone, Address, Website
+   - Show extracted information (note: email signatures have lower confidence than scanned cards)
+   - Check for duplicates and follow same flow as business cards
+   - If pattern extraction fails, ask user to provide details manually
+   
+   RECEIPTS & INVOICES:
+   - Extract merchant name, amount, date, and line items
+   - Suggest appropriate expense category based on merchant type
+   - Offer to create vendor record if not exists
+   
+   BANK STATEMENTS:
+   - Identify bank name and account type
+   - Suggest creating bank account in chart of accounts
+   - Offer to create bank account automatically
+   
+   AUTO-CREATION WORKFLOW:
+   1. Extract information from file/text
+   2. Check for duplicates (email, name, or company match)
+   3. If duplicates exist, show them and ask for confirmation
+   4. If no duplicates or user confirms new record, create automatically
+   5. Show confirmation with [View Customers] or [View Vendors] link
 
 IMPORTANT RULES:
 - Always use tools to fetch data. Never fabricate financial information.
@@ -545,7 +582,7 @@ IMPORTANT RULES:
 - Include clickable links formatted as [text](link) when referring to specific records
 - For general accounting guidance (not about user's specific data), answer based on GAAP principles
 - When you can confidently extract info from a file and take action (create account, customer, vendor), do it automatically and inform the user afterward
-- Only ask for confirmation when there's ambiguity (e.g., "Is this a customer or vendor?")
+- Only ask for confirmation when there's ambiguity (e.g., "Is this a customer or vendor?") or duplicates found
 - MIGRATION CONTEXT: Once a user imports data from a source (e.g., QuickBooks), assume subsequent import requests are from the same source. Confirm briefly: "I'll import your vendors from QuickBooks - sound good?" or "Importing invoices from QuickBooks..." Don't ask them to re-specify the source each time.
 
 ACCOUNT TYPES:
@@ -1318,6 +1355,76 @@ const tools = [
                     skip_reason: { type: 'string', description: 'Reason for skipping (if status is Skipped)' }
                 },
                 required: ['company_id', 'step_code', 'status']
+            }
+        }
+    },
+    // ========== Contact Extraction Tools (Business Cards & Email Signatures) ==========
+    {
+        type: 'function',
+        function: {
+            name: 'extract_from_business_card',
+            description: 'Extract contact information from a business card image using AI vision. Extracts name, company, title, email, phone, address, and website.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    file_id: { type: 'string', description: 'The uploaded file ID of the business card image' }
+                },
+                required: ['file_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'extract_from_email_signature',
+            description: 'Extract contact information from an email signature text. Extracts name, company, title, email, phone, address, and website using pattern matching.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    signature_text: { type: 'string', description: 'The email signature text to extract contact info from' }
+                },
+                required: ['signature_text']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'create_customer_from_contact',
+            description: 'Create a new customer record from extracted contact information (from business card or email). Checks for duplicates first.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string', description: 'Company name or contact name' },
+                    email: { type: 'string', description: 'Email address' },
+                    phone: { type: 'string', description: 'Phone number' },
+                    address: { type: 'string', description: 'Physical address' },
+                    contact_title: { type: 'string', description: 'Contact job title' },
+                    website: { type: 'string', description: 'Website URL' },
+                    skip_duplicate_check: { type: 'boolean', description: 'Skip duplicate check if user confirmed they want to create anyway' }
+                },
+                required: ['name']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'create_vendor_from_contact',
+            description: 'Create a new vendor record from extracted contact information (from business card or email). Checks for duplicates first.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string', description: 'Company name or vendor name' },
+                    email: { type: 'string', description: 'Email address' },
+                    phone: { type: 'string', description: 'Phone number' },
+                    address: { type: 'string', description: 'Physical address' },
+                    contact_title: { type: 'string', description: 'Contact job title' },
+                    website: { type: 'string', description: 'Website URL' },
+                    is_1099_vendor: { type: 'boolean', description: 'Whether this is a 1099 contractor' },
+                    skip_duplicate_check: { type: 'boolean', description: 'Skip duplicate check if user confirmed they want to create anyway' }
+                },
+                required: ['name']
             }
         }
     }
@@ -3308,6 +3415,255 @@ async function executeUpdateOnboardingStep(params) {
 }
 
 // ============================================================================
+// Contact Extraction Tool Execution Functions
+// ============================================================================
+
+async function executeExtractFromBusinessCard(params) {
+    try {
+        const { file_id } = params;
+        if (!file_id || !fileStorage.has(file_id)) {
+            return { success: false, error: 'File not found. Please upload a business card image first.' };
+        }
+
+        const fileInfo = fileStorage.get(file_id);
+        if (!fileInfo.filePath) {
+            return { success: false, error: 'File path not available for extraction' };
+        }
+
+        // Extract using GPT-4o Vision
+        const extractionResult = await extractFromBusinessCard(fileInfo.filePath, fileInfo.fileType);
+        
+        if (!extractionResult.success) {
+            return {
+                success: false,
+                error: extractionResult.error,
+                message: 'Unable to extract business card information. Please verify the image is clear and contains contact details.',
+                requiresManualEntry: true
+            };
+        }
+
+        // Check for duplicates
+        const duplicates = await checkForDuplicates(extractionResult.data, mcp);
+        
+        if (duplicates.length > 0) {
+            return {
+                success: true,
+                extracted: extractionResult.data,
+                confidence: extractionResult.confidence,
+                duplicates: duplicates,
+                message: `Found ${duplicates.length} potential duplicate(s). Please confirm if this is a new contact or an existing one.`,
+                nextAction: 'ask_duplicate_confirmation'
+            };
+        }
+
+        return {
+            success: true,
+            extracted: extractionResult.data,
+            confidence: extractionResult.confidence,
+            message: 'Business card information extracted successfully. Is this a customer or vendor?',
+            nextAction: 'ask_customer_or_vendor'
+        };
+    } catch (error) {
+        console.error('Business card extraction error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeExtractFromEmailSignature(params) {
+    try {
+        const { signature_text } = params;
+        if (!signature_text) {
+            return { success: false, error: 'No email signature text provided' };
+        }
+
+        // Extract using pattern matching
+        const extractionResult = await extractFromEmailSignature(signature_text);
+
+        if (!extractionResult.success) {
+            return {
+                success: false,
+                error: extractionResult.error,
+                requiresManualEntry: true
+            };
+        }
+
+        // Check for duplicates
+        const duplicates = await checkForDuplicates(extractionResult.data, mcp);
+
+        if (duplicates.length > 0) {
+            return {
+                success: true,
+                extracted: extractionResult.data,
+                confidence: extractionResult.confidence,
+                duplicates: duplicates,
+                message: `Found ${duplicates.length} potential duplicate(s). Please confirm if this is a new contact or an existing one.`,
+                nextAction: 'ask_duplicate_confirmation'
+            };
+        }
+
+        return {
+            success: true,
+            extracted: extractionResult.data,
+            confidence: extractionResult.confidence,
+            message: 'Email signature information extracted successfully. Is this a customer or vendor?',
+            nextAction: 'ask_customer_or_vendor'
+        };
+    } catch (error) {
+        console.error('Email signature extraction error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeCreateCustomerFromContact(params) {
+    try {
+        const {
+            name,
+            email,
+            phone,
+            address,
+            contact_title,
+            website,
+            skip_duplicate_check
+        } = params;
+
+        if (!name) {
+            return { success: false, error: 'Customer name is required' };
+        }
+
+        // Check for duplicates unless skipped
+        if (!skip_duplicate_check) {
+            const duplicates = await checkForDuplicates({
+                contactName: name,
+                email,
+                companyName: name
+            }, mcp);
+
+            if (duplicates.length > 0) {
+                return {
+                    success: false,
+                    duplicatesFound: true,
+                    duplicates: duplicates,
+                    message: `Found ${duplicates.length} existing customer(s) that might match. Please verify before creating a new one.`,
+                    instruction: 'To create anyway, confirm with skip_duplicate_check: true'
+                };
+            }
+        }
+
+        // Create customer
+        const customerData = {
+            Name: name,
+            Email: email || null,
+            Phone: phone || null,
+            BillingAddress: address || null,
+            ContactTitle: contact_title || null,
+            Website: website || null,
+            CreatedFrom: 'contact_extraction'
+        };
+
+        const createResult = await mcp.createRecord('customers', customerData);
+        if (createResult.error) {
+            return { success: false, error: createResult.error };
+        }
+
+        const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+
+        return {
+            success: true,
+            message: `✓ Created customer '${name}'`,
+            customer: {
+                id: newId,
+                name: name,
+                email: email,
+                phone: phone,
+                address: address,
+                title: contact_title,
+                website: website,
+                link: `${APP_URL}/customers`
+            }
+        };
+    } catch (error) {
+        console.error('Create customer error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeCreateVendorFromContact(params) {
+    try {
+        const {
+            name,
+            email,
+            phone,
+            address,
+            contact_title,
+            website,
+            is_1099_vendor,
+            skip_duplicate_check
+        } = params;
+
+        if (!name) {
+            return { success: false, error: 'Vendor name is required' };
+        }
+
+        // Check for duplicates unless skipped
+        if (!skip_duplicate_check) {
+            const duplicates = await checkForDuplicates({
+                contactName: name,
+                email,
+                companyName: name
+            }, mcp);
+
+            if (duplicates.length > 0) {
+                return {
+                    success: false,
+                    duplicatesFound: true,
+                    duplicates: duplicates,
+                    message: `Found ${duplicates.length} existing vendor(s) that might match. Please verify before creating a new one.`,
+                    instruction: 'To create anyway, confirm with skip_duplicate_check: true'
+                };
+            }
+        }
+
+        // Create vendor
+        const vendorData = {
+            Name: name,
+            Email: email || null,
+            Phone: phone || null,
+            Address: address || null,
+            ContactTitle: contact_title || null,
+            Website: website || null,
+            Is1099Vendor: is_1099_vendor || false,
+            CreatedFrom: 'contact_extraction'
+        };
+
+        const createResult = await mcp.createRecord('vendors', vendorData);
+        if (createResult.error) {
+            return { success: false, error: createResult.error };
+        }
+
+        const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
+
+        return {
+            success: true,
+            message: `✓ Created vendor '${name}'${is_1099_vendor ? ' (1099 vendor)' : ''}`,
+            vendor: {
+                id: newId,
+                name: name,
+                email: email,
+                phone: phone,
+                address: address,
+                title: contact_title,
+                website: website,
+                is1099: is_1099_vendor,
+                link: `${APP_URL}/vendors`
+            }
+        };
+    } catch (error) {
+        console.error('Create vendor error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================================================
 // Function Dispatcher
 // ============================================================================
 
@@ -3441,6 +3797,15 @@ async function executeFunction(name, args) {
             return executeGetOnboardingStatus(args);
         case 'update_onboarding_step':
             return executeUpdateOnboardingStep(args);
+        // Contact Extraction Tools
+        case 'extract_from_business_card':
+            return executeExtractFromBusinessCard(args);
+        case 'extract_from_email_signature':
+            return executeExtractFromEmailSignature(args);
+        case 'create_customer_from_contact':
+            return executeCreateCustomerFromContact(args);
+        case 'create_vendor_from_contact':
+            return executeCreateVendorFromContact(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }
@@ -3517,8 +3882,9 @@ async function extractTextFromPDF(filePath) {
 }
 
 async function processUploadedFile(file) {
+    const fileId = randomUUID();
     const result = {
-        fileId: randomUUID(),
+        fileId: fileId,
         fileName: file.originalname,
         fileType: file.mimetype,
         filePath: file.path,
@@ -3544,6 +3910,17 @@ async function processUploadedFile(file) {
         const fileBuffer = await fs.readFile(file.path);
         result.base64Data = fileBuffer.toString('base64');
     }
+
+    // Store file info for later retrieval by tools
+    fileStorage.set(fileId, {
+        filePath: file.path,
+        fileName: file.originalname,
+        fileType: file.mimetype,
+        fileSize: file.size,
+        extractedText: result.extractedText,
+        base64Data: result.base64Data,
+        createdAt: new Date()
+    });
 
     return result;
 }
