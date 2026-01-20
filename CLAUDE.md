@@ -178,3 +178,74 @@ npm run dev  # Start the monitor agent
 - `ANTHROPIC_API_KEY` - Claude API key
 - `GITHUB_TOKEN` - GitHub personal access token
 - `DB_PASSWORD` - Database password
+
+---
+
+### Playwright Testing (Jan 2026)
+
+**Authentication in Tests:**
+The app requires Azure AD authentication. For Playwright tests, bypass auth using the `VITE_BYPASS_AUTH` environment variable:
+
+```bash
+# Start dev server with auth bypassed
+cd client
+set VITE_BYPASS_AUTH=true && npm run dev   # Windows
+VITE_BYPASS_AUTH=true npm run dev          # Mac/Linux
+
+# Run tests (in another terminal)
+npx playwright test
+```
+
+**How it works:**
+- `VITE_BYPASS_AUTH=true` activates `BypassAuthProvider` in `AuthContext.tsx`
+- User is automatically treated as authenticated with Admin role
+- No Microsoft login popup appears
+
+**Test Configuration:**
+- Base URL: `http://localhost:5173` (configured in `playwright.config.ts`)
+- Tests use relative paths (e.g., `page.goto('/invoices/new')`)
+- The config has `webServer` setting to auto-start dev server, but auth bypass requires manual start with env var
+
+**Common Test Patterns:**
+```typescript
+// DON'T hardcode URLs - use relative paths
+await page.goto('/invoices/new');  // Correct
+await page.goto('http://localhost:5173/invoices/new');  // Avoid
+
+// Customer/Product selectors use role-based queries
+await page.getByRole('button', { name: /Select a customer/i }).click();
+await page.getByRole('option').first().click();
+
+// Form fields use getByLabel
+await page.getByLabel('Invoice Number').fill('INV-001');
+```
+
+**Running Specific Tests:**
+```bash
+npx playwright test product-service-selector.spec.ts  # Single file
+npx playwright test --grep "invoice"                   # Pattern match
+npx playwright test --ui                               # Interactive UI mode
+```
+
+---
+
+### DAB Read vs Write Endpoints (Jan 2026)
+
+**Problem:** Some DAB endpoints use views (read-only) while writes require separate `_write` endpoints.
+
+**Affected Entities:**
+- `/invoices` (view: `dbo.v_Invoices`) - READ ONLY
+- `/invoices_write` (table: `dbo.Invoices`) - CREATE/UPDATE/DELETE
+- `/estimates` (view: `dbo.v_Estimates`) - READ ONLY (no write endpoint yet)
+
+**Frontend must use correct endpoints:**
+```typescript
+// Reading invoices (uses view for joined data)
+await api.get('/invoices');
+
+// Creating/updating invoices (uses table directly)
+await api.post('/invoices_write', data);
+await api.patch(`/invoices_write/Id/${id}`, data);
+```
+
+**Why Views?** Views join related data (customer names, totals) for display. Direct table access is needed for writes.

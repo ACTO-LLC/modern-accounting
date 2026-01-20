@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect, ReactNode } from 'react';
 import CustomerSelector from './CustomerSelector';
+import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
 
 export const invoiceSchema = z.object({
   InvoiceNumber: z.string().min(1, 'Invoice number is required'),
@@ -15,6 +16,7 @@ export const invoiceSchema = z.object({
   Status: z.enum(['Draft', 'Sent', 'Paid', 'Overdue']),
   Lines: z.array(z.object({
     Id: z.string().optional(),
+    ProductServiceId: z.string().optional(),
     Description: z.string().min(1, 'Description is required'),
     Quantity: z.number().min(1, 'Quantity must be at least 1'),
     UnitPrice: z.number().min(0, 'Unit price must be positive'),
@@ -41,7 +43,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       Status: 'Draft',
       IssueDate: new Date().toISOString().split('T')[0],
       DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      Lines: [{ Description: '', Quantity: 1, UnitPrice: 0 }],
+      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 }],
       TotalAmount: 0,
       ...initialValues
     }
@@ -152,7 +154,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             <h3 className="text-lg font-medium text-gray-900">Line Items</h3>
             <button
               type="button"
-              onClick={() => append({ Description: '', Quantity: 1, UnitPrice: 0 })}
+              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 })}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
             >
               <Plus className="w-4 h-4 mr-1" />
@@ -161,52 +163,84 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
           </div>
           
           <div className="space-y-4">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex gap-4 items-start bg-gray-50 p-4 rounded-md">
-                <div className="flex-grow">
-                  <label className="block text-xs font-medium text-gray-500">Description</label>
-                  <input
-                    {...register(`Lines.${index}.Description`)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                    placeholder="Item description"
-                  />
-                  {errors.Lines?.[index]?.Description && (
-                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Description?.message}</p>
-                  )}
-                </div>
-                <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-500">Qty</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.Quantity`, { valueAsNumber: true })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
-                </div>
-                <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-500">Unit Price</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.UnitPrice`, { valueAsNumber: true })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
-                </div>
-                <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-500">Amount</label>
-                  <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium">
-                    ${((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0)).toFixed(2)}
+            {fields.map((field, index) => {
+              const handleProductServiceSelect = (productServiceId: string, productService?: ProductService) => {
+                setValue(`Lines.${index}.ProductServiceId`, productServiceId);
+                if (productService) {
+                  // Auto-populate description and price from product/service
+                  setValue(`Lines.${index}.Description`, productService.Name);
+                  if (productService.SalesPrice !== null) {
+                    setValue(`Lines.${index}.UnitPrice`, productService.SalesPrice);
+                  }
+                }
+              };
+
+              return (
+                <div key={field.id} className="bg-gray-50 p-4 rounded-md">
+                  <div className="flex gap-4 items-start mb-3">
+                    <div className="flex-grow">
+                      <label className="block text-xs font-medium text-gray-500">Product/Service</label>
+                      <Controller
+                        name={`Lines.${index}.ProductServiceId`}
+                        control={control}
+                        render={({ field: psField }) => (
+                          <ProductServiceSelector
+                            value={psField.value || ''}
+                            onChange={handleProductServiceSelect}
+                            disabled={isSubmitting}
+                            placeholder="Select or type description below"
+                          />
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-grow">
+                      <label className="block text-xs font-medium text-gray-500">Description</label>
+                      <input
+                        {...register(`Lines.${index}.Description`)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        placeholder="Item description"
+                      />
+                      {errors.Lines?.[index]?.Description && (
+                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Description?.message}</p>
+                      )}
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-xs font-medium text-gray-500">Qty</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        {...register(`Lines.${index}.Quantity`, { valueAsNumber: true })}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <label className="block text-xs font-medium text-gray-500">Unit Price</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        {...register(`Lines.${index}.UnitPrice`, { valueAsNumber: true })}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <label className="block text-xs font-medium text-gray-500">Amount</label>
+                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium">
+                        ${((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0)).toFixed(2)}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      className="mt-6 text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => remove(index)}
-                  className="mt-6 text-red-600 hover:text-red-800"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {errors.Lines && <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>}
         </div>

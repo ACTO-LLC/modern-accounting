@@ -7,7 +7,7 @@ export default function NewInvoice() {
 
   const onSubmit = async (data: InvoiceFormData) => {
     try {
-      await api.post('/invoices', data);
+      await api.post('/invoices_write', data);
       navigate('/invoices');
     } catch (error) {
       console.error('Failed to create invoice:', error);
