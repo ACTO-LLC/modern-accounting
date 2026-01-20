@@ -260,6 +260,7 @@
             "mappings": {
                 "Id": "Id",
                 "InvoiceId": "InvoiceId",
+                "ProductServiceId": "ProductServiceId",
                 "Description": "Description",
                 "Quantity": "Quantity",
                 "UnitPrice": "UnitPrice",
@@ -269,6 +270,16 @@
                 "UpdatedAt": "UpdatedAt"
             },
             "relationships": {
+                "ProductService": {
+                    "target.entity": "productsservices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ProductServiceId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
                 "RevenueAccount": {
                     "target.entity": "accounts",
                     "cardinality": "one",
