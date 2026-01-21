@@ -331,7 +331,7 @@ describe('Integration Tests', () => {
         .mockResolvedValueOnce(createMockQueryResult([], [1])); // deployed
 
       mockOctokit.pulls.get.mockResolvedValueOnce({
-        data: { state: 'open', mergeable: true },
+        data: { state: 'open', mergeable: true, merged: false, head: { sha: 'abc123' } },
       });
 
       mockOctokit.checks.listForRef.mockResolvedValueOnce({

@@ -119,6 +119,8 @@ describe('Deployment Scheduler', () => {
           state: 'open',
           mergeable: true,
           mergeable_state: 'clean',
+          merged: false,
+          head: { sha: 'abc123' },
         },
       });
 
@@ -147,6 +149,8 @@ describe('Deployment Scheduler', () => {
         data: {
           state: 'closed',
           mergeable: null,
+          merged: true,
+          head: { sha: 'abc123' },
         },
       });
 
@@ -168,6 +172,8 @@ describe('Deployment Scheduler', () => {
           state: 'open',
           mergeable: false,
           mergeable_state: 'dirty',
+          merged: false,
+          head: { sha: 'abc123' },
         },
       });
 
@@ -191,6 +197,8 @@ describe('Deployment Scheduler', () => {
           state: 'open',
           mergeable: true,
           mergeable_state: 'clean',
+          merged: false,
+          head: { sha: 'abc123' },
         },
       });
 
@@ -219,6 +227,8 @@ describe('Deployment Scheduler', () => {
           state: 'open',
           mergeable: true,
           mergeable_state: 'clean',
+          merged: false,
+          head: { sha: 'abc123' },
         },
       });
 
@@ -226,9 +236,10 @@ describe('Deployment Scheduler', () => {
         data: { check_runs: [] },
       });
 
-      mockOctokit.pulls.merge.mockResolvedValueOnce({
-        data: { merged: false },
-      });
+      // The mergePullRequest function only returns false if it catches an error
+      mockOctokit.pulls.merge.mockRejectedValueOnce(
+        new Error('Merge failed: branch is out of date')
+      );
 
       const result = await scheduler.processDeployment(mockDeployment);
 
@@ -254,6 +265,8 @@ describe('Deployment Scheduler', () => {
           state: 'open',
           mergeable: true,
           mergeable_state: 'clean',
+          merged: false,
+          head: { sha: 'abc123' },
         },
       });
 
@@ -281,6 +294,8 @@ describe('Deployment Scheduler', () => {
         data: {
           state: 'open',
           mergeable: false,
+          merged: false,
+          head: { sha: 'abc123' },
         },
       });
 
@@ -325,7 +340,7 @@ describe('Deployment Scheduler', () => {
           .mockResolvedValueOnce(createMockQueryResult([], [1])); // deployed
 
         mockOctokit.pulls.get.mockResolvedValueOnce({
-          data: { state: 'closed' },
+          data: { state: 'closed', merged: true, head: { sha: 'abc123' } },
         });
       }
 
@@ -350,7 +365,7 @@ describe('Deployment Scheduler', () => {
         .mockResolvedValueOnce(createMockQueryResult([], [1]))
         .mockResolvedValueOnce(createMockQueryResult([], [1]));
       mockOctokit.pulls.get.mockResolvedValueOnce({
-        data: { state: 'closed' },
+        data: { state: 'closed', merged: true, head: { sha: 'abc123' } },
       });
 
       // Second deployment fails
@@ -358,7 +373,7 @@ describe('Deployment Scheduler', () => {
         .mockResolvedValueOnce(createMockQueryResult([], [1]))
         .mockResolvedValueOnce(createMockQueryResult([], [1]));
       mockOctokit.pulls.get.mockResolvedValueOnce({
-        data: { state: 'open', mergeable: false },
+        data: { state: 'open', mergeable: false, merged: false, head: { sha: 'abc123' } },
       });
       mockOctokit.checks.listForRef.mockResolvedValueOnce({
         data: { check_runs: [] },
