@@ -197,6 +197,11 @@
                 "CustomerName": "CustomerName",
                 "IssueDate": "IssueDate",
                 "DueDate": "DueDate",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxRateName": "TaxRateName",
+                "TaxRate": "TaxRate",
+                "TaxAmount": "TaxAmount",
                 "TotalAmount": "TotalAmount",
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
@@ -222,6 +227,9 @@
                 "CustomerId": "CustomerId",
                 "IssueDate": "IssueDate",
                 "DueDate": "DueDate",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxAmount": "TaxAmount",
                 "TotalAmount": "TotalAmount",
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
@@ -237,6 +245,16 @@
                     "cardinality": "one",
                     "source.fields": [
                         "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "TaxRate": {
+                    "target.entity": "taxrates",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "TaxRateId"
                     ],
                     "target.fields": [
                         "Id"
@@ -504,6 +522,30 @@
                         "Id"
                     ]
                 }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "taxrates": {
+            "source": "dbo.TaxRates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Rate": "Rate",
+                "Description": "Description",
+                "IsDefault": "IsDefault",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
             },
             "key-fields": [
                 "Id"
