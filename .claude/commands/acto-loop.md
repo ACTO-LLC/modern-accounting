@@ -61,13 +61,43 @@ For each iteration:
 - **New error?** → Reset error timer, continue to next iteration
 - **Same error?** → Increment attempt counter, continue to next iteration
 
-### Phase 3: Complete
+### Phase 3: Create PR
 
 When all acceptance criteria pass:
 1. Commit changes with descriptive message referencing issue
 2. Push branch
 3. Create PR with summary
-4. Output: `<acto-complete>PR #N created: <url></acto-complete>`
+4. Output: `<acto-pr-created>PR #N created: <url></acto-pr-created>`
+5. Continue to Phase 4
+
+### Phase 4: PR Review & Polish
+
+After PR is created:
+
+#### Step 1: Request Copilot Review
+- Add comment to PR: `@Copilot please review this pull request`
+- Wait briefly, then check for Copilot's response
+- Parse any suggestions from Copilot's review
+
+#### Step 2: Implement Suggestions
+For each Copilot suggestion:
+- Evaluate if it's valid and improves the code
+- Implement the change
+- Track what was implemented
+
+#### Step 3: Independent Review Check
+- Verify code follows patterns in CLAUDE.md
+- Check for common issues (null handling, type safety, etc.)
+- Implement any additional improvements found
+
+#### Step 4: Final Verification
+- Re-run build: `npm run build`
+- Re-run tests: `npx playwright test <pattern>`
+- If failures: loop back to fix (but don't count against escape hatch)
+
+#### Step 5: Complete
+- Push final changes to PR
+- Output: `<acto-complete>PR #N ready for merge: <url></acto-complete>`
 
 ## Error Signature Detection
 
@@ -95,6 +125,15 @@ During execution, output progress markers:
 - Result: <build/test outcome>
 ```
 
+## Completion Criteria
+
+ALL must pass before `<acto-complete>`:
+- [ ] `npm run build` succeeds (no TypeScript errors)
+- [ ] Relevant tests pass
+- [ ] PR created and pushed
+- [ ] Copilot review requested and suggestions implemented
+- [ ] Final test pass after review changes
+
 ## Important Rules
 
 1. **Don't fake completion** - Only output `<acto-complete>` when genuinely done
@@ -102,6 +141,12 @@ During execution, output progress markers:
 3. **Try different approaches** - Don't repeat the same fix twice
 4. **Check CLAUDE.md** - Look for known patterns before giving up
 5. **Document learning** - If you discover something novel, suggest adding to CLAUDE.md
+6. **Always do Phase 4** - PR review is not optional; it catches issues
+
+## References
+
+- `docs/pr-review-template.md` - PR review process template
+- `CLAUDE.md` - Project patterns and known issues
 
 ## Example Execution
 
@@ -123,7 +168,16 @@ During execution, output progress markers:
 - Action: Checking onClick handler and modal state
 - Result: Build ✅, Tests ✅
 
-<acto-complete>PR #153 created: https://github.com/ACTO-LLC/modern-accounting/pull/153</acto-complete>
+<acto-pr-created>PR #155 created: https://github.com/ACTO-LLC/modern-accounting/pull/155</acto-pr-created>
+
+[Phase 4: PR Review]
+- Requesting Copilot review...
+- Copilot suggests: Add error handling for edge case
+- Implementing suggestion...
+- Independent review: Code follows CLAUDE.md patterns ✅
+- Final tests: Build ✅, Tests ✅
+
+<acto-complete>PR #155 ready for merge: https://github.com/ACTO-LLC/modern-accounting/pull/155</acto-complete>
 ```
 
 ## Start Now
