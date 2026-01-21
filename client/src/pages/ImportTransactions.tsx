@@ -27,7 +27,7 @@ export default function ImportTransactions() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sourceAccountId, setSourceAccountId] = useState('');
   const [sourceType, setSourceType] = useState<'Bank' | 'CreditCard'>('Bank');
-  const [importedTransactions, setImportedTransactions] = useState<Transaction[]>([]);
+  const [, setImportedTransactions] = useState<Transaction[]>([]);
   const [importing, setImporting] = useState(false);
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
   

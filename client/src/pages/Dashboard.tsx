@@ -29,6 +29,7 @@ interface JournalEntry {
 
 interface JournalEntryLine {
   Id: string;
+  JournalEntryId: string;
   AccountId: string;
   Debit: number;
   Credit: number;
@@ -102,9 +103,6 @@ export default function Dashboard() {
   });
 
   // Calculations
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-
   let totalRevenue = 0;
   let totalExpenses = 0;
   let cashOnHand = 0;

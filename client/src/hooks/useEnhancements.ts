@@ -135,15 +135,12 @@ export function useCreateEnhancement(
   return useMutation({
     mutationFn: ({ description, requestorName = 'Admin' }) =>
       submitEnhancement(description, requestorName),
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data) => {
       // Invalidate all enhancement lists to refetch with new data
       queryClient.invalidateQueries({ queryKey: enhancementKeys.lists() });
 
       // Optionally set the new enhancement in cache
       queryClient.setQueryData(enhancementKeys.detail(data.id), data);
-
-      // Call user-provided onSuccess if exists
-      options?.onSuccess?.(data, variables, context);
     },
     ...options,
   });
@@ -181,37 +178,13 @@ export function useUpdateEnhancement(
 
   return useMutation({
     mutationFn: ({ id, update }) => updateEnhancementStatus(id, update),
-    onMutate: async ({ id, update }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: enhancementKeys.detail(id) });
-
-      // Snapshot the previous value
-      const previousEnhancement = queryClient.getQueryData<Enhancement>(
-        enhancementKeys.detail(id)
-      );
-
-      // Optimistically update the cache
-      if (previousEnhancement) {
-        queryClient.setQueryData<Enhancement>(enhancementKeys.detail(id), {
-          ...previousEnhancement,
-          ...update,
-          updatedAt: new Date().toISOString(),
-        });
-      }
-
-      return { previousEnhancement };
+    onError: (_err, variables) => {
+      // Invalidate to refetch on error
+      queryClient.invalidateQueries({
+        queryKey: enhancementKeys.detail(variables.id),
+      });
     },
-    onError: (err, variables, context) => {
-      // Rollback to previous value on error
-      if (context?.previousEnhancement) {
-        queryClient.setQueryData(
-          enhancementKeys.detail(variables.id),
-          context.previousEnhancement
-        );
-      }
-      options?.onError?.(err, variables, context);
-    },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Refetch to ensure cache is in sync with server
       queryClient.invalidateQueries({
         queryKey: enhancementKeys.detail(variables.id),

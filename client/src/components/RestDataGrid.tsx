@@ -149,31 +149,6 @@ export default function RestDataGrid<T extends GridValidRowModel>({
         },
       },
     },
-    components: {
-      MuiDataGrid: {
-        styleOverrides: {
-          root: {
-            border: 'none',
-            color: '#111827',
-          },
-          cell: {
-            color: '#111827',
-            borderBottom: '1px solid #e5e7eb',
-          },
-          columnHeaders: {
-            backgroundColor: '#f9fafb',
-            borderBottom: '1px solid #e5e7eb',
-          },
-          columnHeaderTitle: {
-            color: '#374151',
-            fontWeight: 600,
-          },
-          footerContainer: {
-            borderTop: '1px solid #e5e7eb',
-          },
-        },
-      },
-    },
   });
 
   return (

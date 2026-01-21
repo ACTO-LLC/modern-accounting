@@ -156,7 +156,7 @@ export function calculateStateWithholding(
   grossPay: number,
   payFrequency: string,
   stateCode?: string,
-  filingStatus?: string,
+  _filingStatus?: string,
   allowances: number = 0
 ): number {
   if (!stateCode || !STATE_TAX_RATES[stateCode]) {

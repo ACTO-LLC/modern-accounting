@@ -71,10 +71,10 @@ export const employeeSchema = z.object({
   PayRate: z.coerce.number().min(0, 'Pay rate must be positive'),
   PayFrequency: z.enum(['Weekly', 'Biweekly', 'Semimonthly', 'Monthly']),
   FederalFilingStatus: z.string().min(1, 'Federal filing status is required'),
-  FederalAllowances: z.coerce.number().min(0).default(0),
+  FederalAllowances: z.coerce.number().min(0).optional(),
   StateCode: z.string().optional().or(z.literal('')),
   StateFilingStatus: z.string().optional().or(z.literal('')),
-  StateAllowances: z.coerce.number().min(0).default(0),
+  StateAllowances: z.coerce.number().min(0).optional(),
   BankRoutingNumber: z.string().max(9).optional().or(z.literal('')),
   BankAccountNumber: z.string().optional().or(z.literal('')),
   BankAccountType: z.string().optional().or(z.literal('')),
@@ -82,7 +82,7 @@ export const employeeSchema = z.object({
   City: z.string().optional().or(z.literal('')),
   State: z.string().optional().or(z.literal('')),
   ZipCode: z.string().optional().or(z.literal('')),
-  Status: z.enum(['Active', 'Inactive', 'Terminated']).default('Active'),
+  Status: z.enum(['Active', 'Inactive', 'Terminated']).optional(),
 });
 
 export type EmployeeFormData = z.infer<typeof employeeSchema>;

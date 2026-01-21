@@ -21,7 +21,7 @@ export const accountSchema = z.object({
   Subtype: z.string().optional(),
   AccountNumber: z.string().max(50, 'Account number must be 50 characters or less').optional(),
   Description: z.string().optional(),
-  IsActive: z.boolean().default(true),
+  IsActive: z.boolean().optional(),
 });
 
 export type AccountFormData = z.infer<typeof accountSchema>;

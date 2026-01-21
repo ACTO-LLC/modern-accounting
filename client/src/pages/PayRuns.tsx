@@ -138,7 +138,6 @@ export default function PayRuns() {
         columns={columns}
         editPath="/payruns/{id}"
         initialPageSize={25}
-        defaultSort={[{ field: 'PayDate', sort: 'desc' }]}
         emptyMessage="No pay runs found. Create your first pay run to get started."
       />
     </div>

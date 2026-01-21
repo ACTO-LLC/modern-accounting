@@ -10,7 +10,7 @@ export const projectSchema = z.object({
   Name: z.string().min(1, 'Project name is required'),
   CustomerId: z.string().min(1, 'Customer is required'),
   Description: z.string().optional(),
-  Status: z.enum(['Active', 'Completed', 'OnHold']).default('Active'),
+  Status: z.enum(['Active', 'Completed', 'OnHold']).optional(),
   StartDate: z.string().optional(),
   EndDate: z.string().optional(),
   BudgetedHours: z.coerce.number().min(0).optional().nullable(),

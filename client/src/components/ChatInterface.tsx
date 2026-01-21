@@ -21,7 +21,7 @@ function sanitizeAndFormatContent(content: string): string {
   // Convert markdown links to HTML - internal links (starting with /) don't open in new tab
   htmlContent = htmlContent.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    (match, text, url) => {
+    (_match, text, url) => {
       const isInternal = url.startsWith('/');
       if (isInternal) {
         return `<a href="${url}" class="underline text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300" data-internal="true">${text}</a>`;
@@ -230,7 +230,6 @@ export default function ChatInterface() {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [qboConnected, setQboConnected] = useState(false);
-  const [qboCompanyName, setQboCompanyName] = useState<string | null>(null);
 
   // Handle clicks on internal links in chat messages
   const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -529,7 +528,6 @@ What would you like to do?`
           compact={true}
           onStatusChange={(status) => {
             setQboConnected(status.connected);
-            setQboCompanyName(status.companyName || null);
           }}
         />
       </div>

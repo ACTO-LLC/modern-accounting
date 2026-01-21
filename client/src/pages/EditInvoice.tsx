@@ -22,6 +22,17 @@ interface InvoiceLine {
   UnitPrice: number;
 }
 
+interface InvoiceWithLines {
+  Id: string;
+  InvoiceNumber: string;
+  CustomerId: string;
+  IssueDate: string;
+  DueDate: string;
+  TotalAmount: number;
+  Status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+  Lines?: InvoiceLine[];
+}
+
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -40,14 +51,14 @@ export default function EditInvoice() {
 
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['invoice', id],
-    queryFn: async () => {
+    queryFn: async (): Promise<InvoiceWithLines | null> => {
       if (!id) return null;
       // Fetch invoice and lines separately since $expand is not supported
       const [invoiceResponse, linesResponse] = await Promise.all([
-        api.get<{ value: any[] }>(`/invoices?$filter=Id eq ${formatGuidForOData(id, 'Invoice Id')}`),
-        api.get<{ value: any[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'Invoice Id')}`)
+        api.get<{ value: InvoiceWithLines[] }>(`/invoices?$filter=Id eq ${formatGuidForOData(id, 'Invoice Id')}`),
+        api.get<{ value: InvoiceLine[] }>(`/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(id, 'Invoice Id')}`)
       ]);
-      
+
       const invoice = invoiceResponse.data.value[0];
       if (invoice) {
         invoice.Lines = linesResponse.data.value;
