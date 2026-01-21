@@ -283,11 +283,13 @@ test.describe('Estimates Management', () => {
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 15000 });
     await page.waitForSelector('.MuiDataGrid-row', { timeout: 15000 });
 
-    // 3. Find and click the first available Convert button
-    const convertButtons = page.getByRole('button', { name: /Convert/i });
-    const firstConvertButton = convertButtons.first();
-    await expect(firstConvertButton).toBeVisible({ timeout: 10000 });
-    await firstConvertButton.click();
+    // 3. Find the specific estimate row by estimateNumber and click its Convert button
+    const estimateRow = page.locator('.MuiDataGrid-row').filter({ hasText: estimateNumber });
+    await expect(estimateRow).toBeVisible({ timeout: 10000 });
+    
+    const convertButton = estimateRow.getByRole('button', { name: /Convert/i });
+    await expect(convertButton).toBeVisible({ timeout: 10000 });
+    await convertButton.click();
 
     // 4. Wait for confirmation modal to appear
     const modalTitle = page.getByRole('heading', { name: 'Convert to Invoice' });
@@ -301,7 +303,19 @@ test.describe('Estimates Management', () => {
     // 5. Should redirect to invoice edit page
     await expect(page).toHaveURL(/\/invoices\/.*\/edit/, { timeout: 30000 });
 
-    // 6. Verify the invoice page loads correctly
+    // 6. Verify the invoice page loads correctly and contains data from the estimate
     await expect(page.getByRole('heading', { name: /Edit Invoice/i })).toBeVisible({ timeout: 10000 });
+    
+    // Verify the invoice has the correct customer (should match the estimate)
+    const customerButton = page.getByRole('button', { name: /Acme Corporation/i });
+    await expect(customerButton).toBeVisible({ timeout: 5000 });
+    
+    // Verify the total amount matches the estimate
+    const totalAmountField = page.getByLabel('Total Amount');
+    await expect(totalAmountField).toHaveValue('1500');
+    
+    // Verify the status is Draft
+    const statusField = page.getByLabel('Status');
+    await expect(statusField).toHaveValue('Draft');
   });
 });
