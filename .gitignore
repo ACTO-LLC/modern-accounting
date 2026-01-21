@@ -54,8 +54,10 @@ chat-api/uploads/
 
 tmpclaude*
 nul
-# Local Claude Code settings
-.claude/
+# Local Claude Code settings (user-specific)
+.claude/settings*.json
+# Allow shared commands
+!.claude/commands/
 .mcp.json
 
 scratch
