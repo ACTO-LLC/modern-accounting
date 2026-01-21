@@ -129,21 +129,23 @@ export async function pollForCopilotResponse(
 function parseCopilotResponse(body: string): CopilotReviewResult {
   const lowerBody = body.toLowerCase();
 
-  // Check for approval indicators
+  // Check for explicit approval indicators first
   const approvalIndicators = [
     'looks good',
     'lgtm',
     'approved',
     'no issues found',
+    'no issues',
     'no concerns',
     'well-written',
     'good to merge',
   ];
-  const approved = approvalIndicators.some((indicator) =>
+  const hasExplicitApproval = approvalIndicators.some((indicator) =>
     lowerBody.includes(indicator)
   );
 
-  // Check for issue indicators
+  // Check for issue indicators only if not explicitly approved
+  // This prevents "no issues found" from being flagged as having issues
   const issueIndicators = [
     'issue',
     'bug',
@@ -158,7 +160,7 @@ function parseCopilotResponse(body: string): CopilotReviewResult {
     'error',
     'problem',
   ];
-  const hasIssues = issueIndicators.some((indicator) =>
+  const hasIssues = !hasExplicitApproval && issueIndicators.some((indicator) =>
     lowerBody.includes(indicator)
   );
 
@@ -168,13 +170,15 @@ function parseCopilotResponse(body: string): CopilotReviewResult {
     .filter((line) => /^[\s]*[-*\d.]/.test(line) && line.trim().length > 3)
     .map((line) => line.trim());
 
+  const isApproved = hasExplicitApproval && !hasIssues;
+
   console.log(
-    `Parsed Copilot response: approved=${approved && !hasIssues}, suggestions=${suggestions.length}`
+    `Parsed Copilot response: approved=${isApproved}, suggestions=${suggestions.length}`
   );
 
   return {
     responded: true,
-    approved: approved && !hasIssues,
+    approved: isApproved,
     suggestions,
     rawResponse: body,
   };
