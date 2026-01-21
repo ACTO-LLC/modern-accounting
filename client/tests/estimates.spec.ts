@@ -35,8 +35,8 @@ test.describe('Estimates Management', () => {
     await page.getByRole('button', { name: /Select a customer/i }).click();
     await page.getByRole('option').first().click();
 
-    await page.getByLabel('Issue Date').fill('2025-01-15');
-    await page.getByLabel('Expiration Date').fill('2025-02-15');
+    await page.getByLabel('Issue Date').fill('2026-01-15');
+    await page.getByLabel('Expiration Date').fill('2026-02-15');
     await page.getByLabel('Status').selectOption('Draft');
     await page.getByLabel('Notes').fill('Test estimate notes');
 
@@ -74,7 +74,7 @@ test.describe('Estimates Management', () => {
     await page.getByRole('button', { name: /Select a customer/i }).click();
     await page.getByRole('option').first().click();
 
-    await page.getByLabel('Issue Date').fill('2025-01-15');
+    await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.locator('input[name="Lines.0.Description"]').fill('Initial Service');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
     await page.locator('input[name="Lines.0.UnitPrice"]').fill('100');
@@ -84,8 +84,9 @@ test.describe('Estimates Management', () => {
     await expect(page).toHaveURL(/\/estimates$/, { timeout: 30000 });
 
     // 2. Query for the created estimate to get its ID
+    const escapedEstimateNumber = String(estimateNumber).replace(/'/g, "''");
     const queryResponse = await page.request.get(
-      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${estimateNumber}'`
+      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${escapedEstimateNumber}'`
     );
     const queryResult = await queryResponse.json();
     const estimate = queryResult.value[0];
@@ -194,7 +195,7 @@ test.describe('Estimates Management', () => {
     await page.getByRole('button', { name: /Select a customer/i }).click();
     await page.getByRole('option').first().click();
 
-    await page.getByLabel('Issue Date').fill('2025-01-15');
+    await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.getByLabel('Status').selectOption('Draft');
     await page.locator('input[name="Lines.0.Description"]').fill('Draft Service');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
@@ -203,8 +204,9 @@ test.describe('Estimates Management', () => {
     await expect(page).toHaveURL(/\/estimates$/, { timeout: 30000 });
 
     // 2. Verify Draft estimate was created via API
+    const escapedDraftEstimateNumber = String(draftEstimateNumber).replace(/'/g, "''");
     const draftResponse = await page.request.get(
-      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${draftEstimateNumber}'`
+      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${escapedDraftEstimateNumber}'`
     );
     const draftResult = await draftResponse.json();
     expect(draftResult.value).toHaveLength(1);
@@ -219,7 +221,7 @@ test.describe('Estimates Management', () => {
     await page.getByRole('button', { name: /Select a customer/i }).click();
     await page.getByRole('option').first().click();
 
-    await page.getByLabel('Issue Date').fill('2025-01-15');
+    await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.getByLabel('Status').selectOption('Sent');
     await page.locator('input[name="Lines.0.Description"]').fill('Sent Service');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
@@ -228,8 +230,9 @@ test.describe('Estimates Management', () => {
     await expect(page).toHaveURL(/\/estimates$/, { timeout: 30000 });
 
     // 4. Verify Sent estimate was created via API
+    const escapedSentEstimateNumber = String(sentEstimateNumber).replace(/'/g, "''");
     const sentResponse = await page.request.get(
-      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${sentEstimateNumber}'`
+      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${escapedSentEstimateNumber}'`
     );
     const sentResult = await sentResponse.json();
     expect(sentResult.value).toHaveLength(1);
@@ -245,8 +248,8 @@ test.describe('Estimates Management', () => {
     const estimateData = {
       EstimateNumber: estimateNumber,
       CustomerId: '83133C08-C910-4660-8A29-F11BCF8532F4', // Acme Corporation
-      IssueDate: '2025-01-15',
-      ExpirationDate: '2025-02-15',
+      IssueDate: '2026-01-15',
+      ExpirationDate: '2026-02-15',
       Status: 'Accepted',
       TotalAmount: 1500.00,
     };
@@ -256,8 +259,9 @@ test.describe('Estimates Management', () => {
     });
 
     // Query for the created estimate
+    const escapedEstimateNumber = String(estimateNumber).replace(/'/g, "''");
     const queryResponse = await page.request.get(
-      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${estimateNumber}'`
+      `http://localhost:5000/api/estimates?$filter=EstimateNumber eq '${escapedEstimateNumber}'`
     );
     const queryResult = await queryResponse.json();
     const estimate = queryResult.value[0];

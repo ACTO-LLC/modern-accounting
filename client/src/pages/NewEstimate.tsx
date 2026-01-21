@@ -27,8 +27,9 @@ export default function NewEstimate() {
       await api.post('/estimates_write', estimateData);
 
       // DAB doesn't return the created entity, so we need to query for it
+      const escapedEstimateNumber = String(estimateData.EstimateNumber).replace(/'/g, "''");
       const queryResponse = await api.get<{ value: CreateEstimateResponse[] }>(
-        `/estimates?$filter=EstimateNumber eq '${estimateData.EstimateNumber}'`
+        `/estimates?$filter=EstimateNumber eq '${escapedEstimateNumber}'`
       );
       const estimate = queryResponse.data.value[0];
 

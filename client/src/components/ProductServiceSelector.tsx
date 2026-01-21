@@ -220,7 +220,12 @@ export default function ProductServiceSelector({
               role="button"
               tabIndex={0}
               onClick={handleClear}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClear(e as unknown as React.MouseEvent); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLSpanElement).click();
+                }
+              }}
               className="mr-1 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
               aria-label="Clear selection"
             >
