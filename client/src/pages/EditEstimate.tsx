@@ -68,7 +68,7 @@ export default function EditEstimate() {
 
       // 1. Update Estimate (exclude Lines)
       const { Lines, ...estimateData } = data;
-      await api.patch(`/estimates/Id/${id}`, estimateData);
+      await api.patch(`/estimates_write/Id/${id}`, estimateData);
 
       // 2. Handle Lines Reconciliation
       // Fetch current lines from DB to know what to delete

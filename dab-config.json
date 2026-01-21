@@ -887,6 +887,30 @@
                 "UpdatedAt": "UpdatedAt"
             }
         },
+        "estimates_write": {
+            "source": "dbo.Estimates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EstimateNumber": "EstimateNumber",
+                "CustomerId": "CustomerId",
+                "IssueDate": "IssueDate",
+                "ExpirationDate": "ExpirationDate",
+                "TotalAmount": "TotalAmount",
+                "Status": "Status",
+                "ConvertedToInvoiceId": "ConvertedToInvoiceId",
+                "Notes": "Notes"
+            }
+        },
         "estimatelines": {
             "source": "dbo.EstimateLines",
             "permissions": [

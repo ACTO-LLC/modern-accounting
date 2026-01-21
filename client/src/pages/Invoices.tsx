@@ -78,7 +78,7 @@ export default function Invoices() {
         Status: 'Draft'
       };
 
-      const createResponse = await api.post<Invoice>('/invoices', newInvoice);
+      const createResponse = await api.post<Invoice>('/invoices_write', newInvoice);
       const createdInvoice = createResponse.data;
 
       await Promise.all(
