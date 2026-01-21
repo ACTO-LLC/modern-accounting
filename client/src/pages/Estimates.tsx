@@ -67,13 +67,14 @@ export default function Estimates() {
       }
 
       const linesResponse = await api.get<{ value: EstimateLine[] }>(
-        `/estimatelines?\$filter=EstimateId eq ${formatGuidForOData(estimate.Id, 'EstimateId')}`
+        `/estimatelines?$filter=EstimateId eq ${formatGuidForOData(estimate.Id, 'EstimateId')}`
       );
       const lines = linesResponse.data.value;
 
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
 
-      const invoiceResponse = await api.post<Invoice>('/invoices_write', {
+      // Create the invoice
+      await api.post('/invoices_write', {
         InvoiceNumber: invoiceNumber,
         CustomerId: estimate.CustomerId,
         IssueDate: new Date().toISOString().split('T')[0],
@@ -81,7 +82,15 @@ export default function Estimates() {
         TotalAmount: estimate.TotalAmount,
         Status: 'Draft',
       });
-      const invoice = invoiceResponse.data;
+
+      // DAB doesn't return the created entity, so query for it by InvoiceNumber
+      const invoiceQueryResponse = await api.get<{ value: Invoice[] }>(
+        `/invoices?$filter=InvoiceNumber eq '${invoiceNumber}'`
+      );
+      const invoice = invoiceQueryResponse.data.value[0];
+      if (!invoice) {
+        throw new Error('Failed to retrieve created invoice');
+      }
 
       await Promise.all(
         lines.map((line: EstimateLine) =>
