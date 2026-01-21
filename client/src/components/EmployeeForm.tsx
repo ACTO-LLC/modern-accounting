@@ -57,32 +57,37 @@ const BANK_ACCOUNT_TYPES = [
   { value: 'Savings', label: 'Savings' },
 ];
 
+// Helper to handle null from API - transforms null to undefined for Zod
+const nullToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((val) => (val === null ? undefined : val), schema);
+
 export const employeeSchema = z.object({
   EmployeeNumber: z.string().min(1, 'Employee number is required'),
   FirstName: z.string().min(1, 'First name is required'),
   LastName: z.string().min(1, 'Last name is required'),
-  Email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  Phone: z.string().optional(),
-  SSNLast4: z.string().max(4, 'Enter only last 4 digits').optional().or(z.literal('')),
-  DateOfBirth: z.string().optional().or(z.literal('')),
+  // Use nullToUndefined to handle null values from API (see CLAUDE.md)
+  Email: nullToUndefined(z.string().email('Invalid email address').optional().or(z.literal(''))),
+  Phone: nullToUndefined(z.string().optional()),
+  SSNLast4: nullToUndefined(z.string().max(4, 'Enter only last 4 digits').optional().or(z.literal(''))),
+  DateOfBirth: nullToUndefined(z.string().optional().or(z.literal(''))),
   HireDate: z.string().min(1, 'Hire date is required'),
-  TerminationDate: z.string().optional().or(z.literal('')),
+  TerminationDate: nullToUndefined(z.string().optional().or(z.literal(''))),
   PayType: z.enum(['Hourly', 'Salary']),
   PayRate: z.coerce.number().min(0, 'Pay rate must be positive'),
   PayFrequency: z.enum(['Weekly', 'Biweekly', 'Semimonthly', 'Monthly']),
   FederalFilingStatus: z.string().min(1, 'Federal filing status is required'),
-  FederalAllowances: z.coerce.number().min(0).optional(),
-  StateCode: z.string().optional().or(z.literal('')),
-  StateFilingStatus: z.string().optional().or(z.literal('')),
-  StateAllowances: z.coerce.number().min(0).optional(),
-  BankRoutingNumber: z.string().max(9).optional().or(z.literal('')),
-  BankAccountNumber: z.string().optional().or(z.literal('')),
-  BankAccountType: z.string().optional().or(z.literal('')),
-  Address: z.string().optional().or(z.literal('')),
-  City: z.string().optional().or(z.literal('')),
-  State: z.string().optional().or(z.literal('')),
-  ZipCode: z.string().optional().or(z.literal('')),
-  Status: z.enum(['Active', 'Inactive', 'Terminated']).optional(),
+  FederalAllowances: nullToUndefined(z.coerce.number().min(0).optional()),
+  StateCode: nullToUndefined(z.string().optional().or(z.literal(''))),
+  StateFilingStatus: nullToUndefined(z.string().optional().or(z.literal(''))),
+  StateAllowances: nullToUndefined(z.coerce.number().min(0).optional()),
+  BankRoutingNumber: nullToUndefined(z.string().max(9).optional().or(z.literal(''))),
+  BankAccountNumber: nullToUndefined(z.string().optional().or(z.literal(''))),
+  BankAccountType: nullToUndefined(z.string().optional().or(z.literal(''))),
+  Address: nullToUndefined(z.string().optional().or(z.literal(''))),
+  City: nullToUndefined(z.string().optional().or(z.literal(''))),
+  State: nullToUndefined(z.string().optional().or(z.literal(''))),
+  ZipCode: nullToUndefined(z.string().optional().or(z.literal(''))),
+  Status: nullToUndefined(z.enum(['Active', 'Inactive', 'Terminated']).optional()),
 });
 
 export type EmployeeFormData = z.infer<typeof employeeSchema>;
