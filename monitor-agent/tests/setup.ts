@@ -16,27 +16,37 @@ vi.stubEnv('DB_PASSWORD', 'TestPassword123');
 vi.stubEnv('DB_SERVER', 'localhost');
 vi.stubEnv('DB_PORT', '14330');
 vi.stubEnv('DB_NAME', 'TestDB');
+vi.stubEnv('ENABLE_EMAIL_NOTIFICATIONS', 'true');
 
-// Mock mssql module
-export const mockRequest = {
-  input: vi.fn().mockReturnThis(),
-  query: vi.fn(),
-  batch: vi.fn(),
-};
+// Use vi.hoisted() to ensure mocks are defined before vi.mock factory runs
+// This is necessary because vi.mock() calls are hoisted to the top of the file
+const hoistedMocks = vi.hoisted(() => {
+  const mockRequest = {
+    input: vi.fn().mockReturnThis(),
+    query: vi.fn(),
+    batch: vi.fn(),
+  };
 
-export const mockPool = {
-  connected: true,
-  request: vi.fn(() => mockRequest),
-  close: vi.fn(),
-};
+  const mockPool = {
+    connected: true,
+    request: vi.fn(() => mockRequest),
+    close: vi.fn(),
+  };
+
+  return { mockRequest, mockPool };
+});
+
+// Export the mocks for use in tests
+export const mockRequest = hoistedMocks.mockRequest;
+export const mockPool = hoistedMocks.mockPool;
 
 vi.mock('mssql', () => ({
   default: {
-    connect: vi.fn(() => Promise.resolve(mockPool)),
-    ConnectionPool: vi.fn(() => mockPool),
+    connect: vi.fn(() => Promise.resolve(hoistedMocks.mockPool)),
+    ConnectionPool: vi.fn(() => hoistedMocks.mockPool),
     Int: 'Int',
-    NVarChar: vi.fn((size) => `NVarChar(${size})`),
-    VarChar: vi.fn((size) => `VarChar(${size})`),
+    NVarChar: vi.fn((size: number | string) => `NVarChar(${size})`),
+    VarChar: vi.fn((size: number) => `VarChar(${size})`),
     DateTime2: 'DateTime2',
     MAX: 'MAX',
   },
@@ -64,6 +74,14 @@ export const mockOctokit = {
           state: 'open',
           mergeable: true,
           mergeable_state: 'clean',
+          merged: false,
+          head: {
+            sha: 'abc123def456',
+            ref: 'feature/test-branch',
+          },
+          base: {
+            ref: 'main',
+          },
         },
       })
     ),
@@ -201,7 +219,7 @@ export const mockDeployment = {
   BranchName: 'feature/1-add-new-feature',
   PrNumber: 42,
   Description: 'Add new feature implementation',
-  RequestorName: 'Test User',
+  RequestorName: 'test@example.com', // Must contain @ for sendDeploymentNotification to call sendEmail
 };
 
 /**
@@ -245,6 +263,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   // Reset mock pool state
   mockPool.connected = true;
+  // Re-establish mock implementations that may have been cleared
+  mockPool.request.mockImplementation(() => mockRequest);
+  mockRequest.input.mockImplementation(function (this: typeof mockRequest) {
+    return this;
+  });
 });
 
 /**
