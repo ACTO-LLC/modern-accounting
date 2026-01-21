@@ -63,7 +63,7 @@ export default function EditInvoice() {
       
       // 1. Update Invoice (exclude Lines)
       const { Lines, ...invoiceData } = data;
-      await api.patch(`/invoices/Id/${id}`, invoiceData);
+      await api.patch(`/invoices_write/Id/${id}`, invoiceData);
 
       // 2. Handle Lines Reconciliation
       // Fetch current lines from DB to know what to delete
@@ -139,7 +139,7 @@ export default function EditInvoice() {
         Status: 'Draft'
       };
 
-      const createResponse = await api.post<Invoice>('/invoices', newInvoice);
+      const createResponse = await api.post<Invoice>('/invoices_write', newInvoice);
       const createdInvoice = createResponse.data;
 
       // Create line items for the new invoice in parallel

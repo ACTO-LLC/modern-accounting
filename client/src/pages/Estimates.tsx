@@ -73,7 +73,7 @@ export default function Estimates() {
 
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
 
-      const invoiceResponse = await api.post<Invoice>('/invoices', {
+      const invoiceResponse = await api.post<Invoice>('/invoices_write', {
         InvoiceNumber: invoiceNumber,
         CustomerId: estimate.CustomerId,
         IssueDate: new Date().toISOString().split('T')[0],
@@ -94,7 +94,7 @@ export default function Estimates() {
         )
       );
 
-      await api.patch(`/estimates/Id/${estimate.Id}`, {
+      await api.patch(`/estimates_write/Id/${estimate.Id}`, {
         Status: 'Converted',
         ConvertedToInvoiceId: invoice.Id,
       });
@@ -114,8 +114,7 @@ export default function Estimates() {
     },
   });
 
-  const handleConvertClick = (e: React.MouseEvent, estimate: Estimate) => {
-    e.stopPropagation();
+  const handleConvertClick = (estimate: Estimate) => {
     setConfirmModal({ isOpen: true, estimate });
   };
 

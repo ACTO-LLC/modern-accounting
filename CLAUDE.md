@@ -231,24 +231,30 @@ npx playwright test --ui                               # Interactive UI mode
 
 ### DAB Read vs Write Endpoints (Jan 2026)
 
-**Problem:** Some DAB endpoints use views (read-only) while writes require separate `_write` endpoints.
+**Problem:** Some DAB endpoints use views (read-only) while writes require separate `_write` endpoints. Attempting to POST/PATCH/DELETE to a view endpoint returns `403 Forbidden`.
 
 **Affected Entities:**
 - `/invoices` (view: `dbo.v_Invoices`) - READ ONLY
 - `/invoices_write` (table: `dbo.Invoices`) - CREATE/UPDATE/DELETE
-- `/estimates` (view: `dbo.v_Estimates`) - READ ONLY (no write endpoint yet)
+- `/estimates` (view: `dbo.v_Estimates`) - READ ONLY
+- `/estimates_write` (table: `dbo.Estimates`) - CREATE/UPDATE/DELETE
 
 **Frontend must use correct endpoints:**
 ```typescript
-// Reading invoices (uses view for joined data)
+// Reading (uses view for joined data like CustomerName)
 await api.get('/invoices');
+await api.get('/estimates');
 
-// Creating/updating invoices (uses table directly)
+// Creating/updating/deleting (uses table directly)
 await api.post('/invoices_write', data);
 await api.patch(`/invoices_write/Id/${id}`, data);
+await api.post('/estimates_write', data);
+await api.patch(`/estimates_write/Id/${id}`, data);
 ```
 
 **Why Views?** Views join related data (customer names, totals) for display. Direct table access is needed for writes.
+
+**Common Symptom:** Form save button appears to do nothing, browser console shows `403 Forbidden` error on POST/PATCH request.
 
 ---
 
