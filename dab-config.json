@@ -899,6 +899,9 @@
                     ]
                 }
             ],
+            "key-fields": [
+                "Id"
+            ],
             "mappings": {
                 "Id": "Id",
                 "EstimateNumber": "EstimateNumber",

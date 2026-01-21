@@ -19,8 +19,9 @@ export default function NewInvoice() {
       await api.post('/invoices_write', invoiceData);
 
       // DAB doesn't return the created entity, so we need to query for it
+      const escapedInvoiceNumber = String(invoiceData.InvoiceNumber).replace(/'/g, "''");
       const queryResponse = await api.get<{ value: Invoice[] }>(
-        `/invoices?$filter=InvoiceNumber eq '${invoiceData.InvoiceNumber}'`
+        `/invoices?$filter=InvoiceNumber eq '${escapedInvoiceNumber}'`
       );
       const invoice = queryResponse.data.value[0];
 

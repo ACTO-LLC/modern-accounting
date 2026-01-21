@@ -7,8 +7,8 @@ test.describe('Invoice Edit and Save', () => {
     const invoiceData = {
       InvoiceNumber: `TEST-SAVE-${Date.now()}`,
       CustomerId: '83133C08-C910-4660-8A29-F11BCF8532F4', // Acme Corporation
-      IssueDate: '2023-11-28',
-      DueDate: '2023-12-28',
+      IssueDate: '2026-11-28',
+      DueDate: '2026-12-28',
       Status: 'Draft',
       TotalAmount: 100.00,
     };
@@ -19,8 +19,9 @@ test.describe('Invoice Edit and Save', () => {
     });
 
     // Query for the created invoice since DAB doesn't return it
+    const escapedInvoiceNumber = String(invoiceData.InvoiceNumber).replace(/'/g, "''");
     const queryResponse = await page.request.get(
-      `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${invoiceData.InvoiceNumber}'`
+      `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${escapedInvoiceNumber}'`
     );
     const queryResult = await queryResponse.json();
     const invoice = queryResult.value[0];
@@ -63,8 +64,9 @@ test.describe('Invoice Edit and Save', () => {
     await page.waitForTimeout(2000);
 
     // 7. Verify changes in DB via API
+    const escapedNewInvoiceNumber = String(newInvoiceNumber).replace(/'/g, "''");
     const verifyResponse = await page.request.get(
-      `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${newInvoiceNumber}'`
+      `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${escapedNewInvoiceNumber}'`
     );
     const verifyJson = await verifyResponse.json();
     const updatedInvoice = verifyJson.value[0];
