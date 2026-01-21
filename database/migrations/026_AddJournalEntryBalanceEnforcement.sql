@@ -100,9 +100,9 @@ BEGIN
     DECLARE @AffectedEntries TABLE (JournalEntryId UNIQUEIDENTIFIER);
 
     INSERT INTO @AffectedEntries (JournalEntryId)
-    SELECT DISTINCT JournalEntryId FROM inserted
-    UNION
-    SELECT DISTINCT JournalEntryId FROM deleted;
+    SELECT JournalEntryId FROM inserted
+    UNION ALL
+    SELECT JournalEntryId FROM deleted;
 
     -- Check balance for each affected entry
     DECLARE @UnbalancedEntries TABLE (
@@ -119,7 +119,7 @@ BEGIN
         SUM(l.Credit) AS TotalCredit,
         ABS(SUM(l.Debit) - SUM(l.Credit)) AS Difference
     FROM [dbo].[JournalEntryLines] l
-    WHERE l.JournalEntryId IN (SELECT JournalEntryId FROM @AffectedEntries)
+    WHERE l.JournalEntryId IN (SELECT DISTINCT JournalEntryId FROM @AffectedEntries)
     GROUP BY l.JournalEntryId
     HAVING ABS(SUM(l.Debit) - SUM(l.Credit)) > 0.0001; -- Allow tiny rounding tolerance
 

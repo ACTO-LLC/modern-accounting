@@ -204,7 +204,7 @@ export default function NewJournalEntry() {
                 </div>
                 {errors.Lines?.[index] && (
                   <p className="mt-1 text-sm text-red-600">
-                    {errors.Lines[index]?.root?.message || errors.Lines[index]?.AccountId?.message}
+                    {errors.Lines[index]?.message || errors.Lines[index]?.AccountId?.message}
                   </p>
                 )}
               </div>
