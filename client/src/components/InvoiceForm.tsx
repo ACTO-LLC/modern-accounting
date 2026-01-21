@@ -15,12 +15,12 @@ export const invoiceSchema = z.object({
   TotalAmount: z.number().min(0, 'Amount must be positive'),
   Status: z.enum(['Draft', 'Sent', 'Paid', 'Overdue']),
   Lines: z.array(z.object({
-    Id: z.string().optional(),
-    ProductServiceId: z.string().optional(),
+    Id: z.string().nullish(),
+    ProductServiceId: z.string().nullish(),
     Description: z.string().min(1, 'Description is required'),
     Quantity: z.number().min(1, 'Quantity must be at least 1'),
     UnitPrice: z.number().min(0, 'Unit price must be positive'),
-    Amount: z.number().optional()
+    Amount: z.number().nullish()
   })).min(1, 'At least one line item is required')
 });
 

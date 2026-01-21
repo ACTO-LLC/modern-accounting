@@ -61,8 +61,7 @@ test.describe('Estimates Management', () => {
     await expect(page).toHaveURL(/\/estimates$/, { timeout: 30000 });
   });
 
-  // TODO: Known issue - form save not triggering in test environment (works in browser)
-  test.skip('should edit an existing estimate', async ({ page }) => {
+  test('should edit an existing estimate', async ({ page }) => {
     const timestamp = Date.now();
     const estimateNumber = `EST-EDIT-${timestamp}`;
 

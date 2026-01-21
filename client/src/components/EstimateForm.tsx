@@ -9,12 +9,12 @@ import ProductServiceSelector, { ProductService } from './ProductServiceSelector
 
 // Line item schema with proper validation
 const lineItemSchema = z.object({
-  Id: z.string().optional(),
-  ProductServiceId: z.string().optional(),
+  Id: z.string().nullish(),
+  ProductServiceId: z.string().nullish(),
   Description: z.string().min(1, 'Description is required'),
   Quantity: z.number().min(0.0001, 'Quantity must be positive'),
   UnitPrice: z.number().min(0, 'Unit price must be zero or positive'),
-  Amount: z.number().optional()
+  Amount: z.number().nullish()
 });
 
 // Main estimate schema with date validation

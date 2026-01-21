@@ -18,9 +18,9 @@ export const billSchema = z.object({
   Terms: z.string().optional(),
   Memo: z.string().optional(),
   Lines: z.array(z.object({
-    Id: z.string().optional(),
+    Id: z.string().nullish(),
     AccountId: z.string().uuid('Please select an account'),
-    Description: z.string().optional(),
+    Description: z.string().nullish(),
     Amount: z.number().min(0, 'Amount must be positive')
   })).min(1, 'At least one line item is required')
 });

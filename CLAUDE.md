@@ -298,3 +298,46 @@ Journal entries MUST always satisfy these rules to maintain valid double-entry b
 - Zero amounts are allowed as placeholders during form editing, but submission requires non-zero amounts
 - Rounding tolerance: 0.0001 difference allowed to handle floating-point precision
 - System-versioned tables: Constraints must be added with SYSTEM_VERSIONING temporarily disabled
+
+---
+
+### Zod Schema: Use `.nullish()` for API Fields (Jan 2026)
+
+**Problem:** Form silently fails to submit when editing existing records. No error messages shown, button does nothing.
+
+**Root Cause:** The database returns `null` for empty nullable columns, but Zod's `.optional()` only accepts `undefined`, not `null`. This causes silent validation failure.
+
+**Solution:** Use `.nullish()` instead of `.optional()` for any field that comes from the API:
+
+```typescript
+// WRONG - fails silently when API returns null
+const schema = z.object({
+  Id: z.string().optional(),
+  ProductServiceId: z.string().optional(),
+  Amount: z.number().optional()
+});
+
+// CORRECT - accepts both null and undefined
+const schema = z.object({
+  Id: z.string().nullish(),
+  ProductServiceId: z.string().nullish(),
+  Amount: z.number().nullish()
+});
+```
+
+**Why This Happens:**
+- SQL Server `NULL` → DAB API returns `null` (not `undefined`)
+- JavaScript `undefined` ≠ `null`
+- Zod `.optional()` = `T | undefined`
+- Zod `.nullish()` = `T | null | undefined`
+
+**When to Use Each:**
+- `.nullish()` - Fields from API/database (nullable columns)
+- `.optional()` - Fields that are truly optional in forms and never come from API with null
+
+**Testing Tip:** Always test the **edit** flow with real database records, not just the create flow. Create tests skip this issue because new records don't have null fields yet.
+
+**Affected Files (fixed Jan 2026):**
+- `EstimateForm.tsx` - line item schema
+- `InvoiceForm.tsx` - line item schema
+- `BillForm.tsx` - line item schema
