@@ -53,7 +53,8 @@ For each iteration:
 
 #### Step 4: Verify
 - Run `npm run build` in client folder
-- Run relevant tests: `npx playwright test <pattern>`
+- Run relevant tests: `VITE_BYPASS_AUTH=true npx playwright test <pattern>`
+  - Note: Auth bypass is required for Playwright tests (see CLAUDE.md)
 - Check results
 
 #### Step 5: Evaluate
@@ -92,7 +93,7 @@ For each Copilot suggestion:
 
 #### Step 4: Final Verification
 - Re-run build: `npm run build`
-- Re-run tests: `npx playwright test <pattern>`
+- Re-run tests: `VITE_BYPASS_AUTH=true npx playwright test <pattern>`
 - If failures: loop back to fix (but don't count against escape hatch)
 
 #### Step 5: Complete
