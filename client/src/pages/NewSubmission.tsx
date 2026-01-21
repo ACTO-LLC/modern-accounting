@@ -14,7 +14,7 @@ const submissionSchema = z.object({
   Type: z.enum(['Bug', 'Enhancement', 'Question'], {
     required_error: 'Please select a type'
   }),
-  Priority: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium'),
+  Priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
   Description: z.string().optional(),
   StepsToReproduce: z.string().optional(),
   ExpectedBehavior: z.string().optional(),

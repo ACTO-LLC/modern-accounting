@@ -9,7 +9,6 @@ import { EnhancementDetail } from '../components/admin/EnhancementDetail';
 import { DeploymentScheduler } from '../components/admin/DeploymentScheduler';
 import {
   Enhancement,
-  Deployment,
   getEnhancements,
   submitEnhancement,
   getDeployments,
@@ -35,7 +34,7 @@ const tabs: Tab[] = [
 export default function AdminEnhancements() {
   const [activeTab, setActiveTab] = useState<TabId>('new');
   const [selectedEnhancement, setSelectedEnhancement] = useState<Enhancement | null>(null);
-  const [schedulingEnhancement, setSchedulingEnhancement] = useState<Enhancement | null>(null);
+  const [, setSchedulingEnhancement] = useState<Enhancement | null>(null);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 

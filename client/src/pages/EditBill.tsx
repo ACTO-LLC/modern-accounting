@@ -27,7 +27,7 @@ interface Bill {
   DueDate: string;
   TotalAmount: number;
   AmountPaid: number;
-  Status: string;
+  Status: 'Draft' | 'Open' | 'Paid' | 'Partial' | 'Overdue';
   Terms: string;
   Memo: string;
   Lines?: BillLine[];

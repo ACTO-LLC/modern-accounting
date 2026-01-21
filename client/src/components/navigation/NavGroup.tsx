@@ -17,7 +17,7 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
   const { isCollapsed, isGroupExpanded, toggleGroup } = useSidebar();
   const [showFlyout, setShowFlyout] = useState(false);
   const [flyoutPosition, setFlyoutPosition] = useState({ top: 0, left: 0 });
-  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
 

@@ -13,9 +13,9 @@ export const vendorSchema = z.object({
   Address: z.string().optional(),
   PaymentTerms: z.string().optional(),
   TaxId: z.string().optional(),
-  Is1099Vendor: z.boolean().default(false),
+  Is1099Vendor: z.boolean().optional(),
   DefaultExpenseAccountId: z.string().uuid().optional().nullable(),
-  Status: z.enum(['Active', 'Inactive']).default('Active'),
+  Status: z.enum(['Active', 'Inactive']).optional(),
 });
 
 export type VendorFormData = z.infer<typeof vendorSchema>;

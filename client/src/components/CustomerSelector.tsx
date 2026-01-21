@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Search, Loader2, RefreshCw, Plus } from 'lucide-react';
-import { customersApi, Customer } from '../lib/api';
+import { customersApi } from '../lib/api';
 import QuickAddCustomerModal from './QuickAddCustomerModal';
 
 export interface CustomerSelectorProps {

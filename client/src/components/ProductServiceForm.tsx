@@ -11,22 +11,14 @@ export const productServiceSchema = z.object({
   SKU: z.string().optional().nullable(),
   Type: z.enum(['Inventory', 'NonInventory', 'Service'], { required_error: 'Type is required' }),
   Description: z.string().optional().nullable(),
-  SalesPrice: z.union([z.number(), z.string()]).optional().nullable().transform(val => {
-    if (val === '' || val === null || val === undefined) return null;
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    return isNaN(num) ? null : num;
-  }).refine(val => val === null || val >= 0, { message: 'Sales price cannot be negative' }),
-  PurchaseCost: z.union([z.number(), z.string()]).optional().nullable().transform(val => {
-    if (val === '' || val === null || val === undefined) return null;
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    return isNaN(num) ? null : num;
-  }).refine(val => val === null || val >= 0, { message: 'Purchase cost cannot be negative' }),
-  IncomeAccountId: z.string().optional().nullable().transform(val => val === '' ? null : val),
-  ExpenseAccountId: z.string().optional().nullable().transform(val => val === '' ? null : val),
-  InventoryAssetAccountId: z.string().optional().nullable().transform(val => val === '' ? null : val),
+  SalesPrice: z.coerce.number().min(0, 'Sales price cannot be negative').optional().nullable(),
+  PurchaseCost: z.coerce.number().min(0, 'Purchase cost cannot be negative').optional().nullable(),
+  IncomeAccountId: z.string().optional().nullable(),
+  ExpenseAccountId: z.string().optional().nullable(),
+  InventoryAssetAccountId: z.string().optional().nullable(),
   Category: z.string().optional().nullable(),
-  Taxable: z.boolean().default(true),
-  Status: z.enum(['Active', 'Inactive']).default('Active'),
+  Taxable: z.boolean().optional(),
+  Status: z.enum(['Active', 'Inactive']).optional(),
 });
 
 export type ProductServiceFormData = z.infer<typeof productServiceSchema>;

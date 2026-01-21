@@ -71,7 +71,6 @@ export default function ChartOfAccounts() {
         editPath="/accounts/{id}/edit"
         initialPageSize={25}
         emptyMessage="No accounts found. Create your first account to get started."
-        defaultSort={[{ field: 'Code', sort: 'asc' }]}
       />
     </div>
   );

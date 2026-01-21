@@ -4,35 +4,20 @@ import { Search, FileText, Users, Truck, Receipt, Package, X, Command, AlertCirc
 import { graphql } from '../lib/api';
 import clsx from 'clsx';
 
-// Search result types
-interface Invoice {
-  Id: string;
-  InvoiceNumber: string;
-  CustomerName?: string;
-  TotalAmount: number;
-  Status: string;
-}
+// Search result types - used in GraphQL response parsing
 
-interface Customer {
+type Customer = {
   Id: string;
   Name: string;
   Email: string | null;
 }
 
-interface Vendor {
+type Vendor = {
   Id: string;
   Name: string;
 }
 
-interface Bill {
-  Id: string;
-  BillNumber: string;
-  VendorName?: string;
-  TotalAmount: number;
-  Status: string;
-}
-
-interface ProductService {
+type ProductService = {
   Id: string;
   Name: string;
   SKU: string | null;

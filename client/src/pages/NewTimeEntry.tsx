@@ -13,7 +13,7 @@ const timeEntrySchema = z.object({
   Hours: z.coerce.number().min(0.25, 'Minimum 0.25 hours').max(24, 'Maximum 24 hours'),
   HourlyRate: z.coerce.number().min(0).optional(),
   Description: z.string().optional(),
-  IsBillable: z.boolean().default(true),
+  IsBillable: z.boolean().optional(),
 });
 
 type TimeEntryFormData = z.infer<typeof timeEntrySchema>;

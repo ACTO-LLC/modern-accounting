@@ -10,10 +10,10 @@ interface Estimate {
   EstimateNumber: string;
   CustomerId: string;
   IssueDate: string;
-  ExpirationDate: string | null;
+  ExpirationDate?: string;
   TotalAmount: number;
-  Status: string;
-  Notes: string | null;
+  Status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Expired' | 'Converted';
+  Notes?: string;
   Lines?: EstimateLine[];
 }
 

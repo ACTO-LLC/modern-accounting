@@ -29,7 +29,7 @@ export default function QuickAddCustomerModal({
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<QuickCustomerFormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<QuickCustomerFormData>({
     resolver: zodResolver(quickCustomerSchema),
     mode: 'onSubmit',
     defaultValues: {
