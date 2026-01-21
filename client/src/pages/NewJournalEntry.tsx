@@ -10,6 +10,13 @@ const lineSchema = z.object({
   Description: z.string().optional(),
   Debit: z.number().min(0),
   Credit: z.number().min(0),
+}).refine((line) => {
+  // Either debit or credit must be > 0, but not both
+  const hasDebit = line.Debit > 0;
+  const hasCredit = line.Credit > 0;
+  return (hasDebit && !hasCredit) || (!hasDebit && hasCredit);
+}, {
+  message: "Each line must have either a Debit OR Credit amount (not both, not neither)",
 });
 
 const journalEntrySchema = z.object({
@@ -153,46 +160,53 @@ export default function NewJournalEntry() {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Lines</h3>
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex gap-4 items-start">
-                <div className="flex-1">
-                  <input
-                    {...register(`Lines.${index}.AccountId`)}
-                    placeholder="Account Code"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
+              <div key={field.id}>
+                <div className="flex gap-4 items-start">
+                  <div className="flex-1">
+                    <input
+                      {...register(`Lines.${index}.AccountId`)}
+                      placeholder="Account Code"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      {...register(`Lines.${index}.Description`)}
+                      placeholder="Line Description"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    />
+                  </div>
+                  <div className="w-32">
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register(`Lines.${index}.Debit`, { valueAsNumber: true })}
+                      placeholder="Debit"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    />
+                  </div>
+                  <div className="w-32">
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register(`Lines.${index}.Credit`, { valueAsNumber: true })}
+                      placeholder="Credit"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => remove(index)}
+                    className="p-2 text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
-                <div className="flex-1">
-                  <input
-                    {...register(`Lines.${index}.Description`)}
-                    placeholder="Line Description"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
-                </div>
-                <div className="w-32">
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.Debit`, { valueAsNumber: true })}
-                    placeholder="Debit"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
-                </div>
-                <div className="w-32">
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.Credit`, { valueAsNumber: true })}
-                    placeholder="Credit"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => remove(index)}
-                  className="p-2 text-red-600 hover:text-red-800"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                {errors.Lines?.[index] && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.Lines[index]?.message || errors.Lines[index]?.AccountId?.message}
+                  </p>
+                )}
               </div>
             ))}
           </div>

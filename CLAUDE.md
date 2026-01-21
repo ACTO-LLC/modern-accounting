@@ -249,3 +249,46 @@ await api.patch(`/invoices_write/Id/${id}`, data);
 ```
 
 **Why Views?** Views join related data (customer names, totals) for display. Direct table access is needed for writes.
+
+---
+
+### Journal Entry Balance Enforcement (Jan 2026)
+
+**Critical Accounting Invariants:**
+Journal entries MUST always satisfy these rules to maintain valid double-entry bookkeeping:
+
+1. **Debit/Credit Exclusivity:** Each line must have EITHER a debit OR credit amount (not both, not neither)
+2. **Balanced Entries:** Total debits must equal total credits for each journal entry
+3. **Valid Accounts:** Every line must reference a valid account
+
+**Enforcement Layers:**
+
+**Database Level (Migration 026):**
+- CHECK constraint: `CK_JournalEntryLines_DebitCreditExclusivity` prevents both/neither debit and credit
+- AFTER trigger: `TR_JournalEntryLines_EnforceBalance` verifies balanced entries and rolls back if unbalanced
+- Foreign key: `FK_JournalEntryLines_Accounts` ensures valid account references
+
+**Frontend Validation (`NewJournalEntry.tsx`):**
+- Zod schema validates per-line exclusivity
+- Real-time balance calculation shows running totals
+- Submit button disabled when entry is unbalanced
+- Per-line error messages guide user to fix issues
+
+**Example Error Messages:**
+```sql
+-- Database trigger error
+"Journal entry must be balanced. Entry ID: {guid} has Total Debits: 100.00, Total Credits: 50.00, Difference: 50.00"
+
+-- Frontend validation error
+"Each line must have either a Debit OR Credit amount (not both, not neither)"
+"Total Debits must equal Total Credits"
+```
+
+**Testing:**
+- `client/tests/journal-entry-balance-enforcement.spec.ts` - E2E tests for all invalid scenarios
+- `client/tests/journal-entry-create.spec.ts` - E2E test for valid entry creation
+
+**Common Issues:**
+- Zero amounts are allowed as placeholders during form editing, but submission requires non-zero amounts
+- Rounding tolerance: 0.0001 difference allowed to handle floating-point precision
+- System-versioned tables: Constraints must be added with SYSTEM_VERSIONING temporarily disabled
