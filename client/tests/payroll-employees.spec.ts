@@ -58,8 +58,9 @@ test.describe('Employee Management', () => {
     await expect(page).toHaveURL(/\/employees$/, { timeout: 30000 });
 
     // 8. Verify the employee appears in the list (via API query)
+    const escapedEmployeeNumber = String(employeeNumber).replace(/'/g, "''");
     const response = await page.request.get(
-      `http://localhost:5000/api/employees?$filter=EmployeeNumber eq '${employeeNumber}'`
+      `http://localhost:5000/api/employees?$filter=EmployeeNumber eq '${escapedEmployeeNumber}'`
     );
     const result = await response.json();
     expect(result.value).toHaveLength(1);
@@ -104,8 +105,9 @@ test.describe('Employee Management', () => {
     await expect(page).toHaveURL(/\/employees$/, { timeout: 30000 });
 
     // 8. Verify the employee appears via API
+    const escapedEmployeeNumber = String(employeeNumber).replace(/'/g, "''");
     const response = await page.request.get(
-      `http://localhost:5000/api/employees?$filter=EmployeeNumber eq '${employeeNumber}'`
+      `http://localhost:5000/api/employees?$filter=EmployeeNumber eq '${escapedEmployeeNumber}'`
     );
     const result = await response.json();
     expect(result.value).toHaveLength(1);
@@ -144,8 +146,9 @@ test.describe('Employee Management', () => {
     expect(createResponse.ok()).toBeTruthy();
 
     // 2. Query for the created employee to get its ID
+    const escapedEmployeeNumber = String(employeeNumber).replace(/'/g, "''");
     const queryResponse = await page.request.get(
-      `http://localhost:5000/api/employees?$filter=EmployeeNumber eq '${employeeNumber}'`
+      `http://localhost:5000/api/employees?$filter=EmployeeNumber eq '${escapedEmployeeNumber}'`
     );
     const queryResult = await queryResponse.json();
     const employee = queryResult.value[0];
@@ -163,28 +166,35 @@ test.describe('Employee Management', () => {
     // Wait for the form to be fully loaded with existing data
     await expect(page.getByLabel('First Name *')).toHaveValue(firstName, { timeout: 10000 });
 
-    // 5. Verify we can see the current pay rate (should show some value)
+    // 5. Verify we can see the current pay rate
     const currentValue = await payRateInput.inputValue();
     expect(parseFloat(currentValue)).toBe(20);
 
-    // 6. Verify form has all required sections
-    await expect(page.getByText('Personal Information')).toBeVisible();
-    await expect(page.getByText('Employment Information')).toBeVisible();
-    await expect(page.getByText('Compensation')).toBeVisible();
-    await expect(page.getByText('Tax Information')).toBeVisible();
+    // 6. Update the pay rate from $20 to $30
+    await payRateInput.click();
+    await payRateInput.press('Control+a');
+    await payRateInput.press('Backspace');
+    await payRateInput.pressSequentially('30.00');
 
-    // 7. Verify Update Employee button is present
+    // Tab out to trigger blur event
+    await payRateInput.press('Tab');
+
+    // 7. Click Update Employee button to save
     const saveButton = page.getByRole('button', { name: 'Update Employee' });
     await expect(saveButton).toBeVisible();
     await expect(saveButton).toBeEnabled();
+    await saveButton.click();
 
-    // 8. Verify Cancel button navigates back
-    const cancelButton = page.getByRole('button', { name: 'Cancel' });
-    await expect(cancelButton).toBeVisible();
-    await cancelButton.click();
+    // 8. Wait for redirect to employees list
+    await expect(page).toHaveURL(/\/employees$/, { timeout: 30000 });
 
-    // Should navigate back to employees list
-    await expect(page).toHaveURL(/\/employees$/, { timeout: 10000 });
+    // 9. Verify the pay rate was updated via API
+    const verifyResponse = await page.request.get(
+      `http://localhost:5000/api/employees?$filter=EmployeeNumber eq '${escapedEmployeeNumber}'`
+    );
+    const verifyResult = await verifyResponse.json();
+    expect(verifyResult.value).toHaveLength(1);
+    expect(verifyResult.value[0].PayRate).toBe(30);
   });
 
   test('should view employee list with multiple employees', async ({ page }) => {

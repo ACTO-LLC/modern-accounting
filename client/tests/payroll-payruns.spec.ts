@@ -90,8 +90,9 @@ test.describe('Pay Run Management', () => {
     expect(createResponse.ok()).toBeTruthy();
 
     // Query for the created pay run
+    const escapedPayRunNumber = String(payRunNumber).replace(/'/g, "''");
     const queryResponse = await page.request.get(
-      `http://localhost:5000/api/payruns?$filter=PayRunNumber eq '${payRunNumber}'`
+      `http://localhost:5000/api/payruns?$filter=PayRunNumber eq '${escapedPayRunNumber}'`
     );
     const queryResult = await queryResponse.json();
     expect(queryResult.value).toHaveLength(1);
