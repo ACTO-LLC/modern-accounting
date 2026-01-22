@@ -238,8 +238,7 @@ test.describe('Estimates Management', () => {
     expect(sentResult.value[0].Status).toBe('Sent');
   });
 
-  // TODO: Known issue - modal interaction not working in test environment
-  test.skip('should convert estimate to invoice', async ({ page }) => {
+  test('should convert estimate to invoice', async ({ page }) => {
     const timestamp = Date.now();
     const estimateNumber = `EST-CONVERT-${timestamp}`;
 
@@ -253,9 +252,10 @@ test.describe('Estimates Management', () => {
       TotalAmount: 1500.00,
     };
 
-    await page.request.post('http://localhost:5000/api/estimates_write', {
+    const createResponse = await page.request.post('http://localhost:5000/api/estimates_write', {
       data: estimateData
     });
+    expect(createResponse.ok()).toBeTruthy();
 
     // Query for the created estimate
     const escapedEstimateNumber = String(estimateNumber).replace(/'/g, "''");
@@ -264,10 +264,11 @@ test.describe('Estimates Management', () => {
     );
     const queryResult = await queryResponse.json();
     const estimate = queryResult.value[0];
+    expect(estimate).toBeTruthy();
     const estimateId = estimate.Id;
 
     // Create line item
-    await page.request.post('http://localhost:5000/api/estimatelines', {
+    const lineResponse = await page.request.post('http://localhost:5000/api/estimatelines', {
       data: {
         EstimateId: estimateId,
         Description: 'Accepted Service',
@@ -275,26 +276,46 @@ test.describe('Estimates Management', () => {
         UnitPrice: 500.00
       }
     });
+    expect(lineResponse.ok()).toBeTruthy();
 
     // 2. Navigate to estimates page
     await page.goto('/estimates');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 15000 });
     await page.waitForSelector('.MuiDataGrid-row', { timeout: 15000 });
 
-    // 3. Find and click the Convert button on our estimate
-    const row = page.locator('.MuiDataGrid-row').filter({ hasText: estimateNumber });
-    await expect(row).toBeVisible({ timeout: 10000 });
-    await row.getByRole('button', { name: /Convert/i }).click();
+    // 3. Find the specific estimate row by estimateNumber and click its Convert button
+    const estimateRow = page.locator('.MuiDataGrid-row').filter({ hasText: estimateNumber });
+    await expect(estimateRow).toBeVisible({ timeout: 10000 });
+    
+    const convertButton = estimateRow.getByRole('button', { name: /Convert/i });
+    await expect(convertButton).toBeVisible({ timeout: 10000 });
+    await convertButton.click();
 
-    // 4. Wait for modal and confirm conversion
-    const modal = page.locator('.bg-white.rounded-lg.p-6');
-    await expect(modal).toBeVisible({ timeout: 5000 });
-    await modal.getByRole('button', { name: 'Convert' }).click();
+    // 4. Wait for confirmation modal to appear
+    const modalTitle = page.getByRole('heading', { name: 'Convert to Invoice' });
+    await expect(modalTitle).toBeVisible({ timeout: 5000 });
+
+    // Find and click the Confirm button in the modal
+    const confirmButton = page.locator('.fixed.inset-0').getByRole('button', { name: 'Convert' });
+    await expect(confirmButton).toBeVisible();
+    await confirmButton.click();
 
     // 5. Should redirect to invoice edit page
     await expect(page).toHaveURL(/\/invoices\/.*\/edit/, { timeout: 30000 });
 
-    // 6. Verify the invoice was created with correct amount
-    await expect(page.getByText('Total: $1500.00')).toBeVisible();
+    // 6. Verify the invoice page loads correctly and contains data from the estimate
+    await expect(page.getByRole('heading', { name: /Edit Invoice/i })).toBeVisible({ timeout: 10000 });
+    
+    // Verify the invoice has the correct customer (should match the estimate)
+    const customerButton = page.getByRole('button', { name: /Acme Corporation/i });
+    await expect(customerButton).toBeVisible({ timeout: 5000 });
+    
+    // Verify the total amount matches the estimate
+    const totalAmountField = page.getByLabel('Total Amount');
+    await expect(totalAmountField).toHaveValue('1500');
+    
+    // Verify the status is Draft
+    const statusField = page.getByLabel('Status');
+    await expect(statusField).toHaveValue('Draft');
   });
 });

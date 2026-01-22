@@ -9,6 +9,7 @@ import { formatGuidForOData, isValidUUID } from '../lib/validation';
 import { formatDate } from '../lib/dateUtils';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
+import { generateNextInvoiceNumber, type Invoice } from '../lib/invoiceUtils';
 
 interface Estimate {
   Id: string;
@@ -31,15 +32,7 @@ interface EstimateLine {
   Amount?: number;
 }
 
-interface Invoice {
-  Id: string;
-  InvoiceNumber: string;
-  CustomerId: string;
-  IssueDate: string;
-  DueDate: string;
-  TotalAmount: number;
-  Status: string;
-}
+
 
 const statusColors: Record<string, string> = {
   Draft: 'bg-gray-100 text-gray-800',
@@ -67,13 +60,17 @@ export default function Estimates() {
       }
 
       const linesResponse = await api.get<{ value: EstimateLine[] }>(
-        `/estimatelines?\$filter=EstimateId eq ${formatGuidForOData(estimate.Id, 'EstimateId')}`
+        `/estimatelines?$filter=EstimateId eq ${formatGuidForOData(estimate.Id, 'EstimateId')}`
       );
       const lines = linesResponse.data.value;
 
-      const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+      // Fetch existing invoices to generate next invoice number
+      const allInvoicesResponse = await api.get<{ value: Invoice[] }>('/invoices');
+      const allInvoices = allInvoicesResponse.data.value;
+      const invoiceNumber = generateNextInvoiceNumber(allInvoices);
 
-      const invoiceResponse = await api.post<Invoice>('/invoices_write', {
+      // Create the invoice
+      await api.post('/invoices_write', {
         InvoiceNumber: invoiceNumber,
         CustomerId: estimate.CustomerId,
         IssueDate: new Date().toISOString().split('T')[0],
@@ -81,7 +78,16 @@ export default function Estimates() {
         TotalAmount: estimate.TotalAmount,
         Status: 'Draft',
       });
-      const invoice = invoiceResponse.data;
+
+      // DAB doesn't return the created entity, so query for it by InvoiceNumber
+      const escapedInvoiceNumber = invoiceNumber.replace(/'/g, "''");
+      const invoiceQueryResponse = await api.get<{ value: Invoice[] }>(
+        `/invoices?$filter=InvoiceNumber eq '${escapedInvoiceNumber}'`
+      );
+      const invoice = invoiceQueryResponse.data.value[0];
+      if (!invoice) {
+        throw new Error('Failed to retrieve created invoice');
+      }
 
       await Promise.all(
         lines.map((line: EstimateLine) =>
