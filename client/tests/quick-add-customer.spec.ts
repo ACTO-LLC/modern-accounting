@@ -94,9 +94,6 @@ test.describe('Quick Add Customer from Invoice', () => {
     // Try to submit without filling name
     await modal.getByRole('button', { name: /Create Customer/i }).click();
 
-    // Wait a moment for validation to trigger
-    await page.waitForTimeout(500);
-
     // Validation error should appear (the form should show error for empty name)
     await expect(modal.getByText('Customer name is required')).toBeVisible({ timeout: 5000 });
 

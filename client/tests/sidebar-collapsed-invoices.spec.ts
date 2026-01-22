@@ -97,9 +97,6 @@ test.describe('Collapsed Sidebar - Invoices Navigation', () => {
         // Hover on the Invoices link - flyout should stay open
         await invoicesLink.hover();
 
-        // Small wait to ensure flyout doesn't close
-        await page.waitForTimeout(200);
-
         // Flyout should still be visible
         await expect(flyout).toBeVisible();
         await expect(invoicesLink).toBeVisible();

@@ -33,10 +33,7 @@ test.describe('Product/Service Selector', () => {
       const searchInput = page.getByPlaceholder('Search by name, SKU, or category...');
       await searchInput.fill('service');
 
-      // Wait for filtered results
-      await page.waitForTimeout(300);
-
-      // Verify dropdown is still visible after search
+      // Verify dropdown is still visible after search (listbox auto-updates)
       await expect(page.locator('[role="listbox"]')).toBeVisible();
     });
 
@@ -46,8 +43,8 @@ test.describe('Product/Service Selector', () => {
       // Click the product/service selector
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
-      // Wait for the dropdown to load
-      await page.waitForTimeout(500);
+      // Wait for dropdown options to appear
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // Select the first option (if available)
       const firstOption = page.locator('[role="option"]').first();
@@ -67,8 +64,8 @@ test.describe('Product/Service Selector', () => {
       // Click the product/service selector
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
-      // Wait for the dropdown to load
-      await page.waitForTimeout(500);
+      // Wait for dropdown options to appear
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // Select the first option (if available)
       const firstOption = page.locator('[role="option"]').first();
@@ -129,8 +126,8 @@ test.describe('Product/Service Selector', () => {
       // Click the product/service selector
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
-      // Wait for dropdown to load
-      await page.waitForTimeout(500);
+      // Wait for dropdown to appear
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // If products exist, select one; otherwise use manual entry
       const firstOption = page.locator('[role="option"]').first();
@@ -171,8 +168,8 @@ test.describe('Product/Service Selector', () => {
       // Click the product/service selector
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
-      // Wait for the dropdown to load
-      await page.waitForTimeout(500);
+      // Wait for dropdown to appear
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // Select the first option (if available)
       const firstOption = page.locator('[role="option"]').first();
@@ -199,8 +196,8 @@ test.describe('Product/Service Selector', () => {
       // Click the product/service selector
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
-      // Wait for dropdown to load
-      await page.waitForTimeout(500);
+      // Wait for dropdown to appear
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // If products exist, select one; otherwise use manual entry
       const firstOption = page.locator('[role="option"]').first();
@@ -262,8 +259,8 @@ test.describe('Product/Service Selector', () => {
       // Click the product/service selector
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
-      // Wait for dropdown to load
-      await page.waitForTimeout(500);
+      // Wait for dropdown to appear
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // Check if there are any products available
       const hasProducts = await page.locator('[role="option"]').first().isVisible();
@@ -283,7 +280,6 @@ test.describe('Product/Service Selector', () => {
         if (firstProductText && firstProductText.length > 3) {
           const partialTerm = firstProductText.substring(0, 3);
           await searchInput.fill(partialTerm);
-          await page.waitForTimeout(300);
 
           // Should still find results
           await expect(page.locator('[role="option"]').first()).toBeVisible();
@@ -297,13 +293,12 @@ test.describe('Product/Service Selector', () => {
       // Click the product/service selector
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
-      // Wait for dropdown to load
-      await page.waitForTimeout(500);
+      // Wait for dropdown to appear
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // Type a search term
       const searchInput = page.getByPlaceholder('Search by name, SKU, or category...');
       await searchInput.fill('test');
-      await page.waitForTimeout(300);
 
       // Verify dropdown is visible (results may vary based on data)
       await expect(page.locator('[role="listbox"]')).toBeVisible();
@@ -334,7 +329,7 @@ test.describe('Product/Service Selector', () => {
       await page.getByRole('button', { name: /Select or type description below/i }).first().click();
 
       // Wait for dropdown to appear
-      await page.waitForTimeout(500);
+      await expect(page.locator('[role="listbox"]')).toBeVisible();
 
       // Press ArrowDown to focus first option
       await page.keyboard.press('ArrowDown');

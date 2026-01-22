@@ -165,8 +165,8 @@ test.describe('MUI DataGrid - Server-side Features', () => {
         if (await option10.isVisible()) {
           await option10.click();
 
-          // Wait for the grid to update
-          await page.waitForTimeout(500);
+          // Wait for grid rows to update (may have fewer than 10 rows)
+          await expect(page.locator('.MuiDataGrid-row').first()).toBeVisible({ timeout: 5000 });
         }
       }
     });

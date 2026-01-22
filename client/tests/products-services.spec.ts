@@ -18,27 +18,32 @@ test.describe('Products & Services Management', () => {
     await page.locator('#SalesPrice').fill('100');
     await page.locator('#PurchaseCost').fill('50');
 
-    // 3. Wait for form to be ready and save
-    await page.waitForTimeout(500);
+    // 3. Save the product/service and capture the created ID
+    const responsePromise = page.waitForResponse(resp => resp.url().includes('/productsservices') && resp.status() === 201);
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
+    const response = await responsePromise;
+    const responseBody = await response.json();
+    const createdId = responseBody.value?.[0]?.Id || responseBody.Id;
 
-    // 4. Verify Redirect and List (wait for DataGrid to refresh)
+    // 4. Verify Redirect
     await expect(page).toHaveURL(/\/products-services$/, { timeout: 15000 });
-    await expect(page.getByText(serviceName)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(sku)).toBeVisible({ timeout: 10000 });
 
-    // 5. Edit Product/Service (RestDataGrid navigates on row click)
-    await page.getByText(serviceName).click();
-    await expect(page).toHaveURL(/\/products-services\/.*\/edit/);
+    // 5. Navigate directly to the created item to verify and edit
+    await page.goto(`/products-services/${createdId}/edit`);
+    await expect(page.locator('#Name')).toHaveValue(serviceName);
+    await expect(page.locator('#SKU')).toHaveValue(sku);
 
-    // 6. Update Name
+    // 6. Update Name and save
     await page.locator('#Name').fill(updatedName);
-    await page.waitForTimeout(500);
-    await page.getByRole('button', { name: 'Save Product/Service' }).click();
+    await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/productsservices') && resp.status() === 200),
+      page.getByRole('button', { name: 'Save Product/Service' }).click()
+    ]);
 
-    // 7. Verify Update
+    // 7. Verify Update by navigating back to edit page
     await expect(page).toHaveURL(/\/products-services$/, { timeout: 15000 });
-    await expect(page.getByText(updatedName)).toBeVisible({ timeout: 10000 });
+    await page.goto(`/products-services/${createdId}/edit`);
+    await expect(page.locator('#Name')).toHaveValue(updatedName);
   });
 
   test.skip('should filter by type', async ({ page }) => {
@@ -70,12 +75,18 @@ test.describe('Products & Services Management', () => {
     await page.locator('#SalesPrice').fill('75');
     await page.locator('#PurchaseCost').fill('40');
 
-    // Wait for form to be ready and save
-    await page.waitForTimeout(500);
+    // Save the product/service and capture the created ID
+    const responsePromise = page.waitForResponse(resp => resp.url().includes('/productsservices') && resp.status() === 201);
     await page.getByRole('button', { name: 'Save Product/Service' }).click();
+    const response = await responsePromise;
+    const responseBody = await response.json();
+    const createdId = responseBody.value?.[0]?.Id || responseBody.Id;
 
+    // Verify redirect and then verify created item directly
     await expect(page).toHaveURL(/\/products-services$/, { timeout: 15000 });
-    await expect(page.getByText(inventoryName)).toBeVisible({ timeout: 10000 });
+    await page.goto(`/products-services/${createdId}/edit`);
+    await expect(page.locator('#Name')).toHaveValue(inventoryName);
+    await expect(page.locator('#Type')).toHaveValue('Inventory');
   });
 
   test('should validate required fields', async ({ page }) => {

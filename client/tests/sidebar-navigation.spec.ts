@@ -23,7 +23,6 @@ test.describe('Sidebar Navigation', () => {
       if (isExpanded) {
         // Collapse first
         await peopleGroup.click();
-        await page.waitForTimeout(300);
         await expect(peopleGroup).toHaveAttribute('aria-expanded', 'false');
       }
 
@@ -39,8 +38,7 @@ test.describe('Sidebar Navigation', () => {
       // Click again to collapse
       await peopleGroup.click();
 
-      // Wait for animation and verify collapsed
-      await page.waitForTimeout(300);
+      // Verify collapsed
       await expect(peopleGroup).toHaveAttribute('aria-expanded', 'false');
     });
 
@@ -198,8 +196,11 @@ test.describe('Sidebar Navigation', () => {
       // Verify collapsed
       await expect(page.getByTestId('sidebar')).toHaveAttribute('data-collapsed', 'true');
 
-      // Wait for debounced localStorage save (300ms debounce + buffer)
-      await page.waitForTimeout(500);
+      // Wait for debounced localStorage save
+      await page.waitForFunction(() => {
+        const state = localStorage.getItem('sidebar-state');
+        return state && JSON.parse(state).isCollapsed === true;
+      }, { timeout: 5000 });
 
       // Verify localStorage was updated
       const savedState = await page.evaluate(() => localStorage.getItem('sidebar-state'));
