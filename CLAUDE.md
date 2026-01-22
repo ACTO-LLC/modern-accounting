@@ -341,3 +341,23 @@ const schema = z.object({
 - `EstimateForm.tsx` - line item schema
 - `InvoiceForm.tsx` - line item schema
 - `BillForm.tsx` - line item schema
+- `EmployeeForm.tsx` - all nullable fields
+
+**WARNING: Do NOT use `z.preprocess` to transform null to undefined!**
+
+```typescript
+// WRONG - loses TypeScript type information, causes TS2322 errors
+const nullToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((val) => (val === null ? undefined : val), schema);
+
+const schema = z.object({
+  Status: nullToUndefined(z.enum(['Active', 'Inactive']).optional()), // Type becomes 'unknown'
+});
+
+// CORRECT - use .nullish() directly
+const schema = z.object({
+  Status: z.enum(['Active', 'Inactive']).nullish(), // Type is 'Active' | 'Inactive' | null | undefined
+});
+```
+
+The `z.preprocess` approach breaks TypeScript inference because the preprocessor returns `unknown` before the schema validates it.
