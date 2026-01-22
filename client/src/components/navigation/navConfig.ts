@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart } from 'lucide-react';
 
 export interface NavItem {
   id: string;
@@ -40,12 +40,15 @@ export const navigationConfig: NavEntry[] = [
     ],
   },
 
-  // Bills - standalone
+  // Purchasing group
   {
-    id: 'bills',
-    name: 'Bills',
-    href: '/bills',
+    id: 'purchasing',
+    name: 'Purchasing',
     icon: Receipt,
+    items: [
+      { id: 'purchase-orders', name: 'Purchase Orders', href: '/purchase-orders', icon: ShoppingCart },
+      { id: 'bills', name: 'Bills', href: '/bills', icon: Receipt },
+    ],
   },
 
   // People group

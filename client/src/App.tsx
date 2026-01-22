@@ -57,6 +57,9 @@ import Inventory from './pages/Inventory';
 import Bills from './pages/Bills';
 import NewBill from './pages/NewBill';
 import EditBill from './pages/EditBill';
+import PurchaseOrders from './pages/PurchaseOrders';
+import NewPurchaseOrder from './pages/NewPurchaseOrder';
+import EditPurchaseOrder from './pages/EditPurchaseOrder';
 import RecurringTransactions from './pages/RecurringTransactions';
 import Submissions from './pages/Submissions';
 import NewSubmission from './pages/NewSubmission';
@@ -126,6 +129,9 @@ function AppContent() {
             <Route path="bills" element={<Bills />} />
             <Route path="bills/new" element={<NewBill />} />
             <Route path="bills/:id/edit" element={<EditBill />} />
+            <Route path="purchase-orders" element={<PurchaseOrders />} />
+            <Route path="purchase-orders/new" element={<NewPurchaseOrder />} />
+            <Route path="purchase-orders/:id/edit" element={<EditPurchaseOrder />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/new" element={<NewProject />} />
             <Route path="projects/:id/edit" element={<EditProject />} />
