@@ -925,11 +925,11 @@ const tools = [
         type: 'function',
         function: {
             name: 'create_customer',
-            description: 'Create a new customer record with contact information.',
+            description: 'Create a new customer record with contact information. Records created via AI are tagged with SourceSystem="AI" for tracking. Always confirm with the user before creating a customer.',
             parameters: {
                 type: 'object',
                 properties: {
-                    name: { type: 'string', description: 'Customer/Company name' },
+                    name: { type: 'string', description: 'Customer/Company name (required)' },
                     email: { type: 'string', description: 'Email address' },
                     phone: { type: 'string', description: 'Phone number' },
                     address: { type: 'string', description: 'Full address' }
@@ -942,15 +942,15 @@ const tools = [
         type: 'function',
         function: {
             name: 'create_vendor',
-            description: 'Create a new vendor record with contact information.',
+            description: 'Create a new vendor record with contact information. Records created via AI are tagged with SourceSystem="AI" for tracking. Always confirm with the user before creating a vendor.',
             parameters: {
                 type: 'object',
                 properties: {
-                    name: { type: 'string', description: 'Vendor/Company name' },
+                    name: { type: 'string', description: 'Vendor/Company name (required)' },
                     email: { type: 'string', description: 'Email address' },
                     phone: { type: 'string', description: 'Phone number' },
                     address: { type: 'string', description: 'Full address' },
-                    is_1099_vendor: { type: 'boolean', description: 'Whether this is a 1099 vendor' }
+                    is_1099_vendor: { type: 'boolean', description: 'Whether this is a 1099 vendor (default: false)' }
                 },
                 required: ['name']
             }
@@ -960,16 +960,16 @@ const tools = [
         type: 'function',
         function: {
             name: 'create_account',
-            description: 'Create a new account in the chart of accounts.',
+            description: 'Create a new account in the chart of accounts. Records created via AI are tagged with SourceSystem="AI" for tracking. Always confirm with the user before creating an account.',
             parameters: {
                 type: 'object',
                 properties: {
-                    code: { type: 'string', description: 'Account code (e.g., 1000, 5100)' },
-                    name: { type: 'string', description: 'Account name' },
+                    code: { type: 'string', description: 'Account code (e.g., 1000, 5100) - must be unique' },
+                    name: { type: 'string', description: 'Account name (required)' },
                     type: {
                         type: 'string',
                         enum: ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'],
-                        description: 'Account type'
+                        description: 'Account type (required)'
                     },
                     subtype: { type: 'string', description: 'Account subtype' },
                     description: { type: 'string', description: 'Account description' }
@@ -2143,11 +2143,24 @@ async function executeCopyInvoice(params) {
 
 async function executeCreateCustomer(params) {
     try {
+        // Validate required fields
+        if (!params.name || params.name.trim() === '') {
+            return { success: false, error: 'Customer name is required' };
+        }
+
+        // Validate email format if provided
+        if (params.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(params.email)) {
+            return { success: false, error: 'Invalid email format' };
+        }
+
         const customerData = {
-            Name: params.name,
+            Name: params.name.trim(),
             Email: params.email || null,
             Phone: params.phone || null,
-            BillingAddress: params.address || null
+            BillingAddress: params.address || null,
+            // Tag as AI-created for tracking and auditing
+            SourceSystem: 'AI',
+            SourceId: `AI-${Date.now()}`
         };
 
         const createResult = await mcp.createRecord('customers', customerData);
@@ -2159,13 +2172,14 @@ async function executeCreateCustomer(params) {
 
         return {
             success: true,
-            message: `Created customer '${params.name}'`,
+            message: `Successfully created customer '${params.name}'`,
             customer: {
                 id: newId,
                 name: params.name,
                 email: params.email,
                 phone: params.phone,
                 address: params.address,
+                createdBy: 'AI Assistant',
                 link: `${APP_URL}/customers`
             }
         };
@@ -2176,12 +2190,25 @@ async function executeCreateCustomer(params) {
 
 async function executeCreateVendor(params) {
     try {
+        // Validate required fields
+        if (!params.name || params.name.trim() === '') {
+            return { success: false, error: 'Vendor name is required' };
+        }
+
+        // Validate email format if provided
+        if (params.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(params.email)) {
+            return { success: false, error: 'Invalid email format' };
+        }
+
         const vendorData = {
-            Name: params.name,
+            Name: params.name.trim(),
             Email: params.email || null,
             Phone: params.phone || null,
             Address: params.address || null,
-            Is1099Vendor: params.is_1099_vendor || false
+            Is1099Vendor: params.is_1099_vendor || false,
+            // Tag as AI-created for tracking and auditing
+            SourceSystem: 'AI',
+            SourceId: `AI-${Date.now()}`
         };
 
         const createResult = await mcp.createRecord('vendors', vendorData);
@@ -2193,7 +2220,7 @@ async function executeCreateVendor(params) {
 
         return {
             success: true,
-            message: `Created vendor '${params.name}'`,
+            message: `Successfully created vendor '${params.name}'`,
             vendor: {
                 id: newId,
                 name: params.name,
@@ -2201,6 +2228,7 @@ async function executeCreateVendor(params) {
                 phone: params.phone,
                 address: params.address,
                 is1099: params.is_1099_vendor,
+                createdBy: 'AI Assistant',
                 link: `${APP_URL}/vendors`
             }
         };
@@ -2211,17 +2239,41 @@ async function executeCreateVendor(params) {
 
 async function executeCreateAccount(params) {
     try {
+        // Validate required fields
+        if (!params.code || params.code.trim() === '') {
+            return { success: false, error: 'Account code is required' };
+        }
+        if (!params.name || params.name.trim() === '') {
+            return { success: false, error: 'Account name is required' };
+        }
+        if (!params.type) {
+            return { success: false, error: 'Account type is required' };
+        }
+
+        // Validate account type
+        const validTypes = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
+        if (!validTypes.includes(params.type)) {
+            return { success: false, error: `Invalid account type. Must be one of: ${validTypes.join(', ')}` };
+        }
+
         const accountData = {
-            Code: params.code,
-            Name: params.name,
+            Code: params.code.trim(),
+            Name: params.name.trim(),
             Type: params.type,
             Subtype: params.subtype || null,
             Description: params.description || null,
-            IsActive: true
+            IsActive: true,
+            // Tag as AI-created for tracking and auditing
+            SourceSystem: 'AI',
+            SourceId: `AI-${Date.now()}`
         };
 
         const createResult = await mcp.createRecord('accounts', accountData);
         if (createResult.error) {
+            // Check for duplicate code error
+            if (createResult.error.includes('UQ_Accounts_Code') || createResult.error.includes('duplicate')) {
+                return { success: false, error: `Account code '${params.code}' already exists. Please use a unique code.` };
+            }
             return { success: false, error: createResult.error };
         }
 
@@ -2229,12 +2281,14 @@ async function executeCreateAccount(params) {
 
         return {
             success: true,
-            message: `Created account ${params.code} - ${params.name}`,
+            message: `Successfully created account ${params.code} - ${params.name}`,
             account: {
                 id: newId,
                 code: params.code,
                 name: params.name,
                 type: params.type,
+                subtype: params.subtype,
+                createdBy: 'AI Assistant',
                 link: `${APP_URL}/chart-of-accounts`
             }
         };
