@@ -281,6 +281,202 @@ WHERE SourceField = 'DisplayName' AND EntityType = 'Customer';
 
 ---
 
+## Authentication
+
+Modern Accounting uses **Azure AD** (Entra ID) and **Azure AD B2C** for enterprise-grade authentication with support for single sign-on (SSO) and multi-factor authentication (MFA).
+
+### Authentication Providers
+
+| Provider | Use Case | Users |
+|----------|----------|-------|
+| **Entra ID** | Enterprise SSO | Internal users, enterprise customers |
+| **Azure AD B2C** | Customer-facing | SMB customers, external partners |
+
+### Quick Setup
+
+1. **Create an Azure App Registration** at [portal.azure.com](https://portal.azure.com)
+2. **Configure environment variables** in `client/.env.local`:
+
+```bash
+VITE_AZURE_CLIENT_ID=your-client-id
+VITE_AZURE_TENANT_ID=your-tenant-id
+VITE_AZURE_AUTHORITY=https://login.microsoftonline.com/your-tenant-id
+
+# Optional: B2C for external users
+VITE_B2C_CLIENT_ID=your-b2c-client-id
+VITE_B2C_TENANT_NAME=your-b2c-tenant
+```
+
+### Role-Based Access Control (RBAC)
+
+| Role | Permissions | Description |
+|------|-------------|-------------|
+| **Admin** | Full access | System administration, user management |
+| **Accountant** | Read, write, reports, banking, invoicing | Full accounting operations |
+| **Viewer** | Read, reports | Read-only access to data |
+| **Employee** | Time entry, expense submission | Self-service time/expense tracking |
+
+Roles are assigned through:
+- **Entra ID Groups** - Automatic sync via group claims
+- **Database** - Direct assignment in `UserRoles` table
+- **Admin UI** - User management interface
+
+### Development Mode (Auth Bypass)
+
+For local development and testing, authentication can be bypassed:
+
+```bash
+# Start client with auth bypassed
+cd client
+set VITE_BYPASS_AUTH=true && npm run dev   # Windows
+VITE_BYPASS_AUTH=true npm run dev          # Mac/Linux
+```
+
+When bypassed, a mock admin user is injected with full permissions. **Never enable bypass in production!**
+
+<details>
+<summary><strong>MFA Configuration</strong></summary>
+
+MFA is supported through Azure AD B2C user flows and Entra ID conditional access policies.
+
+**Azure AD B2C:**
+1. Navigate to Azure AD B2C > User flows
+2. Select your sign-in flow
+3. Enable MFA under "Multifactor authentication"
+4. Choose method: Email, SMS, or Authenticator app
+
+**Entra ID Conditional Access:**
+1. Azure Portal > Entra ID > Security > Conditional Access
+2. Create policy requiring MFA for your app
+3. Configure risk-based triggers (sign-in risk, location)
+
+The app detects MFA completion through JWT `amr` claims and can require MFA for sensitive routes.
+
+</details>
+
+---
+
+## Security
+
+Modern Accounting implements multiple layers of security to protect your financial data.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Security Layers                           │
+├─────────────────────────────────────────────────────────────┤
+│  1. Azure AD / B2C Authentication (OAuth 2.0 + OIDC)        │
+│  2. JWT Token Validation (API Gateway)                       │
+│  3. Role-Based Access Control (RBAC)                         │
+│  4. Tenant Isolation (Multi-tenant data separation)          │
+│  5. Audit Logging (All authentication events)                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### API Authentication
+
+All API endpoints require valid JWT tokens from Azure AD:
+
+- **Token Validation**: JWTs are validated for issuer, audience, and expiration
+- **Scope Enforcement**: APIs require specific scopes (e.g., `api://app-id/access`)
+- **Tenant Header**: `X-Tenant-Id` isolates data between organizations
+
+### Data Protection
+
+| Feature | Implementation |
+|---------|----------------|
+| **Encryption at Rest** | Azure SQL TDE (Transparent Data Encryption) |
+| **Encryption in Transit** | TLS 1.2+ for all connections |
+| **Secrets Management** | Environment variables, Azure Key Vault (production) |
+| **SQL Injection Prevention** | Parameterized queries via Data API Builder |
+| **Input Validation** | Zod schemas on frontend, DAB validation on backend |
+
+### Multi-Tenant Isolation
+
+Each tenant's data is completely isolated:
+- All entities include a `TenantId` column
+- Middleware enforces tenant filtering on every query
+- No cross-tenant data access is possible
+
+### Audit Logging
+
+Authentication events are logged to `AuthAuditLog`:
+- Login success/failure with IP and user agent
+- MFA challenges and completions
+- Role changes and permission denials
+
+### Security Best Practices
+
+**DO:**
+- Use environment variables for all secrets
+- Store production secrets in Azure Key Vault
+- Enable HTTPS only in production
+- Configure proper CORS origins
+- Review role assignments regularly
+
+**DON'T:**
+- Commit `.env` files (use `.env.example` templates)
+- Hardcode passwords or API keys in code
+- Use default passwords in production
+- Enable `BYPASS_AUTH` outside of development
+
+See [SECURITY.md](SECURITY.md) for detailed secrets management documentation.
+
+---
+
+## UI Screenshots
+
+The Modern Accounting interface provides a clean, professional experience for managing your accounting operations.
+
+### Main Features
+
+| Feature | Description |
+|---------|-------------|
+| **Dashboard** | Financial overview with charts and key metrics |
+| **Invoices** | Create, edit, and email professional invoices |
+| **Bills** | Track vendor payables and payments |
+| **Banking** | Import transactions and reconcile accounts |
+| **Payroll** | Manage employees, run payroll, generate pay stubs |
+| **Reports** | P&L, Balance Sheet, Trial Balance, AR Aging |
+
+### Adding Screenshots
+
+To add screenshots to this documentation:
+
+1. **Capture screenshots** of the main UI features
+2. **Save them** to `docs/assets/screenshots/`
+3. **Reference them** in this section:
+
+```markdown
+### Dashboard
+![Dashboard](docs/assets/screenshots/dashboard.png)
+
+### Invoice Creation
+![Invoice Form](docs/assets/screenshots/invoice-form.png)
+```
+
+<details>
+<summary><strong>Recommended Screenshots</strong></summary>
+
+Capture these key screens for comprehensive documentation:
+
+- [ ] Dashboard with financial charts
+- [ ] Invoice list view (DataGrid)
+- [ ] Invoice/Estimate creation form
+- [ ] Bill management
+- [ ] Bank reconciliation workflow
+- [ ] Payroll pay run
+- [ ] Pay stub PDF preview
+- [ ] Reports (P&L, Balance Sheet)
+- [ ] Chart of Accounts
+- [ ] Customer/Vendor management
+- [ ] Admin feature request interface
+
+</details>
+
+---
+
 ## QuickBooks Integration
 
 Migrate your entire QuickBooks Online account with one click.
@@ -386,6 +582,7 @@ See [.env.example](.env.example) for all options.
 | [AI Workflow Diagram](docs/ai-workflow-diagram.md) | Visual architecture |
 | [Development Guide](DEVELOPMENT.md) | Local setup details |
 | [Security](SECURITY.md) | Secrets management |
+| [Security Deep-Dive](docs/security.md) | MFA, RBAC, multi-tenant architecture |
 
 ---
 
