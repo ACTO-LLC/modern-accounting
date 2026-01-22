@@ -3,10 +3,44 @@
  *
  * Orchestrates migrations using DB-driven field/type mappings.
  * Self-healing: fix mapping issues via SQL without code changes.
+ *
+ * Performance Optimizations (Issue #111):
+ * - Batch duplicate checking (single query for all records)
+ * - Shared MigrationMapper instance across entity types
+ * - Parallel line item creation with controlled concurrency
+ * - Preloaded entity lookups for cross-entity references
  */
 
 import { MigrationMapper, generateAccountCode } from './db-mapper.js';
 import { randomUUID } from 'crypto';
+
+/**
+ * Shared mapper cache - reuse mapper across migration phases
+ * to preserve entity lookup caches
+ */
+const mapperCache = new Map();
+
+/**
+ * Get or create a shared MigrationMapper instance.
+ * Reusing mappers preserves caches across entity types in a migration.
+ */
+function getSharedMapper(mcp, sourceSystem = 'QBO') {
+    const cacheKey = `${sourceSystem}`;
+    if (!mapperCache.has(cacheKey)) {
+        mapperCache.set(cacheKey, new MigrationMapper(mcp, sourceSystem));
+    }
+    return mapperCache.get(cacheKey);
+}
+
+/**
+ * Clear mapper cache (call between full migrations)
+ */
+export function clearMapperCache() {
+    for (const mapper of mapperCache.values()) {
+        mapper.clearCache();
+    }
+    mapperCache.clear();
+}
 
 /**
  * Migration result structure
@@ -30,7 +64,8 @@ function escapeOData(str) {
 }
 
 /**
- * Generic migration function for any entity type
+ * Generic migration function for any entity type.
+ * Performance optimized with batch duplicate checking.
  */
 async function migrateEntities(
     sourceEntities,
@@ -43,12 +78,39 @@ async function migrateEntities(
     const result = createMigrationResult();
     const {
         duplicateField = 'Name',
-        skipCheck = null,  // Function to check if record should be skipped
-        preSave = null,    // Function to modify mapped data before save
+        getFieldValue = null, // Function to extract field value for duplicate check
+        skipCheck = null,     // Function to check if record should be skipped
+        preSave = null,       // Function to modify mapped data before save
         onProgress = null
     } = options;
 
     const total = sourceEntities.length;
+
+    // PERFORMANCE: Batch preload migration status for all entities
+    const sourceIds = sourceEntities.map(e => String(e.Id));
+    await mapper.preloadEntityLookups(entityType, sourceIds);
+
+    // PERFORMANCE: Batch check for duplicates upfront if field is specified
+    let existingDuplicates = new Map();
+    if (duplicateField) {
+        // Extract all potential duplicate field values
+        const fieldValues = [];
+        for (const entity of sourceEntities) {
+            // Get value from source entity (before mapping)
+            let value = getFieldValue
+                ? getFieldValue(entity)
+                : entity.DisplayName || entity.CompanyName || entity.Name || entity.DocNumber;
+            if (value) {
+                fieldValues.push(String(value));
+            }
+        }
+
+        // Batch check for existing records (single query)
+        if (fieldValues.length > 0 && mcp.batchCheckExisting) {
+            existingDuplicates = await mcp.batchCheckExisting(tableName, duplicateField, fieldValues);
+            console.log(`Batch duplicate check: found ${[...existingDuplicates.values()].filter(Boolean).length} existing ${entityType}s`);
+        }
+    }
 
     for (let i = 0; i < sourceEntities.length; i++) {
         const sourceEntity = sourceEntities[i];
@@ -67,7 +129,7 @@ async function migrateEntities(
                 continue;
             }
 
-            // Check if already migrated (using SourceSystem/SourceId on entity)
+            // Check if already migrated (uses preloaded cache)
             const existingId = await mapper.wasAlreadyMigrated(entityType, sourceId);
             if (existingId) {
                 result.skipped++;
@@ -96,22 +158,19 @@ async function migrateEntities(
                 continue;
             }
 
-            // Check for duplicate by name/number
+            // Check for duplicate using preloaded batch results
             if (duplicateField && mappedEntity[duplicateField]) {
-                const duplicateCheck = await mcp.readRecords(tableName, {
-                    filter: `${duplicateField} eq '${escapeOData(mappedEntity[duplicateField])}'`,
-                    first: 1
-                });
+                const duplicateValue = String(mappedEntity[duplicateField]);
+                const existingRecordId = existingDuplicates.get(duplicateValue);
 
-                const existing = duplicateCheck.result?.value || [];
-                if (existing.length > 0) {
+                if (existingRecordId) {
                     // Record the mapping even for duplicates
-                    await mapper.recordMigration(entityType, sourceId, existing[0].Id);
+                    await mapper.recordMigration(entityType, sourceId, existingRecordId);
                     result.skipped++;
                     result.details.push({
                         type: entityType.toLowerCase(),
                         sourceId,
-                        targetId: existing[0].Id,
+                        targetId: existingRecordId,
                         name: mappedEntity[duplicateField],
                         status: 'skipped',
                         reason: 'Duplicate exists'
@@ -136,6 +195,11 @@ async function migrateEntities(
 
             // Record the migration
             await mapper.recordMigration(entityType, sourceId, newId, sourceEntity);
+
+            // Add to duplicates map to prevent same-batch duplicates
+            if (duplicateField && mappedEntity[duplicateField]) {
+                existingDuplicates.set(String(mappedEntity[duplicateField]), newId);
+            }
 
             result.migrated++;
             result.details.push({
@@ -167,7 +231,7 @@ async function migrateEntities(
  * Migrate customers from source system to ACTO
  */
 export async function migrateCustomers(sourceCustomers, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
 
     return migrateEntities(
         sourceCustomers,
@@ -177,6 +241,7 @@ export async function migrateCustomers(sourceCustomers, mcp, sourceSystem = 'QBO
         mcp,
         {
             duplicateField: 'Name',
+            getFieldValue: (entity) => entity.DisplayName || entity.CompanyName || entity.Name,
             onProgress
         }
     );
@@ -186,7 +251,7 @@ export async function migrateCustomers(sourceCustomers, mcp, sourceSystem = 'QBO
  * Migrate vendors from source system to ACTO
  */
 export async function migrateVendors(sourceVendors, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
 
     return migrateEntities(
         sourceVendors,
@@ -196,6 +261,7 @@ export async function migrateVendors(sourceVendors, mcp, sourceSystem = 'QBO', o
         mcp,
         {
             duplicateField: 'Name',
+            getFieldValue: (entity) => entity.DisplayName || entity.CompanyName || entity.Name,
             onProgress
         }
     );
@@ -205,7 +271,7 @@ export async function migrateVendors(sourceVendors, mcp, sourceSystem = 'QBO', o
  * Migrate products/services from source system to ACTO
  */
 export async function migrateProducts(sourceItems, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
 
     return migrateEntities(
         sourceItems,
@@ -215,6 +281,7 @@ export async function migrateProducts(sourceItems, mcp, sourceSystem = 'QBO', on
         mcp,
         {
             duplicateField: 'Name',
+            getFieldValue: (entity) => entity.Name,
             onProgress
         }
     );
@@ -224,7 +291,7 @@ export async function migrateProducts(sourceItems, mcp, sourceSystem = 'QBO', on
  * Migrate accounts from source system to ACTO
  */
 export async function migrateAccounts(sourceAccounts, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
 
     // Get existing account codes for auto-generation
     const existingAccountsResult = await mcp.readRecords('accounts', {
@@ -244,6 +311,7 @@ export async function migrateAccounts(sourceAccounts, mcp, sourceSystem = 'QBO',
         mcp,
         {
             duplicateField: 'Name',
+            getFieldValue: (entity) => entity.Name,
             skipCheck: (account) => {
                 // Skip system accounts if configured
                 if (skipSystemAccounts &&
@@ -270,17 +338,21 @@ export async function migrateAccounts(sourceAccounts, mcp, sourceSystem = 'QBO',
 
 /**
  * Migrate invoices from source system to ACTO
+ * Performance optimized with batch duplicate checking and parallel line creation.
  */
 export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceInvoices.length;
 
-    // Batch preload: check which invoices are already migrated
+    console.log(`Starting invoice migration: ${total} invoices`);
+    const startTime = Date.now();
+
+    // PERFORMANCE: Batch preload - check which invoices are already migrated
     const invoiceSourceIds = sourceInvoices.map(inv => String(inv.Id));
     await mapper.preloadEntityLookups('Invoice', invoiceSourceIds);
 
-    // Batch preload: preload customer lookups for all invoices
+    // PERFORMANCE: Batch preload - preload customer lookups for all invoices
     const customerSourceIds = [...new Set(
         sourceInvoices
             .map(inv => inv.CustomerRef?.value)
@@ -291,12 +363,22 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
         await mapper.preloadEntityLookups('Customer', customerSourceIds);
     }
 
+    // PERFORMANCE: Batch check for duplicate invoice numbers
+    const invoiceNumbers = sourceInvoices
+        .map(inv => inv.DocNumber)
+        .filter(Boolean);
+    let existingInvoices = new Map();
+    if (invoiceNumbers.length > 0 && mcp.batchCheckExisting) {
+        existingInvoices = await mcp.batchCheckExisting('invoices', 'InvoiceNumber', invoiceNumbers);
+        console.log(`Batch duplicate check: found ${[...existingInvoices.values()].filter(Boolean).length} existing invoices`);
+    }
+
     for (let i = 0; i < sourceInvoices.length; i++) {
         const sourceInvoice = sourceInvoices[i];
         const sourceId = String(sourceInvoice.Id);
 
         try {
-            // Check if already migrated
+            // Check if already migrated (uses preloaded cache)
             const existingId = await mapper.wasAlreadyMigrated('Invoice', sourceId);
             if (existingId) {
                 result.skipped++;
@@ -325,20 +407,16 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
                 continue;
             }
 
-            // Check for duplicate by invoice number
+            // PERFORMANCE: Check for duplicate using preloaded batch results
             if (mappedInvoice.InvoiceNumber) {
-                const duplicateCheck = await mcp.readRecords('invoices', {
-                    filter: `InvoiceNumber eq '${escapeOData(mappedInvoice.InvoiceNumber)}'`,
-                    first: 1
-                });
-
-                if (duplicateCheck.result?.value?.length > 0) {
-                    await mapper.recordMigration('Invoice', sourceId, duplicateCheck.result.value[0].Id);
+                const existingInvoiceId = existingInvoices.get(String(mappedInvoice.InvoiceNumber));
+                if (existingInvoiceId) {
+                    await mapper.recordMigration('Invoice', sourceId, existingInvoiceId);
                     result.skipped++;
                     result.details.push({
                         type: 'invoice',
                         sourceId,
-                        targetId: duplicateCheck.result.value[0].Id,
+                        targetId: existingInvoiceId,
                         number: mappedInvoice.InvoiceNumber,
                         status: 'skipped',
                         reason: 'Duplicate exists'
@@ -373,6 +451,9 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
             }
 
             const newId = newInvoiceId; // Use the ID we generated
+
+            // Add to duplicates map to prevent same-batch duplicates
+            existingInvoices.set(String(mappedInvoice.InvoiceNumber), newId);
 
             // Create invoice lines (in parallel for speed)
             const lines = (sourceInvoice.Line || []).filter(l => l.DetailType === 'SalesItemLineDetail');
@@ -425,22 +506,31 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
         }
     }
 
+    const elapsedMs = Date.now() - startTime;
+    const perInvoiceMs = total > 0 ? elapsedMs / total : 0;
+    console.log(`Invoice migration complete: ${result.migrated} created, ${result.skipped} skipped, ${result.errors.length} errors`);
+    console.log(`Total time: ${(elapsedMs / 1000).toFixed(1)}s, Per invoice: ${perInvoiceMs.toFixed(0)}ms`);
+
     return result;
 }
 
 /**
  * Migrate bills from source system to ACTO
+ * Performance optimized with batch duplicate checking and parallel line creation.
  */
 export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceBills.length;
 
-    // Batch preload: check which bills are already migrated
+    console.log(`Starting bill migration: ${total} bills`);
+    const startTime = Date.now();
+
+    // PERFORMANCE: Batch preload - check which bills are already migrated
     const billSourceIds = sourceBills.map(bill => String(bill.Id));
     await mapper.preloadEntityLookups('Bill', billSourceIds);
 
-    // Batch preload: preload vendor lookups for all bills
+    // PERFORMANCE: Batch preload - preload vendor lookups for all bills
     const vendorSourceIds = [...new Set(
         sourceBills
             .map(bill => bill.VendorRef?.value)
@@ -451,7 +541,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
         await mapper.preloadEntityLookups('Vendor', vendorSourceIds);
     }
 
-    // Batch preload: preload account lookups for all bill lines
+    // PERFORMANCE: Batch preload - preload account lookups for all bill lines
     const accountSourceIds = [...new Set(
         sourceBills
             .flatMap(bill => (bill.Line || []))
@@ -463,12 +553,22 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
         await mapper.preloadEntityLookups('Account', accountSourceIds);
     }
 
+    // PERFORMANCE: Batch check for duplicate bill numbers
+    const billNumbers = sourceBills
+        .map(bill => bill.DocNumber)
+        .filter(Boolean);
+    let existingBills = new Map();
+    if (billNumbers.length > 0 && mcp.batchCheckExisting) {
+        existingBills = await mcp.batchCheckExisting('bills', 'BillNumber', billNumbers);
+        console.log(`Batch duplicate check: found ${[...existingBills.values()].filter(Boolean).length} existing bills`);
+    }
+
     for (let i = 0; i < sourceBills.length; i++) {
         const sourceBill = sourceBills[i];
         const sourceId = String(sourceBill.Id);
 
         try {
-            // Check if already migrated
+            // Check if already migrated (uses preloaded cache)
             const existingId = await mapper.wasAlreadyMigrated('Bill', sourceId);
             if (existingId) {
                 result.skipped++;
@@ -497,20 +597,16 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
                 continue;
             }
 
-            // Check for duplicate by bill number
+            // PERFORMANCE: Check for duplicate using preloaded batch results
             if (mappedBill.BillNumber) {
-                const duplicateCheck = await mcp.readRecords('bills', {
-                    filter: `BillNumber eq '${escapeOData(mappedBill.BillNumber)}'`,
-                    first: 1
-                });
-
-                if (duplicateCheck.result?.value?.length > 0) {
-                    await mapper.recordMigration('Bill', sourceId, duplicateCheck.result.value[0].Id);
+                const existingBillId = existingBills.get(String(mappedBill.BillNumber));
+                if (existingBillId) {
+                    await mapper.recordMigration('Bill', sourceId, existingBillId);
                     result.skipped++;
                     result.details.push({
                         type: 'bill',
                         sourceId,
-                        targetId: duplicateCheck.result.value[0].Id,
+                        targetId: existingBillId,
                         number: mappedBill.BillNumber,
                         status: 'skipped',
                         reason: 'Duplicate exists'
@@ -525,9 +621,9 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
             }
 
             // Calculate AmountPaid from Balance
-            const total = parseFloat(sourceBill.TotalAmt) || 0;
+            const totalAmt = parseFloat(sourceBill.TotalAmt) || 0;
             const balance = parseFloat(sourceBill.Balance) || 0;
-            const amountPaid = total - balance;
+            const amountPaid = totalAmt - balance;
 
             // Create bill
             const newBillId = randomUUID().toUpperCase();
@@ -553,12 +649,16 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
 
             const newId = newBillId; // Use the ID we generated
 
+            // Add to duplicates map to prevent same-batch duplicates
+            existingBills.set(String(mappedBill.BillNumber), newId);
+
             // Create bill lines (in parallel for speed)
             const lines = (sourceBill.Line || []).filter(l => l.DetailType === 'AccountBasedExpenseLineDetail');
 
             const linePromises = lines.map(async (line) => {
                 try {
                     const detail = line.AccountBasedExpenseLineDetail || {};
+                    // Account lookups use preloaded cache
                     const accountId = detail.AccountRef?.value
                         ? await mapper.lookupEntity('Account', String(detail.AccountRef.value))
                         : null;
@@ -610,6 +710,11 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
         }
     }
 
+    const elapsedMs = Date.now() - startTime;
+    const perBillMs = total > 0 ? elapsedMs / total : 0;
+    console.log(`Bill migration complete: ${result.migrated} created, ${result.skipped} skipped, ${result.errors.length} errors`);
+    console.log(`Total time: ${(elapsedMs / 1000).toFixed(1)}s, Per bill: ${perBillMs.toFixed(0)}ms`);
+
     return result;
 }
 
@@ -617,7 +722,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
  * Migrate customer payments from source system to ACTO
  */
 export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourcePayments.length;
 
@@ -774,7 +879,7 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
  * Migrate vendor bill payments from source system to ACTO
  */
 export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceBillPayments.length;
 
@@ -957,7 +1062,7 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
  * Migrate journal entries from source system to ACTO
  */
 export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSystem = 'QBO', onProgress = null) {
-    const mapper = new MigrationMapper(mcp, sourceSystem);
+    const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceJournalEntries.length;
 
@@ -1134,5 +1239,6 @@ export default {
     migrateBills,
     migratePayments,
     migrateBillPayments,
-    migrateJournalEntries
+    migrateJournalEntries,
+    clearMapperCache
 };
