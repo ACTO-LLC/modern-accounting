@@ -143,6 +143,7 @@ ALL must pass before `<acto-complete>`:
 4. **Check CLAUDE.md** - Look for known patterns before giving up
 5. **Document learning** - If you discover something novel, suggest adding to CLAUDE.md
 6. **Always do Phase 4** - PR review is not optional; it catches issues
+7. **NEVER create a PR without passing build** - Run `npm run build` in client/ and verify it succeeds with zero errors before committing. TypeScript errors that reach main break CI for everyone.
 
 ## References
 
