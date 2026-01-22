@@ -993,6 +993,126 @@
                 "Id"
             ]
         },
+        "purchaseorders": {
+            "source": {
+                "object": "dbo.v_PurchaseOrders",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "PONumber": "PONumber",
+                "PODate": "PODate",
+                "ExpectedDate": "ExpectedDate",
+                "Status": "Status",
+                "Notes": "Notes",
+                "Subtotal": "Subtotal",
+                "Total": "Total",
+                "ConvertedToBillId": "ConvertedToBillId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "purchaseorders_write": {
+            "source": "dbo.PurchaseOrders",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "key-fields": [
+                "Id"
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "PONumber": "PONumber",
+                "PODate": "PODate",
+                "ExpectedDate": "ExpectedDate",
+                "Status": "Status",
+                "Notes": "Notes",
+                "Subtotal": "Subtotal",
+                "Total": "Total",
+                "ConvertedToBillId": "ConvertedToBillId"
+            },
+            "relationships": {
+                "Vendor": {
+                    "target.entity": "vendors",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "VendorId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Bill": {
+                    "target.entity": "bills",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ConvertedToBillId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            }
+        },
+        "purchaseorderlines": {
+            "source": "dbo.PurchaseOrderLines",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PurchaseOrderId": "PurchaseOrderId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "relationships": {
+                "ProductService": {
+                    "target.entity": "productsservices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ProductServiceId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
         "recurringtemplates": {
             "source": "dbo.RecurringTemplates",
             "permissions": [
