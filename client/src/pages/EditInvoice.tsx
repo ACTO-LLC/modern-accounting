@@ -28,6 +28,9 @@ interface InvoiceWithLines {
   CustomerId: string;
   IssueDate: string;
   DueDate: string;
+  Subtotal: number;
+  TaxRateId: string | null;
+  TaxAmount: number;
   TotalAmount: number;
   Status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
   Lines?: InvoiceLine[];
@@ -141,12 +144,16 @@ export default function EditInvoice() {
       const totalAmount = calculateInvoiceTotal(originalLines);
 
       // Create new invoice with current date and Draft status
+      // Copy tax settings from original invoice
       const newInvoice = {
         InvoiceNumber: newInvoiceNumber,
         CustomerId: invoice.CustomerId,
         IssueDate: getCurrentDate(),
         DueDate: getDateNDaysFromNow(30),
-        TotalAmount: totalAmount,
+        Subtotal: invoice.Subtotal || totalAmount,
+        TaxRateId: invoice.TaxRateId || null,
+        TaxAmount: invoice.TaxAmount || 0,
+        TotalAmount: invoice.TotalAmount || totalAmount,
         Status: 'Draft'
       };
 

@@ -69,12 +69,16 @@ export default function Invoices() {
       const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || []);
       const totalAmount = calculateInvoiceTotal(originalLines);
 
+      // Copy tax settings from original invoice
       const newInvoice = {
         InvoiceNumber: newInvoiceNumber,
         CustomerId: originalInvoice.CustomerId,
         IssueDate: getCurrentDate(),
         DueDate: getDateNDaysFromNow(30),
-        TotalAmount: totalAmount,
+        Subtotal: (originalInvoice as any).Subtotal || totalAmount,
+        TaxRateId: (originalInvoice as any).TaxRateId || null,
+        TaxAmount: (originalInvoice as any).TaxAmount || 0,
+        TotalAmount: (originalInvoice as any).TotalAmount || totalAmount,
         Status: 'Draft'
       };
 

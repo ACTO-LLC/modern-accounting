@@ -77,6 +77,19 @@ export default function ProductsServices() {
       renderCell: (params) => formatCurrency(params.value),
     },
     {
+      field: 'Taxable',
+      headerName: 'Taxable',
+      width: 100,
+      filterable: true,
+      renderCell: (params) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          params.value ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+        }`}>
+          {params.value ? 'Yes' : 'No'}
+        </span>
+      ),
+    },
+    {
       field: 'Status',
       headerName: 'Status',
       width: 100,

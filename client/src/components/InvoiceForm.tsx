@@ -3,15 +3,30 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import { useEffect, ReactNode } from 'react';
+import { useEffect, ReactNode, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import CustomerSelector from './CustomerSelector';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
+import api from '../lib/api';
+
+// Tax rate interface
+interface TaxRate {
+  Id: string;
+  Name: string;
+  Rate: number;
+  Description: string | null;
+  IsDefault: boolean;
+  IsActive: boolean;
+}
 
 export const invoiceSchema = z.object({
   InvoiceNumber: z.string().min(1, 'Invoice number is required'),
   CustomerId: z.string().uuid('Please select a customer'),
   IssueDate: z.string().min(1, 'Issue date is required'),
   DueDate: z.string().min(1, 'Due date is required'),
+  Subtotal: z.number().min(0, 'Subtotal must be positive'),
+  TaxRateId: z.string().nullish(),
+  TaxAmount: z.number().min(0, 'Tax amount must be positive'),
   TotalAmount: z.number().min(0, 'Amount must be positive'),
   Status: z.enum(['Draft', 'Sent', 'Paid', 'Overdue']),
   Lines: z.array(z.object({
@@ -20,7 +35,8 @@ export const invoiceSchema = z.object({
     Description: z.string().min(1, 'Description is required'),
     Quantity: z.number().min(1, 'Quantity must be at least 1'),
     UnitPrice: z.number().min(0, 'Unit price must be positive'),
-    Amount: z.number().nullish()
+    Amount: z.number().nullish(),
+    IsTaxable: z.boolean().optional()
   })).min(1, 'At least one line item is required')
 });
 
@@ -37,17 +53,45 @@ interface InvoiceFormProps {
 
 export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Invoice', headerActions }: InvoiceFormProps) {
   const navigate = useNavigate();
-  const { register, control, handleSubmit, setValue, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<InvoiceFormData>({
+
+  // Track taxable status for each line item (keyed by ProductServiceId)
+  const [lineTaxableStatus, setLineTaxableStatus] = useState<Record<number, boolean>>({});
+
+  // Fetch active tax rates
+  const { data: taxRates } = useQuery({
+    queryKey: ['taxrates-active'],
+    queryFn: async (): Promise<TaxRate[]> => {
+      const response = await api.get('/taxrates?$filter=IsActive eq true&$orderby=Name');
+      return response.data.value;
+    },
+  });
+
+  // Get default tax rate
+  const defaultTaxRate = useMemo(() => {
+    return taxRates?.find(tr => tr.IsDefault);
+  }, [taxRates]);
+
+  const { register, control, handleSubmit, setValue, watch, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
       Status: 'Draft',
       IssueDate: new Date().toISOString().split('T')[0],
       DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 }],
+      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true }],
+      Subtotal: 0,
+      TaxRateId: initialValues?.TaxRateId || null,
+      TaxAmount: 0,
       TotalAmount: 0,
       ...initialValues
     }
   });
+
+  // Set default tax rate when tax rates load and no initial value
+  useEffect(() => {
+    if (defaultTaxRate && !initialValues?.TaxRateId) {
+      setValue('TaxRateId', defaultTaxRate.Id);
+    }
+  }, [defaultTaxRate, initialValues?.TaxRateId, setValue]);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -59,14 +103,56 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     name: "Lines"
   });
 
+  const selectedTaxRateId = watch('TaxRateId');
+
+  // Get the selected tax rate
+  const selectedTaxRate = useMemo(() => {
+    if (!selectedTaxRateId || !taxRates) return null;
+    return taxRates.find(tr => tr.Id === selectedTaxRateId) || null;
+  }, [selectedTaxRateId, taxRates]);
+
+  // Calculate subtotal, taxable amount, tax, and total
+  const calculations = useMemo(() => {
+    let subtotal = 0;
+    let taxableAmount = 0;
+
+    lines.forEach((line, index) => {
+      const lineAmount = (line.Quantity || 0) * (line.UnitPrice || 0);
+      subtotal += lineAmount;
+
+      // Check if this line is taxable
+      const isTaxable = lineTaxableStatus[index] ?? true; // Default to taxable
+      if (isTaxable) {
+        taxableAmount += lineAmount;
+      }
+    });
+
+    const taxRate = selectedTaxRate?.Rate || 0;
+    const taxAmount = taxableAmount * taxRate;
+    const total = subtotal + taxAmount;
+
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      taxableAmount: Math.round(taxableAmount * 100) / 100,
+      taxAmount: Math.round(taxAmount * 100) / 100,
+      total: Math.round(total * 100) / 100,
+      taxRate: taxRate
+    };
+  }, [lines, lineTaxableStatus, selectedTaxRate]);
+
+  // Update form values when calculations change
   useEffect(() => {
-    const total = lines.reduce((sum, line) => {
-      return sum + (line.Quantity || 0) * (line.UnitPrice || 0);
-    }, 0);
-    setValue('TotalAmount', total);
-  }, [lines, setValue]);
+    setValue('Subtotal', calculations.subtotal);
+    setValue('TaxAmount', calculations.taxAmount);
+    setValue('TotalAmount', calculations.total);
+  }, [calculations, setValue]);
 
   const isSubmitting = externalIsSubmitting || formIsSubmitting;
+
+  // Format tax rate for display
+  const formatTaxRate = (rate: number) => {
+    return `${(rate * 100).toFixed(2)}%`;
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -146,6 +232,25 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             </select>
             {errors.Status && <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>}
           </div>
+
+          <div>
+            <label htmlFor="TaxRateId" className="block text-sm font-medium text-gray-700">Tax Rate</label>
+            <select
+              id="TaxRateId"
+              {...register('TaxRateId')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            >
+              <option value="">No Tax</option>
+              {taxRates?.map((taxRate) => (
+                <option key={taxRate.Id} value={taxRate.Id}>
+                  {taxRate.Name} ({formatTaxRate(taxRate.Rate)})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Tax will be applied to taxable line items only
+            </p>
+          </div>
         </div>
 
         {/* Line Items */}
@@ -154,14 +259,18 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             <h3 className="text-lg font-medium text-gray-900">Line Items</h3>
             <button
               type="button"
-              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 })}
+              onClick={() => {
+                append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true });
+                // Set new line as taxable by default
+                setLineTaxableStatus(prev => ({ ...prev, [fields.length]: true }));
+              }}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
             >
               <Plus className="w-4 h-4 mr-1" />
               Add Item
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {fields.map((field, index) => {
               const handleProductServiceSelect = (productServiceId: string, productService?: ProductService) => {
@@ -172,8 +281,16 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                   if (productService.SalesPrice !== null) {
                     setValue(`Lines.${index}.UnitPrice`, productService.SalesPrice);
                   }
+                  // Set taxable status from product/service
+                  setLineTaxableStatus(prev => ({ ...prev, [index]: productService.Taxable }));
+                } else {
+                  // If cleared, default to taxable
+                  setLineTaxableStatus(prev => ({ ...prev, [index]: true }));
                 }
               };
+
+              const lineAmount = (lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0);
+              const isTaxable = lineTaxableStatus[index] ?? true;
 
               return (
                 <div key={field.id} className="bg-gray-50 p-4 rounded-md">
@@ -192,6 +309,20 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                           />
                         )}
                       />
+                    </div>
+                    <div className="flex items-center pt-5">
+                      <input
+                        type="checkbox"
+                        id={`taxable-${index}`}
+                        checked={isTaxable}
+                        onChange={(e) => {
+                          setLineTaxableStatus(prev => ({ ...prev, [index]: e.target.checked }));
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label htmlFor={`taxable-${index}`} className="ml-2 text-xs text-gray-600">
+                        Taxable
+                      </label>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">
@@ -227,12 +358,30 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                     <div className="w-32">
                       <label className="block text-xs font-medium text-gray-500">Amount</label>
                       <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium">
-                        ${((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0)).toFixed(2)}
+                        ${lineAmount.toFixed(2)}
+                        {!isTaxable && selectedTaxRate && (
+                          <span className="ml-1 text-xs text-gray-400">(no tax)</span>
+                        )}
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => remove(index)}
+                      onClick={() => {
+                        remove(index);
+                        // Update taxable status indices
+                        setLineTaxableStatus(prev => {
+                          const newStatus: Record<number, boolean> = {};
+                          Object.keys(prev).forEach(key => {
+                            const keyNum = parseInt(key);
+                            if (keyNum < index) {
+                              newStatus[keyNum] = prev[keyNum];
+                            } else if (keyNum > index) {
+                              newStatus[keyNum - 1] = prev[keyNum];
+                            }
+                          });
+                          return newStatus;
+                        });
+                      }}
                       className="mt-6 text-red-600 hover:text-red-800"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -245,10 +394,39 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
           {errors.Lines && <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>}
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
-          <div className="text-xl font-bold text-gray-900 mr-6">
-            Total: ${lines.reduce((sum, line) => sum + (line.Quantity || 0) * (line.UnitPrice || 0), 0).toFixed(2)}
+        {/* Totals Section */}
+        <div className="border-t pt-4">
+          <div className="flex justify-end">
+            <div className="w-72 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Subtotal:</span>
+                <span className="font-medium text-gray-900">${calculations.subtotal.toFixed(2)}</span>
+              </div>
+              {selectedTaxRate && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Tax ({selectedTaxRate.Name} - {formatTaxRate(selectedTaxRate.Rate)}):
+                    </span>
+                    <span className="font-medium text-gray-900">${calculations.taxAmount.toFixed(2)}</span>
+                  </div>
+                  {calculations.taxableAmount !== calculations.subtotal && (
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Taxable amount:</span>
+                      <span>${calculations.taxableAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="flex justify-between text-lg font-bold border-t pt-2">
+                <span className="text-gray-900">Total:</span>
+                <span className="text-gray-900">${calculations.total.toFixed(2)}</span>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div className="flex justify-end items-center border-t pt-4">
           <button
             type="button"
             onClick={() => navigate('/invoices')}
