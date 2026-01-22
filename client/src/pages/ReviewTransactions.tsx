@@ -334,8 +334,9 @@ export default function ReviewTransactions() {
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">Status</label>
             <select
+              id="statusFilter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -349,8 +350,9 @@ export default function ReviewTransactions() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Confidence</label>
+            <label htmlFor="confidenceFilter" className="block text-sm font-medium text-gray-700 mb-2">Confidence</label>
             <select
+              id="confidenceFilter"
               value={confidenceFilter}
               onChange={(e) => setConfidenceFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -363,8 +365,9 @@ export default function ReviewTransactions() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Source</label>
+            <label htmlFor="sourceFilter" className="block text-sm font-medium text-gray-700 mb-2">Source</label>
             <select
+              id="sourceFilter"
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -376,8 +379,9 @@ export default function ReviewTransactions() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Institution</label>
+            <label htmlFor="institutionFilter" className="block text-sm font-medium text-gray-700 mb-2">Institution</label>
             <select
+              id="institutionFilter"
               value={institutionFilter}
               onChange={(e) => setInstitutionFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -392,9 +396,10 @@ export default function ReviewTransactions() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
             <div className="relative">
               <input
+                id="startDate"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -404,9 +409,10 @@ export default function ReviewTransactions() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
             <div className="relative">
               <input
+                id="endDate"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}

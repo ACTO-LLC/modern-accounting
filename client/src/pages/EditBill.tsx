@@ -71,7 +71,7 @@ export default function EditBill() {
 
       // 1. Update Bill (exclude Lines)
       const { Lines, ...billData } = data;
-      await api.patch(`/bills/Id/${id}`, billData);
+      await api.patch(`/bills_write/Id/${id}`, billData);
 
       // 2. Handle Lines Reconciliation
       // Use unquoted GUIDs in OData filter for DAB

@@ -152,7 +152,7 @@ export default function AdminEnhancements() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <div className="-mb-px flex space-x-8" role="tablist" aria-label="Enhancement tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -187,6 +187,9 @@ export default function AdminEnhancements() {
             return (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={clsx(
                   'group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors',
@@ -206,7 +209,7 @@ export default function AdminEnhancements() {
               </button>
             );
           })}
-        </nav>
+        </div>
       </div>
 
       {/* Tab Content */}

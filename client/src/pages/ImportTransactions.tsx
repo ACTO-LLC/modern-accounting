@@ -133,8 +133,9 @@ export default function ImportTransactions() {
         <h2 className="text-lg font-medium text-gray-900 mb-4">Step 1: Select Source Account</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+            <label htmlFor="accountType" className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
             <select
+              id="accountType"
               value={sourceType}
               onChange={(e) => setSourceType(e.target.value as 'Bank' | 'CreditCard')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -145,9 +146,10 @@ export default function ImportTransactions() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Source Account</label>
+            <label htmlFor="sourceAccount" className="block text-sm font-medium text-gray-700 mb-2">Source Account</label>
             <div className="flex space-x-2">
               <select
+                id="sourceAccount"
                 value={sourceAccountId}
                 onChange={(e) => setSourceAccountId(e.target.value)}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"

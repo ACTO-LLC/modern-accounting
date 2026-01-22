@@ -557,8 +557,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
 
           {/* Template Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Template Name</label>
+            <label htmlFor="TemplateName" className="block text-sm font-medium text-gray-700">Template Name</label>
             <input
+              id="TemplateName"
               type="text"
               required
               value={formData.TemplateName}
@@ -570,8 +571,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
 
           {/* Transaction Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Transaction Type</label>
+            <label htmlFor="TransactionType" className="block text-sm font-medium text-gray-700">Transaction Type</label>
             <select
+              id="TransactionType"
               value={formData.TransactionType}
               onChange={(e) => setFormData({ ...formData, TransactionType: e.target.value as TransactionType })}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -585,8 +587,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
           {/* Frequency */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Frequency</label>
+              <label htmlFor="Frequency" className="block text-sm font-medium text-gray-700">Frequency</label>
               <select
+                id="Frequency"
                 value={formData.Frequency}
                 onChange={(e) => {
                   const freq = e.target.value as FrequencyType;
@@ -605,8 +608,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Every</label>
+              <label htmlFor="IntervalCount" className="block text-sm font-medium text-gray-700">Every</label>
               <input
+                id="IntervalCount"
                 type="number"
                 min="1"
                 value={formData.IntervalCount}
@@ -619,8 +623,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
           {/* Day of Week (for Weekly) */}
           {formData.Frequency === 'Weekly' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700">Day of Week</label>
+              <label htmlFor="DayOfWeek" className="block text-sm font-medium text-gray-700">Day of Week</label>
               <select
+                id="DayOfWeek"
                 value={formData.DayOfWeek ?? 1}
                 onChange={(e) => setFormData({ ...formData, DayOfWeek: parseInt(e.target.value) })}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -635,8 +640,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
           {/* Day of Month (for Monthly) */}
           {formData.Frequency === 'Monthly' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700">Day of Month</label>
+              <label htmlFor="DayOfMonth" className="block text-sm font-medium text-gray-700">Day of Month</label>
               <select
+                id="DayOfMonth"
                 value={formData.DayOfMonth ?? 1}
                 onChange={(e) => setFormData({ ...formData, DayOfMonth: parseInt(e.target.value) })}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -652,8 +658,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Start Date</label>
+              <label htmlFor="StartDate" className="block text-sm font-medium text-gray-700">Start Date</label>
               <input
+                id="StartDate"
                 type="date"
                 required
                 value={formData.StartDate}
@@ -662,8 +669,9 @@ function CreateTemplateModal({ onClose, onSubmit, isSubmitting, error }: CreateT
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">End Date (Optional)</label>
+              <label htmlFor="EndDate" className="block text-sm font-medium text-gray-700">End Date (Optional)</label>
               <input
+                id="EndDate"
                 type="date"
                 value={formData.EndDate || ''}
                 onChange={(e) => setFormData({ ...formData, EndDate: e.target.value || null })}

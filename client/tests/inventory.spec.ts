@@ -3,15 +3,15 @@ import { test, expect } from '@playwright/test';
 test.describe('Inventory Management', () => {
   test('should navigate to Inventory page and display inventory items', async ({ page }) => {
     // Navigate to Inventory page
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Verify page title
     await expect(page.getByRole('heading', { name: 'Inventory Management' })).toBeVisible();
 
     // Verify stats cards are visible
     await expect(page.getByText('Total Items')).toBeVisible();
-    await expect(page.getByText('Low Stock')).toBeVisible();
-    await expect(page.getByText('Out of Stock')).toBeVisible();
+    await expect(page.getByRole('paragraph').filter({ hasText: 'Low Stock' })).toBeVisible();
+    await expect(page.getByRole('paragraph').filter({ hasText: 'Out of Stock' })).toBeVisible();
     await expect(page.getByText('Total Value')).toBeVisible();
 
     // Verify view mode tabs are visible
@@ -24,7 +24,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should display inventory items with stock levels', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Wait for inventory table to load
     await expect(page.getByRole('table')).toBeVisible();
@@ -43,7 +43,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should filter by stock status - In Stock', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Wait for page to load
     await expect(page.getByLabel('Stock Status')).toBeVisible();
@@ -69,7 +69,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should filter by stock status - Low Stock', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Wait for page to load
     await expect(page.getByLabel('Stock Status')).toBeVisible();
@@ -82,7 +82,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should filter by stock status - Out of Stock', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Wait for page to load
     await expect(page.getByLabel('Stock Status')).toBeVisible();
@@ -95,7 +95,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should create inventory adjustment', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Wait for inventory table to load
     await expect(page.getByRole('table')).toBeVisible();
@@ -132,7 +132,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should cancel inventory adjustment', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Wait for inventory table to load
     await expect(page.getByRole('table')).toBeVisible();
@@ -157,7 +157,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should view transaction history', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Wait for page to load
     await expect(page.getByRole('button', { name: 'Transactions' })).toBeVisible();
@@ -176,7 +176,7 @@ test.describe('Inventory Management', () => {
   });
 
   test('should switch between view modes', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Verify we start on Inventory Items tab
     await expect(page.getByRole('button', { name: 'Inventory Items' })).toHaveClass(/border-indigo-500/);
@@ -202,12 +202,12 @@ test.describe('Inventory Management', () => {
   });
 
   test('should navigate to new inventory item page', async ({ page }) => {
-    await page.goto('http://localhost:5176/inventory');
+    await page.goto('/inventory');
 
     // Click on New Inventory Item link
     await page.getByRole('link', { name: 'New Inventory Item' }).click();
 
     // Verify navigation to products-services/new
-    await expect(page).toHaveURL('http://localhost:5176/products-services/new');
+    await expect(page).toHaveURL('/products-services/new');
   });
 });

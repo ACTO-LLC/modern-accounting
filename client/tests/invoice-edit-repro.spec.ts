@@ -21,7 +21,7 @@ test.describe('Invoice Edit', () => {
     };
 
     // Create invoice via API (Node.js API)
-    const createResponse = await page.request.post('http://localhost:7072/api/invoices', {
+    const createResponse = await page.request.post('http://localhost:7071/api/invoices', {
       data: invoiceData
     });
     
@@ -31,7 +31,7 @@ test.describe('Invoice Edit', () => {
     console.log(`Created test invoice: ${invoiceId}`);
 
     // 2. Navigate to the edit page
-    await page.goto(`//invoices/${invoiceId}/edit`);
+    await page.goto(`/invoices/${invoiceId}/edit`);
 
     // 3. Verify the form loaded
     // Check for the invoice number input to have the correct value

@@ -140,20 +140,21 @@ test.describe('Recurring Transactions', () => {
     await page.getByLabel('Start Date').fill(startDate);
     await page.getByRole('button', { name: 'Create Template' }).click();
 
-    // Wait for the template to appear
-    await expect(page.getByText(templateName)).toBeVisible();
+    // Wait for the template to appear in the list
+    await expect(page.locator('table').getByText(templateName)).toBeVisible();
 
-    // 3. Set up dialog handler for confirmation
-    page.on('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('Are you sure you want to delete this recurring template?');
-      await dialog.accept();
-    });
-
-    // 4. Find the row and click Delete
+    // 3. Find the row and click Delete (opens custom modal, not browser dialog)
     const row = page.getByRole('row').filter({ hasText: templateName });
     await row.getByRole('button', { name: 'Delete' }).click();
 
-    // 5. Verify the template is removed from the list
-    await expect(page.getByText(templateName)).not.toBeVisible();
+    // 4. Verify the confirmation modal appears
+    await expect(page.getByRole('heading', { name: 'Delete Recurring Template' })).toBeVisible();
+    await expect(page.getByText('Are you sure you want to delete')).toBeVisible();
+
+    // 5. Confirm deletion by clicking Delete button in modal
+    await page.getByRole('button', { name: 'Delete' }).last().click();
+
+    // 6. Verify the template is removed from the list
+    await expect(page.locator('table').getByText(templateName)).not.toBeVisible();
   });
 });

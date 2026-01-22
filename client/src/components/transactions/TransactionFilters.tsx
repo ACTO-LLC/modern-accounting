@@ -34,12 +34,13 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
         {/* Search */}
         <div className="lg:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="searchFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Search
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
+              id="searchFilter"
               type="text"
               value={filters.search}
               onChange={(e) => updateFilter('search', e.target.value)}
@@ -51,10 +52,11 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
 
         {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Status
           </label>
           <select
+            id="statusFilter"
             value={filters.status}
             onChange={(e) => updateFilter('status', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -70,10 +72,11 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
 
         {/* Confidence */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="confidenceFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Confidence
           </label>
           <select
+            id="confidenceFilter"
             value={filters.confidence}
             onChange={(e) => updateFilter('confidence', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -87,10 +90,11 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
 
         {/* Account */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="accountFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Account
           </label>
           <select
+            id="accountFilter"
             value={filters.account}
             onChange={(e) => updateFilter('account', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -104,10 +108,11 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
 
         {/* Source */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="sourceFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Source
           </label>
           <select
+            id="sourceFilter"
             value={filters.source}
             onChange={(e) => updateFilter('source', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -121,17 +126,19 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
 
         {/* Date Range */}
         <div className="lg:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="dateFromFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Date Range
           </label>
           <div className="flex gap-2">
             <input
+              id="dateFromFilter"
               type="date"
               value={filters.dateFrom}
               onChange={(e) => updateFilter('dateFrom', e.target.value)}
               className="flex-1 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <input
+              id="dateToFilter"
               type="date"
               value={filters.dateTo}
               onChange={(e) => updateFilter('dateTo', e.target.value)}

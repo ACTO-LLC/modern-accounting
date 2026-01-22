@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Email Invoice', () => {
   test('email button visible on invoice view page', async ({ page }) => {
     // First go to invoices list and get an invoice
-    await page.goto('http://localhost:5173/invoices');
+    await page.goto('/invoices');
 
     // Wait for table to load
     await page.waitForSelector('tbody tr', { timeout: 10000 });
@@ -34,7 +34,7 @@ test.describe('Email Invoice', () => {
 
   test('email button opens email modal', async ({ page }) => {
     // Navigate to invoices list
-    await page.goto('http://localhost:5173/invoices');
+    await page.goto('/invoices');
 
     // Wait for table to load
     await page.waitForSelector('tbody tr', { timeout: 10000 });
@@ -60,7 +60,7 @@ test.describe('Email Invoice', () => {
 
   test('email modal can be closed', async ({ page }) => {
     // Navigate to an invoice
-    await page.goto('http://localhost:5173/invoices');
+    await page.goto('/invoices');
     await page.waitForSelector('tbody tr', { timeout: 10000 });
     await page.locator('tbody tr').first().locator('a').first().click();
     await page.waitForURL(/.*\/invoices\/[^/]+$/);
@@ -78,7 +78,7 @@ test.describe('Email Invoice', () => {
 
   test('email modal shows unconfigured message when SMTP not set', async ({ page }) => {
     // Navigate to an invoice
-    await page.goto('http://localhost:5173/invoices');
+    await page.goto('/invoices');
     await page.waitForSelector('tbody tr', { timeout: 10000 });
     await page.locator('tbody tr').first().locator('a').first().click();
     await page.waitForURL(/.*\/invoices\/[^/]+$/);
@@ -104,7 +104,7 @@ test.describe('Email Invoice', () => {
 
   test('email history section visible on invoice view', async ({ page }) => {
     // Navigate to an invoice
-    await page.goto('http://localhost:5173/invoices');
+    await page.goto('/invoices');
     await page.waitForSelector('tbody tr', { timeout: 10000 });
     await page.locator('tbody tr').first().locator('a').first().click();
     await page.waitForURL(/.*\/invoices\/[^/]+$/);

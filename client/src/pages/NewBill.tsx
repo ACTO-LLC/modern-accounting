@@ -4,8 +4,9 @@ import { useState } from 'react';
 import api from '../lib/api';
 import BillForm, { BillFormData } from '../components/BillForm';
 
-interface BillResponse {
+interface Bill {
   Id: string;
+  BillNumber: string;
 }
 
 export default function NewBill() {
@@ -17,15 +18,25 @@ export default function NewBill() {
     mutationFn: async (data: BillFormData) => {
       // Create the bill first
       const { Lines, ...billData } = data;
-      const billResponse = await api.post<BillResponse>('/bills', billData);
-      const billId = billResponse.data.Id;
+      await api.post('/bills_write', billData);
+
+      // DAB doesn't return the created entity, so we need to query for it
+      const escapedBillNumber = String(billData.BillNumber).replace(/'/g, "''");
+      const queryResponse = await api.get<{ value: Bill[] }>(
+        `/bills?$filter=BillNumber eq '${escapedBillNumber}'`
+      );
+      const bill = queryResponse.data.value[0];
+
+      if (!bill?.Id) {
+        throw new Error('Failed to retrieve created bill');
+      }
 
       // Then create the line items
       if (Lines && Lines.length > 0) {
         await Promise.all(
           Lines.map((line) =>
             api.post('/billlines', {
-              BillId: billId,
+              BillId: bill.Id,
               AccountId: line.AccountId,
               Description: line.Description || '',
               Amount: line.Amount,
@@ -34,7 +45,7 @@ export default function NewBill() {
         );
       }
 
-      return billResponse.data;
+      return bill;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bills'] });

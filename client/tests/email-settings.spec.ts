@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Email Settings', () => {
   test('email settings section visible on company settings page', async ({ page }) => {
-    await page.goto('http://localhost:5173/settings');
+    await page.goto('/settings');
 
     // Verify Email Settings section is visible
     await expect(page.getByText('Email Settings')).toBeVisible();
@@ -24,7 +24,7 @@ test.describe('Email Settings', () => {
   });
 
   test('email settings form has default template values', async ({ page }) => {
-    await page.goto('http://localhost:5173/settings');
+    await page.goto('/settings');
 
     // Check default subject template
     const subjectInput = page.getByLabel(/Subject Template/i);
@@ -39,7 +39,7 @@ test.describe('Email Settings', () => {
   });
 
   test('can fill in email settings form', async ({ page }) => {
-    await page.goto('http://localhost:5173/settings');
+    await page.goto('/settings');
 
     // Fill in SMTP settings
     await page.getByLabel(/SMTP Host/i).fill('smtp.test.com');
