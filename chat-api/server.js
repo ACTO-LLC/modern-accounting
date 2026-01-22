@@ -369,6 +369,96 @@ class DabMcpClient {
         this.sessionId = null;
         this.requestId = 0;
         this.initialized = false;
+
+        // Performance optimizations
+        this.lastActivityTime = 0;
+        this.keepAliveInterval = null;
+        this.keepAliveIntervalMs = 30000; // 30 seconds - keep session alive
+        this.sessionTimeoutMs = 120000;   // 2 minutes - MCP session timeout
+
+        // Response cache for frequently accessed data
+        this.responseCache = new Map();
+        this.responseCacheTtlMs = 5000;   // 5 second cache TTL for read queries
+    }
+
+    /**
+     * Start session keep-alive pings
+     */
+    startKeepAlive() {
+        if (this.keepAliveInterval) return;
+
+        this.keepAliveInterval = setInterval(async () => {
+            if (!this.initialized || !this.sessionId) return;
+
+            const timeSinceActivity = Date.now() - this.lastActivityTime;
+            // Only ping if we've been idle but session is still valid
+            if (timeSinceActivity > this.keepAliveIntervalMs &&
+                timeSinceActivity < this.sessionTimeoutMs) {
+                try {
+                    // Light ping - list tools (small response)
+                    await this.ping();
+                } catch (e) {
+                    console.log('Keep-alive ping failed:', e.message);
+                }
+            }
+        }, this.keepAliveIntervalMs);
+    }
+
+    /**
+     * Stop session keep-alive pings
+     */
+    stopKeepAlive() {
+        if (this.keepAliveInterval) {
+            clearInterval(this.keepAliveInterval);
+            this.keepAliveInterval = null;
+        }
+    }
+
+    /**
+     * Ping the session to keep it alive
+     */
+    async ping() {
+        if (!this.initialized || !this.sessionId) return false;
+
+        this.requestId++;
+        const payload = {
+            jsonrpc: '2.0',
+            id: this.requestId,
+            method: 'ping'
+        };
+
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.sessionId) {
+                headers['Mcp-Session-Id'] = this.sessionId;
+            }
+
+            await axios.post(this.mcpUrl, payload, {
+                headers,
+                timeout: 5000,
+                transformResponse: [(data) => data]
+            });
+
+            this.lastActivityTime = Date.now();
+            return true;
+        } catch (error) {
+            // Session likely expired
+            return false;
+        }
+    }
+
+    /**
+     * Get cache key for a read operation
+     */
+    getCacheKey(entity, options) {
+        return `${entity}:${JSON.stringify(options)}`;
+    }
+
+    /**
+     * Clear the response cache
+     */
+    clearCache() {
+        this.responseCache.clear();
     }
 
     // Parse SSE response from DAB MCP
@@ -412,6 +502,8 @@ class DabMcpClient {
                 // Get session ID from response headers
                 this.sessionId = response.headers['mcp-session-id'];
                 this.initialized = true;
+                this.lastActivityTime = Date.now();
+                this.startKeepAlive();
                 console.log('MCP initialized, session:', this.sessionId);
                 return true;
             }
@@ -424,6 +516,9 @@ class DabMcpClient {
 
     async callTool(toolName, args = {}, retryOnSessionError = true) {
         await this.initialize();
+
+        // Update activity time to prevent unnecessary keep-alive pings
+        this.lastActivityTime = Date.now();
 
         this.requestId++;
         const payload = {
@@ -457,6 +552,7 @@ class DabMcpClient {
                 // Check for session errors and retry
                 if (parsed.error.code === -32001 && retryOnSessionError) {
                     console.log('Session expired, reinitializing...');
+                    this.stopKeepAlive();
                     this.initialized = false;
                     this.sessionId = null;
                     return this.callTool(toolName, args, false);
@@ -475,6 +571,7 @@ class DabMcpClient {
             // Also retry on 404 (session not found)
             if (error.response?.status === 404 && retryOnSessionError) {
                 console.log('Session not found (404), reinitializing...');
+                this.stopKeepAlive();
                 this.initialized = false;
                 this.sessionId = null;
                 return this.callTool(toolName, args, false);
@@ -491,6 +588,90 @@ class DabMcpClient {
 
     async readRecords(entity, options = {}) {
         return this.callTool('read_records', { entity, ...options });
+    }
+
+    /**
+     * Read records with short-lived caching for migration batch operations.
+     * Cache is cleared after TTL expires.
+     */
+    async readRecordsCached(entity, options = {}) {
+        const cacheKey = this.getCacheKey(entity, options);
+        const cached = this.responseCache.get(cacheKey);
+
+        if (cached && (Date.now() - cached.timestamp) < this.responseCacheTtlMs) {
+            return cached.data;
+        }
+
+        const result = await this.readRecords(entity, options);
+
+        // Only cache successful reads
+        if (!result.error) {
+            this.responseCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+        }
+
+        return result;
+    }
+
+    /**
+     * Batch check for existing records by field values.
+     * Returns a Map of fieldValue -> existing record ID (or null if not found).
+     * Much more efficient than checking one by one.
+     */
+    async batchCheckExisting(entity, fieldName, fieldValues) {
+        if (!fieldValues || fieldValues.length === 0) {
+            return new Map();
+        }
+
+        // Build OR filter for all values at once
+        const escapedValues = fieldValues.map(v =>
+            String(v).replace(/'/g, "''")
+        );
+        const filter = escapedValues
+            .map(v => `${fieldName} eq '${v}'`)
+            .join(' or ');
+
+        const result = await this.readRecords(entity, {
+            filter: `(${filter})`,
+            select: `Id,${fieldName}`,
+            first: fieldValues.length
+        });
+
+        const existingMap = new Map();
+        const records = result.result?.value || [];
+
+        for (const record of records) {
+            existingMap.set(String(record[fieldName]), record.Id);
+        }
+
+        // Mark non-found values as null
+        for (const value of fieldValues) {
+            if (!existingMap.has(String(value))) {
+                existingMap.set(String(value), null);
+            }
+        }
+
+        return existingMap;
+    }
+
+    /**
+     * Create multiple records in parallel with controlled concurrency.
+     * Returns array of results in same order as input data.
+     */
+    async createRecordsBatch(entity, dataArray, concurrency = 5) {
+        const results = [];
+
+        for (let i = 0; i < dataArray.length; i += concurrency) {
+            const batch = dataArray.slice(i, i + concurrency);
+            const batchResults = await Promise.all(
+                batch.map(data => this.createRecord(entity, data))
+            );
+            results.push(...batchResults);
+        }
+
+        return results;
     }
 
     async createRecord(entity, data) {
