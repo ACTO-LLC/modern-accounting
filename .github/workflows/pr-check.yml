@@ -1,0 +1,70 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: StrongPassword123
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P StrongPassword123 -C -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            client/package-lock.json
+            chat-api/package-lock.json
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: TypeScript check (client)
+        working-directory: client
+        run: npx tsc --noEmit
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+
+      - name: Install chat-api dependencies
+        working-directory: chat-api
+        run: npm ci
+
+      - name: Run chat-api tests
+        working-directory: chat-api
+        run: npm test
+
+      - name: Install monitor-agent dependencies
+        working-directory: monitor-agent
+        run: npm ci
+
+      - name: Run monitor-agent tests
+        working-directory: monitor-agent
+        run: npm test
