@@ -226,6 +226,7 @@ export default function ChatInterface() {
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -356,8 +357,23 @@ What would you like to do?`
     }
   };
 
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+      addMessage({
+        role: 'assistant',
+        content: 'Action cancelled.',
+      });
+    }
+  }, [setIsLoading, addMessage]);
+
   const sendMessage = async (text: string, attachments: FileAttachment[] = []) => {
     if ((!text.trim() && attachments.length === 0) || isLoading) return;
+
+    // Create a new AbortController for this request
+    abortControllerRef.current = new AbortController();
 
     addMessage({ role: 'user', content: text, attachments });
     setIsLoading(true);
@@ -375,6 +391,7 @@ What would you like to do?`
           history: messages.slice(-10),
           attachments,
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) throw new Error('Chat API failed');
@@ -397,6 +414,11 @@ What would you like to do?`
         });
       }
     } catch (error) {
+      // Check if the error was due to cancellation
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Request was cancelled - message already added in cancelRequest
+        return;
+      }
       console.error('Chat error:', error);
       addMessage({
         role: 'assistant',
@@ -405,6 +427,7 @@ What would you like to do?`
         retryable: true,
       });
     } finally {
+      abortControllerRef.current = null;
       setIsLoading(false);
     }
   };
@@ -676,19 +699,30 @@ What would you like to do?`
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="flex gap-1.5">
-                <div
-                  className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '0ms' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '150ms' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '300ms' }}
-                ></div>
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <div
+                    className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
+                    style={{ animationDelay: '0ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
+                    style={{ animationDelay: '150ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce"
+                    style={{ animationDelay: '300ms' }}
+                  ></div>
+                </div>
+                <button
+                  onClick={cancelRequest}
+                  className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  aria-label="Cancel request"
+                  title="Cancel request"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Cancel</span>
+                </button>
               </div>
             </div>
           </div>
