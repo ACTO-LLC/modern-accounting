@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, DollarSign } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, DollarSign, Receipt } from 'lucide-react';
 
 const reports = [
   {
@@ -36,6 +36,13 @@ const reports = [
     href: '/reports/payroll-summary',
     icon: DollarSign,
     color: 'bg-teal-100 text-teal-600',
+  },
+  {
+    name: 'Sales Tax Liability',
+    description: 'Tax collected on invoices by tax rate and period',
+    href: '/reports/sales-tax',
+    icon: Receipt,
+    color: 'bg-rose-100 text-rose-600',
   },
 ];
 
