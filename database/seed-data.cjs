@@ -1,55 +1,24 @@
 const sql = require('mssql');
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const shouldClean = args.includes('--clean');
+const isVerbose = args.includes('--verbose');
+
 const config = {
-    server: 'localhost',
-    port: 14330,
-    database: 'AccountingDB',
-    user: 'sa',
-    password: 'StrongPassword123!',
+    server: process.env.SQL_SERVER || 'localhost',
+    port: parseInt(process.env.SQL_PORT || '14330'),
+    database: process.env.SQL_DATABASE || 'AccountingDB',
+    user: process.env.SQL_USER || 'sa',
+    password: process.env.SQL_SA_PASSWORD || 'StrongPassword123!',
     options: { trustServerCertificate: true }
 };
 
-// Reference IDs from existing data
-const accounts = {
-    checking: 'E1015339-4B5C-4CB8-990C-733AF15C04E6',
-    savings: '267411B5-6BC9-4F5B-828E-BBA63DBD035A',
-    ar: '7F6E97A2-3555-4C4C-839B-F56E880C4D6F',
-    ap: '729E360A-DD02-465B-9026-0E7DB8925252',
-    salesRevenue: '854883F8-7F57-432C-B85A-6E93A5B19E39',
-    serviceRevenue: '4AC6355D-E3C0-4BFE-8588-168C9D43AE5B',
-    consultingRevenue: '38A423D5-F050-4A32-BC43-96D51FD4D554',
-    cogs: 'E98BAB52-21B0-4528-ACF4-DB2536F2E13A',
-    payrollExpense: '7001C298-D0D2-4563-85AE-AC84ADA3F33B',
-    rent: 'AD16F2AB-127E-4614-89EF-B7FF9FB16B6F',
-    utilities: '82D45B30-60BD-4C02-8FE3-C447FA7FBC04',
-    software: '40D0C898-C35F-4847-B9CD-492AFEB58FF3',
-    officeSupplies: '07DFE56C-1913-49DF-92C5-1F2F8F32E589',
-    professional: 'E97F56CA-C10E-40E7-936E-50881EDE52D4',
-    subcontractor: '092D8F9B-1527-4F3B-8CE3-B092B0B6B274',
-    inventory: 'CDA5B559-46F6-407E-9456-DB82BCA1A58A'
-};
-
-const customers = [
-    '5E660FF8-CDE1-42A3-917B-05862133D6D6',
-    '2F2A83CD-77A3-4000-AEFC-120D46E54DB1',
-    '8DD45AFF-97E6-4508-9BFD-281C19D95909',
-    '45B28EE7-56D8-4685-A17B-7374FDDCDD90',
-    '1F42D5EF-3034-4752-BDEB-A07A55D41723',
-    '974882A2-DE74-4D08-984A-AE3BEDBE07FD',
-    '8C341CC4-EA3B-4AFA-A94A-EA7545053942',
-    '83133C08-C910-4660-8A29-F11BCF8532F4'
-];
-
-const vendors = [
-    '5FA05A9E-4604-4EF9-9711-19624ED8E56A',
-    'BCDF837F-6277-44B8-AB3E-2EC780510CC0',
-    '1BB6259F-A534-498D-8768-CBD863A6CC8B',
-    '40A621B0-024D-4BF9-B2FA-9FFFB472804C',
-    '25D54EE4-40B8-4F8D-82CF-94219C091CC8',
-    '18AF7AF0-0637-4658-A79F-7620F9A4968E',
-    '52CD67DB-222F-4C08-B427-FD0DBF632BA0',
-    '50190707-B087-4DA5-B94D-E71A54089927'
-];
+// Reference IDs from existing data (will be populated dynamically)
+let accounts = {};
+let customers = [];
+let vendors = [];
+let products = [];
 
 function uuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -66,63 +35,399 @@ function formatDate(d) {
     return d.toISOString().split('T')[0];
 }
 
-async function seed() {
-    const pool = await sql.connect(config);
-    const now = new Date().toISOString();
+function randomAmount(min, max) {
+    return Math.round((Math.random() * (max - min) + min) * 100) / 100;
+}
 
-    console.log('Seeding database...\n');
+async function loadExistingData(pool) {
+    console.log('Loading existing reference data...');
 
-    // 1. Products & Services (columns: Id, Name, SKU, Type, Description, SalesPrice, IncomeAccountId, Status, CreatedAt)
-    console.log('Creating Products & Services...');
-    const products = [
-        { id: uuid(), name: 'Web Development Services', sku: 'SVC-WEB', type: 'Service', price: 150, incomeAccountId: accounts.serviceRevenue },
-        { id: uuid(), name: 'Consulting - Hourly', sku: 'SVC-CONS', type: 'Service', price: 200, incomeAccountId: accounts.consultingRevenue },
-        { id: uuid(), name: 'Software License', sku: 'SVC-LIC', type: 'Service', price: 500, incomeAccountId: accounts.salesRevenue },
-        { id: uuid(), name: 'Technical Support', sku: 'SVC-SUP', type: 'Service', price: 100, incomeAccountId: accounts.serviceRevenue },
-        { id: uuid(), name: 'Training Session', sku: 'SVC-TRN', type: 'Service', price: 750, incomeAccountId: accounts.serviceRevenue },
-        { id: uuid(), name: 'Hardware - Server', sku: 'HW-SRV', type: 'Inventory', price: 2500, incomeAccountId: accounts.salesRevenue },
-        { id: uuid(), name: 'Hardware - Workstation', sku: 'HW-WRK', type: 'Inventory', price: 1200, incomeAccountId: accounts.salesRevenue },
-        { id: uuid(), name: 'Cloud Hosting - Monthly', sku: 'SVC-HOST', type: 'Service', price: 299, incomeAccountId: accounts.serviceRevenue }
+    // Load accounts
+    const accountResult = await pool.query`SELECT Id, Code, Name, Type FROM Accounts`;
+    for (const acc of accountResult.recordset) {
+        const key = acc.Code;
+        accounts[key] = acc.Id;
+    }
+    console.log(`  Loaded ${Object.keys(accounts).length} accounts`);
+
+    // Load customers
+    const customerResult = await pool.query`SELECT Id, Name FROM Customers`;
+    customers = customerResult.recordset.map(c => c.Id);
+    console.log(`  Loaded ${customers.length} customers`);
+
+    // Load vendors
+    const vendorResult = await pool.query`SELECT Id, Name FROM Vendors`;
+    vendors = vendorResult.recordset.map(v => v.Id);
+    console.log(`  Loaded ${vendors.length} vendors`);
+
+    // Load products/services
+    const productResult = await pool.query`SELECT Id, Name, SalesPrice, IncomeAccountId FROM ProductsServices WHERE Status = 'Active'`;
+    products = productResult.recordset;
+    console.log(`  Loaded ${products.length} products/services`);
+}
+
+async function cleanData(pool) {
+    console.log('\nCleaning existing demo data...');
+
+    // Delete in order to respect foreign keys (most dependent first)
+    const tables = [
+        'BankTransactions',
+        'JournalEntryLines',
+        'JournalEntries',
+        'InvoiceLines',
+        'Invoices',
+        'BillLines',
+        'Bills',
+        'PayStubs',
+        'PayRuns',
+        'TimeEntries',
+        'EstimateLines',
+        'Estimates'
     ];
 
-    for (const p of products) {
+    for (const table of tables) {
+        try {
+            const result = await pool.query(`DELETE FROM ${table}`);
+            console.log(`  Cleared ${table}: ${result.rowsAffected[0]} rows deleted`);
+        } catch (err) {
+            // Table may not exist or have dependencies
+            if (isVerbose) console.log(`  Skipped ${table}: ${err.message}`);
+        }
+    }
+    console.log('Clean complete.\n');
+}
+
+async function seedJournalEntries(pool) {
+    console.log('Creating Journal Entries (6 months of transactions)...');
+
+    const now = new Date();
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const journalEntries = [];
+    const journalLines = [];
+
+    // Get account IDs
+    const checkingId = accounts['1000'];  // Checking Account
+    const arId = accounts['1100'];        // Accounts Receivable
+    const apId = accounts['2000'];        // Accounts Payable
+    const salesRevenueId = accounts['4000'];    // Sales Revenue
+    const serviceRevenueId = accounts['4100'];  // Service Revenue
+    const consultingRevenueId = accounts['4200']; // Consulting Revenue
+    const cogsId = accounts['5000'];      // COGS
+    const rentId = accounts['6500'];      // Rent
+    const utilitiesId = accounts['6900']; // Utilities
+    const softwareId = accounts['6600'];  // Software
+    const officeSuppliesId = accounts['6300']; // Office Supplies
+    const professionalId = accounts['6400'];   // Professional Services
+    const payrollId = accounts['7000'];   // Payroll Expense
+
+    if (!checkingId || !salesRevenueId) {
+        console.error('  ERROR: Required accounts not found. Run the post-deployment script first.');
+        return;
+    }
+
+    // Generate entries for each month
+    for (let monthOffset = 5; monthOffset >= 0; monthOffset--) {
+        const monthDate = new Date(now);
+        monthDate.setMonth(monthDate.getMonth() - monthOffset);
+        const monthName = monthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        // Revenue entries for the month (5-8 per month)
+        const revenueCount = Math.floor(Math.random() * 4) + 5;
+        for (let i = 0; i < revenueCount; i++) {
+            const entryId = uuid();
+            const amount = randomAmount(1000, 15000);
+            const entryDate = randomDate(
+                new Date(monthDate.getFullYear(), monthDate.getMonth(), 1),
+                new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
+            );
+
+            const revenueAccounts = [salesRevenueId, serviceRevenueId, consultingRevenueId].filter(Boolean);
+            const revenueAccount = revenueAccounts[Math.floor(Math.random() * revenueAccounts.length)];
+
+            journalEntries.push({
+                id: entryId,
+                date: formatDate(entryDate),
+                description: `Revenue - ${monthName} Invoice Payment #${i + 1}`,
+                reference: `REV-${formatDate(entryDate).replace(/-/g, '')}-${i + 1}`,
+                status: 'Posted'
+            });
+
+            // Debit Checking (or AR), Credit Revenue
+            journalLines.push({
+                id: uuid(),
+                journalEntryId: entryId,
+                accountId: checkingId,
+                description: 'Payment received',
+                debit: amount,
+                credit: 0
+            });
+            journalLines.push({
+                id: uuid(),
+                journalEntryId: entryId,
+                accountId: revenueAccount,
+                description: 'Revenue recognition',
+                debit: 0,
+                credit: amount
+            });
+        }
+
+        // Expense entries for the month (4-7 per month)
+        const expenseCount = Math.floor(Math.random() * 4) + 4;
+        const expenseAccounts = [
+            { id: rentId, name: 'Monthly Rent', min: 2500, max: 5000 },
+            { id: utilitiesId, name: 'Utilities', min: 200, max: 800 },
+            { id: softwareId, name: 'Software Subscription', min: 100, max: 500 },
+            { id: officeSuppliesId, name: 'Office Supplies', min: 50, max: 300 },
+            { id: professionalId, name: 'Professional Services', min: 500, max: 3000 },
+            { id: payrollId, name: 'Payroll', min: 8000, max: 25000 },
+            { id: cogsId, name: 'Cost of Goods Sold', min: 500, max: 5000 }
+        ].filter(e => e.id);
+
+        for (let i = 0; i < expenseCount; i++) {
+            const entryId = uuid();
+            const expenseType = expenseAccounts[i % expenseAccounts.length];
+            const amount = randomAmount(expenseType.min, expenseType.max);
+            const entryDate = randomDate(
+                new Date(monthDate.getFullYear(), monthDate.getMonth(), 1),
+                new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
+            );
+
+            journalEntries.push({
+                id: entryId,
+                date: formatDate(entryDate),
+                description: `${expenseType.name} - ${monthName}`,
+                reference: `EXP-${formatDate(entryDate).replace(/-/g, '')}-${i + 1}`,
+                status: 'Posted'
+            });
+
+            // Debit Expense, Credit Checking (or AP)
+            journalLines.push({
+                id: uuid(),
+                journalEntryId: entryId,
+                accountId: expenseType.id,
+                description: expenseType.name,
+                debit: amount,
+                credit: 0
+            });
+            journalLines.push({
+                id: uuid(),
+                journalEntryId: entryId,
+                accountId: checkingId,
+                description: 'Payment made',
+                debit: 0,
+                credit: amount
+            });
+        }
+    }
+
+    // Initial cash balance entry (6 months ago)
+    const initialCashId = uuid();
+    const initialCash = 50000;
+    journalEntries.unshift({
+        id: initialCashId,
+        date: formatDate(sixMonthsAgo),
+        description: 'Opening Balance - Cash on Hand',
+        reference: 'OPEN-BALANCE',
+        status: 'Posted'
+    });
+
+    const ownersEquityId = accounts['3000'];
+    if (ownersEquityId) {
+        journalLines.unshift({
+            id: uuid(),
+            journalEntryId: initialCashId,
+            accountId: checkingId,
+            description: 'Opening cash balance',
+            debit: initialCash,
+            credit: 0
+        });
+        journalLines.unshift({
+            id: uuid(),
+            journalEntryId: initialCashId,
+            accountId: ownersEquityId,
+            description: 'Owner investment',
+            debit: 0,
+            credit: initialCash
+        });
+    }
+
+    // Insert journal entries
+    const createdBy = 'seed-script@system';
+    const nowStr = new Date().toISOString();
+
+    for (const entry of journalEntries) {
         await pool.query`
-            INSERT INTO ProductsServices (Id, Name, SKU, Type, Description, SalesPrice, IncomeAccountId, Status, CreatedAt)
-            VALUES (${p.id}, ${p.name}, ${p.sku}, ${p.type}, ${p.name + ' - professional grade'}, ${p.price}, ${p.incomeAccountId}, 'Active', ${now})
+            INSERT INTO JournalEntries (Id, TransactionDate, Description, Reference, Status, CreatedAt, CreatedBy, PostedAt, PostedBy)
+            VALUES (${entry.id}, ${entry.date}, ${entry.description}, ${entry.reference}, ${entry.status}, ${nowStr}, ${createdBy}, ${nowStr}, ${createdBy})
         `;
     }
-    console.log(`  Created ${products.length} products/services`);
 
-    // 2. Invoices (columns: Id, InvoiceNumber, CustomerId, IssueDate, DueDate, TotalAmount, Status, CreatedAt)
+    for (const line of journalLines) {
+        await pool.query`
+            INSERT INTO JournalEntryLines (Id, JournalEntryId, AccountId, Description, Debit, Credit, CreatedAt)
+            VALUES (${line.id}, ${line.journalEntryId}, ${line.accountId}, ${line.description}, ${line.debit}, ${line.credit}, ${nowStr})
+        `;
+    }
+
+    console.log(`  Created ${journalEntries.length} journal entries with ${journalLines.length} lines`);
+}
+
+async function seedBankTransactions(pool) {
+    console.log('Creating Bank Transactions...');
+
+    const checkingId = accounts['1000'];
+    const utilitiesId = accounts['6900'];
+    const softwareId = accounts['6600'];
+    const officeSuppliesId = accounts['6300'];
+
+    if (!checkingId) {
+        console.error('  ERROR: Checking account not found');
+        return;
+    }
+
+    const transactions = [];
+    const now = new Date();
+
+    // Create mix of pending, approved, and posted transactions
+    const txDescriptions = [
+        { desc: 'Amazon Web Services', merchant: 'AWS', category: 'Software', amount: -299.99, suggestedAccountId: softwareId },
+        { desc: 'Office Depot Purchase', merchant: 'Office Depot', category: 'Supplies', amount: -156.78, suggestedAccountId: officeSuppliesId },
+        { desc: 'Electric Company', merchant: 'City Power', category: 'Utilities', amount: -245.00, suggestedAccountId: utilitiesId },
+        { desc: 'Microsoft 365 Subscription', merchant: 'Microsoft', category: 'Software', amount: -22.99, suggestedAccountId: softwareId },
+        { desc: 'Staples Office Supplies', merchant: 'Staples', category: 'Supplies', amount: -89.45, suggestedAccountId: officeSuppliesId },
+        { desc: 'Water Bill', merchant: 'City Water', category: 'Utilities', amount: -67.50, suggestedAccountId: utilitiesId },
+        { desc: 'Zoom Pro Subscription', merchant: 'Zoom', category: 'Software', amount: -14.99, suggestedAccountId: softwareId },
+        { desc: 'Internet Service', merchant: 'Comcast Business', category: 'Utilities', amount: -189.00, suggestedAccountId: utilitiesId },
+        { desc: 'Adobe Creative Cloud', merchant: 'Adobe', category: 'Software', amount: -54.99, suggestedAccountId: softwareId },
+        { desc: 'Gas Bill', merchant: 'Gas Company', category: 'Utilities', amount: -112.30, suggestedAccountId: utilitiesId },
+        { desc: 'Customer Payment - Acme Corp', merchant: 'Acme Corp', category: 'Income', amount: 5000.00, suggestedAccountId: null },
+        { desc: 'Customer Payment - TechStart', merchant: 'TechStart', category: 'Income', amount: 3500.00, suggestedAccountId: null },
+        { desc: 'Slack Subscription', merchant: 'Slack', category: 'Software', amount: -12.50, suggestedAccountId: softwareId },
+        { desc: 'Phone Bill', merchant: 'AT&T Business', category: 'Utilities', amount: -165.00, suggestedAccountId: utilitiesId },
+        { desc: 'Customer Payment - Global Dynamics', merchant: 'Global Dynamics', category: 'Income', amount: 7500.00, suggestedAccountId: null }
+    ];
+
+    // Recent transactions in the last month
+    for (let i = 0; i < txDescriptions.length; i++) {
+        const tx = txDescriptions[i];
+        const daysAgo = Math.floor(Math.random() * 30);
+        const txDate = new Date(now);
+        txDate.setDate(txDate.getDate() - daysAgo);
+
+        // First 5 are pending (for dashboard pending count), rest are processed
+        const status = i < 5 ? 'Pending' : (i < 10 ? 'Approved' : 'Posted');
+
+        transactions.push({
+            id: uuid(),
+            sourceType: 'Bank',
+            sourceName: 'Wells Fargo Checking',
+            sourceAccountId: checkingId,
+            transactionDate: formatDate(txDate),
+            postDate: formatDate(txDate),
+            amount: tx.amount,
+            description: tx.desc,
+            merchant: tx.merchant,
+            originalCategory: tx.category,
+            transactionType: tx.amount < 0 ? 'Debit' : 'Credit',
+            status: status,
+            suggestedAccountId: tx.suggestedAccountId,
+            suggestedCategory: tx.category,
+            confidenceScore: 0.85
+        });
+    }
+
+    const nowStr = new Date().toISOString();
+
+    for (const tx of transactions) {
+        await pool.query`
+            INSERT INTO BankTransactions (
+                Id, SourceType, SourceName, SourceAccountId, TransactionDate, PostDate,
+                Amount, Description, Merchant, OriginalCategory, TransactionType,
+                Status, SuggestedAccountId, SuggestedCategory, ConfidenceScore, CreatedDate
+            )
+            VALUES (
+                ${tx.id}, ${tx.sourceType}, ${tx.sourceName}, ${tx.sourceAccountId},
+                ${tx.transactionDate}, ${tx.postDate}, ${tx.amount}, ${tx.description},
+                ${tx.merchant}, ${tx.originalCategory}, ${tx.transactionType}, ${tx.status},
+                ${tx.suggestedAccountId}, ${tx.suggestedCategory}, ${tx.confidenceScore}, ${nowStr}
+            )
+        `;
+    }
+
+    const pendingCount = transactions.filter(t => t.Status === 'Pending').length;
+    console.log(`  Created ${transactions.length} bank transactions (${pendingCount} pending)`);
+}
+
+async function seedInvoices(pool) {
     console.log('Creating Invoices...');
+
+    if (customers.length === 0) {
+        console.log('  Skipping - no customers found');
+        return;
+    }
+
     const invoices = [];
     const invoiceLines = [];
+    const now = new Date();
+    const nowStr = now.toISOString();
 
-    for (let i = 0; i < 15; i++) {
+    // Create invoices spread over 6 months
+    for (let i = 0; i < 25; i++) {
         const invId = uuid();
         const custId = customers[i % customers.length];
-        const invDate = randomDate(new Date('2024-10-01'), new Date('2025-01-15'));
+        const monthsAgo = Math.floor(i / 5);
+        const invDate = new Date(now);
+        invDate.setMonth(invDate.getMonth() - monthsAgo);
+        invDate.setDate(Math.floor(Math.random() * 28) + 1);
+
         const dueDate = new Date(invDate);
         dueDate.setDate(dueDate.getDate() + 30);
-        const invNum = `INV-${String(1001 + i).padStart(4, '0')}`;
-        const status = i < 10 ? 'Sent' : (i < 13 ? 'Paid' : 'Draft');
 
-        const lineCount = Math.floor(Math.random() * 3) + 1;
+        const invNum = `INV-${String(1001 + i).padStart(4, '0')}`;
+
+        // Status distribution: mostly Paid for older, mix for recent
+        let status;
+        if (monthsAgo >= 3) {
+            status = 'Paid';
+        } else if (monthsAgo >= 1) {
+            status = Math.random() > 0.3 ? 'Paid' : 'Sent';
+        } else {
+            const rand = Math.random();
+            if (rand < 0.3) status = 'Draft';
+            else if (rand < 0.6) status = 'Sent';
+            else if (rand < 0.8) status = 'Paid';
+            else status = 'Overdue';
+        }
+
+        // Create 1-4 line items
+        const lineCount = Math.floor(Math.random() * 4) + 1;
         let total = 0;
 
         for (let j = 0; j < lineCount; j++) {
-            const prod = products[Math.floor(Math.random() * products.length)];
-            const qty = Math.floor(Math.random() * 5) + 1;
-            const amount = prod.price * qty;
-            total += amount;
+            const qty = Math.floor(Math.random() * 10) + 1;
+            const unitPrice = randomAmount(100, 500);
+            const lineAmount = qty * unitPrice;
+            total += lineAmount;
+
+            const productNames = [
+                'Consulting Services',
+                'Development Work',
+                'Technical Support',
+                'Training Session',
+                'Software License',
+                'Cloud Hosting',
+                'Project Management',
+                'Design Services'
+            ];
 
             invoiceLines.push({
                 id: uuid(),
                 invoiceId: invId,
-                description: prod.name,
+                description: productNames[Math.floor(Math.random() * productNames.length)],
                 quantity: qty,
-                unitPrice: prod.price,
-                amount: amount
+                unitPrice: unitPrice
             });
         }
 
@@ -133,51 +438,102 @@ async function seed() {
             issueDate: formatDate(invDate),
             dueDate: formatDate(dueDate),
             status: status,
-            totalAmount: total
+            totalAmount: Math.round(total * 100) / 100
         });
     }
 
     for (const inv of invoices) {
         await pool.query`
             INSERT INTO Invoices (Id, InvoiceNumber, CustomerId, IssueDate, DueDate, Status, TotalAmount, CreatedAt)
-            VALUES (${inv.id}, ${inv.invoiceNumber}, ${inv.customerId}, ${inv.issueDate}, ${inv.dueDate}, ${inv.status}, ${inv.totalAmount}, ${now})
+            VALUES (${inv.id}, ${inv.invoiceNumber}, ${inv.customerId}, ${inv.issueDate}, ${inv.dueDate}, ${inv.status}, ${inv.totalAmount}, ${nowStr})
         `;
     }
 
     for (const line of invoiceLines) {
         await pool.query`
             INSERT INTO InvoiceLines (Id, InvoiceId, Description, Quantity, UnitPrice, CreatedAt)
-            VALUES (${line.id}, ${line.invoiceId}, ${line.description}, ${line.quantity}, ${line.unitPrice}, ${now})
+            VALUES (${line.id}, ${line.invoiceId}, ${line.description}, ${line.quantity}, ${line.unitPrice}, ${nowStr})
         `;
     }
-    console.log(`  Created ${invoices.length} invoices with ${invoiceLines.length} line items`);
 
-    // 3. Bills (columns: Id, VendorId, BillNumber, BillDate, DueDate, TotalAmount, AmountPaid, Status, CreatedAt)
+    const statusCounts = invoices.reduce((acc, inv) => {
+        acc[inv.status] = (acc[inv.status] || 0) + 1;
+        return acc;
+    }, {});
+
+    console.log(`  Created ${invoices.length} invoices with ${invoiceLines.length} line items`);
+    console.log(`    Status breakdown: ${Object.entries(statusCounts).map(([k, v]) => `${k}: ${v}`).join(', ')}`);
+}
+
+async function seedBills(pool) {
     console.log('Creating Bills...');
+
+    if (vendors.length === 0) {
+        console.log('  Skipping - no vendors found');
+        return;
+    }
+
     const bills = [];
     const billLines = [];
-    const expenseAccounts = [accounts.rent, accounts.utilities, accounts.software, accounts.officeSupplies, accounts.professional, accounts.subcontractor];
-    const billDescriptions = ['Monthly rent', 'Electricity', 'Software subscription', 'Office supplies', 'Legal services', 'Contract work'];
+    const now = new Date();
+    const nowStr = now.toISOString();
 
-    for (let i = 0; i < 12; i++) {
+    const expenseAccountCodes = ['6300', '6400', '6500', '6600', '6700', '6800', '6900', '5000'];
+    const billDescriptions = [
+        'Office Supplies',
+        'Professional Services',
+        'Monthly Rent',
+        'Software Subscription',
+        'Phone & Internet',
+        'Travel Expense',
+        'Utilities',
+        'Inventory Purchase'
+    ];
+
+    // Create bills spread over 6 months
+    for (let i = 0; i < 20; i++) {
         const billId = uuid();
         const vendorId = vendors[i % vendors.length];
-        const billDate = randomDate(new Date('2024-10-01'), new Date('2025-01-15'));
+        const monthsAgo = Math.floor(i / 4);
+        const billDate = new Date(now);
+        billDate.setMonth(billDate.getMonth() - monthsAgo);
+        billDate.setDate(Math.floor(Math.random() * 28) + 1);
+
         const dueDate = new Date(billDate);
         dueDate.setDate(dueDate.getDate() + 30);
+
         const billNum = `BILL-${String(2001 + i).padStart(4, '0')}`;
-        const status = i < 8 ? 'Received' : (i < 10 ? 'Paid' : 'Draft');
 
-        const expIdx = i % expenseAccounts.length;
-        const amount = Math.floor(Math.random() * 2000) + 200;
+        // Status distribution
+        let status, amountPaid;
+        if (monthsAgo >= 3) {
+            status = 'Paid';
+            amountPaid = 1; // Will be set to total
+        } else if (monthsAgo >= 1) {
+            status = Math.random() > 0.3 ? 'Paid' : 'Open';
+            amountPaid = status === 'Paid' ? 1 : 0;
+        } else {
+            const rand = Math.random();
+            if (rand < 0.2) { status = 'Draft'; amountPaid = 0; }
+            else if (rand < 0.5) { status = 'Open'; amountPaid = 0; }
+            else if (rand < 0.7) { status = 'Partial'; amountPaid = 0.5; }
+            else if (rand < 0.9) { status = 'Paid'; amountPaid = 1; }
+            else { status = 'Overdue'; amountPaid = 0; }
+        }
 
-        billLines.push({
-            id: uuid(),
-            billId: billId,
-            description: billDescriptions[expIdx],
-            amount: amount,
-            accountId: expenseAccounts[expIdx]
-        });
+        const idx = i % expenseAccountCodes.length;
+        const expenseAccountId = accounts[expenseAccountCodes[idx]];
+        const amount = randomAmount(200, 3000);
+
+        if (expenseAccountId) {
+            billLines.push({
+                id: uuid(),
+                billId: billId,
+                accountId: expenseAccountId,
+                description: billDescriptions[idx],
+                amount: amount
+            });
+        }
 
         bills.push({
             id: billId,
@@ -186,200 +542,69 @@ async function seed() {
             billDate: formatDate(billDate),
             dueDate: formatDate(dueDate),
             status: status,
-            totalAmount: amount
+            totalAmount: amount,
+            amountPaid: Math.round(amount * amountPaid * 100) / 100
         });
     }
 
     for (const bill of bills) {
         await pool.query`
             INSERT INTO Bills (Id, BillNumber, VendorId, BillDate, DueDate, Status, TotalAmount, AmountPaid, CreatedAt)
-            VALUES (${bill.id}, ${bill.billNumber}, ${bill.vendorId}, ${bill.billDate}, ${bill.dueDate}, ${bill.status}, ${bill.totalAmount}, 0, ${now})
+            VALUES (${bill.id}, ${bill.billNumber}, ${bill.vendorId}, ${bill.billDate}, ${bill.dueDate}, ${bill.status}, ${bill.totalAmount}, ${bill.amountPaid}, ${nowStr})
         `;
     }
 
     for (const line of billLines) {
         await pool.query`
             INSERT INTO BillLines (Id, BillId, AccountId, Description, Amount, CreatedAt)
-            VALUES (${line.id}, ${line.billId}, ${line.accountId}, ${line.description}, ${line.amount}, ${now})
+            VALUES (${line.id}, ${line.billId}, ${line.accountId}, ${line.description}, ${line.amount}, ${nowStr})
         `;
     }
+
     console.log(`  Created ${bills.length} bills with ${billLines.length} line items`);
+}
 
-    // 4. Employees (columns: Id, EmployeeNumber, FirstName, LastName, Email, PayType, PayRate, PayFrequency, Status, HireDate, CreatedAt)
-    console.log('Creating Employees...');
-    const employees = [
-        { id: uuid(), empNum: 'EMP001', firstName: 'Sarah', lastName: 'Johnson', email: 'sarah.johnson@company.com', payType: 'Salary', payRate: 95000 },
-        { id: uuid(), empNum: 'EMP002', firstName: 'Michael', lastName: 'Chen', email: 'michael.chen@company.com', payType: 'Salary', payRate: 85000 },
-        { id: uuid(), empNum: 'EMP003', firstName: 'Emily', lastName: 'Williams', email: 'emily.williams@company.com', payType: 'Salary', payRate: 75000 },
-        { id: uuid(), empNum: 'EMP004', firstName: 'James', lastName: 'Brown', email: 'james.brown@company.com', payType: 'Hourly', payRate: 45 },
-        { id: uuid(), empNum: 'EMP005', firstName: 'Jessica', lastName: 'Davis', email: 'jessica.davis@company.com', payType: 'Salary', payRate: 65000 },
-        { id: uuid(), empNum: 'EMP006', firstName: 'Robert', lastName: 'Miller', email: 'robert.miller@company.com', payType: 'Hourly', payRate: 35 }
-    ];
-
-    for (const emp of employees) {
-        await pool.query`
-            INSERT INTO Employees (Id, EmployeeNumber, FirstName, LastName, Email, PayType, PayRate, PayFrequency, Status, HireDate, CreatedAt)
-            VALUES (${emp.id}, ${emp.empNum}, ${emp.firstName}, ${emp.lastName}, ${emp.email}, ${emp.payType}, ${emp.payRate}, 'Biweekly', 'Active', '2024-01-15', ${now})
-        `;
-    }
-    console.log(`  Created ${employees.length} employees`);
-
-    // 5. PayRuns & PayStubs
-    console.log('Creating PayRuns and PayStubs...');
-    const payRuns = [];
-    const payStubs = [];
-    let payRunNum = 1;
-
-    for (let month = 10; month <= 12; month++) {
-        const payRunId = uuid();
-        const payDate = new Date(2024, month - 1, 15);
-        const periodStart = new Date(2024, month - 1, 1);
-        const periodEnd = new Date(2024, month - 1, 14);
-
-        let totalGross = 0;
-        let totalDeductions = 0;
-        let totalNet = 0;
-
-        for (const emp of employees) {
-            const gross = emp.payType === 'Salary' ? emp.payRate / 24 : (emp.payRate * 80);
-            const fedTax = gross * 0.12;
-            const stateTax = gross * 0.05;
-            const ss = gross * 0.062;
-            const medicare = gross * 0.0145;
-            const deductions = fedTax + stateTax + ss + medicare;
-            const net = gross - deductions;
-
-            totalGross += gross;
-            totalDeductions += deductions;
-            totalNet += net;
-
-            payStubs.push({
-                id: uuid(),
-                payRunId: payRunId,
-                employeeId: emp.id,
-                regularHours: emp.payType === 'Hourly' ? 80 : 0,
-                regularPay: gross,
-                grossPay: gross,
-                federalWithholding: fedTax,
-                stateWithholding: stateTax,
-                socialSecurity: ss,
-                medicare: medicare,
-                totalDeductions: deductions,
-                netPay: net
-            });
-        }
-
-        payRuns.push({
-            id: payRunId,
-            payRunNumber: `PR-2024-${String(payRunNum++).padStart(3, '0')}`,
-            payDate: formatDate(payDate),
-            periodStart: formatDate(periodStart),
-            periodEnd: formatDate(periodEnd),
-            status: 'Completed',
-            totalGross: totalGross,
-            totalDeductions: totalDeductions,
-            totalNet: totalNet,
-            employeeCount: employees.length
-        });
-    }
-
-    for (const pr of payRuns) {
-        await pool.query`
-            INSERT INTO PayRuns (Id, PayRunNumber, PayPeriodStart, PayPeriodEnd, PayDate, Status, TotalGrossPay, TotalDeductions, TotalNetPay, EmployeeCount, CreatedAt)
-            VALUES (${pr.id}, ${pr.payRunNumber}, ${pr.periodStart}, ${pr.periodEnd}, ${pr.payDate}, ${pr.status}, ${pr.totalGross}, ${pr.totalDeductions}, ${pr.totalNet}, ${pr.employeeCount}, ${now})
-        `;
-    }
-
-    for (const ps of payStubs) {
-        await pool.query`
-            INSERT INTO PayStubs (Id, PayRunId, EmployeeId, RegularHours, RegularPay, GrossPay, FederalWithholding, StateWithholding, SocialSecurity, Medicare, TotalDeductions, NetPay, Status, CreatedAt)
-            VALUES (${ps.id}, ${ps.payRunId}, ${ps.employeeId}, ${ps.regularHours}, ${ps.regularPay}, ${ps.grossPay}, ${ps.federalWithholding}, ${ps.stateWithholding}, ${ps.socialSecurity}, ${ps.medicare}, ${ps.totalDeductions}, ${ps.netPay}, 'Processed', ${now})
-        `;
-    }
-    console.log(`  Created ${payRuns.length} pay runs with ${payStubs.length} pay stubs`);
-
-    // 6. Projects (columns: Id, Name, CustomerId, Status, BudgetedAmount, BudgetedHours, StartDate, CreatedAt)
-    console.log('Creating Projects...');
-    const projects = [
-        { id: uuid(), name: 'Website Redesign', customerId: customers[0], status: 'Active', budget: 25000, hours: 150 },
-        { id: uuid(), name: 'Mobile App Development', customerId: customers[1], status: 'Active', budget: 75000, hours: 500 },
-        { id: uuid(), name: 'System Integration', customerId: customers[2], status: 'Completed', budget: 45000, hours: 300 },
-        { id: uuid(), name: 'Cloud Migration', customerId: customers[3], status: 'Active', budget: 35000, hours: 200 },
-        { id: uuid(), name: 'Security Audit', customerId: customers[4], status: 'Completed', budget: 15000, hours: 80 }
-    ];
-
-    for (const proj of projects) {
-        await pool.query`
-            INSERT INTO Projects (Id, Name, CustomerId, Status, BudgetedAmount, BudgetedHours, StartDate, CreatedAt)
-            VALUES (${proj.id}, ${proj.name}, ${proj.customerId}, ${proj.status}, ${proj.budget}, ${proj.hours}, '2024-09-01', ${now})
-        `;
-    }
-    console.log(`  Created ${projects.length} projects`);
-
-    // 7. Time Entries (columns: Id, ProjectId, CustomerId, EmployeeName, EntryDate, Hours, HourlyRate, Description, IsBillable, Status, CreatedAt)
-    console.log('Creating Time Entries...');
-    const timeEntries = [];
-    const empNames = ['Sarah Johnson', 'Michael Chen', 'Emily Williams', 'James Brown', 'Jessica Davis', 'Robert Miller'];
-
-    for (const proj of projects) {
-        for (let i = 0; i < 8; i++) {
-            const empIdx = Math.floor(Math.random() * empNames.length);
-            const entryDate = randomDate(new Date('2024-10-01'), new Date('2025-01-10'));
-            const hours = Math.floor(Math.random() * 6) + 2;
-
-            timeEntries.push({
-                id: uuid(),
-                projectId: proj.id,
-                customerId: proj.customerId,
-                employeeName: empNames[empIdx],
-                date: formatDate(entryDate),
-                hours: hours,
-                hourlyRate: 150,
-                description: 'Development work on ' + proj.name,
-                isBillable: true
-            });
-        }
-    }
-
-    for (const te of timeEntries) {
-        await pool.query`
-            INSERT INTO TimeEntries (Id, ProjectId, CustomerId, EmployeeName, EntryDate, Hours, HourlyRate, Description, IsBillable, Status, CreatedAt)
-            VALUES (${te.id}, ${te.projectId}, ${te.customerId}, ${te.employeeName}, ${te.date}, ${te.hours}, ${te.hourlyRate}, ${te.description}, ${te.isBillable ? 1 : 0}, 'Approved', ${now})
-        `;
-    }
-    console.log(`  Created ${timeEntries.length} time entries`);
-
-    // 8. Estimates (columns: Id, EstimateNumber, CustomerId, IssueDate, ExpirationDate, TotalAmount, Status, CreatedAt)
+async function seedEstimates(pool) {
     console.log('Creating Estimates...');
+
+    if (customers.length === 0) {
+        console.log('  Skipping - no customers found');
+        return;
+    }
+
     const estimates = [];
     const estimateLines = [];
+    const now = new Date();
+    const nowStr = now.toISOString();
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 8; i++) {
         const estId = uuid();
         const custId = customers[i % customers.length];
-        const estDate = randomDate(new Date('2024-11-01'), new Date('2025-01-10'));
+        const estDate = new Date(now);
+        estDate.setDate(estDate.getDate() - Math.floor(Math.random() * 60));
+
         const expDate = new Date(estDate);
         expDate.setDate(expDate.getDate() + 30);
-        const estNum = `EST-${String(3001 + i).padStart(4, '0')}`;
-        const status = i < 2 ? 'Accepted' : (i < 4 ? 'Sent' : 'Draft');
 
-        let total = 0;
+        const estNum = `EST-${String(3001 + i).padStart(4, '0')}`;
+        const statuses = ['Draft', 'Sent', 'Accepted', 'Rejected', 'Expired'];
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+
         const lineCount = Math.floor(Math.random() * 3) + 1;
+        let total = 0;
 
         for (let j = 0; j < lineCount; j++) {
-            const prod = products[Math.floor(Math.random() * products.length)];
-            const qty = Math.floor(Math.random() * 10) + 1;
-            const amount = prod.price * qty;
-            total += amount;
+            const qty = Math.floor(Math.random() * 20) + 1;
+            const unitPrice = randomAmount(100, 1000);
+            const lineAmount = qty * unitPrice;
+            total += lineAmount;
 
             estimateLines.push({
                 id: uuid(),
                 estimateId: estId,
-                productId: prod.id,
-                description: prod.name,
+                description: `Project Work Item ${j + 1}`,
                 quantity: qty,
-                unitPrice: prod.price,
-                amount: amount
+                unitPrice: unitPrice
             });
         }
 
@@ -390,63 +615,107 @@ async function seed() {
             issueDate: formatDate(estDate),
             expirationDate: formatDate(expDate),
             status: status,
-            totalAmount: total
+            totalAmount: Math.round(total * 100) / 100
         });
     }
 
     for (const est of estimates) {
         await pool.query`
             INSERT INTO Estimates (Id, EstimateNumber, CustomerId, IssueDate, ExpirationDate, Status, TotalAmount, CreatedAt)
-            VALUES (${est.id}, ${est.estimateNumber}, ${est.customerId}, ${est.issueDate}, ${est.expirationDate}, ${est.status}, ${est.totalAmount}, ${now})
+            VALUES (${est.id}, ${est.estimateNumber}, ${est.customerId}, ${est.issueDate}, ${est.expirationDate}, ${est.status}, ${est.totalAmount}, ${nowStr})
         `;
     }
 
     for (const line of estimateLines) {
         await pool.query`
-            INSERT INTO EstimateLines (Id, EstimateId, ProductServiceId, Description, Quantity, UnitPrice, CreatedAt)
-            VALUES (${line.id}, ${line.estimateId}, ${line.productId}, ${line.description}, ${line.quantity}, ${line.unitPrice}, ${now})
+            INSERT INTO EstimateLines (Id, EstimateId, Description, Quantity, UnitPrice, CreatedAt)
+            VALUES (${line.id}, ${line.estimateId}, ${line.description}, ${line.quantity}, ${line.unitPrice}, ${nowStr})
         `;
     }
+
     console.log(`  Created ${estimates.length} estimates with ${estimateLines.length} line items`);
+}
 
-    // 9. Classes (columns: Id, Name, Description, Status, CreatedAt)
-    console.log('Creating Classes...');
-    const classes = [
-        { id: uuid(), name: 'Engineering', description: 'Engineering department' },
-        { id: uuid(), name: 'Sales', description: 'Sales department' },
-        { id: uuid(), name: 'Marketing', description: 'Marketing department' },
-        { id: uuid(), name: 'Operations', description: 'Operations department' }
-    ];
+async function seed() {
+    console.log('========================================');
+    console.log('Demo Data Seed Script');
+    console.log('========================================');
+    console.log(`Server:   ${config.server}:${config.port}`);
+    console.log(`Database: ${config.database}`);
+    console.log(`Options:  ${shouldClean ? '--clean ' : ''}${isVerbose ? '--verbose' : ''}`);
+    console.log('');
 
-    for (const cls of classes) {
-        await pool.query`
-            INSERT INTO Classes (Id, Name, Description, Status, CreatedAt)
-            VALUES (${cls.id}, ${cls.name}, ${cls.description}, 'Active', ${now})
-        `;
+    let pool;
+    try {
+        pool = await sql.connect(config);
+        console.log('Connected to database.\n');
+
+        // Load existing reference data (accounts, customers, vendors)
+        await loadExistingData(pool);
+
+        // Optionally clean existing data
+        if (shouldClean) {
+            await cleanData(pool);
+        }
+
+        console.log('\nSeeding demo data...\n');
+
+        // Seed in order (respecting dependencies)
+        await seedJournalEntries(pool);
+        await seedBankTransactions(pool);
+        await seedInvoices(pool);
+        await seedBills(pool);
+        await seedEstimates(pool);
+
+        console.log('\n========================================');
+        console.log('Seed complete!');
+        console.log('');
+        console.log('Dashboard should now show:');
+        console.log('  - Total Revenue (from journal entries)');
+        console.log('  - Total Expenses (from journal entries)');
+        console.log('  - Net Income (revenue - expenses)');
+        console.log('  - Cash on Hand (bank account balance)');
+        console.log('  - 6 months of cash flow chart data');
+        console.log('  - Pending bank transactions count');
+        console.log('  - Recent activity (journal entries)');
+        console.log('========================================');
+
+        process.exit(0);
+    } catch (err) {
+        console.error('\nError:', err.message);
+        if (isVerbose) console.error(err);
+        process.exit(1);
+    } finally {
+        if (pool) await pool.close();
     }
-    console.log(`  Created ${classes.length} classes`);
+}
 
-    // 10. Locations (columns: Id, Name, Address, Status, CreatedAt)
-    console.log('Creating Locations...');
-    const locations = [
-        { id: uuid(), name: 'Headquarters', address: '100 Main Street, New York, NY 10001' },
-        { id: uuid(), name: 'West Coast Office', address: '500 Market Street, San Francisco, CA 94102' },
-        { id: uuid(), name: 'Remote', address: 'Various' }
-    ];
+// Show help if requested
+if (args.includes('--help') || args.includes('-h')) {
+    console.log(`
+Demo Data Seed Script for Modern Accounting
 
-    for (const loc of locations) {
-        await pool.query`
-            INSERT INTO Locations (Id, Name, Address, Status, CreatedAt)
-            VALUES (${loc.id}, ${loc.name}, ${loc.address}, 'Active', ${now})
-        `;
-    }
-    console.log(`  Created ${locations.length} locations`);
+Usage:
+  node seed-data.cjs [options]
 
-    console.log('\n✅ Seed complete!');
+Options:
+  --clean     Delete existing demo data before seeding
+  --verbose   Show detailed output and error messages
+  --help, -h  Show this help message
+
+Environment Variables:
+  SQL_SERVER        Server hostname (default: localhost)
+  SQL_PORT          Server port (default: 14330)
+  SQL_DATABASE      Database name (default: AccountingDB)
+  SQL_USER          Username (default: sa)
+  SQL_SA_PASSWORD   Password (default: StrongPassword123!)
+
+Examples:
+  node seed-data.cjs                    # Add demo data
+  node seed-data.cjs --clean            # Clear and reseed
+  node seed-data.cjs --clean --verbose  # Clear, reseed, show details
+`);
     process.exit(0);
 }
 
-seed().catch(err => {
-    console.error('Seed error:', err);
-    process.exit(1);
-});
+seed();
