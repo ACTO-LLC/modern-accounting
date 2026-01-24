@@ -78,18 +78,15 @@ test.describe('Products & Services Management', () => {
     await filterInput.fill('Service');
     await page.keyboard.press('Enter');
 
-    // Wait for filtering to take effect
-    await page.waitForTimeout(500);
-
-    // Verify filtering occurred - rows should contain 'Service' type
-    // All visible rows should have the Service badge (blue badge in Type column)
+    // Wait for filtering to take effect by waiting for the Service badge to appear
     const rows = page.locator('.MuiDataGrid-row');
-    const rowCount = await rows.count();
+    const serviceBadge = rows.first().locator('.bg-blue-100.text-blue-800', { hasText: 'Service' });
+    await expect(serviceBadge).toBeVisible({ timeout: 10000 });
 
-    // Either we have fewer rows or all rows are Service type
+    // Verify filtering occurred - all visible rows should contain 'Service' type
+    const rowCount = await rows.count();
     if (rowCount > 0) {
-      // Check that Service badge is visible in filtered results - use more specific locator for the Type badge
-      const serviceBadge = rows.first().locator('.bg-blue-100.text-blue-800', { hasText: 'Service' });
+      // Service badge should be visible in filtered results
       await expect(serviceBadge).toBeVisible();
     }
   });
@@ -123,15 +120,14 @@ test.describe('Products & Services Management', () => {
     await filterInput.fill('Active');
     await page.keyboard.press('Enter');
 
-    // Wait for filtering to take effect
-    await page.waitForTimeout(500);
+    // Wait for filtering to take effect by waiting for the Active text to appear
+    const rows = page.locator('.MuiDataGrid-row');
+    await expect(rows.first().getByText('Active')).toBeVisible({ timeout: 10000 });
 
     // Verify filtering occurred - all visible rows should have Active status
-    const rows = page.locator('.MuiDataGrid-row');
     const rowCount = await rows.count();
-
     if (rowCount > 0) {
-      // Check that Active badge is visible in filtered results
+      // Active badge should be visible in filtered results
       await expect(rows.first().getByText('Active')).toBeVisible();
     }
   });
