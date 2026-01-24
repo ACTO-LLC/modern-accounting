@@ -790,7 +790,7 @@
                 "key-fields": ["Id"]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -1065,7 +1065,7 @@
                     ]
                 },
                 "Bill": {
-                    "target.entity": "bills",
+                    "target.entity": "bills_write",
                     "cardinality": "one",
                     "source.fields": [
                         "ConvertedToBillId"
