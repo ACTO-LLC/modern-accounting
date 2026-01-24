@@ -46,17 +46,76 @@ test.describe('Products & Services Management', () => {
     await expect(page.locator('#Name')).toHaveValue(updatedName);
   });
 
-  test.skip('should filter by type', async ({ page }) => {
-    // Skipped: MUI DataGrid column menu filtering is used instead of separate filter dropdowns.
-    // The #typeFilter and #statusFilter elements don't exist.
-    // MUI DataGrid filtering requires complex interactions that are difficult to test reliably.
+  test('should filter by type using DataGrid column filter', async ({ page }) => {
     await page.goto('/products-services');
+
+    // Wait for DataGrid to load with data
+    await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+    await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
+
+    // Get the initial row count
+    const initialRowCount = await page.locator('.MuiDataGrid-row').count();
+
+    // Open the column menu for Type
+    const typeHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Type' });
+
+    // Hover over the header to make the menu icon visible
+    await typeHeader.hover();
+
+    // Click the menu icon button
+    const menuButton = typeHeader.locator('.MuiDataGrid-menuIcon button');
+    await expect(menuButton).toBeVisible({ timeout: 5000 });
+    await menuButton.click();
+
+    // Click Filter menu item
+    await page.getByRole('menuitem', { name: /filter/i }).click();
+
+    // Wait for filter panel to appear and enter filter value
+    await expect(page.locator('.MuiDataGrid-filterForm')).toBeVisible({ timeout: 5000 });
+
+    // Type 'Service' into the filter value input
+    const filterInput = page.locator('.MuiDataGrid-filterForm input[type="text"]');
+    await filterInput.fill('Service');
+    await page.keyboard.press('Enter');
+
+    // Wait for filtering to take effect by waiting for the Service badge to appear
+    const rows = page.locator('.MuiDataGrid-row');
+    const serviceBadge = rows.first().locator('.bg-blue-100.text-blue-800', { hasText: 'Service' });
+    await expect(serviceBadge).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should filter by status', async ({ page }) => {
-    // Skipped: MUI DataGrid column menu filtering is used instead of separate filter dropdowns.
-    // The #typeFilter and #statusFilter elements don't exist.
+  test('should filter by status using DataGrid column filter', async ({ page }) => {
     await page.goto('/products-services');
+
+    // Wait for DataGrid to load with data
+    await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+    await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
+
+    // Open the column menu for Status
+    const statusHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Status' });
+
+    // Hover over the header to make the menu icon visible
+    await statusHeader.hover();
+
+    // Click the menu icon button
+    const menuButton = statusHeader.locator('.MuiDataGrid-menuIcon button');
+    await expect(menuButton).toBeVisible({ timeout: 5000 });
+    await menuButton.click();
+
+    // Click Filter menu item
+    await page.getByRole('menuitem', { name: /filter/i }).click();
+
+    // Wait for filter panel to appear and enter filter value
+    await expect(page.locator('.MuiDataGrid-filterForm')).toBeVisible({ timeout: 5000 });
+
+    // Type 'Active' into the filter value input
+    const filterInput = page.locator('.MuiDataGrid-filterForm input[type="text"]');
+    await filterInput.fill('Active');
+    await page.keyboard.press('Enter');
+
+    // Wait for filtering to take effect by waiting for the Active text to appear
+    const rows = page.locator('.MuiDataGrid-row');
+    await expect(rows.first().getByText('Active')).toBeVisible({ timeout: 10000 });
   });
 
   test('should create inventory product with asset account', async ({ page }) => {

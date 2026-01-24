@@ -162,11 +162,38 @@ test.describe('Bills Management', () => {
     await expect(page).toHaveURL('/bills');
   });
 
-  test.skip('should filter bills using DataGrid column filter', async ({ page }) => {
-    // Skipped: MUI DataGrid column menu filtering requires complex hover/mouse interactions
-    // that are difficult to test reliably in Playwright. Manual testing recommended.
+  test('should filter bills using DataGrid column filter', async ({ page }) => {
     await page.goto('/bills');
-    await expect(page.getByRole('columnheader', { name: 'Status' })).toBeVisible();
+
+    // Wait for DataGrid to load with data
+    await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+    await page.waitForSelector('.MuiDataGrid-row', { timeout: 10000 });
+
+    // Open the column menu for Status
+    const statusHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Status' });
+
+    // Hover over the header to make the menu icon visible
+    await statusHeader.hover();
+
+    // Click the menu icon button
+    const menuButton = statusHeader.locator('.MuiDataGrid-menuIcon button');
+    await expect(menuButton).toBeVisible({ timeout: 5000 });
+    await menuButton.click();
+
+    // Click Filter menu item
+    await page.getByRole('menuitem', { name: /filter/i }).click();
+
+    // Wait for filter panel to appear
+    await expect(page.locator('.MuiDataGrid-filterForm')).toBeVisible({ timeout: 5000 });
+
+    // Type 'Open' into the filter value input to filter for Open bills
+    const filterInput = page.locator('.MuiDataGrid-filterForm input[type="text"]');
+    await filterInput.fill('Open');
+    await page.keyboard.press('Enter');
+
+    // Wait for filtering to take effect by waiting for the Open text to appear
+    const rows = page.locator('.MuiDataGrid-row');
+    await expect(rows.first().getByText('Open')).toBeVisible({ timeout: 10000 });
   });
 
   test('should verify bill totals are calculated correctly', async ({ page }) => {
