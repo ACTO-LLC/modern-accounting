@@ -109,8 +109,6 @@ async function seedJournalEntries(pool) {
 
     // Get account IDs
     const checkingId = accounts['1000'];  // Checking Account
-    const arId = accounts['1100'];        // Accounts Receivable
-    const apId = accounts['2000'];        // Accounts Payable
     const salesRevenueId = accounts['4000'];    // Sales Revenue
     const serviceRevenueId = accounts['4100'];  // Service Revenue
     const consultingRevenueId = accounts['4200']; // Consulting Revenue
