@@ -356,7 +356,7 @@ async function seedBankTransactions(pool) {
         `;
     }
 
-    const pendingCount = transactions.filter(t => t.Status === 'Pending').length;
+    const pendingCount = transactions.filter(t => t.status === 'Pending').length;
     console.log(`  Created ${transactions.length} bank transactions (${pendingCount} pending)`);
 }
 
