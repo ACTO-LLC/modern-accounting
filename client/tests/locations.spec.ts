@@ -15,9 +15,13 @@ test.describe('Locations Management', () => {
     // 3. Verify form appears
     await expect(page.getByRole('heading', { name: 'New Location' })).toBeVisible();
 
-    // 4. Fill Form
+    // 4. Fill Form (using new separate address fields)
     await page.getByLabel('Name *').fill(locationName);
-    await page.getByLabel('Address').fill('123 Test Street');
+    await page.getByLabel('Street Address').fill('123 Test Street');
+    await page.getByLabel('Address Line 2').fill('Suite 200');
+    await page.getByLabel('City').fill('Chicago');
+    await page.locator('form').getByLabel('State').selectOption('IL');
+    await page.getByLabel('ZIP Code').fill('60601');
     await page.getByLabel('Description').fill('Test location description');
 
     // 5. Save

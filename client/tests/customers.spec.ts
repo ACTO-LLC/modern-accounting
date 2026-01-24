@@ -9,22 +9,31 @@ test.describe('Customer Management', () => {
 
     // 1. Navigate to Customers page
     await page.goto('/customers');
-    
+
     // 2. Click "New Customer"
     await page.getByRole('link', { name: 'New Customer' }).click();
-    await expect(page).toHaveURL('//customers/new');
+    await expect(page).toHaveURL(/\/customers\/new/);
 
-    // 3. Fill Form
+    // 3. Fill Form (using new separate address fields)
     await page.getByLabel('Name').fill(customerName);
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Phone').fill('555-0123');
-    await page.getByLabel('Address').fill('123 Test St');
+    // New address fields
+    await page.getByLabel('Street Address').fill('123 Test St');
+    await page.getByLabel('Address Line 2').fill('Suite 100');
+    await page.getByLabel('City').fill('Springfield');
+    await page.getByLabel('State').selectOption('IL');
+    await page.getByLabel('ZIP Code').fill('62701');
 
-    // 4. Save
+    // 4. Save - wait for API response
+    const responsePromise = page.waitForResponse(
+      resp => resp.url().includes('/customers') && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Save Customer' }).click();
+    await responsePromise;
 
     // 5. Verify Redirect and List
-    await expect(page).toHaveURL('//customers');
+    await expect(page).toHaveURL(/\/customers$/);
     await expect(page.getByText(customerName)).toBeVisible();
     await expect(page.getByText(email)).toBeVisible();
 
@@ -35,10 +44,16 @@ test.describe('Customer Management', () => {
 
     // 7. Update Name
     await page.getByLabel('Name').fill(updatedName);
+
+    // Wait for save to complete
+    const updatePromise = page.waitForResponse(
+      resp => resp.url().includes('/customers') && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Save Customer' }).click();
+    await updatePromise;
 
     // 8. Verify Update
-    await expect(page).toHaveURL('//customers');
+    await expect(page).toHaveURL(/\/customers$/);
     await expect(page.getByText(updatedName)).toBeVisible();
     await expect(page.getByText(customerName, { exact: true })).not.toBeVisible();
   });
