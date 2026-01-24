@@ -194,13 +194,6 @@ test.describe('Bills Management', () => {
     // Wait for filtering to take effect by waiting for the Open text to appear
     const rows = page.locator('.MuiDataGrid-row');
     await expect(rows.first().getByText('Open')).toBeVisible({ timeout: 10000 });
-
-    // Verify filtering occurred - all visible rows should have Open status
-    const rowCount = await rows.count();
-    if (rowCount > 0) {
-      // Open badge should be visible in filtered results
-      await expect(rows.first().getByText('Open')).toBeVisible();
-    }
   });
 
   test('should verify bill totals are calculated correctly', async ({ page }) => {

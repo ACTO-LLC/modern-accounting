@@ -82,13 +82,6 @@ test.describe('Products & Services Management', () => {
     const rows = page.locator('.MuiDataGrid-row');
     const serviceBadge = rows.first().locator('.bg-blue-100.text-blue-800', { hasText: 'Service' });
     await expect(serviceBadge).toBeVisible({ timeout: 10000 });
-
-    // Verify filtering occurred - all visible rows should contain 'Service' type
-    const rowCount = await rows.count();
-    if (rowCount > 0) {
-      // Service badge should be visible in filtered results
-      await expect(serviceBadge).toBeVisible();
-    }
   });
 
   test('should filter by status using DataGrid column filter', async ({ page }) => {
@@ -123,13 +116,6 @@ test.describe('Products & Services Management', () => {
     // Wait for filtering to take effect by waiting for the Active text to appear
     const rows = page.locator('.MuiDataGrid-row');
     await expect(rows.first().getByText('Active')).toBeVisible({ timeout: 10000 });
-
-    // Verify filtering occurred - all visible rows should have Active status
-    const rowCount = await rows.count();
-    if (rowCount > 0) {
-      // Active badge should be visible in filtered results
-      await expect(rows.first().getByText('Active')).toBeVisible();
-    }
   });
 
   test('should create inventory product with asset account', async ({ page }) => {
