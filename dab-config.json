@@ -2279,6 +2279,140 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "employeeworkstates": {
+            "source": {
+                "object": "dbo.v_EmployeeWorkStates",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeId": "EmployeeId",
+                "EmployeeName": "EmployeeName",
+                "EmployeeNumber": "EmployeeNumber",
+                "StateCode": "StateCode",
+                "Percentage": "Percentage",
+                "EffectiveDate": "EffectiveDate",
+                "EndDate": "EndDate",
+                "IsPrimary": "IsPrimary",
+                "Notes": "Notes",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "employeeworkstates_write": {
+            "source": "dbo.EmployeeWorkStates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeId": "EmployeeId",
+                "StateCode": "StateCode",
+                "Percentage": "Percentage",
+                "EffectiveDate": "EffectiveDate",
+                "EndDate": "EndDate",
+                "IsPrimary": "IsPrimary",
+                "Notes": "Notes"
+            },
+            "relationships": {
+                "Employee": {
+                    "target.entity": "employees_write",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "EmployeeId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "statetaxreciprocity": {
+            "source": "dbo.StateTaxReciprocity",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ResidentState": "ResidentState",
+                "WorkState": "WorkState",
+                "ReciprocityType": "ReciprocityType",
+                "Description": "Description",
+                "EffectiveDate": "EffectiveDate",
+                "EndDate": "EndDate",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "paystubstatewitholdings": {
+            "source": "dbo.PayStubStateWithholdings",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayStubId": "PayStubId",
+                "StateCode": "StateCode",
+                "GrossWages": "GrossWages",
+                "Percentage": "Percentage",
+                "StateWithholding": "StateWithholding",
+                "ReciprocityApplied": "ReciprocityApplied",
+                "ReciprocityStateCode": "ReciprocityStateCode",
+                "CreatedAt": "CreatedAt"
+            },
+            "relationships": {
+                "PayStub": {
+                    "target.entity": "paystubs_write",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "PayStubId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
