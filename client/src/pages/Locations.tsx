@@ -2,12 +2,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, ChevronRight, X, MapPin } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import api from '../lib/api';
+import { US_STATES, formatAddress } from '../components/AddressFields';
 
 interface Location {
   Id: string;
   Name: string;
   ParentLocationId: string | null;
+  // Legacy single address field
   Address: string | null;
+  // New separate address fields
+  AddressLine1: string | null;
+  AddressLine2: string | null;
+  City: string | null;
+  State: string | null;
+  PostalCode: string | null;
+  Country: string | null;
   Description: string | null;
   Status: string;
   CreatedAt: string;
@@ -17,7 +26,12 @@ interface Location {
 interface LocationInput {
   Name: string;
   ParentLocationId?: string | null;
-  Address?: string;
+  AddressLine1?: string;
+  AddressLine2?: string;
+  City?: string;
+  State?: string;
+  PostalCode?: string;
+  Country?: string;
   Description?: string;
   Status?: string;
 }
@@ -61,7 +75,12 @@ export default function Locations() {
   const [formData, setFormData] = useState<LocationInput>({
     Name: '',
     ParentLocationId: null,
-    Address: '',
+    AddressLine1: '',
+    AddressLine2: '',
+    City: '',
+    State: '',
+    PostalCode: '',
+    Country: 'US',
     Description: '',
     Status: 'Active',
   });
@@ -118,7 +137,12 @@ export default function Locations() {
     setFormData({
       Name: '',
       ParentLocationId: null,
-      Address: '',
+      AddressLine1: '',
+      AddressLine2: '',
+      City: '',
+      State: '',
+      PostalCode: '',
+      Country: 'US',
       Description: '',
       Status: 'Active',
     });
@@ -187,7 +211,12 @@ export default function Locations() {
     setFormData({
       Name: location.Name,
       ParentLocationId: location.ParentLocationId,
-      Address: location.Address || '',
+      AddressLine1: location.AddressLine1 || '',
+      AddressLine2: location.AddressLine2 || '',
+      City: location.City || '',
+      State: location.State || '',
+      PostalCode: location.PostalCode || '',
+      Country: location.Country || 'US',
       Description: location.Description || '',
       Status: location.Status,
     });
@@ -208,12 +237,30 @@ export default function Locations() {
     return parent?.Name || null;
   };
 
+  // Get display address - prefer new fields, fall back to legacy
+  const getDisplayAddress = (location: Location): string => {
+    // If new fields are populated, use them
+    if (location.AddressLine1 || location.City || location.State) {
+      return formatAddress({
+        AddressLine1: location.AddressLine1,
+        AddressLine2: location.AddressLine2,
+        City: location.City,
+        State: location.State,
+        PostalCode: location.PostalCode,
+        Country: location.Country,
+      });
+    }
+    // Fall back to legacy field
+    return location.Address || '-';
+  };
+
   // Filter locations
   const filteredLocations = locations?.filter((location) => {
+    const displayAddress = getDisplayAddress(location);
     const matchesSearch =
       searchTerm === '' ||
       location.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      location.Address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      displayAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       location.Description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === 'all' || location.Status === statusFilter;
@@ -237,6 +284,8 @@ export default function Locations() {
   if (isLoading) return <div className="p-4">Loading locations...</div>;
   if (error)
     return <div className="p-4 text-red-600">Error loading locations</div>;
+
+  const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2";
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -266,6 +315,7 @@ export default function Locations() {
             </button>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Basic Info Row */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label
@@ -286,7 +336,7 @@ export default function Locations() {
                       setValidationErrors({ ...validationErrors, name: undefined });
                     }
                   }}
-                  className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 sm:text-sm border p-2 ${
+                  className={`${inputClass} ${
                     validationErrors.name
                       ? 'border-red-300 focus:border-red-500'
                       : 'border-gray-300 focus:border-indigo-500'
@@ -312,7 +362,7 @@ export default function Locations() {
                       ParentLocationId: e.target.value || null,
                     })
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  className={inputClass}
                 >
                   <option value="">None (Top-level)</option>
                   {availableParents?.map((l) => (
@@ -322,6 +372,113 @@ export default function Locations() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Address Fields */}
+            <div className="border-t pt-4">
+              <h3 className="text-md font-medium text-gray-800 mb-3">Address</h3>
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="addressLine1"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    id="addressLine1"
+                    value={formData.AddressLine1}
+                    onChange={(e) =>
+                      setFormData({ ...formData, AddressLine1: e.target.value })
+                    }
+                    placeholder="123 Main St"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="addressLine2"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Address Line 2
+                  </label>
+                  <input
+                    type="text"
+                    id="addressLine2"
+                    value={formData.AddressLine2}
+                    onChange={(e) =>
+                      setFormData({ ...formData, AddressLine2: e.target.value })
+                    }
+                    placeholder="Suite, Unit, etc."
+                    className={inputClass}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label
+                      htmlFor="city"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      value={formData.City}
+                      onChange={(e) =>
+                        setFormData({ ...formData, City: e.target.value })
+                      }
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="state"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      State
+                    </label>
+                    <select
+                      id="state"
+                      value={formData.State}
+                      onChange={(e) =>
+                        setFormData({ ...formData, State: e.target.value })
+                      }
+                      className={inputClass}
+                    >
+                      {US_STATES.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="postalCode"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      ZIP Code
+                    </label>
+                    <input
+                      type="text"
+                      id="postalCode"
+                      value={formData.PostalCode}
+                      onChange={(e) =>
+                        setFormData({ ...formData, PostalCode: e.target.value })
+                      }
+                      placeholder="12345"
+                      maxLength={10}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Status and Description */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label
                   htmlFor="status"
@@ -335,46 +492,29 @@ export default function Locations() {
                   onChange={(e) =>
                     setFormData({ ...formData, Status: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  className={inputClass}
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
-              <div>
-                <label
-                  htmlFor="address"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Address
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  value={formData.Address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, Address: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="description"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  rows={2}
-                  value={formData.Description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, Description: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-              </div>
+            </div>
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                rows={2}
+                value={formData.Description}
+                onChange={(e) =>
+                  setFormData({ ...formData, Description: e.target.value })
+                }
+                className={inputClass}
+              />
             </div>
             <div className="flex justify-end gap-3">
               <button
@@ -481,7 +621,7 @@ export default function Locations() {
                     {getParentName(location.ParentLocationId) || '-'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                    {location.Address || '-'}
+                    {getDisplayAddress(location)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

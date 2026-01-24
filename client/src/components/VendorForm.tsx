@@ -5,11 +5,20 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import api from '../lib/api';
+import AddressFields, { AddressFieldValues } from './AddressFields';
 
 export const vendorSchema = z.object({
   Name: z.string().min(1, 'Name is required'),
   Email: z.string().email('Invalid email address').optional().or(z.literal('')),
   Phone: z.string().optional(),
+  // Separate address fields (use .nullish() for API compatibility - see CLAUDE.md)
+  AddressLine1: z.string().nullish(),
+  AddressLine2: z.string().nullish(),
+  City: z.string().nullish(),
+  State: z.string().nullish(),
+  PostalCode: z.string().nullish(),
+  Country: z.string().nullish(),
+  // Legacy field for backward compatibility
   Address: z.string().optional(),
   PaymentTerms: z.string().optional(),
   TaxId: z.string().optional(),
@@ -18,7 +27,7 @@ export const vendorSchema = z.object({
   Status: z.enum(['Active', 'Inactive']).optional(),
 });
 
-export type VendorFormData = z.infer<typeof vendorSchema>;
+export type VendorFormData = z.infer<typeof vendorSchema> & AddressFieldValues;
 
 interface VendorFormProps {
   initialValues?: Partial<VendorFormData>;
@@ -132,22 +141,15 @@ export default function VendorForm({
           </div>
         </div>
 
-        <div>
-          <label
-            htmlFor="Address"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Address
-          </label>
-          <textarea
-            id="Address"
-            rows={3}
-            {...register('Address')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+        {/* Address Section */}
+        <div className="border-t pt-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
+          <AddressFields<VendorFormData>
+            register={register}
+            errors={errors}
+            showLine2={true}
+            showCountry={false}
           />
-          {errors.Address && (
-            <p className="mt-1 text-sm text-red-600">{errors.Address.message}</p>
-          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
