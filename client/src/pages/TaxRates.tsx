@@ -190,15 +190,20 @@ export default function TaxRates() {
   };
 
   const handleSetDefault = async (id: string) => {
-    // First, unset all other defaults
-    const currentDefault = taxRates?.find((tr) => tr.IsDefault);
-    if (currentDefault && currentDefault.Id !== id) {
-      await api.patch(`/taxrates/Id/${currentDefault.Id}`, { IsDefault: false });
+    try {
+      // First, unset all other defaults
+      const currentDefault = taxRates?.find((tr) => tr.IsDefault);
+      if (currentDefault && currentDefault.Id !== id) {
+        await api.patch(`/taxrates/Id/${currentDefault.Id}`, { IsDefault: false });
+      }
+      // Set the new default
+      await api.patch(`/taxrates/Id/${id}`, { IsDefault: true });
+      queryClient.invalidateQueries({ queryKey: ['taxrates'] });
+      showToast('Default tax rate updated', 'success');
+    } catch (error) {
+      console.error('Failed to set default tax rate:', error);
+      showToast('Failed to set default tax rate', 'error');
     }
-    // Set the new default
-    await api.patch(`/taxrates/Id/${id}`, { IsDefault: true });
-    queryClient.invalidateQueries({ queryKey: ['taxrates'] });
-    showToast('Default tax rate updated', 'success');
   };
 
   // Format rate as percentage for display
