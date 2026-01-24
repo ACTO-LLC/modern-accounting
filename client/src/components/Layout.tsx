@@ -1,9 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import clsx from 'clsx';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
-import { SidebarProvider, useSidebar } from '../contexts/SidebarContext';
+import { SidebarProvider } from '../contexts/SidebarContext';
 import GlobalSearch from './GlobalSearch';
 import Sidebar from './navigation/Sidebar';
 
@@ -11,7 +10,6 @@ function LayoutContent() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { settings: companySettings } = useCompanySettings();
-  const { isCollapsed } = useSidebar();
 
   // Close mobile menu on navigation
   useEffect(() => {
@@ -33,10 +31,7 @@ function LayoutContent() {
 
       {/* Main Content */}
       <div
-        className={clsx(
-          "flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-200",
-          isCollapsed ? "lg:ml-16" : "lg:ml-64"
-        )}
+        className="flex-1 flex flex-col min-w-0 overflow-hidden"
       >
         {/* Mobile Header - Hidden when printing */}
         <div className="lg:hidden flex items-center justify-between bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 print:hidden">
