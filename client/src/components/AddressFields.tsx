@@ -62,8 +62,8 @@ export default function AddressFields<T extends AddressFieldValues>({
   showLine2 = true,
   showCountry = false,
   required = false,
-  inputClassName = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2",
-  labelClassName = "block text-sm font-medium text-gray-700",
+  inputClassName = "mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:text-white",
+  labelClassName = "block text-sm font-medium text-gray-700 dark:text-gray-300",
 }: AddressFieldsProps<T>) {
   const getError = (field: keyof AddressFieldValues): string | undefined => {
     // Cast errors to any to avoid TypeScript index signature issues

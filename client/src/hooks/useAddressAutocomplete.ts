@@ -189,6 +189,10 @@ export function useAddressAutocomplete(
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastSearchRef = useRef<string>('');
+  const lastRequestTimeRef = useRef<number>(0);
+
+  // Minimum time between API requests (Nominatim requires 1 req/sec)
+  const MIN_REQUEST_INTERVAL_MS = 1000;
 
   const clear = useCallback(() => {
     setSuggestions([]);
@@ -239,10 +243,23 @@ export function useAddressAutocomplete(
       setIsLoading(true);
       setError(null);
 
+      // Enforce rate limiting (Nominatim requires 1 req/sec max)
+      const now = Date.now();
+      const timeSinceLastRequest = now - lastRequestTimeRef.current;
+      if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
+        // Wait for the remaining time before making the request
+        await new Promise(resolve =>
+          setTimeout(resolve, MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest)
+        );
+      }
+
       // Create new abort controller for this request
       abortControllerRef.current = new AbortController();
 
       try {
+        // Update last request time
+        lastRequestTimeRef.current = Date.now();
+
         // Nominatim API - search for US addresses
         const params = new URLSearchParams({
           q: query,

@@ -150,14 +150,16 @@ test.describe('Address Autocomplete', () => {
 
     const streetInput = page.getByLabel(/Street Address/);
 
-    // Type only 4 characters (less than minChars of 5)
+    // Type only 3 characters (less than minChars of 5)
     await streetInput.fill('123');
 
-    // Wait a bit for any potential API call
-    await page.waitForTimeout(500);
-
-    // Suggestions should not appear
+    // Suggestions should not appear - verify immediately
+    // (no API call is made for queries shorter than 5 chars)
     const suggestions = page.locator('#address-suggestions');
+    await expect(suggestions).not.toBeVisible();
+
+    // Also verify still no suggestions after typing more (still under 5 chars)
+    await streetInput.fill('123M');
     await expect(suggestions).not.toBeVisible();
   });
 });
