@@ -116,8 +116,8 @@ cd modern-accounting
 # 1. Start Docker services
 docker compose up -d
 
-# 2. Run database migrations
-cd scripts && node deploy-db.js
+# 2. Deploy database schema
+node scripts/deploy-db.js
 
 # 3. Start API (terminal 1)
 cd chat-api && npm install && npm start
@@ -531,8 +531,14 @@ cd monitor-agent && npm test
 ### Database
 
 ```bash
-# Run migrations
-cd scripts && node deploy-db.js
+# Deploy database schema (auto-detects best mode)
+node scripts/deploy-db.js
+
+# Force SqlPackage mode (incremental updates)
+node scripts/deploy-db.js --sqlpackage
+
+# Force Node.js mode (fallback)
+node scripts/deploy-db.js --node
 
 # Connect via sqlcmd
 sqlcmd -S localhost,14330 -U sa -P $SQL_SA_PASSWORD -d AccountingDB

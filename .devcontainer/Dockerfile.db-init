@@ -10,4 +10,6 @@ RUN npm install mssql
 COPY database/ ./database/
 COPY scripts/deploy-db.js ./scripts/
 
-CMD ["node", "scripts/deploy-db.js"]
+# Use Node.js mode explicitly since we're in a minimal container
+# SqlPackage mode requires .NET SDK which isn't installed here
+CMD ["node", "scripts/deploy-db.js", "--node"]

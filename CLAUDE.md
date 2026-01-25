@@ -63,6 +63,7 @@ When users say:
 - **Client:** React + Vite + TypeScript + Tailwind CSS
 - **API:** Node.js Express (`chat-api/`)
 - **Database:** SQL Server via DAB (Data API Builder)
+- **Database Deployment:** Use `node scripts/deploy-db.js` - supports SqlPackage mode (incremental) or Node.js mode (fallback)
 - **MCP Servers:** DAB MCP (port 5000), QBO MCP (port 8001)
 - **Dark Mode:** Tailwind `.dark` class on `<html>` - does NOT automatically sync with MUI
 

@@ -194,17 +194,26 @@ jobs:
           name: chat-api-build
           path: chat-api-dist
 
-      # Database migration (placeholder)
-      - name: Run database migrations
+      # Database deployment using Node.js mode
+      # Note: SqlPackage mode can be used when SSDT-compatible SQL files are available
+      - name: Setup Node.js for DB deployment
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install mssql package
+        run: npm install mssql
+
+      - name: Run database deployment
         run: |
-          echo "Running database migrations..."
-          echo "Placeholder: Would run migrations against staging database"
-          # node scripts/deploy-db.js --env staging
+          echo "Running database deployment..."
+          node scripts/deploy-db.js --node
         env:
-          DB_SERVER: ${{ secrets.STAGING_DB_SERVER }}
-          DB_USER: ${{ secrets.STAGING_DB_USER }}
-          DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
-          DB_NAME: ${{ secrets.STAGING_DB_NAME }}
+          SQL_SERVER: ${{ secrets.STAGING_DB_SERVER }}
+          SQL_PORT: ${{ secrets.STAGING_DB_PORT || '1433' }}
+          SQL_USER: ${{ secrets.STAGING_DB_USER }}
+          SQL_SA_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          SQL_DATABASE: ${{ secrets.STAGING_DB_NAME }}
 
       # PII Scrubbing for staging (if data was copied from prod)
       - name: Scrub PII data (staging only)
