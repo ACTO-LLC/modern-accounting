@@ -1,30 +1,10 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-
-// US States for dropdown
-const US_STATES = [
-  { code: '', name: 'Select State' },
-  { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
-  { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
-  { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'DC', name: 'District of Columbia' },
-  { code: 'FL', name: 'Florida' }, { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' },
-  { code: 'ID', name: 'Idaho' }, { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' },
-  { code: 'IA', name: 'Iowa' }, { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' },
-  { code: 'LA', name: 'Louisiana' }, { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' },
-  { code: 'MA', name: 'Massachusetts' }, { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' },
-  { code: 'MS', name: 'Mississippi' }, { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' },
-  { code: 'NE', name: 'Nebraska' }, { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' },
-  { code: 'NJ', name: 'New Jersey' }, { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' },
-  { code: 'NC', name: 'North Carolina' }, { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' },
-  { code: 'OK', name: 'Oklahoma' }, { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' },
-  { code: 'RI', name: 'Rhode Island' }, { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' },
-  { code: 'TN', name: 'Tennessee' }, { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' },
-  { code: 'VT', name: 'Vermont' }, { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' },
-  { code: 'WV', name: 'West Virginia' }, { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' },
-];
+import AddressAutocomplete, { AddressSuggestion } from './AddressAutocomplete';
+import { US_STATES } from './AddressFields';
 
 const FILING_STATUSES = [
   { value: 'Single', label: 'Single' },
@@ -104,7 +84,7 @@ export default function EmployeeForm({
   submitButtonText = 'Save Employee'
 }: EmployeeFormProps) {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<EmployeeFormData>({
+  const { register, handleSubmit, formState: { errors }, watch, control, setValue } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
       PayType: 'Hourly',
@@ -116,6 +96,13 @@ export default function EmployeeForm({
       ...initialValues
     }
   });
+
+  // Handle address selection from autocomplete
+  const handleAddressSelect = (suggestion: AddressSuggestion) => {
+    setValue('City', suggestion.city, { shouldDirty: true });
+    setValue('State', suggestion.state, { shouldDirty: true });
+    setValue('ZipCode', suggestion.postalCode, { shouldDirty: true });
+  };
 
   const payType = watch('PayType');
 
@@ -314,10 +301,22 @@ export default function EmployeeForm({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Address</h2>
           <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label htmlFor="Address" className={labelClass}>Street Address</label>
-              <input id="Address" type="text" {...register('Address')} className={inputClass} />
-            </div>
+            <Controller
+              name="Address"
+              control={control}
+              render={({ field }) => (
+                <AddressAutocomplete
+                  id="Address"
+                  label="Street Address"
+                  labelClassName={labelClass}
+                  className={inputClass}
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  onAddressSelect={handleAddressSelect}
+                  error={errors.Address?.message}
+                />
+              )}
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="City" className={labelClass}>City</label>

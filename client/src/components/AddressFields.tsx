@@ -1,4 +1,7 @@
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { useState, useRef, useEffect } from 'react';
+import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
+import { useAddressAutocomplete, AddressSuggestion } from '../hooks/useAddressAutocomplete';
+import { Loader2, MapPin } from 'lucide-react';
 
 // US States for dropdown
 export const US_STATES = [
@@ -35,6 +38,10 @@ export interface AddressFieldValues {
 interface AddressFieldsProps<T extends AddressFieldValues> {
   register: UseFormRegister<T>;
   errors: FieldErrors<T>;
+  /** setValue function from react-hook-form (required for autocomplete) */
+  setValue?: UseFormSetValue<T>;
+  /** Enable address autocomplete (default: true if setValue provided) */
+  enableAutocomplete?: boolean;
   /** Show AddressLine2 field (default: true) */
   showLine2?: boolean;
   /** Show Country field (default: false) */
@@ -50,11 +57,13 @@ interface AddressFieldsProps<T extends AddressFieldValues> {
 export default function AddressFields<T extends AddressFieldValues>({
   register,
   errors,
+  setValue,
+  enableAutocomplete = true,
   showLine2 = true,
   showCountry = false,
   required = false,
-  inputClassName = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2",
-  labelClassName = "block text-sm font-medium text-gray-700",
+  inputClassName = "mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:text-white",
+  labelClassName = "block text-sm font-medium text-gray-700 dark:text-gray-300",
 }: AddressFieldsProps<T>) {
   const getError = (field: keyof AddressFieldValues): string | undefined => {
     // Cast errors to any to avoid TypeScript index signature issues
@@ -62,22 +71,181 @@ export default function AddressFields<T extends AddressFieldValues>({
     return fieldErrors[field]?.message;
   };
 
+  // Autocomplete state
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const { suggestions, isLoading, error, search, clear } = useAddressAutocomplete();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Determine if autocomplete is enabled
+  const autocompleteEnabled = enableAutocomplete && setValue;
+
+  // Handle input change for autocomplete
+  const handleAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (autocompleteEnabled) {
+      const value = e.target.value;
+      search(value);
+      setShowSuggestions(true);
+      setHighlightedIndex(-1);
+    }
+  };
+
+  // Handle suggestion selection
+  const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    if (!setValue) return;
+
+    // Fill in all address fields - cast to any to handle generic type constraints
+    const setField = setValue as (name: string, value: string, options?: { shouldDirty: boolean }) => void;
+    setField('AddressLine1', suggestion.street, { shouldDirty: true });
+    setField('City', suggestion.city, { shouldDirty: true });
+    setField('State', suggestion.state, { shouldDirty: true });
+    setField('PostalCode', suggestion.postalCode, { shouldDirty: true });
+
+    // Clear autocomplete state
+    setShowSuggestions(false);
+    clear();
+    setHighlightedIndex(-1);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev =>
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+          handleSelectSuggestion(suggestions[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+        break;
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Register the AddressLine1 input and merge refs
+  const addressLine1Registration = register('AddressLine1' as any);
+
   return (
     <div className="space-y-4">
-      {/* Address Line 1 */}
-      <div>
+      {/* Address Line 1 with autocomplete */}
+      <div ref={containerRef} className="relative">
         <label htmlFor="AddressLine1" className={labelClassName}>
           Street Address {required && '*'}
+          {autocompleteEnabled && (
+            <span className="ml-2 text-xs text-gray-500 font-normal">
+              (type to search)
+            </span>
+          )}
         </label>
-        <input
-          id="AddressLine1"
-          type="text"
-          {...register('AddressLine1' as any)}
-          placeholder="123 Main St"
-          className={inputClassName}
-        />
+        <div className="relative">
+          <input
+            id="AddressLine1"
+            type="text"
+            {...addressLine1Registration}
+            ref={(e) => {
+              addressLine1Registration.ref(e);
+              inputRef.current = e;
+            }}
+            onChange={(e) => {
+              addressLine1Registration.onChange(e);
+              handleAddressInput(e);
+            }}
+            onKeyDown={handleKeyDown}
+            onFocus={() => {
+              if (suggestions.length > 0) {
+                setShowSuggestions(true);
+              }
+            }}
+            placeholder="123 Main St"
+            autoComplete="off"
+            className={inputClassName}
+            role={autocompleteEnabled ? 'combobox' : undefined}
+            aria-expanded={showSuggestions && suggestions.length > 0}
+            aria-haspopup={autocompleteEnabled ? 'listbox' : undefined}
+            aria-controls={autocompleteEnabled ? 'address-suggestions' : undefined}
+            aria-autocomplete={autocompleteEnabled ? 'list' : undefined}
+          />
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        {/* Error display */}
+        {error && (
+          <p className="mt-1 text-sm text-amber-600">{error}</p>
+        )}
         {getError('AddressLine1') && (
           <p className="mt-1 text-sm text-red-600">{getError('AddressLine1')}</p>
+        )}
+
+        {/* Suggestions dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <ul
+            id="address-suggestions"
+            role="listbox"
+            className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto"
+          >
+            {suggestions.map((suggestion, index) => (
+              <li
+                key={`${suggestion.street}-${suggestion.postalCode}-${index}`}
+                role="option"
+                aria-selected={index === highlightedIndex}
+                className={`
+                  px-4 py-3 cursor-pointer flex items-start gap-3
+                  ${index === highlightedIndex
+                    ? 'bg-indigo-50 dark:bg-indigo-900/50'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }
+                  ${index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''}
+                `}
+                onClick={() => handleSelectSuggestion(suggestion)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+              >
+                <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 dark:text-white truncate">
+                    {suggestion.street}
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {suggestion.city}, {suggestion.state} {suggestion.postalCode}
+                  </div>
+                </div>
+              </li>
+            ))}
+            {/* Attribution - required by Nominatim */}
+            <li className="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              Address data by OpenStreetMap
+            </li>
+          </ul>
         )}
       </div>
 

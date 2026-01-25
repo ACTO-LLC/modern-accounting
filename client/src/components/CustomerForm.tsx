@@ -32,7 +32,7 @@ interface CustomerFormProps {
 
 export default function CustomerForm({ initialValues, onSubmit, title, isSubmitting, submitButtonText = 'Save Customer' }: CustomerFormProps) {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm<CustomerFormData>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: initialValues
   });
@@ -86,6 +86,7 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
           <AddressFields<CustomerFormData>
             register={register}
             errors={errors}
+            setValue={setValue}
             showLine2={true}
             showCountry={false}
           />
