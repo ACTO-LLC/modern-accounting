@@ -19,26 +19,24 @@ export interface AddressSuggestion {
 }
 
 /**
- * Geoapify API response structure
+ * Geoapify API response structure (JSON format, not GeoJSON)
  * @see https://apidocs.geoapify.com/docs/geocoding/address-autocomplete/
  */
 interface GeoapifyResult {
-  properties: {
-    formatted: string;
-    address_line1?: string;
-    address_line2?: string;
-    housenumber?: string;
-    street?: string;
-    city?: string;
-    town?: string;
-    village?: string;
-    suburb?: string;
-    state?: string;
-    state_code?: string;
-    postcode?: string;
-    country?: string;
-    country_code?: string;
-  };
+  formatted: string;
+  address_line1?: string;
+  address_line2?: string;
+  housenumber?: string;
+  street?: string;
+  city?: string;
+  town?: string;
+  village?: string;
+  suburb?: string;
+  state?: string;
+  state_code?: string;
+  postcode?: string;
+  country?: string;
+  country_code?: string;
 }
 
 interface GeoapifyResponse {
@@ -49,36 +47,34 @@ interface GeoapifyResponse {
  * Parse Geoapify result into AddressSuggestion
  */
 function parseGeoapifyResult(result: GeoapifyResult): AddressSuggestion | null {
-  const props = result.properties;
-
   // Only process US addresses
-  if (props.country_code?.toLowerCase() !== 'us') {
+  if (result.country_code?.toLowerCase() !== 'us') {
     return null;
   }
 
   // Get city from various possible fields
-  const city = props.city || props.town || props.village || props.suburb || '';
+  const city = result.city || result.town || result.village || result.suburb || '';
 
   // Build street address
   let street = '';
-  if (props.housenumber && props.street) {
-    street = `${props.housenumber} ${props.street}`;
-  } else if (props.street) {
-    street = props.street;
-  } else if (props.address_line1) {
-    street = props.address_line1;
+  if (result.housenumber && result.street) {
+    street = `${result.housenumber} ${result.street}`;
+  } else if (result.street) {
+    street = result.street;
+  } else if (result.address_line1) {
+    street = result.address_line1;
   }
 
   // Get state code (Geoapify provides state_code directly)
-  const state = props.state_code?.toUpperCase() || '';
+  const state = result.state_code?.toUpperCase() || '';
 
   return {
-    displayName: props.formatted || '',
+    displayName: result.formatted || '',
     street,
     city,
     state,
-    postalCode: props.postcode || '',
-    houseNumber: props.housenumber,
+    postalCode: result.postcode || '',
+    houseNumber: result.housenumber,
   };
 }
 
@@ -238,18 +234,21 @@ export function useAddressAutocomplete(
           apiKey: apiKey,
         });
 
-        const response = await fetch(
-          `https://api.geoapify.com/v1/geocode/autocomplete?${params}`,
-          {
-            signal: abortControllerRef.current.signal,
-          }
-        );
+        const url = `https://api.geoapify.com/v1/geocode/autocomplete?${params}`;
+        console.log('Address autocomplete request:', url.replace(apiKey, '***'));
+
+        const response = await fetch(url, {
+          signal: abortControllerRef.current.signal,
+        });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Geoapify API error:', response.status, errorText);
           throw new Error(`Search failed: ${response.status}`);
         }
 
         const data: GeoapifyResponse = await response.json();
+        console.log('Geoapify response:', data);
 
         // Parse and filter results
         const parsed = (data.results || [])
