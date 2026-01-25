@@ -2279,6 +2279,238 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "expenses": {
+            "source": {
+                "object": "dbo.v_Expenses",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseNumber": "ExpenseNumber",
+                "ExpenseDate": "ExpenseDate",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "AccountId": "AccountId",
+                "AccountName": "AccountName",
+                "AccountType": "AccountType",
+                "Amount": "Amount",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentAccountName": "PaymentAccountName",
+                "PaymentMethod": "PaymentMethod",
+                "Description": "Description",
+                "Reference": "Reference",
+                "IsReimbursable": "IsReimbursable",
+                "ReimbursedDate": "ReimbursedDate",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName",
+                "BankTransactionId": "BankTransactionId",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ReceiptCount": "ReceiptCount"
+            }
+        },
+        "expenses_write": {
+            "source": "dbo.Expenses",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseNumber": "ExpenseNumber",
+                "ExpenseDate": "ExpenseDate",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "AccountId": "AccountId",
+                "Amount": "Amount",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentMethod": "PaymentMethod",
+                "Description": "Description",
+                "Reference": "Reference",
+                "IsReimbursable": "IsReimbursable",
+                "ReimbursedDate": "ReimbursedDate",
+                "CustomerId": "CustomerId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId",
+                "BankTransactionId": "BankTransactionId",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedBy": "CreatedBy"
+            },
+            "relationships": {
+                "Vendor": {
+                    "target.entity": "vendors",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "VendorId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Account": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "AccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "PaymentAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "PaymentAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Customer": {
+                    "target.entity": "customers",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "CustomerId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "JournalEntry": {
+                    "target.entity": "journalentries",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "receipts": {
+            "source": {
+                "object": "dbo.v_Receipts",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseId": "ExpenseId",
+                "ExpenseNumber": "ExpenseNumber",
+                "ExpenseDate": "ExpenseDate",
+                "BankTransactionId": "BankTransactionId",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "FileSize": "FileSize",
+                "ExtractedVendor": "ExtractedVendor",
+                "ExtractedAmount": "ExtractedAmount",
+                "ExtractedDate": "ExtractedDate",
+                "OcrConfidence": "OcrConfidence",
+                "OcrStatus": "OcrStatus",
+                "OcrErrorMessage": "OcrErrorMessage",
+                "UploadedBy": "UploadedBy",
+                "UploadedAt": "UploadedAt",
+                "IsMatched": "IsMatched"
+            }
+        },
+        "receipts_write": {
+            "source": "dbo.Receipts",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseId": "ExpenseId",
+                "BankTransactionId": "BankTransactionId",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "FileSize": "FileSize",
+                "FileData": "FileData",
+                "ThumbnailData": "ThumbnailData",
+                "ExtractedVendor": "ExtractedVendor",
+                "ExtractedAmount": "ExtractedAmount",
+                "ExtractedDate": "ExtractedDate",
+                "ExtractedLineItems": "ExtractedLineItems",
+                "OcrConfidence": "OcrConfidence",
+                "OcrStatus": "OcrStatus",
+                "OcrErrorMessage": "OcrErrorMessage",
+                "UploadedBy": "UploadedBy"
+            },
+            "relationships": {
+                "Expense": {
+                    "target.entity": "expenses_write",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ExpenseId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "BankTransaction": {
+                    "target.entity": "banktransactions",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "BankTransactionId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
