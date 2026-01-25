@@ -141,6 +141,51 @@ export default function EmployeeWorkStates({ employeeId, residentState }: Employ
     return reciprocityAgreements.find(r => r.WorkState === stateCode);
   };
 
+  // Check if two date ranges overlap
+  const dateRangesOverlap = (
+    start1: string,
+    end1: string | null | undefined,
+    start2: string,
+    end2: string | null | undefined
+  ): boolean => {
+    const s1 = new Date(start1);
+    const e1 = end1 ? new Date(end1) : new Date('9999-12-31');
+    const s2 = new Date(start2);
+    const e2 = end2 ? new Date(end2) : new Date('9999-12-31');
+
+    // Ranges overlap if one starts before the other ends
+    return s1 <= e2 && s2 <= e1;
+  };
+
+  // Validate that overlapping date ranges don't exceed 100% total allocation
+  const validateDateRangeOverlap = (newWorkState: Partial<WorkState>): string | null => {
+    if (!newWorkState.EffectiveDate || !newWorkState.Percentage) return null;
+
+    // Find all existing work states that overlap with the new one
+    const overlappingStates = workStates.filter(ws =>
+      dateRangesOverlap(
+        newWorkState.EffectiveDate!,
+        newWorkState.EndDate,
+        ws.EffectiveDate,
+        ws.EndDate
+      )
+    );
+
+    if (overlappingStates.length === 0) return null;
+
+    // Calculate total percentage during overlap period
+    const overlapTotal = overlappingStates.reduce((sum, ws) => sum + ws.Percentage, 0) + newWorkState.Percentage;
+
+    if (overlapTotal > 100.01) {
+      const stateNames = overlappingStates.map(ws =>
+        US_STATES.find(s => s.code === ws.StateCode)?.name || ws.StateCode
+      ).join(', ');
+      return `Date range overlaps with ${stateNames}. Combined allocation would be ${overlapTotal.toFixed(1)}% (max 100%).`;
+    }
+
+    return null;
+  };
+
   const handleAddState = () => {
     if (!newState.StateCode) {
       setError('Please select a state');
@@ -155,16 +200,25 @@ export default function EmployeeWorkStates({ employeeId, residentState }: Employ
       return;
     }
 
-    // Check if adding would exceed 100%
-    const newTotal = totalPercentage + newState.Percentage;
-    if (newTotal > 100.01) {
-      setError(`Total percentage would be ${newTotal}%. Maximum is 100%.`);
+    // Check for duplicate state (same state code with overlapping dates)
+    const duplicateWithOverlap = workStates.find(ws =>
+      ws.StateCode === newState.StateCode &&
+      dateRangesOverlap(
+        newState.EffectiveDate!,
+        newState.EndDate,
+        ws.EffectiveDate,
+        ws.EndDate
+      )
+    );
+    if (duplicateWithOverlap) {
+      setError('This state already has an allocation for the specified date range');
       return;
     }
 
-    // Check for duplicate state
-    if (workStates.some(ws => ws.StateCode === newState.StateCode)) {
-      setError('This state is already added');
+    // Validate date range overlap doesn't exceed 100%
+    const overlapError = validateDateRangeOverlap(newState);
+    if (overlapError) {
+      setError(overlapError);
       return;
     }
 
