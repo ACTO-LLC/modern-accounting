@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard, FileText } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard, FileText, Users } from 'lucide-react';
 
 const reports = [
   {
@@ -29,6 +29,13 @@ const reports = [
     href: '/reports/ar-aging',
     icon: Clock,
     color: 'bg-orange-100 text-orange-600',
+  },
+  {
+    name: 'Customer Statement',
+    description: 'Account activity and outstanding balances for a customer',
+    href: '/reports/customer-statement',
+    icon: Users,
+    color: 'bg-cyan-100 text-cyan-600',
   },
   {
     name: 'Payroll Summary',
