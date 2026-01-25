@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
-import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail } from 'lucide-react';
+import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail, AlertCircle } from 'lucide-react';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
 import EmailSettingsForm from '../components/EmailSettingsForm';
+import { validateEIN } from '../lib/taxForms';
 
 export default function CompanySettings() {
   const { settings, updateSettings } = useCompanySettings();
@@ -306,11 +307,22 @@ export default function CompanySettings() {
                 onChange={handleChange}
                 placeholder="XX-XXXXXXX"
                 maxLength={10}
-                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:text-white"
+                className={`block w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:text-white ${
+                  formData.taxId && !validateEIN(formData.taxId).valid
+                    ? 'border-red-300 dark:border-red-600'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Federal Employer Identification Number (9 digits)
-              </p>
+              {formData.taxId && !validateEIN(formData.taxId).valid ? (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {validateEIN(formData.taxId).error}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Federal Employer Identification Number (9 digits)
+                </p>
+              )}
             </div>
 
             <div>

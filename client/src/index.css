@@ -86,3 +86,61 @@
 .dark .MuiDataGrid-row:hover {
   background-color: rgba(79, 70, 229, 0.15) !important;
 }
+
+/* Print styles for tax forms - force light mode colors */
+@media print {
+  /* Reset dark mode for printing */
+  .dark {
+    --datagrid-header-bg: #f9fafb;
+    --datagrid-border: #e5e7eb;
+    --datagrid-text: #111827;
+    --datagrid-text-secondary: #6b7280;
+  }
+
+  /* Force white background and dark text for all elements */
+  body, .dark {
+    background-color: white !important;
+    color: #111827 !important;
+  }
+
+  /* Tax form specific print styles */
+  .print\:bg-white {
+    background-color: white !important;
+  }
+
+  /* Ensure all text is dark for printing */
+  .dark .text-gray-900,
+  .dark .text-gray-700,
+  .dark .text-gray-600,
+  .dark .text-gray-500,
+  .dark .text-white {
+    color: #111827 !important;
+  }
+
+  .dark .text-gray-400 {
+    color: #6b7280 !important;
+  }
+
+  /* Border colors for print */
+  .dark .border-gray-300,
+  .dark .border-gray-600,
+  .dark .border-gray-700 {
+    border-color: #d1d5db !important;
+  }
+
+  /* Background colors for print */
+  .dark .bg-gray-50,
+  .dark .bg-gray-700,
+  .dark .bg-gray-800 {
+    background-color: #f9fafb !important;
+  }
+
+  .dark .bg-green-900\/20 {
+    background-color: #f0fdf4 !important;
+  }
+
+  .dark .text-green-300,
+  .dark .text-green-400 {
+    color: #15803d !important;
+  }
+}

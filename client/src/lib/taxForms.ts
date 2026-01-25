@@ -211,6 +211,42 @@ export function formatEIN(ein: string): string {
 }
 
 /**
+ * Validate EIN format (XX-XXXXXXX or 9 digits)
+ * Returns { valid: boolean, formatted: string, error?: string }
+ */
+export function validateEIN(ein: string): { valid: boolean; formatted: string; error?: string } {
+  if (!ein) {
+    return { valid: false, formatted: '', error: 'EIN is required' };
+  }
+
+  const cleaned = ein.replace(/\D/g, '');
+
+  if (cleaned.length !== 9) {
+    return {
+      valid: false,
+      formatted: ein,
+      error: 'EIN must be 9 digits (XX-XXXXXXX)',
+    };
+  }
+
+  // EIN cannot start with 00, 07, 08, 09, 17, 18, 19, 28, 29, 49, 69, 70, 78, 79, or 89
+  const prefix = cleaned.slice(0, 2);
+  const invalidPrefixes = ['00', '07', '08', '09', '17', '18', '19', '28', '29', '49', '69', '70', '78', '79', '89'];
+  if (invalidPrefixes.includes(prefix)) {
+    return {
+      valid: false,
+      formatted: formatEIN(ein),
+      error: `Invalid EIN prefix: ${prefix}`,
+    };
+  }
+
+  return {
+    valid: true,
+    formatted: `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`,
+  };
+}
+
+/**
  * Get available tax years for form generation
  * Returns current year and previous 2 years
  */
