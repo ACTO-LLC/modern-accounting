@@ -19,92 +19,66 @@ export interface AddressSuggestion {
 }
 
 /**
- * Nominatim API response structure
+ * Geoapify API response structure
+ * @see https://apidocs.geoapify.com/docs/geocoding/address-autocomplete/
  */
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  address: {
-    house_number?: string;
-    road?: string;
-    neighbourhood?: string;
-    suburb?: string;
+interface GeoapifyResult {
+  properties: {
+    formatted: string;
+    address_line1?: string;
+    address_line2?: string;
+    housenumber?: string;
+    street?: string;
     city?: string;
     town?: string;
     village?: string;
-    municipality?: string;
-    county?: string;
+    suburb?: string;
     state?: string;
+    state_code?: string;
     postcode?: string;
     country?: string;
     country_code?: string;
   };
 }
 
-/**
- * Map of US state names to state codes
- */
-const STATE_NAME_TO_CODE: Record<string, string> = {
-  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
-  'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
-  'district of columbia': 'DC', 'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI',
-  'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
-  'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME',
-  'maryland': 'MD', 'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN',
-  'mississippi': 'MS', 'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE',
-  'nevada': 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM',
-  'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH',
-  'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI',
-  'south carolina': 'SC', 'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX',
-  'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA',
-  'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY',
-};
-
-/**
- * Convert state name to 2-letter code
- */
-function getStateCode(stateName: string | undefined): string {
-  if (!stateName) return '';
-  const normalized = stateName.toLowerCase().trim();
-  // Check if already a 2-letter code
-  if (normalized.length === 2) {
-    return normalized.toUpperCase();
-  }
-  return STATE_NAME_TO_CODE[normalized] || '';
+interface GeoapifyResponse {
+  results: GeoapifyResult[];
 }
 
 /**
- * Parse Nominatim result into AddressSuggestion
+ * Parse Geoapify result into AddressSuggestion
  */
-function parseNominatimResult(result: NominatimResult): AddressSuggestion | null {
-  const addr = result.address;
+function parseGeoapifyResult(result: GeoapifyResult): AddressSuggestion | null {
+  const props = result.properties;
 
   // Only process US addresses
-  if (addr.country_code?.toLowerCase() !== 'us') {
+  if (props.country_code?.toLowerCase() !== 'us') {
     return null;
   }
 
   // Get city from various possible fields
-  const city = addr.city || addr.town || addr.village || addr.municipality || '';
+  const city = props.city || props.town || props.village || props.suburb || '';
 
   // Build street address
   let street = '';
-  if (addr.house_number && addr.road) {
-    street = `${addr.house_number} ${addr.road}`;
-  } else if (addr.road) {
-    street = addr.road;
+  if (props.housenumber && props.street) {
+    street = `${props.housenumber} ${props.street}`;
+  } else if (props.street) {
+    street = props.street;
+  } else if (props.address_line1) {
+    street = props.address_line1;
   }
 
-  // Get state code
-  const state = getStateCode(addr.state);
+  // Get state code (Geoapify provides state_code directly)
+  const state = props.state_code?.toUpperCase() || '';
 
   return {
-    displayName: result.display_name,
+    displayName: props.formatted || '',
     street,
     city,
     state,
-    postalCode: addr.postcode || '',
-    houseNumber: addr.house_number,
+    postalCode: props.postcode || '',
+    houseNumber: props.housenumber,
   };
 }
 
@@ -166,18 +140,18 @@ interface UseAddressAutocompleteReturn {
 }
 
 /**
- * Hook for US address autocomplete using OpenStreetMap Nominatim API.
+ * Hook for US address autocomplete using Geoapify API.
  *
- * Note: Nominatim has usage limits (1 request/second max).
- * This hook implements debouncing and caching to respect those limits.
+ * Requires VITE_GEOAPIFY_API_KEY environment variable.
+ * Free tier: 3,000 requests/day.
  *
- * @see https://nominatim.org/release-docs/latest/api/Search/
+ * @see https://apidocs.geoapify.com/docs/geocoding/address-autocomplete/
  */
 export function useAddressAutocomplete(
   options: UseAddressAutocompleteOptions = {}
 ): UseAddressAutocompleteReturn {
   const {
-    debounceMs = 400,
+    debounceMs = 300,
     minChars = 5,
     maxResults = 5,
   } = options;
@@ -189,10 +163,10 @@ export function useAddressAutocomplete(
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastSearchRef = useRef<string>('');
-  const lastRequestTimeRef = useRef<number>(0);
 
-  // Minimum time between API requests (Nominatim requires 1 req/sec)
-  const MIN_REQUEST_INTERVAL_MS = 1000;
+  // Get API key from environment (free tier: 3,000 requests/day)
+  // Register at https://myprojects.geoapify.com/ to get a key
+  const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined;
 
   const clear = useCallback(() => {
     setSuggestions([]);
@@ -239,44 +213,35 @@ export function useAddressAutocomplete(
 
     // Set loading state after a short delay to avoid flicker
     debounceTimerRef.current = setTimeout(async () => {
+      // Check if API key is configured
+      if (!apiKey) {
+        console.warn('Geoapify API key not configured. Set VITE_GEOAPIFY_API_KEY environment variable.');
+        setError('Address lookup not configured. Please enter address manually.');
+        setIsLoading(false);
+        return;
+      }
+
       lastSearchRef.current = query;
       setIsLoading(true);
       setError(null);
-
-      // Enforce rate limiting (Nominatim requires 1 req/sec max)
-      const now = Date.now();
-      const timeSinceLastRequest = now - lastRequestTimeRef.current;
-      if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
-        // Wait for the remaining time before making the request
-        await new Promise(resolve =>
-          setTimeout(resolve, MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest)
-        );
-      }
 
       // Create new abort controller for this request
       abortControllerRef.current = new AbortController();
 
       try {
-        // Update last request time
-        lastRequestTimeRef.current = Date.now();
-
-        // Nominatim API - search for US addresses
+        // Geoapify Autocomplete API - search for US addresses
         const params = new URLSearchParams({
-          q: query,
+          text: query,
           format: 'json',
-          addressdetails: '1',
-          countrycodes: 'us',
+          filter: 'countrycode:us',
           limit: String(maxResults),
+          apiKey: apiKey,
         });
 
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?${params}`,
+          `https://api.geoapify.com/v1/geocode/autocomplete?${params}`,
           {
             signal: abortControllerRef.current.signal,
-            headers: {
-              // Nominatim requires a User-Agent
-              'User-Agent': 'ModernAccounting/1.0',
-            },
           }
         );
 
@@ -284,11 +249,11 @@ export function useAddressAutocomplete(
           throw new Error(`Search failed: ${response.status}`);
         }
 
-        const results: NominatimResult[] = await response.json();
+        const data: GeoapifyResponse = await response.json();
 
         // Parse and filter results
-        const parsed = results
-          .map(parseNominatimResult)
+        const parsed = (data.results || [])
+          .map(parseGeoapifyResult)
           .filter((s): s is AddressSuggestion => s !== null && s.street !== '');
 
         // Cache the results
@@ -306,7 +271,7 @@ export function useAddressAutocomplete(
         setIsLoading(false);
       }
     }, debounceMs);
-  }, [debounceMs, minChars, maxResults]);
+  }, [debounceMs, minChars, maxResults, apiKey]);
 
   // Cleanup on unmount
   useEffect(() => {
