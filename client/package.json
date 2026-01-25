@@ -13,7 +13,12 @@
         "test:bank": "playwright test bank-transactions.spec.ts",
         "test:headed": "playwright test --headed",
         "test:unit": "vitest run",
-        "test:unit:watch": "vitest"
+        "test:unit:watch": "vitest",
+        "demo": "playwright test --config=playwright.demo.config.ts --project=demo-landscape",
+        "demo:vertical": "playwright test --config=playwright.demo.config.ts --project=demo-vertical",
+        "demo:square": "playwright test --config=playwright.demo.config.ts --project=demo-square",
+        "demo:headed": "playwright test --config=playwright.demo.config.ts --project=demo-landscape --headed",
+        "demo:report": "playwright show-report demo-report"
     },
     "dependencies": {
         "@azure/msal-browser": "^3.0.0",
