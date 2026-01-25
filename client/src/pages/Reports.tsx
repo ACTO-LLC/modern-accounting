@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard, FileText } from 'lucide-react';
 
 const reports = [
   {
@@ -50,6 +50,13 @@ const reports = [
     href: '/reports/expenses',
     icon: CreditCard,
     color: 'bg-amber-100 text-amber-600',
+  },
+  {
+    name: 'Tax Forms (W-2/1099)',
+    description: 'Generate W-2 forms for employees and 1099-NEC for contractors',
+    href: '/tax-forms',
+    icon: FileText,
+    color: 'bg-indigo-100 text-indigo-600',
   },
 ];
 
