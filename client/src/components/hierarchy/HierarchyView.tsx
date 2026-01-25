@@ -47,13 +47,17 @@ export default function HierarchyView({
 
   const getCardState = useCallback(
     (level: number, itemId: string): CardState => {
+      const item = levels[level]?.items.find(i => i.id === itemId);
+      if (item?.isDisabled) {
+        return 'disabled';
+      }
       const levelSelections = selectedIds[level];
       if (levelSelections?.has(itemId)) {
         return 'selected';
       }
       return 'default';
     },
-    [selectedIds]
+    [selectedIds, levels]
   );
 
   const handleCardClick = useCallback(

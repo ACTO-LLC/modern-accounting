@@ -26,6 +26,7 @@ export default function Breadcrumb({ items, onNavigate }: BreadcrumbProps) {
         onClick={() => onNavigate(-1)}
         className="flex items-center text-gray-500 hover:text-indigo-600 transition-colors"
         title="Back to list"
+        aria-label="Back to list"
       >
         <Home className="w-4 h-4" />
       </button>
