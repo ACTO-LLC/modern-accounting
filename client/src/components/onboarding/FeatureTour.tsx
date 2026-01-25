@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, CheckCircle } from 'lucide-react';
 import { useOnboarding, FeatureDetails } from '../../contexts/OnboardingContext';
+import { triggerSpotlight } from './SpotlightManager';
 import clsx from 'clsx';
 
 // Map menu paths to feature keys
@@ -63,6 +64,12 @@ export default function FeatureTour() {
       newSeen.add(currentFeatureKey);
       setSeenFeatures(newSeen);
       localStorage.setItem('ma-seen-feature-tours', JSON.stringify([...newSeen]));
+
+      // Trigger spotlight to highlight the menu item
+      // Small delay to let the modal close first
+      setTimeout(() => {
+        triggerSpotlight(currentFeatureKey);
+      }, 300);
     }
     setShowTour(false);
     setFeatureDetails(null);

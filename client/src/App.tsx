@@ -102,6 +102,7 @@ import OnboardingWelcome from './components/onboarding/OnboardingWelcome';
 import FeatureTour from './components/onboarding/FeatureTour';
 import OnboardingNotifications from './components/onboarding/OnboardingNotifications';
 import MiltonOnboardingHelper from './components/onboarding/MiltonOnboardingHelper';
+import SpotlightManager from './components/onboarding/SpotlightManager';
 
 const queryClient = new QueryClient();
 
@@ -218,6 +219,7 @@ function AppContent() {
       <FeatureTour />
       <OnboardingNotifications />
       <MiltonOnboardingHelper />
+      <SpotlightManager />
     </BrowserRouter>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RefreshCw, CheckCircle, BookOpen, Eye } from 'lucide-react';
+import { resetSpotlights } from './SpotlightManager';
 
 export default function OnboardingSettings() {
   const { status, resetOnboarding, showAllFeatures, learningPath, isLoading } = useOnboarding();
@@ -14,6 +15,10 @@ export default function OnboardingSettings() {
 
     try {
       setIsResetting(true);
+      // Also reset spotlight tracking and feature tours
+      localStorage.removeItem('ma-seen-feature-tours');
+      localStorage.removeItem('ma-milton-feature-help');
+      resetSpotlights();
       await resetOnboarding();
     } catch (error) {
       console.error('Failed to reset onboarding:', error);

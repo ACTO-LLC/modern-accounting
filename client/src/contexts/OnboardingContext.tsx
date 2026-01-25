@@ -388,11 +388,8 @@ export function useOnboarding() {
   return context;
 }
 
-// Items that are always visible regardless of onboarding state
-const ALWAYS_VISIBLE_ITEMS = new Set(['dashboard', 'settings']);
-
 // Hook for checking feature access in nav items
-export function useFeatureAccess(featureKey: string | undefined, itemId?: string) {
+export function useFeatureAccess(featureKey: string | undefined) {
   const { isFeatureAccessible, getFeatureStatus, isLoading, status } = useOnboarding();
 
   // If onboarding is not loaded yet, allow access (don't block while loading)
