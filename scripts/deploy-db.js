@@ -393,7 +393,7 @@ async function main() {
   try {
     // Determine deployment mode
     const sqlPackageAvailable = findSqlPackage() !== null;
-    const canBuild = canBuildSqlProj();
+    canBuildSqlProj(); // Check if sqlproj can be built (logs warning if not)
 
     if (forceSqlPackage) {
       if (!sqlPackageAvailable) {
