@@ -22,9 +22,40 @@ export interface Employee {
   PayFrequency: string;
   FederalFilingStatus: string;
   FederalAllowances: number;
-  StateCode?: string;
+  StateCode?: string;  // Primary/resident state (legacy support)
   StateFilingStatus?: string;
   StateAllowances: number;
+  ResidentState?: string;  // Employee's state of residence for reciprocity
+}
+
+/**
+ * Work state allocation for multi-state employees
+ */
+export interface WorkStateAllocation {
+  stateCode: string;
+  percentage: number;  // 0-100
+  isPrimary: boolean;
+}
+
+/**
+ * State tax reciprocity agreement
+ */
+export interface ReciprocityAgreement {
+  residentState: string;
+  workState: string;
+  reciprocityType: 'Full' | 'Partial' | 'Conditional';
+}
+
+/**
+ * Per-state withholding breakdown for multi-state employees
+ */
+export interface StateWithholdingBreakdown {
+  stateCode: string;
+  grossWages: number;
+  percentage: number;
+  stateWithholding: number;
+  reciprocityApplied: boolean;
+  reciprocityStateCode?: string;  // If reciprocity, which state gets the tax
 }
 
 export interface PayStubCalculation {
@@ -37,6 +68,7 @@ export interface PayStubCalculation {
   grossPay: number;
   federalWithholding: number;
   stateWithholding: number;
+  stateWithholdingBreakdown?: StateWithholdingBreakdown[];  // Per-state breakdown for multi-state
   socialSecurity: number;
   medicare: number;
   otherDeductions: number;
@@ -150,7 +182,7 @@ export function calculateFederalWithholding(
 }
 
 /**
- * Calculate state income tax withholding
+ * Calculate state income tax withholding for a single state
  */
 export function calculateStateWithholding(
   grossPay: number,
@@ -177,7 +209,7 @@ export function calculateStateWithholding(
   // For simplicity, use the flat rate or top marginal rate
   // In production, you would fetch the actual brackets from the database
   // and calculate progressively for states with graduated rates
-  let effectiveRate = stateInfo.rate;
+  const effectiveRate = stateInfo.rate;
 
   // Apply a simplified allowance reduction for state tax
   const allowanceReduction = allowances * 2000; // Simplified
@@ -190,6 +222,96 @@ export function calculateStateWithholding(
   const periodTax = annualTax / periodsPerYear;
 
   return Math.round(periodTax * 100) / 100;
+}
+
+/**
+ * Check if reciprocity agreement exists between two states
+ */
+export function checkReciprocity(
+  residentState: string,
+  workState: string,
+  reciprocityAgreements: ReciprocityAgreement[]
+): ReciprocityAgreement | undefined {
+  return reciprocityAgreements.find(
+    agreement =>
+      agreement.residentState === residentState &&
+      agreement.workState === workState
+  );
+}
+
+/**
+ * Calculate multi-state withholding for employees working in multiple states
+ * Handles pro-rata allocation and reciprocity agreements
+ */
+export function calculateMultiStateWithholding(
+  grossPay: number,
+  payFrequency: string,
+  workStates: WorkStateAllocation[],
+  residentState: string,
+  filingStatus: string,
+  allowances: number = 0,
+  reciprocityAgreements: ReciprocityAgreement[] = []
+): { totalWithholding: number; breakdown: StateWithholdingBreakdown[] } {
+  // Validate percentages sum to 100
+  const totalPercentage = workStates.reduce((sum, ws) => sum + ws.percentage, 0);
+  if (Math.abs(totalPercentage - 100) > 0.01) {
+    console.warn(`Work state percentages sum to ${totalPercentage}, expected 100`);
+  }
+
+  const breakdown: StateWithholdingBreakdown[] = [];
+  let totalWithholding = 0;
+
+  for (const workState of workStates) {
+    // Calculate wages allocated to this state
+    const allocatedWages = (grossPay * workState.percentage) / 100;
+
+    // Check for reciprocity agreement
+    const reciprocity = checkReciprocity(residentState, workState.stateCode, reciprocityAgreements);
+
+    let stateWithholding = 0;
+    let reciprocityApplied = false;
+    let reciprocityStateCode: string | undefined;
+
+    if (reciprocity && reciprocity.reciprocityType === 'Full') {
+      // Full reciprocity: tax goes to resident state, not work state
+      reciprocityApplied = true;
+      reciprocityStateCode = residentState;
+
+      // Calculate tax for resident state on these wages
+      stateWithholding = calculateStateWithholding(
+        allocatedWages,
+        payFrequency,
+        residentState,
+        filingStatus,
+        Math.round(allowances * workState.percentage / 100)  // Pro-rate allowances
+      );
+    } else {
+      // No reciprocity: tax to work state
+      stateWithholding = calculateStateWithholding(
+        allocatedWages,
+        payFrequency,
+        workState.stateCode,
+        filingStatus,
+        Math.round(allowances * workState.percentage / 100)  // Pro-rate allowances
+      );
+    }
+
+    breakdown.push({
+      stateCode: workState.stateCode,
+      grossWages: Math.round(allocatedWages * 100) / 100,
+      percentage: workState.percentage,
+      stateWithholding,
+      reciprocityApplied,
+      reciprocityStateCode,
+    });
+
+    totalWithholding += stateWithholding;
+  }
+
+  return {
+    totalWithholding: Math.round(totalWithholding * 100) / 100,
+    breakdown,
+  };
 }
 
 /**
@@ -238,7 +360,16 @@ export function calculateMedicare(
 }
 
 /**
+ * Options for multi-state pay stub calculation
+ */
+export interface MultiStatePayStubOptions {
+  workStates?: WorkStateAllocation[];
+  reciprocityAgreements?: ReciprocityAgreement[];
+}
+
+/**
  * Calculate complete pay stub for an employee
+ * Supports both single-state (legacy) and multi-state employees
  */
 export function calculatePayStub(
   employee: Employee,
@@ -247,7 +378,8 @@ export function calculatePayStub(
   otherEarnings: number = 0,
   otherDeductions: number = 0,
   ytdTotals: YTDTotals = { grossPay: 0, federalWithholding: 0, stateWithholding: 0, socialSecurity: 0, medicare: 0, netPay: 0 },
-  payDate: Date = new Date()
+  payDate: Date = new Date(),
+  multiStateOptions?: MultiStatePayStubOptions
 ): PayStubCalculation {
   // Calculate gross pay
   const { regularPay, overtimePay, grossPay } = calculateGrossPay(
@@ -266,13 +398,34 @@ export function calculatePayStub(
     payDate
   );
 
-  const stateWithholding = calculateStateWithholding(
-    grossPay,
-    employee.PayFrequency,
-    employee.StateCode,
-    employee.StateFilingStatus || employee.FederalFilingStatus,
-    employee.StateAllowances
-  );
+  // State withholding - check for multi-state or single-state
+  let stateWithholding: number;
+  let stateWithholdingBreakdown: StateWithholdingBreakdown[] | undefined;
+
+  if (multiStateOptions?.workStates && multiStateOptions.workStates.length > 0) {
+    // Multi-state employee
+    const residentState = employee.ResidentState || employee.StateCode || '';
+    const result = calculateMultiStateWithholding(
+      grossPay,
+      employee.PayFrequency,
+      multiStateOptions.workStates,
+      residentState,
+      employee.StateFilingStatus || employee.FederalFilingStatus,
+      employee.StateAllowances,
+      multiStateOptions.reciprocityAgreements || []
+    );
+    stateWithholding = result.totalWithholding;
+    stateWithholdingBreakdown = result.breakdown;
+  } else {
+    // Single-state employee (legacy behavior)
+    stateWithholding = calculateStateWithholding(
+      grossPay,
+      employee.PayFrequency,
+      employee.StateCode,
+      employee.StateFilingStatus || employee.FederalFilingStatus,
+      employee.StateAllowances
+    );
+  }
 
   const socialSecurity = calculateSocialSecurity(
     grossPay,
@@ -298,6 +451,7 @@ export function calculatePayStub(
     grossPay,
     federalWithholding,
     stateWithholding,
+    stateWithholdingBreakdown,
     socialSecurity,
     medicare,
     otherDeductions,

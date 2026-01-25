@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../lib/api';
 import EmployeeForm, { EmployeeFormData } from '../components/EmployeeForm';
+import EmployeeWorkStates from '../components/EmployeeWorkStates';
 
 export default function EditEmployee() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showWorkStates, setShowWorkStates] = useState(false);
 
   const { data: employee, isLoading, error } = useQuery({
     queryKey: ['employee', id],
@@ -61,12 +65,50 @@ export default function EditEmployee() {
   if (error || !employee) return <div className="p-4 text-red-600">Error loading employee</div>;
 
   return (
-    <EmployeeForm
-      title="Edit Employee"
-      initialValues={employee}
-      onSubmit={(data) => mutation.mutateAsync(data)}
-      isSubmitting={mutation.isPending}
-      submitButtonText="Update Employee"
-    />
+    <div className="max-w-4xl mx-auto space-y-6">
+      <EmployeeForm
+        title="Edit Employee"
+        initialValues={employee}
+        onSubmit={(data) => mutation.mutateAsync(data)}
+        isSubmitting={mutation.isPending}
+        submitButtonText="Update Employee"
+      />
+
+      {/* Multi-State Work Locations Section */}
+      {id && (
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowWorkStates(!showWorkStates)}
+            className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <div>
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                Multi-State Work Locations
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Configure work state allocations for employees working across multiple states
+              </p>
+            </div>
+            {showWorkStates ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+
+          {showWorkStates && (
+            <div className="px-6 pb-6 border-t dark:border-gray-700">
+              <div className="pt-4">
+                <EmployeeWorkStates
+                  employeeId={id}
+                  residentState={employee?.State || employee?.StateCode}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

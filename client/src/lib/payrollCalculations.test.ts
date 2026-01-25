@@ -491,3 +491,182 @@ describe('Full Pay Stub Calculation Integration', () => {
     expect(payStub.federalWithholding).toBeGreaterThan(0); // Should still have federal
   });
 });
+
+// =============================================================================
+// TEST 6: Multi-State Tax Withholding (Issue #121)
+// =============================================================================
+describe('Multi-State Tax Withholding', () => {
+  it('should calculate pro-rata state taxes for multi-state employee', () => {
+    const employee = createEmployee({
+      PayType: 'Salary',
+      PayRate: 100000,
+      PayFrequency: 'Biweekly',
+      ResidentState: 'CA',
+    });
+
+    const workStates = [
+      { stateCode: 'CA', percentage: 60, isPrimary: true },
+      { stateCode: 'NV', percentage: 40, isPrimary: false },  // Nevada has no state tax
+    ];
+
+    const payStub = calculatePayStub(
+      employee,
+      80,
+      0,
+      0,
+      0,
+      { grossPay: 0, federalWithholding: 0, stateWithholding: 0, socialSecurity: 0, medicare: 0, netPay: 0 },
+      new Date('2024-06-15'),
+      { workStates }
+    );
+
+    // Should have state withholding breakdown
+    expect(payStub.stateWithholdingBreakdown).toBeDefined();
+    expect(payStub.stateWithholdingBreakdown).toHaveLength(2);
+
+    // CA portion should have tax, NV portion should be 0
+    const caBreakdown = payStub.stateWithholdingBreakdown?.find(b => b.stateCode === 'CA');
+    const nvBreakdown = payStub.stateWithholdingBreakdown?.find(b => b.stateCode === 'NV');
+
+    expect(caBreakdown?.stateWithholding).toBeGreaterThan(0);
+    expect(nvBreakdown?.stateWithholding).toBe(0);
+
+    // Total should equal the sum
+    const expectedTotal = (caBreakdown?.stateWithholding || 0) + (nvBreakdown?.stateWithholding || 0);
+    expect(payStub.stateWithholding).toBeCloseTo(expectedTotal, 2);
+  });
+
+  it('should apply reciprocity agreements correctly', () => {
+    const employee = createEmployee({
+      PayType: 'Salary',
+      PayRate: 100000,
+      PayFrequency: 'Biweekly',
+      ResidentState: 'PA',  // Pennsylvania resident
+    });
+
+    const workStates = [
+      { stateCode: 'PA', percentage: 50, isPrimary: true },
+      { stateCode: 'NJ', percentage: 50, isPrimary: false },  // PA-NJ have reciprocity
+    ];
+
+    const reciprocityAgreements = [
+      { residentState: 'PA', workState: 'NJ', reciprocityType: 'Full' as const },
+    ];
+
+    const payStub = calculatePayStub(
+      employee,
+      80,
+      0,
+      0,
+      0,
+      { grossPay: 0, federalWithholding: 0, stateWithholding: 0, socialSecurity: 0, medicare: 0, netPay: 0 },
+      new Date('2024-06-15'),
+      { workStates, reciprocityAgreements }
+    );
+
+    // NJ breakdown should show reciprocity applied
+    const njBreakdown = payStub.stateWithholdingBreakdown?.find(b => b.stateCode === 'NJ');
+    expect(njBreakdown?.reciprocityApplied).toBe(true);
+    expect(njBreakdown?.reciprocityStateCode).toBe('PA');
+  });
+
+  it('should handle 100% in single state like legacy behavior', () => {
+    const employee = createEmployee({
+      PayType: 'Salary',
+      PayRate: 100000,
+      PayFrequency: 'Biweekly',
+      StateCode: 'CA',
+      ResidentState: 'CA',
+    });
+
+    const workStates = [
+      { stateCode: 'CA', percentage: 100, isPrimary: true },
+    ];
+
+    const multiStatePayStub = calculatePayStub(
+      employee,
+      80,
+      0,
+      0,
+      0,
+      { grossPay: 0, federalWithholding: 0, stateWithholding: 0, socialSecurity: 0, medicare: 0, netPay: 0 },
+      new Date('2024-06-15'),
+      { workStates }
+    );
+
+    const legacyPayStub = calculatePayStub(
+      employee,
+      80,
+      0,
+      0,
+      0,
+      { grossPay: 0, federalWithholding: 0, stateWithholding: 0, socialSecurity: 0, medicare: 0, netPay: 0 },
+      new Date('2024-06-15')
+    );
+
+    // State withholding should be the same
+    expect(multiStatePayStub.stateWithholding).toBeCloseTo(legacyPayStub.stateWithholding, 2);
+  });
+
+  it('should handle all no-tax states correctly', () => {
+    const employee = createEmployee({
+      PayType: 'Salary',
+      PayRate: 100000,
+      PayFrequency: 'Biweekly',
+      ResidentState: 'TX',
+    });
+
+    const workStates = [
+      { stateCode: 'TX', percentage: 50, isPrimary: true },
+      { stateCode: 'FL', percentage: 30, isPrimary: false },
+      { stateCode: 'NV', percentage: 20, isPrimary: false },
+    ];
+
+    const payStub = calculatePayStub(
+      employee,
+      80,
+      0,
+      0,
+      0,
+      { grossPay: 0, federalWithholding: 0, stateWithholding: 0, socialSecurity: 0, medicare: 0, netPay: 0 },
+      new Date('2024-06-15'),
+      { workStates }
+    );
+
+    // All states have no tax, so total should be 0
+    expect(payStub.stateWithholding).toBe(0);
+    expect(payStub.stateWithholdingBreakdown?.every(b => b.stateWithholding === 0)).toBe(true);
+  });
+
+  it('should properly allocate gross wages by percentage', () => {
+    const employee = createEmployee({
+      PayType: 'Salary',
+      PayRate: 52000, // $2000/biweekly
+      PayFrequency: 'Biweekly',
+      ResidentState: 'CA',
+    });
+
+    const workStates = [
+      { stateCode: 'CA', percentage: 75, isPrimary: true },
+      { stateCode: 'OR', percentage: 25, isPrimary: false },
+    ];
+
+    const payStub = calculatePayStub(
+      employee,
+      80,
+      0,
+      0,
+      0,
+      { grossPay: 0, federalWithholding: 0, stateWithholding: 0, socialSecurity: 0, medicare: 0, netPay: 0 },
+      new Date('2024-06-15'),
+      { workStates }
+    );
+
+    // Gross pay is $2000, so 75% = $1500, 25% = $500
+    const caBreakdown = payStub.stateWithholdingBreakdown?.find(b => b.stateCode === 'CA');
+    const orBreakdown = payStub.stateWithholdingBreakdown?.find(b => b.stateCode === 'OR');
+
+    expect(caBreakdown?.grossWages).toBe(1500);
+    expect(orBreakdown?.grossWages).toBe(500);
+  });
+});
