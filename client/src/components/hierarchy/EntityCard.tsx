@@ -19,9 +19,9 @@ const statusVariants = {
 };
 
 const cardStateStyles = {
-  default: 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md',
-  hover: 'bg-white border-indigo-300 shadow-md',
-  selected: 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-200',
+  default: 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500',
+  hover: 'bg-white border-indigo-300 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500',
+  selected: 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-200 focus:outline-none',
   disabled: 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed',
 };
 
