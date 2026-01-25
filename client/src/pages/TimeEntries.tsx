@@ -221,7 +221,7 @@ export default function TimeEntries() {
         </div>
       ) : (
         /* List View */
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div className="bg-white shadow overflow-x-auto sm:rounded-lg">
           {weekEntries.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="mx-auto h-12 w-12 text-gray-400" />

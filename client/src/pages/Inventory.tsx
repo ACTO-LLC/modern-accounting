@@ -430,7 +430,7 @@ export default function Inventory() {
           </div>
 
           {/* Inventory Table */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -525,7 +525,7 @@ export default function Inventory() {
 
       {/* Transactions View */}
       {viewMode === 'transactions' && (
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
           {loadingTransactions ? (
             <div className="p-4">Loading transactions...</div>
           ) : (
@@ -600,7 +600,7 @@ export default function Inventory() {
 
       {/* Locations View */}
       {viewMode === 'locations' && (
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
           {loadingLocations ? (
             <div className="p-4">Loading locations...</div>
           ) : (

@@ -332,7 +332,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
           {headerActions}
         </div>
       )}
-      <div style={{ height, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div style={{ height, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
         <ThemeProvider theme={dataGridTheme}>
           <DataGrid
             rows={rows}
@@ -359,6 +359,13 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
             disableRowSelectionOnClick={disableRowSelectionOnClick}
             // Styling
             sx={{
+              // Enable horizontal scrolling when columns exceed container width
+              '& .MuiDataGrid-main': {
+                overflow: 'auto',
+              },
+              '& .MuiDataGrid-virtualScroller': {
+                overflow: 'auto !important',
+              },
               '& .MuiDataGrid-cell': {
                 color: '#111827 !important',
               },
