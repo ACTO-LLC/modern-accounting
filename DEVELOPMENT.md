@@ -69,10 +69,24 @@ docker compose down
 - User: `sa`
 - Password: `StrongPassword123!`
 
-### Run Migrations
+### Deploy Database Schema
 ```powershell
-cd scripts && node deploy-db.js
+# Auto-detect best deployment mode (SqlPackage or Node.js)
+node scripts/deploy-db.js
+
+# Force SqlPackage mode (recommended for production)
+node scripts/deploy-db.js --sqlpackage
+
+# Force Node.js mode (for environments without .NET SDK)
+node scripts/deploy-db.js --node
+
+# Generate deployment script only (doesn't apply changes)
+node scripts/deploy-db.js --script-only
 ```
+
+The deployment script supports two modes:
+- **SqlPackage mode**: Uses the SQL Server Database Project (`.sqlproj`) for incremental updates
+- **Node.js mode**: Falls back to running SQL scripts directly when SqlPackage is unavailable
 
 ## Environment Variables
 
