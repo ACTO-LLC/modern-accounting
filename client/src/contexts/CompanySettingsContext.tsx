@@ -10,6 +10,8 @@ export interface CompanySettings {
   phone: string;
   email: string;
   website: string;
+  taxId: string; // EIN (Employer Identification Number)
+  stateEmployerId: string; // State employer ID for W-2 forms
 }
 
 const defaultSettings: CompanySettings = {
@@ -22,6 +24,8 @@ const defaultSettings: CompanySettings = {
   phone: '',
   email: '',
   website: '',
+  taxId: '',
+  stateEmployerId: '',
 };
 
 interface CompanySettingsContextType {

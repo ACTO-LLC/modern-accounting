@@ -286,6 +286,52 @@ export default function CompanySettings() {
           </div>
         </div>
 
+        {/* Tax Information */}
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Tax Information</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Required for generating W-2 and 1099 tax forms.
+          </p>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label htmlFor="taxId" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                Employer ID (EIN)
+              </label>
+              <input
+                type="text"
+                id="taxId"
+                name="taxId"
+                value={formData.taxId || ''}
+                onChange={handleChange}
+                placeholder="XX-XXXXXXX"
+                maxLength={10}
+                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:text-white"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Federal Employer Identification Number (9 digits)
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="stateEmployerId" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                State Employer ID
+              </label>
+              <input
+                type="text"
+                id="stateEmployerId"
+                name="stateEmployerId"
+                value={formData.stateEmployerId || ''}
+                onChange={handleChange}
+                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:text-white"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                State-issued employer identification number for W-2 forms
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Save Message */}
         {saveMessage && (
           <div className={`rounded-md p-4 ${saveMessage.type === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
