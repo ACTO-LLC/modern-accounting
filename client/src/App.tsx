@@ -77,6 +77,10 @@ import SalesTaxLiability from './pages/reports/SalesTaxLiability';
 import TaxRates from './pages/TaxRates';
 import PlaidConnections from './pages/PlaidConnections';
 import UnifiedTransactions from './pages/UnifiedTransactions';
+import Payments from './pages/Payments';
+import NewPayment from './pages/NewPayment';
+import BillPayments from './pages/BillPayments';
+import NewBillPayment from './pages/NewBillPayment';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -167,6 +171,10 @@ function AppContent() {
             <Route path="tax-rates" element={<TaxRates />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="payments/new" element={<NewPayment />} />
+            <Route path="bill-payments" element={<BillPayments />} />
+            <Route path="bill-payments/new" element={<NewBillPayment />} />
           </Route>
         </Route>
       </Routes>
