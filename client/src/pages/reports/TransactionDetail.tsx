@@ -30,6 +30,7 @@ interface JournalEntryLine {
 
 interface TransactionDetail {
   date: string;
+  dateValue: Date; // For sorting
   type: string;
   num: string;
   name: string;
@@ -66,7 +67,7 @@ export default function TransactionDetail() {
     isLoading: journalEntriesLoading,
     error: journalEntriesError,
   } = useQuery({
-    queryKey: ['journal-entries'],
+    queryKey: ['journal-entries', startDate, endDate],
     queryFn: async () => {
       const r = await fetch('/api/journalentries');
       if (!r.ok) {
@@ -82,7 +83,7 @@ export default function TransactionDetail() {
     isLoading: linesLoading,
     error: linesError,
   } = useQuery({
-    queryKey: ['journal-entry-lines'],
+    queryKey: ['journal-entry-lines', startDate, endDate, selectedAccountId],
     queryFn: async () => {
       const r = await fetch('/api/journalentrylines');
       if (!r.ok) {
@@ -144,8 +145,10 @@ export default function TransactionDetail() {
       const entry = entryMap.get(line.JournalEntryId);
       if (!entry) return;
 
+      const transactionDate = new Date(entry.TransactionDate);
       const transaction: TransactionDetail = {
-        date: new Date(entry.TransactionDate).toLocaleDateString('en-US'),
+        date: transactionDate.toLocaleDateString('en-US'),
+        dateValue: transactionDate,
         type: 'Journal Entry',
         num: entry.Reference || entry.Id.slice(0, 8),
         name: entry.Description,
@@ -154,9 +157,10 @@ export default function TransactionDetail() {
         credit: line.Credit,
       };
 
-      const existing = accountTransactions.get(line.AccountId) || [];
-      existing.push(transaction);
-      accountTransactions.set(line.AccountId, existing);
+      if (!accountTransactions.has(line.AccountId)) {
+        accountTransactions.set(line.AccountId, []);
+      }
+      accountTransactions.get(line.AccountId)!.push(transaction);
     });
 
     // Build account groups with totals
@@ -186,12 +190,8 @@ export default function TransactionDetail() {
       if (!account) return;
 
       const transactions = accountTransactions.get(accountId) || [];
-      // Sort transactions by date
-      transactions.sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        return dateA.getTime() - dateB.getTime();
-      });
+      // Sort transactions by date using dateValue
+      transactions.sort((a, b) => a.dateValue.getTime() - b.dateValue.getTime());
 
       const totalDebits = transactions.reduce((sum, t) => sum + t.debit, 0);
       const totalCredits = transactions.reduce((sum, t) => sum + t.credit, 0);
