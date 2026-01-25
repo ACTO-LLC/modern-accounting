@@ -60,7 +60,8 @@ export async function getEnhancements(status?: Enhancement['status']): Promise<E
   if (!res.ok) {
     throw new Error('Failed to fetch enhancements');
   }
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.value || [];
 }
 
 /**
@@ -115,7 +116,8 @@ export async function getPendingDeployments(): Promise<Deployment[]> {
   if (!res.ok) {
     throw new Error('Failed to fetch deployments');
   }
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.value || [];
 }
 
 /**
@@ -126,7 +128,8 @@ export async function getDeployments(): Promise<Deployment[]> {
   if (!res.ok) {
     throw new Error('Failed to fetch deployments');
   }
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.value || [];
 }
 
 /**

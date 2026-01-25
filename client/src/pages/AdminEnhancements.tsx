@@ -134,8 +134,12 @@ export default function AdminEnhancements() {
     setActiveTab('deployments');
   }, []);
 
+  // Defensive: ensure arrays (API may return { value: [...] } or null)
+  const enhancementList = Array.isArray(enhancements) ? enhancements : [];
+  const deploymentList = Array.isArray(deployments) ? deployments : [];
+
   // Get approved enhancements for deployment scheduler
-  const approvedEnhancements = enhancements.filter(e => e.status === 'approved');
+  const approvedEnhancements = enhancementList.filter(e => e.status === 'approved');
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -160,7 +164,7 @@ export default function AdminEnhancements() {
             // Add badge for pending enhancements on "All Requests" tab
             let badge = null;
             if (tab.id === 'all') {
-              const pendingCount = enhancements.filter(e =>
+              const pendingCount = enhancementList.filter(e =>
                 e.status !== 'deployed' && e.status !== 'rejected'
               ).length;
               if (pendingCount > 0) {
@@ -174,7 +178,7 @@ export default function AdminEnhancements() {
 
             // Add badge for pending deployments
             if (tab.id === 'deployments') {
-              const pendingCount = deployments.filter(d => d.status === 'pending').length;
+              const pendingCount = deploymentList.filter(d => d.status === 'pending').length;
               if (pendingCount > 0) {
                 badge = (
                   <span className="ml-2 py-0.5 px-2 rounded-full text-xs font-medium bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400">
@@ -229,7 +233,7 @@ export default function AdminEnhancements() {
 
         {activeTab === 'all' && (
           <EnhancementList
-            enhancements={enhancements}
+            enhancements={enhancementList}
             isLoading={isLoadingEnhancements}
             onRefresh={handleRefreshEnhancements}
             onSelectEnhancement={handleSelectEnhancement}
@@ -238,7 +242,7 @@ export default function AdminEnhancements() {
 
         {activeTab === 'deployments' && (
           <DeploymentScheduler
-            deployments={deployments}
+            deployments={deploymentList}
             approvedEnhancements={approvedEnhancements}
             isLoading={isLoadingDeployments}
             onSchedule={handleScheduleDeployment}

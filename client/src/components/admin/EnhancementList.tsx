@@ -69,11 +69,11 @@ export function EnhancementList({ enhancements, isLoading, onRefresh, onSelectEn
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as Enhancement['status'] | 'all')}
-            className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="all">All Statuses ({enhancements.length})</option>
+            <option value="all" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">All Statuses ({enhancements.length})</option>
             {Object.entries(statusConfig).map(([status, config]) => (
-              <option key={status} value={status}>
+              <option key={status} value={status} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                 {config.label} ({statusCounts[status] || 0})
               </option>
             ))}
