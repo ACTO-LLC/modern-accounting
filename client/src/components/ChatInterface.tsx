@@ -223,9 +223,13 @@ function ProactiveSuggestionBanner({
   const routeDisplay = suggestion.route === '/' ? 'Dashboard' : suggestion.route.replace(/^\//, '').replace(/-/g, ' ').replace(/\//g, ' > ');
 
   return (
-    <div className="border-b border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-3">
+    <div
+      role="alert"
+      aria-live="polite"
+      className="border-b border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-3"
+    >
       <div className="flex items-start gap-2">
-        <Lightbulb className="w-5 h-5 text-indigo-500 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+        <Lightbulb className="w-5 h-5 text-indigo-500 dark:text-indigo-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">
             Suggestion for <span className="capitalize">{routeDisplay}</span>
@@ -233,17 +237,19 @@ function ProactiveSuggestionBanner({
           <p className="text-xs text-gray-600 dark:text-gray-400">
             I have context-aware help for this page. Would you like to see it?
           </p>
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2" role="group" aria-label="Suggestion actions">
             <button
               onClick={onAccept}
               disabled={disabled}
-              className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+              className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+              aria-label="Accept suggestion and show context-aware help"
             >
               Yes, show me
             </button>
             <button
               onClick={onDismiss}
-              className="text-xs px-3 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
+              className="text-xs px-3 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+              aria-label="Dismiss suggestion for this page"
             >
               Not now
             </button>
@@ -393,10 +399,27 @@ export default function ChatInterface() {
   const [pendingProactiveSuggestion, setPendingProactiveSuggestion] = useState<ProactiveSuggestion | null>(null);
   const [contextQuickActions, setContextQuickActions] = useState<string[]>([]);
   const lastRouteRef = useRef<string>('');
+  const lastIsOpenRef = useRef<boolean>(false);
 
-  // Track current route and update page context
+  // Cleanup abort controller on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Consolidated route tracking and proactive suggestion logic
+  // Handles both route changes and chat open/close state
   useEffect(() => {
     const currentRoute = location.pathname;
+    const routeChanged = currentRoute !== lastRouteRef.current;
+    const chatJustOpened = isOpen && !lastIsOpenRef.current;
+
+    // Update refs
+    lastRouteRef.current = currentRoute;
+    lastIsOpenRef.current = isOpen;
 
     // Parse entity from route (e.g., /customers/123/edit -> customer, 123)
     const routeParts = currentRoute.split('/').filter(Boolean);
@@ -434,9 +457,8 @@ export default function ChatInterface() {
       currentEntityId: entityId,
     });
 
-    // Check for proactive suggestion on route change
-    if (currentRoute !== lastRouteRef.current && isOpen) {
-      lastRouteRef.current = currentRoute;
+    // Check for proactive suggestion when route changes or chat opens
+    if (isOpen && (routeChanged || chatJustOpened)) {
       const suggestion = getProactiveSuggestion();
       if (suggestion) {
         setPendingProactiveSuggestion(suggestion);
@@ -446,42 +468,39 @@ export default function ChatInterface() {
         setContextQuickActions([]);
       }
     }
+
+    // Clear context quick actions when chat closes
+    if (!isOpen && lastIsOpenRef.current) {
+      setContextQuickActions([]);
+    }
   }, [location.pathname, isOpen, setPageContext, getProactiveSuggestion]);
 
-  // Check for proactive suggestion when chat opens
-  useEffect(() => {
-    if (isOpen && lastRouteRef.current !== location.pathname) {
-      lastRouteRef.current = location.pathname;
-      const suggestion = getProactiveSuggestion();
-      if (suggestion) {
-        setPendingProactiveSuggestion(suggestion);
-        setContextQuickActions(suggestion.quickActions || []);
-      }
-    }
-  }, [isOpen, location.pathname, getProactiveSuggestion]);
-
   // Handle accepting a proactive suggestion
+  // Uses the route from the suggestion itself to avoid stale state issues
   const handleAcceptProactiveSuggestion = useCallback(() => {
     if (pendingProactiveSuggestion) {
+      const routeToMark = pendingProactiveSuggestion.route;
       addMessage({
         role: 'assistant',
         content: pendingProactiveSuggestion.suggestion,
         isProactiveSuggestion: true,
       });
-      markRouteAsVisited(pageContext.currentRoute);
+      markRouteAsVisited(routeToMark);
       setPendingProactiveSuggestion(null);
     }
-  }, [pendingProactiveSuggestion, addMessage, markRouteAsVisited, pageContext.currentRoute]);
+  }, [pendingProactiveSuggestion, addMessage, markRouteAsVisited]);
 
   // Handle dismissing a proactive suggestion for this route
+  // Uses the route from the suggestion itself to avoid stale state issues
   const handleDismissProactiveSuggestion = useCallback(() => {
     if (pendingProactiveSuggestion) {
-      dismissSuggestionForRoute(pageContext.currentRoute);
-      markRouteAsVisited(pageContext.currentRoute);
+      const routeToMark = pendingProactiveSuggestion.route;
+      dismissSuggestionForRoute(routeToMark);
+      markRouteAsVisited(routeToMark);
       setPendingProactiveSuggestion(null);
       setContextQuickActions([]);
     }
-  }, [pendingProactiveSuggestion, dismissSuggestionForRoute, markRouteAsVisited, pageContext.currentRoute]);
+  }, [pendingProactiveSuggestion, dismissSuggestionForRoute, markRouteAsVisited]);
 
   // Handle clicks on internal links in chat messages
   const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
