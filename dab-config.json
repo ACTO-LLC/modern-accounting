@@ -203,6 +203,8 @@
                 "TaxRate": "TaxRate",
                 "TaxAmount": "TaxAmount",
                 "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
+                "BalanceDue": "BalanceDue",
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
@@ -231,6 +233,7 @@
                 "TaxRateId": "TaxRateId",
                 "TaxAmount": "TaxAmount",
                 "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
@@ -1518,12 +1521,49 @@
             }
         },
         "payments": {
+            "source": {
+                "object": "dbo.v_Payments",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "DepositAccountId": "DepositAccountId",
+                "DepositAccountName": "DepositAccountName",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "payments_write": {
             "source": "dbo.Payments",
             "permissions": [
                 {
                     "role": "anonymous",
                     "actions": [
-                        "*"
+                        "create",
+                        "update",
+                        "delete"
                     ]
                 }
             ],
@@ -1539,9 +1579,7 @@
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
-                "JournalEntryId": "JournalEntryId",
-                "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "JournalEntryId": "JournalEntryId"
             },
             "relationships": {
                 "Customer": {
@@ -1623,12 +1661,49 @@
             ]
         },
         "billpayments": {
+            "source": {
+                "object": "dbo.v_BillPayments",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentAccountName": "PaymentAccountName",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "billpayments_write": {
             "source": "dbo.BillPayments",
             "permissions": [
                 {
                     "role": "anonymous",
                     "actions": [
-                        "*"
+                        "create",
+                        "update",
+                        "delete"
                     ]
                 }
             ],
@@ -1644,9 +1719,7 @@
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
-                "JournalEntryId": "JournalEntryId",
-                "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "JournalEntryId": "JournalEntryId"
             },
             "relationships": {
                 "Vendor": {
