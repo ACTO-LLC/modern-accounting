@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, DollarSign, Receipt } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard } from 'lucide-react';
 
 const reports = [
   {
@@ -43,6 +43,13 @@ const reports = [
     href: '/reports/sales-tax',
     icon: Receipt,
     color: 'bg-rose-100 text-rose-600',
+  },
+  {
+    name: 'Expense Report',
+    description: 'Expenses grouped by category, vendor, or project',
+    href: '/reports/expenses',
+    icon: CreditCard,
+    color: 'bg-amber-100 text-amber-600',
   },
 ];
 

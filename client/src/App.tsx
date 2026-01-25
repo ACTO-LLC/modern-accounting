@@ -77,6 +77,11 @@ import SalesTaxLiability from './pages/reports/SalesTaxLiability';
 import TaxRates from './pages/TaxRates';
 import PlaidConnections from './pages/PlaidConnections';
 import UnifiedTransactions from './pages/UnifiedTransactions';
+import Expenses from './pages/Expenses';
+import NewExpense from './pages/NewExpense';
+import EditExpense from './pages/EditExpense';
+import Receipts from './pages/Receipts';
+import ExpenseReport from './pages/reports/ExpenseReport';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -134,6 +139,10 @@ function AppContent() {
             <Route path="purchase-orders" element={<PurchaseOrders />} />
             <Route path="purchase-orders/new" element={<NewPurchaseOrder />} />
             <Route path="purchase-orders/:id/edit" element={<EditPurchaseOrder />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="expenses/new" element={<NewExpense />} />
+            <Route path="expenses/:id/edit" element={<EditExpense />} />
+            <Route path="receipts" element={<Receipts />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/new" element={<NewProject />} />
             <Route path="projects/:id/edit" element={<EditProject />} />
@@ -164,6 +173,7 @@ function AppContent() {
             <Route path="paystubs/:id" element={<PayStubView />} />
             <Route path="reports/payroll-summary" element={<PayrollSummary />} />
             <Route path="reports/sales-tax" element={<SalesTaxLiability />} />
+            <Route path="reports/expenses" element={<ExpenseReport />} />
             <Route path="tax-rates" element={<TaxRates />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
