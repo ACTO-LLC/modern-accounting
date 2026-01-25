@@ -46,8 +46,10 @@ export default function CustomerHierarchy() {
   const { data: customer, isLoading: customerLoading, isError: customerError } = useQuery({
     queryKey: ['customer', id],
     queryFn: async () => {
-      const response = await api.get<Customer>(`/customers/Id/${id}`);
-      return response.data;
+      const response = await api.get<{ value: Customer[] }>(
+        `/customers?$filter=Id eq ${encodeURIComponent(id!)}`
+      );
+      return response.data.value[0];
     },
     enabled: !!id,
   });

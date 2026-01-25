@@ -46,8 +46,10 @@ export default function VendorHierarchy() {
   const { data: vendor, isLoading: vendorLoading, isError: vendorError } = useQuery({
     queryKey: ['vendor', id],
     queryFn: async () => {
-      const response = await api.get<Vendor>(`/vendors/Id/${id}`);
-      return response.data;
+      const response = await api.get<{ value: Vendor[] }>(
+        `/vendors?$filter=Id eq ${encodeURIComponent(id!)}`
+      );
+      return response.data.value[0];
     },
     enabled: !!id,
   });
