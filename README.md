@@ -67,6 +67,7 @@ Copilot reviews → Merge → Auto-deploy to staging
 | **Smart Categorization** | AI suggests categories for bank transactions |
 | **Feature Requests** | Describe changes in English → AI implements them |
 | **Self-Healing Migrations** | Database-driven mappings auto-correct issues |
+| **Guided Onboarding** | AI-powered progressive learning with Milton |
 
 ### Integrations
 | Integration | Capabilities |
@@ -107,6 +108,7 @@ cd modern-accounting
 | Client | http://localhost:5173 | React frontend |
 | Chat API | http://localhost:7071 | Express backend |
 | DAB API | http://localhost:5000 | GraphQL + REST |
+| MA MCP | http://localhost:5002 | Onboarding service |
 | SQL Server | localhost:14330 | Database |
 
 <details>
@@ -162,11 +164,14 @@ modern-accounting/
 ├── client/                 # React frontend
 │   ├── src/pages/         # 50+ page components
 │   ├── src/hooks/         # React Query hooks
+│   ├── src/components/onboarding/  # Guided onboarding UI
 │   └── tests/             # Playwright E2E tests
 ├── chat-api/              # Main Express backend
 │   ├── migration/         # QBO migration logic
 │   └── tests/             # Unit tests
 ├── monitor-agent/         # AI feature processor
+├── ma-mcp-server/         # Onboarding MCP server
+│   └── features/          # YAML feature definitions
 ├── email-api/             # Invoice emails
 ├── csv-import-api/        # Bank statement import
 ├── qbo-mcp-http-server/   # QuickBooks MCP
@@ -584,6 +589,7 @@ See [.env.example](.env.example) for all options.
 |----------|-------------|
 | [AI Feature System](docs/ai-feature-system.md) | Architecture deep-dive |
 | [AI Setup Guide](docs/ai-feature-setup.md) | Monitor agent configuration |
+| [Guided Onboarding](docs/guided-onboarding.md) | Progressive learning system |
 | [API Reference](docs/api-reference.md) | Endpoint documentation |
 | [AI Workflow Diagram](docs/ai-workflow-diagram.md) | Visual architecture |
 | [Development Guide](DEVELOPMENT.md) | Local setup details |
