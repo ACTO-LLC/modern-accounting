@@ -575,6 +575,240 @@ class PlaidService {
 
         return response.data;
     }
+
+    // =========================================================================
+    // Employee Bank Verification Methods (Direct Deposit)
+    // =========================================================================
+
+    /**
+     * Create a Link token for employee bank verification (uses Auth product)
+     * @param {string} employeeId - Employee ID for verification
+     */
+    async createVerificationLinkToken(employeeId) {
+        if (!this.client) {
+            throw new Error('Plaid client not initialized. Check PLAID_CLIENT_ID and PLAID_SECRET.');
+        }
+
+        try {
+            const response = await this.client.linkTokenCreate({
+                user: {
+                    client_user_id: `employee-${employeeId}`,
+                },
+                client_name: 'Modern Accounting',
+                products: [Products.Auth],  // Auth product for account/routing verification
+                country_codes: [CountryCode.Us],
+                language: 'en',
+            });
+
+            return {
+                success: true,
+                linkToken: response.data.link_token,
+                expiration: response.data.expiration,
+            };
+        } catch (error) {
+            console.error('Failed to create verification link token:', error.response?.data || error.message);
+            throw new Error('Failed to create verification link token: ' + (error.response?.data?.error_message || error.message));
+        }
+    }
+
+    /**
+     * Verify employee bank account using Plaid Auth
+     * @param {string} publicToken - Public token from Plaid Link
+     * @param {string} employeeId - Employee ID
+     * @param {object} metadata - Metadata from Plaid Link (institution, accounts)
+     */
+    async verifyEmployeeBankAccount(publicToken, employeeId, metadata) {
+        if (!this.client) {
+            throw new Error('Plaid client not initialized');
+        }
+
+        try {
+            console.log('Verifying bank account for employee:', employeeId);
+
+            // Exchange public token for access token
+            const exchangeResponse = await this.client.itemPublicTokenExchange({
+                public_token: publicToken,
+            });
+
+            const { access_token, item_id } = exchangeResponse.data;
+            console.log('Token exchange successful for verification, itemId:', item_id);
+
+            // Get auth data (routing/account numbers)
+            const authResponse = await this.client.authGet({
+                access_token: access_token,
+            });
+
+            const accounts = authResponse.data.accounts;
+            const numbers = authResponse.data.numbers;
+
+            if (!accounts || accounts.length === 0) {
+                throw new Error('No accounts found in Plaid response');
+            }
+
+            // Get the first checking/savings account
+            const account = accounts.find(a =>
+                a.type === 'depository' &&
+                (a.subtype === 'checking' || a.subtype === 'savings')
+            ) || accounts[0];
+
+            // Get the ACH numbers for this account
+            const achNumbers = numbers.ach?.find(n => n.account_id === account.account_id);
+
+            if (!achNumbers) {
+                throw new Error('Could not retrieve ACH routing/account numbers');
+            }
+
+            const institutionName = metadata?.institution?.name || 'Unknown Institution';
+
+            // Update employee with verified bank info
+            await axios.patch(`${DAB_API_URL}/employees_write/Id/${employeeId}`, {
+                BankRoutingNumber: achNumbers.routing,
+                BankAccountNumber: achNumbers.account,
+                BankAccountType: account.subtype === 'checking' ? 'Checking' : 'Savings',
+                PlaidItemId: item_id,
+                PlaidAccountId: account.account_id,
+                BankVerificationStatus: 'Verified',
+                BankVerifiedAt: new Date().toISOString(),
+                BankInstitutionName: institutionName,
+                UpdatedAt: new Date().toISOString(),
+            }, { headers: { 'Content-Type': 'application/json' } });
+
+            console.log('Employee bank account verified successfully');
+
+            return {
+                success: true,
+                employeeId,
+                status: 'Verified',
+                institutionName,
+                accountType: account.subtype,
+                accountMask: account.mask,
+            };
+        } catch (error) {
+            console.error('Bank verification error:', error.response?.data || error.message);
+
+            // Update employee with failed status
+            try {
+                await axios.patch(`${DAB_API_URL}/employees_write/Id/${employeeId}`, {
+                    BankVerificationStatus: 'Failed',
+                    UpdatedAt: new Date().toISOString(),
+                }, { headers: { 'Content-Type': 'application/json' } });
+            } catch (updateError) {
+                console.error('Failed to update employee verification status:', updateError.message);
+            }
+
+            throw new Error('Bank verification failed: ' + (error.response?.data?.error_message || error.message));
+        }
+    }
+
+    /**
+     * Get verification status for an employee
+     * @param {string} employeeId - Employee ID
+     */
+    async getEmployeeVerificationStatus(employeeId) {
+        try {
+            const response = await axios.get(`${DAB_API_URL}/employees?$filter=Id eq ${employeeId}`);
+            const employee = response.data?.value?.[0];
+
+            if (!employee) {
+                return { success: false, error: 'Employee not found' };
+            }
+
+            return {
+                success: true,
+                employeeId,
+                status: employee.BankVerificationStatus || 'Unverified',
+                verifiedAt: employee.BankVerifiedAt,
+                institutionName: employee.BankInstitutionName,
+                hasBankInfo: !!(employee.BankRoutingNumber && employee.BankAccountNumberMasked),
+            };
+        } catch (error) {
+            console.error('Failed to get verification status:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Remove bank verification from employee (revoke Plaid access)
+     * @param {string} employeeId - Employee ID
+     */
+    async removeEmployeeBankVerification(employeeId) {
+        try {
+            // Get employee to find Plaid item
+            const response = await axios.get(`${DAB_API_URL}/employees?$filter=Id eq ${employeeId}`);
+            const employee = response.data?.value?.[0];
+
+            if (!employee) {
+                return { success: false, error: 'Employee not found' };
+            }
+
+            // If there's a Plaid item, try to remove it
+            if (employee.PlaidItemId && this.client) {
+                try {
+                    const connection = await this.getConnectionByItemId(employee.PlaidItemId);
+                    if (connection) {
+                        const accessToken = this.decryptToken(connection.AccessToken);
+                        await this.client.itemRemove({
+                            access_token: accessToken,
+                        });
+                        console.log('Plaid item removed for employee:', employeeId);
+                    }
+                } catch (plaidError) {
+                    console.warn('Could not remove Plaid item:', plaidError.message);
+                    // Continue to clear employee data even if Plaid removal fails
+                }
+            }
+
+            // Clear verification data from employee
+            await axios.patch(`${DAB_API_URL}/employees_write/Id/${employeeId}`, {
+                PlaidItemId: null,
+                PlaidAccountId: null,
+                BankVerificationStatus: 'Unverified',
+                BankVerifiedAt: null,
+                BankInstitutionName: null,
+                // Note: We keep the bank routing/account numbers as they may have been manually entered
+                UpdatedAt: new Date().toISOString(),
+            }, { headers: { 'Content-Type': 'application/json' } });
+
+            return { success: true, message: 'Bank verification removed' };
+        } catch (error) {
+            console.error('Failed to remove bank verification:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Get list of employees with unverified bank accounts (for pay run warnings)
+     */
+    async getUnverifiedEmployees() {
+        try {
+            // Get active employees with direct deposit but not verified
+            const response = await axios.get(
+                `${DAB_API_URL}/employees?$filter=Status eq 'Active'`
+            );
+            const employees = response.data?.value || [];
+
+            // Filter to those with bank info but not verified
+            const unverified = employees.filter(emp =>
+                emp.BankRoutingNumber &&
+                emp.BankAccountNumberMasked &&
+                emp.BankVerificationStatus !== 'Verified'
+            );
+
+            return {
+                success: true,
+                count: unverified.length,
+                employees: unverified.map(emp => ({
+                    id: emp.Id,
+                    name: emp.FullName || `${emp.FirstName} ${emp.LastName}`,
+                    employeeNumber: emp.EmployeeNumber,
+                    verificationStatus: emp.BankVerificationStatus || 'Unverified',
+                })),
+            };
+        } catch (error) {
+            console.error('Failed to get unverified employees:', error.message);
+            throw error;
+        }
+    }
 }
 
 export const plaidService = new PlaidService();

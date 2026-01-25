@@ -2078,6 +2078,14 @@
                 "State": "State",
                 "ZipCode": "ZipCode",
                 "Status": "Status",
+                "BankRoutingNumber": "BankRoutingNumber",
+                "BankAccountNumberMasked": "BankAccountNumberMasked",
+                "BankAccountType": "BankAccountType",
+                "PlaidItemId": "PlaidItemId",
+                "PlaidAccountId": "PlaidAccountId",
+                "BankVerificationStatus": "BankVerificationStatus",
+                "BankVerifiedAt": "BankVerifiedAt",
+                "BankInstitutionName": "BankInstitutionName",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             }
@@ -2120,7 +2128,12 @@
                 "City": "City",
                 "State": "State",
                 "ZipCode": "ZipCode",
-                "Status": "Status"
+                "Status": "Status",
+                "PlaidItemId": "PlaidItemId",
+                "PlaidAccountId": "PlaidAccountId",
+                "BankVerificationStatus": "BankVerificationStatus",
+                "BankVerifiedAt": "BankVerifiedAt",
+                "BankInstitutionName": "BankInstitutionName"
             },
             "key-fields": [
                 "Id"

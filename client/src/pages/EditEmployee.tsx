@@ -72,6 +72,10 @@ export default function EditEmployee() {
         onSubmit={(data) => mutation.mutateAsync(data)}
         isSubmitting={mutation.isPending}
         submitButtonText="Update Employee"
+        employeeId={id}
+        bankVerificationStatus={employee?.BankVerificationStatus}
+        bankInstitutionName={employee?.BankInstitutionName}
+        bankVerifiedAt={employee?.BankVerifiedAt}
       />
 
       {/* Multi-State Work Locations Section */}

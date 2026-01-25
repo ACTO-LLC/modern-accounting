@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Calculator, CheckCircle, DollarSign, AlertCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Calculator, CheckCircle, DollarSign, AlertCircle, FileText, ShieldAlert, ShieldCheck } from 'lucide-react';
 import api from '../lib/api';
 import {
   calculatePayStub,
@@ -11,6 +11,13 @@ import {
   PayStubCalculation,
   YTDTotals,
 } from '../lib/payrollCalculations';
+
+// Extended Employee type with bank verification fields
+interface EmployeeWithVerification extends Employee {
+  BankVerificationStatus?: string;
+  BankRoutingNumber?: string;
+  BankInstitutionName?: string;
+}
 
 interface PayRun {
   Id: string;
@@ -72,14 +79,20 @@ export default function PayRunDetail() {
     enabled: !!id
   });
 
-  // Fetch active employees
+  // Fetch active employees (with verification status)
   const { data: employees, isLoading: employeesLoading } = useQuery({
     queryKey: ['employees', 'active'],
     queryFn: async () => {
-      const response = await api.get<{ value: Employee[] }>(`/employees?$filter=Status eq 'Active'&$orderby=LastName,FirstName`);
+      const response = await api.get<{ value: EmployeeWithVerification[] }>(`/employees?$filter=Status eq 'Active'&$orderby=LastName,FirstName`);
       return response.data.value;
     }
   });
+
+  // Calculate unverified employees with direct deposit
+  const unverifiedEmployees = employees?.filter(emp =>
+    emp.BankRoutingNumber &&
+    emp.BankVerificationStatus !== 'Verified'
+  ) || [];
 
   // Fetch existing pay stubs for this pay run
   const { data: existingStubs } = useQuery({
@@ -384,6 +397,42 @@ export default function PayRunDetail() {
       </div>
 
       {/* Actions */}
+      {/* Warning: Unverified Bank Accounts */}
+      {unverifiedEmployees.length > 0 && (
+        <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Unverified Bank Accounts
+              </h3>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                {unverifiedEmployees.length} employee{unverifiedEmployees.length > 1 ? 's have' : ' has'} direct deposit enabled but{' '}
+                {unverifiedEmployees.length > 1 ? "haven't" : "hasn't"} verified their bank account.
+                ACH failures may occur without verification.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {unverifiedEmployees.slice(0, 5).map(emp => (
+                  <Link
+                    key={emp.Id}
+                    to={`/employees/${emp.Id}/edit`}
+                    className="inline-flex items-center gap-1 text-xs bg-amber-100 dark:bg-amber-800 text-amber-800 dark:text-amber-200 px-2 py-1 rounded hover:bg-amber-200 dark:hover:bg-amber-700"
+                  >
+                    <ShieldAlert className="w-3 h-3" />
+                    {emp.FirstName} {emp.LastName}
+                  </Link>
+                ))}
+                {unverifiedEmployees.length > 5 && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400">
+                    +{unverifiedEmployees.length - 5} more
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {canEdit && (
         <div className="flex gap-3 mb-6">
           <button
@@ -440,12 +489,29 @@ export default function PayRunDetail() {
                 const hours = employeeHours[emp.Id] || { regularHours: 0, overtimeHours: 0 };
                 const stub = calculatedStubs[emp.Id];
                 const existingStub = existingStubs?.find(s => s.EmployeeId === emp.Id);
+                const empWithVerification = emp as EmployeeWithVerification;
+                const isUnverified = empWithVerification.BankRoutingNumber && empWithVerification.BankVerificationStatus !== 'Verified';
 
                 return (
-                  <tr key={emp.Id}>
+                  <tr key={emp.Id} className={isUnverified ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''}>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{emp.FirstName} {emp.LastName}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{emp.EmployeeNumber}</div>
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{emp.FirstName} {emp.LastName}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{emp.EmployeeNumber}</div>
+                        </div>
+                        {empWithVerification.BankRoutingNumber && (
+                          empWithVerification.BankVerificationStatus === 'Verified' ? (
+                            <span title="Bank account verified">
+                              <ShieldCheck className="w-4 h-4 text-green-500" />
+                            </span>
+                          ) : (
+                            <span title="Bank account not verified">
+                              <ShieldAlert className="w-4 h-4 text-amber-500" />
+                            </span>
+                          )
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {emp.PayType}

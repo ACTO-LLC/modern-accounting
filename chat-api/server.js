@@ -4579,6 +4579,78 @@ app.post('/api/plaid/scheduler/run/:jobName', async (req, res) => {
 });
 
 // ============================================================================
+// Employee Bank Verification Endpoints (Plaid Auth)
+// ============================================================================
+
+// Create Plaid Link token for employee bank verification (uses Auth product)
+app.post('/api/plaid/verify-bank/link-token', async (req, res) => {
+    try {
+        const { employeeId } = req.body;
+        if (!employeeId) {
+            return res.status(400).json({ error: 'employeeId is required' });
+        }
+
+        // Create link token with Auth product for verification
+        const result = await plaidService.createVerificationLinkToken(employeeId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid verification link token error:', error);
+        res.status(500).json({ error: error.message || 'Failed to create verification link token' });
+    }
+});
+
+// Exchange public token and verify bank account for employee
+app.post('/api/plaid/verify-bank/exchange', async (req, res) => {
+    try {
+        const { publicToken, employeeId, metadata } = req.body;
+        if (!publicToken || !employeeId) {
+            return res.status(400).json({ error: 'publicToken and employeeId are required' });
+        }
+
+        const result = await plaidService.verifyEmployeeBankAccount(publicToken, employeeId, metadata);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid bank verification error:', error);
+        res.status(500).json({ error: error.message || 'Failed to verify bank account' });
+    }
+});
+
+// Get verification status for an employee
+app.get('/api/plaid/verify-bank/status/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const result = await plaidService.getEmployeeVerificationStatus(employeeId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid verification status error:', error);
+        res.status(500).json({ error: error.message || 'Failed to get verification status' });
+    }
+});
+
+// Remove bank verification from employee
+app.post('/api/plaid/verify-bank/remove/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const result = await plaidService.removeEmployeeBankVerification(employeeId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid verification removal error:', error);
+        res.status(500).json({ error: error.message || 'Failed to remove bank verification' });
+    }
+});
+
+// Get employees with unverified bank accounts (for pay run warning)
+app.get('/api/plaid/verify-bank/unverified-employees', async (req, res) => {
+    try {
+        const result = await plaidService.getUnverifiedEmployees();
+        res.json(result);
+    } catch (error) {
+        console.error('Unverified employees error:', error);
+        res.status(500).json({ error: error.message || 'Failed to get unverified employees' });
+    }
+});
+
+// ============================================================================
 // Transaction Learning Endpoints
 // ============================================================================
 
