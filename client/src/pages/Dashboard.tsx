@@ -52,6 +52,37 @@ interface Account {
   Type: string;
 }
 
+interface Invoice {
+  Id: string;
+  TotalAmount: number;
+  AmountPaid: number;
+  Status: string;
+  IssueDate: string;
+}
+
+interface Bill {
+  Id: string;
+  TotalAmount: number;
+  AmountPaid: number;
+  Status: string;
+  BillDate: string;
+}
+
+interface Expense {
+  Id: string;
+  TotalAmount: number;
+  Status: string;
+  ExpenseDate: string;
+}
+
+interface Payment {
+  Id: string;
+  TotalAmount: number;
+  PaymentDate: string;
+  Status: string;
+  Type: string;
+}
+
 export default function Dashboard() {
   // Fetch Journal Entries for Financials
   const { data: journalEntries } = useQuery({
@@ -102,14 +133,59 @@ export default function Dashboard() {
     }
   });
 
-  // Calculations
+  // Fetch Invoices for Revenue calculation
+  const { data: invoices } = useQuery({
+    queryKey: ['invoices-dashboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/invoices');
+      if (!response.ok) throw new Error('Failed to fetch invoices');
+      const data = await response.json();
+      return data.value as Invoice[];
+    }
+  });
+
+  // Fetch Bills for Expenses calculation
+  const { data: bills } = useQuery({
+    queryKey: ['bills-dashboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/bills');
+      if (!response.ok) throw new Error('Failed to fetch bills');
+      const data = await response.json();
+      return data.value as Bill[];
+    }
+  });
+
+  // Fetch Expenses
+  const { data: expenses } = useQuery({
+    queryKey: ['expenses-dashboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/expenses');
+      if (!response.ok) throw new Error('Failed to fetch expenses');
+      const data = await response.json();
+      return data.value as Expense[];
+    }
+  });
+
+  // Fetch Payments for Cash calculation
+  const { data: payments } = useQuery({
+    queryKey: ['payments-dashboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/payments');
+      if (!response.ok) throw new Error('Failed to fetch payments');
+      const data = await response.json();
+      return data.value as Payment[];
+    }
+  });
+
+  // Calculations - Use journal entries if available, otherwise fall back to transaction data
   let totalRevenue = 0;
   let totalExpenses = 0;
   let cashOnHand = 0;
 
   const accountMap = new Map(accounts?.map(a => [a.Id, a]) || []);
 
-  if (allLines && accounts) {
+  // Try to calculate from journal entries first (proper GL)
+  if (allLines && accounts && allLines.length > 0) {
     allLines.forEach(line => {
       const account = accountMap.get(line.AccountId);
       if (!account) return;
@@ -123,11 +199,44 @@ export default function Dashboard() {
         totalExpenses += line.Debit - line.Credit;
       }
       // Cash = Debits - Credits to Asset accounts (specifically Bank)
-      // Assuming 'Asset' type and maybe checking name or a subtype if available
       else if (account.Type === 'Asset' && (account.Name.includes('Bank') || account.Name.includes('Checking') || account.Name.includes('Cash'))) {
         cashOnHand += line.Debit - line.Credit;
       }
     });
+  } else {
+    // Fall back to transaction-based calculations if no journal entries
+    // Revenue from paid invoices
+    if (invoices) {
+      totalRevenue = invoices
+        .filter(inv => inv.Status !== 'Cancelled' && inv.Status !== 'Voided')
+        .reduce((sum, inv) => sum + (inv.AmountPaid || 0), 0);
+    }
+
+    // Expenses from bills and expenses
+    if (bills) {
+      totalExpenses += bills
+        .filter(bill => bill.Status !== 'Cancelled' && bill.Status !== 'Voided')
+        .reduce((sum, bill) => sum + (bill.AmountPaid || 0), 0);
+    }
+    if (expenses) {
+      totalExpenses += expenses
+        .filter(exp => exp.Status === 'Paid' || exp.Status === 'Approved')
+        .reduce((sum, exp) => sum + (exp.TotalAmount || 0), 0);
+    }
+
+    // Cash from payments
+    if (payments) {
+      const completedPayments = payments.filter(p => p.Status === 'Completed');
+      // Payments received (from customers)
+      const paymentsReceived = completedPayments
+        .filter(p => p.Type === 'Received' || p.Type === 'CustomerPayment')
+        .reduce((sum, p) => sum + (p.TotalAmount || 0), 0);
+      // Payments made (to vendors)
+      const paymentsMade = completedPayments
+        .filter(p => p.Type === 'Made' || p.Type === 'VendorPayment' || p.Type === 'BillPayment')
+        .reduce((sum, p) => sum + (p.TotalAmount || 0), 0);
+      cashOnHand = paymentsReceived - paymentsMade;
+    }
   }
 
   const netIncome = totalRevenue - totalExpenses;
@@ -140,28 +249,55 @@ export default function Dashboard() {
     d.setMonth(d.getMonth() - i);
     const month = d.toLocaleString('default', { month: 'short' });
     const year = d.getFullYear();
-    
-    // Calculate for this month
-    // This is expensive O(N*M) but fine for small datasets. 
-    // In production, use a SQL aggregation view.
+    const monthStart = new Date(year, d.getMonth(), 1);
+    const monthEnd = new Date(year, d.getMonth() + 1, 0);
+
     let monthRevenue = 0;
     let monthExpenses = 0;
 
-    if (allLines && journalEntries) {
-        // We need to link lines to dates. 
-        // Map EntryId -> Date
-        const entryDateMap = new Map(journalEntries.map(e => [e.Id, new Date(e.TransactionDate)]));
+    // Try journal entries first
+    if (allLines && journalEntries && allLines.length > 0) {
+      const entryDateMap = new Map(journalEntries.map(e => [e.Id, new Date(e.TransactionDate)]));
 
-        allLines.forEach(line => {
-            const date = entryDateMap.get(line.JournalEntryId as any); // Type assertion if needed
-            // Note: JournalEntryId might be missing in line interface above, verify schema
-            // Actually, line usually has JournalEntryId. Let's assume it does.
-            if (date && date.getMonth() === d.getMonth() && date.getFullYear() === year) {
-                const account = accountMap.get(line.AccountId);
-                if (account?.Type === 'Revenue') monthRevenue += line.Credit - line.Debit;
-                if (account?.Type === 'Expense') monthExpenses += line.Debit - line.Credit;
-            }
-        });
+      allLines.forEach(line => {
+        const date = entryDateMap.get(line.JournalEntryId as string);
+        if (date && date.getMonth() === d.getMonth() && date.getFullYear() === year) {
+          const account = accountMap.get(line.AccountId);
+          if (account?.Type === 'Revenue') monthRevenue += line.Credit - line.Debit;
+          if (account?.Type === 'Expense') monthExpenses += line.Debit - line.Credit;
+        }
+      });
+    } else {
+      // Fall back to transaction data
+      if (invoices) {
+        monthRevenue = invoices
+          .filter(inv => {
+            const issueDate = new Date(inv.IssueDate);
+            return inv.Status !== 'Cancelled' && inv.Status !== 'Voided' &&
+              issueDate >= monthStart && issueDate <= monthEnd;
+          })
+          .reduce((sum, inv) => sum + (inv.AmountPaid || 0), 0);
+      }
+
+      if (bills) {
+        monthExpenses += bills
+          .filter(bill => {
+            const billDate = new Date(bill.BillDate);
+            return bill.Status !== 'Cancelled' && bill.Status !== 'Voided' &&
+              billDate >= monthStart && billDate <= monthEnd;
+          })
+          .reduce((sum, bill) => sum + (bill.AmountPaid || 0), 0);
+      }
+
+      if (expenses) {
+        monthExpenses += expenses
+          .filter(exp => {
+            const expDate = new Date(exp.ExpenseDate);
+            return (exp.Status === 'Paid' || exp.Status === 'Approved') &&
+              expDate >= monthStart && expDate <= monthEnd;
+          })
+          .reduce((sum, exp) => sum + (exp.TotalAmount || 0), 0);
+      }
     }
 
     chartData.push({
