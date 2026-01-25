@@ -209,7 +209,7 @@ test.describe('Plaid Bank Verification', () => {
   test.describe('API Endpoints', () => {
     test('verification status endpoint returns data', async ({ request }) => {
       // Create a test employee first via API
-      const createResponse = await request.post('/api/employees_write', {
+      await request.post('/api/employees_write', {
         data: {
           EmployeeNumber: `API-TEST-${Date.now()}`,
           FirstName: 'API',
