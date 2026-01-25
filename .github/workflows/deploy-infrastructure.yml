@@ -1,0 +1,230 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      action:
+        description: 'Deployment action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - deploy
+
+env:
+  BICEP_VERSION: '0.30.23'
+
+jobs:
+  # ============================================================================
+  # Validate Job - Validate Bicep templates
+  # ============================================================================
+  validate:
+    name: Validate Bicep Templates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Azure CLI
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep CLI
+        run: |
+          az bicep install
+          az bicep version
+
+      - name: Lint Bicep templates
+        run: |
+          echo "Linting Bicep templates..."
+          az bicep lint --file infra/azure/main.bicep
+
+      - name: Build Bicep templates
+        run: |
+          echo "Building Bicep templates..."
+          az bicep build --file infra/azure/main.bicep --stdout > /dev/null
+          echo "Main template compiled successfully"
+
+          # Build individual modules
+          for module in infra/azure/modules/*.bicep; do
+            echo "Building $module..."
+            az bicep build --file "$module" --stdout > /dev/null
+            echo "$module compiled successfully"
+          done
+
+      - name: Validate template (dev)
+        run: |
+          az deployment sub validate \
+            --location eastus \
+            --template-file infra/azure/main.bicep \
+            --parameters infra/azure/parameters/dev.bicepparam \
+            --parameters sqlAdminLogin=validateuser sqlAdminPassword=ValidatePass123!
+
+  # ============================================================================
+  # Plan Job - What-if deployment preview
+  # ============================================================================
+  plan:
+    name: Plan Infrastructure Changes
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request' || github.event.inputs.action == 'plan'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Azure CLI
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: What-if deployment
+        run: |
+          echo "Running what-if deployment for ${{ steps.env.outputs.environment }} environment..."
+          az deployment sub what-if \
+            --location eastus \
+            --template-file infra/azure/main.bicep \
+            --parameters infra/azure/parameters/${{ steps.env.outputs.environment }}.bicepparam \
+            --parameters sqlAdminLogin=${{ secrets.SQL_ADMIN_LOGIN }} sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
+
+  # ============================================================================
+  # Deploy Job - Deploy infrastructure
+  # ============================================================================
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    needs: validate
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'dev')
+    environment:
+      name: dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Azure CLI
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy infrastructure
+        run: |
+          echo "Deploying infrastructure to dev environment..."
+          az deployment sub create \
+            --name "modern-accounting-dev-$(date +%Y%m%d%H%M%S)" \
+            --location eastus \
+            --template-file infra/azure/main.bicep \
+            --parameters infra/azure/parameters/dev.bicepparam \
+            --parameters sqlAdminLogin=${{ secrets.SQL_ADMIN_LOGIN }} sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
+
+      - name: Output deployment results
+        run: |
+          echo "Deployment completed successfully!"
+          echo "Fetching deployment outputs..."
+          az deployment sub show \
+            --name "$(az deployment sub list --query "[?starts_with(name, 'modern-accounting-dev')].name | [0]" -o tsv)" \
+            --query properties.outputs
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Azure CLI
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy infrastructure
+        run: |
+          echo "Deploying infrastructure to staging environment..."
+          az deployment sub create \
+            --name "modern-accounting-staging-$(date +%Y%m%d%H%M%S)" \
+            --location eastus \
+            --template-file infra/azure/main.bicep \
+            --parameters infra/azure/parameters/staging.bicepparam \
+            --parameters sqlAdminLogin=${{ secrets.SQL_ADMIN_LOGIN }} sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [validate, deploy-staging]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'prod'
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Azure CLI
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy infrastructure
+        run: |
+          echo "Deploying infrastructure to production environment..."
+          az deployment sub create \
+            --name "modern-accounting-prod-$(date +%Y%m%d%H%M%S)" \
+            --location eastus \
+            --template-file infra/azure/main.bicep \
+            --parameters infra/azure/parameters/prod.bicepparam \
+            --parameters sqlAdminLogin=${{ secrets.SQL_ADMIN_LOGIN }} sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
+
+      - name: Verify deployment
+        run: |
+          echo "Verifying production deployment..."
+          az deployment sub show \
+            --name "$(az deployment sub list --query "[?starts_with(name, 'modern-accounting-prod')].name | [0]" -o tsv)" \
+            --query properties.provisioningState
