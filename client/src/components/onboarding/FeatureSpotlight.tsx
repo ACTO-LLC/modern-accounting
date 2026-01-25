@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
@@ -17,33 +17,76 @@ interface FeatureSpotlightProps {
   onNavigate?: () => void;
 }
 
+// Check if user prefers reduced motion
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export default function FeatureSpotlight({ target, onDismiss, onNavigate }: FeatureSpotlightProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const resizeHandlerRef = useRef<(() => void) | null>(null);
 
   // Find and measure the target element
   const measureTarget = useCallback(() => {
     if (!target) return;
 
-    const element = document.querySelector(target.selector);
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      setTargetRect(rect);
-      setIsVisible(true);
+    try {
+      const element = document.querySelector(target.selector);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        setTargetRect(rect);
+        setIsVisible(true);
+      } else {
+        // Element not found - log warning and dismiss
+        console.warn(`Spotlight target not found: ${target.selector} for feature "${target.featureKey}"`);
+        onDismiss();
+      }
+    } catch (error) {
+      // Invalid selector or other DOM error
+      console.error(`Spotlight selector error for "${target.featureKey}":`, error);
+      onDismiss();
     }
-  }, [target]);
+  }, [target, onDismiss]);
+
+  // Listen for reduced motion preference changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
+    // Clean up previous handlers before setting new ones
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (resizeHandlerRef.current) {
+      window.removeEventListener('resize', resizeHandlerRef.current);
+      resizeHandlerRef.current = null;
+    }
+
     if (target) {
       // Small delay to let the DOM settle after navigation
-      const timer = setTimeout(measureTarget, 100);
+      timeoutRef.current = setTimeout(measureTarget, 100);
 
-      // Re-measure on resize
-      window.addEventListener('resize', measureTarget);
+      // Store resize handler reference for proper cleanup
+      resizeHandlerRef.current = measureTarget;
+      window.addEventListener('resize', resizeHandlerRef.current);
 
       return () => {
-        clearTimeout(timer);
-        window.removeEventListener('resize', measureTarget);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        if (resizeHandlerRef.current) {
+          window.removeEventListener('resize', resizeHandlerRef.current);
+          resizeHandlerRef.current = null;
+        }
       };
     } else {
       setIsVisible(false);
@@ -78,29 +121,65 @@ export default function FeatureSpotlight({ target, onDismiss, onNavigate }: Feat
     height: targetRect.height + padding * 2,
   };
 
-  // Calculate callout position
-  const calloutPosition = target.position || 'right';
+  // Calculate callout position with viewport boundary checking
+  const calloutWidth = 280; // max-w-xs is roughly 280px
+  const calloutHeight = 150; // approximate height
+  const margin = 16; // gap from target
+  const viewportPadding = 12; // minimum distance from viewport edge
+
+  // Determine best position based on available space
+  let calloutPosition = target.position || 'right';
+
+  // Check if preferred position would overflow viewport
+  const spaceRight = window.innerWidth - (hole.left + hole.width + margin);
+  const spaceLeft = hole.left - margin;
+  const spaceBottom = window.innerHeight - (hole.top + hole.height + margin);
+  const spaceTop = hole.top - margin;
+
+  // Auto-adjust position if it would overflow
+  if (calloutPosition === 'right' && spaceRight < calloutWidth + viewportPadding) {
+    calloutPosition = spaceLeft >= calloutWidth + viewportPadding ? 'left' : 'bottom';
+  } else if (calloutPosition === 'left' && spaceLeft < calloutWidth + viewportPadding) {
+    calloutPosition = spaceRight >= calloutWidth + viewportPadding ? 'right' : 'bottom';
+  } else if (calloutPosition === 'bottom' && spaceBottom < calloutHeight + viewportPadding) {
+    calloutPosition = spaceTop >= calloutHeight + viewportPadding ? 'top' : 'right';
+  } else if (calloutPosition === 'top' && spaceTop < calloutHeight + viewportPadding) {
+    calloutPosition = spaceBottom >= calloutHeight + viewportPadding ? 'bottom' : 'right';
+  }
+
   const calloutStyle: React.CSSProperties = {};
 
   switch (calloutPosition) {
     case 'right':
-      calloutStyle.top = hole.top + hole.height / 2;
-      calloutStyle.left = hole.left + hole.width + 16;
+      calloutStyle.top = Math.max(viewportPadding, Math.min(
+        hole.top + hole.height / 2,
+        window.innerHeight - calloutHeight / 2 - viewportPadding
+      ));
+      calloutStyle.left = hole.left + hole.width + margin;
       calloutStyle.transform = 'translateY(-50%)';
       break;
     case 'left':
-      calloutStyle.top = hole.top + hole.height / 2;
-      calloutStyle.right = window.innerWidth - hole.left + 16;
+      calloutStyle.top = Math.max(viewportPadding, Math.min(
+        hole.top + hole.height / 2,
+        window.innerHeight - calloutHeight / 2 - viewportPadding
+      ));
+      calloutStyle.right = window.innerWidth - hole.left + margin;
       calloutStyle.transform = 'translateY(-50%)';
       break;
     case 'bottom':
-      calloutStyle.top = hole.top + hole.height + 16;
-      calloutStyle.left = hole.left + hole.width / 2;
+      calloutStyle.top = hole.top + hole.height + margin;
+      calloutStyle.left = Math.max(viewportPadding, Math.min(
+        hole.left + hole.width / 2,
+        window.innerWidth - calloutWidth / 2 - viewportPadding
+      ));
       calloutStyle.transform = 'translateX(-50%)';
       break;
     case 'top':
-      calloutStyle.bottom = window.innerHeight - hole.top + 16;
-      calloutStyle.left = hole.left + hole.width / 2;
+      calloutStyle.bottom = window.innerHeight - hole.top + margin;
+      calloutStyle.left = Math.max(viewportPadding, Math.min(
+        hole.left + hole.width / 2,
+        window.innerWidth - calloutWidth / 2 - viewportPadding
+      ));
       calloutStyle.transform = 'translateX(-50%)';
       break;
   }
@@ -148,7 +227,7 @@ export default function FeatureSpotlight({ target, onDismiss, onNavigate }: Feat
           width: hole.width,
           height: hole.height,
           boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.8), 0 0 20px rgba(99, 102, 241, 0.4)',
-          animation: 'pulse-glow 2s ease-in-out infinite',
+          animation: reducedMotion ? 'none' : 'pulse-glow 2s ease-in-out infinite',
         }}
       />
 
