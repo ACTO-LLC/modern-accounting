@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, GitBranch } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 
@@ -12,11 +12,43 @@ interface Customer {
 }
 
 export default function Customers() {
+  const navigate = useNavigate();
+
   const columns: GridColDef[] = [
     { field: 'Name', headerName: 'Name', width: 200, filterable: true },
     { field: 'Email', headerName: 'Email', width: 200, filterable: true },
     { field: 'Phone', headerName: 'Phone', width: 150, filterable: true },
     { field: 'Address', headerName: 'Address', width: 250, filterable: true },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 150,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/customers/${params.row.Id}/edit`);
+            }}
+            className="text-indigo-600 hover:text-indigo-900"
+          >
+            Edit
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/customers/${params.row.Id}/hierarchy`);
+            }}
+            className="text-gray-600 hover:text-gray-900 inline-flex items-center"
+            title="View related documents"
+          >
+            <GitBranch className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   return (

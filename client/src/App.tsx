@@ -94,6 +94,8 @@ import Form1099NEC from './pages/Form1099NEC';
 import BankImport from './pages/BankImport';
 import BankImportMatches from './pages/BankImportMatches';
 import BankImportHistory from './pages/BankImportHistory';
+import VendorHierarchy from './pages/VendorHierarchy';
+import CustomerHierarchy from './pages/CustomerHierarchy';
 import ChatInterface from './components/ChatInterface';
 
 const queryClient = new QueryClient();
@@ -136,12 +138,14 @@ function AppContent() {
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
             <Route path="customers/:id/edit" element={<EditCustomer />} />
+            <Route path="customers/:id/hierarchy" element={<CustomerHierarchy />} />
             <Route path="products-services" element={<ProductsServices />} />
             <Route path="products-services/new" element={<NewProductService />} />
             <Route path="products-services/:id/edit" element={<EditProductService />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="vendors/new" element={<NewVendor />} />
             <Route path="vendors/:id/edit" element={<EditVendor />} />
+            <Route path="vendors/:id/hierarchy" element={<VendorHierarchy />} />
             <Route path="accounts" element={<ChartOfAccounts />} />
             <Route path="accounts/new" element={<NewAccount />} />
             <Route path="accounts/:id/edit" element={<EditAccount />} />

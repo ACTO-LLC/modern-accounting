@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, GitBranch } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 
@@ -14,6 +14,8 @@ interface Vendor {
 }
 
 export default function Vendors() {
+  const navigate = useNavigate();
+
   const columns: GridColDef[] = [
     { field: 'Name', headerName: 'Name', width: 180, filterable: true },
     { field: 'Email', headerName: 'Email', width: 180, filterable: true },
@@ -41,6 +43,36 @@ export default function Vendors() {
         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Yes</span>
       ) : (
         <span className="text-gray-400">No</span>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 150,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/vendors/${params.row.Id}/edit`);
+            }}
+            className="text-indigo-600 hover:text-indigo-900"
+          >
+            Edit
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/vendors/${params.row.Id}/hierarchy`);
+            }}
+            className="text-gray-600 hover:text-gray-900 inline-flex items-center"
+            title="View related documents"
+          >
+            <GitBranch className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ];
