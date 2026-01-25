@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { LucideIcon } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useFeatureAccess } from '../../contexts/OnboardingContext';
 import { useState, useRef, useCallback } from 'react';
 
 interface NavItemProps {
@@ -9,14 +10,19 @@ interface NavItemProps {
   href: string;
   icon: LucideIcon;
   isNested?: boolean;
+  featureKey?: string;
+  alwaysVisible?: boolean;
 }
 
-export default function NavItem({ name, href, icon: Icon, isNested = false }: NavItemProps) {
+export default function NavItem({ name, href, icon: Icon, isNested = false, featureKey, alwaysVisible }: NavItemProps) {
   const location = useLocation();
   const { isCollapsed } = useSidebar();
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const linkRef = useRef<HTMLAnchorElement>(null);
+
+  // Check feature access
+  const { isAccessible, status: featureStatus } = useFeatureAccess(featureKey);
 
   const isActive = location.pathname === href ||
     (href !== '/' && location.pathname.startsWith(href));
@@ -31,6 +37,16 @@ export default function NavItem({ name, href, icon: Icon, isNested = false }: Na
       setShowTooltip(true);
     }
   }, [isCollapsed]);
+
+  // During onboarding, hide items unless they're always visible or accessible
+  // This must be AFTER all hooks to satisfy React's rules of hooks
+  if (!alwaysVisible && !isAccessible) {
+    return null;
+  }
+
+  // Visual indicator for feature status
+  const showNewBadge = featureKey && featureStatus === 'unlocked';
+  const showCompletedIndicator = featureKey && featureStatus === 'completed';
 
   return (
     <div
@@ -52,17 +68,35 @@ export default function NavItem({ name, href, icon: Icon, isNested = false }: Na
       >
         <Icon className={clsx("h-5 w-5 flex-shrink-0", !isCollapsed && "mr-3")} />
         {!isCollapsed && (
-          <span className="text-sm font-medium truncate">{name}</span>
+          <>
+            <span className="text-sm font-medium truncate flex-1">{name}</span>
+            {showNewBadge && (
+              <span className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">
+                New
+              </span>
+            )}
+            {showCompletedIndicator && (
+              <span className="ml-2 text-green-500 dark:text-green-400">✓</span>
+            )}
+          </>
         )}
       </Link>
 
       {/* Tooltip when collapsed - fixed position to escape overflow:hidden */}
       {isCollapsed && showTooltip && (
         <div
-          className="fixed z-[100] px-2 py-1 text-sm text-white bg-gray-900 dark:bg-gray-700 rounded shadow-lg whitespace-nowrap -translate-y-1/2"
+          className="fixed z-[100] px-2 py-1 text-sm text-white bg-gray-900 dark:bg-gray-700 rounded shadow-lg whitespace-nowrap -translate-y-1/2 flex items-center gap-2"
           style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
         >
           {name}
+          {showNewBadge && (
+            <span className="px-1 py-0.5 text-xs font-medium bg-green-500 text-white rounded">
+              New
+            </span>
+          )}
+          {showCompletedIndicator && (
+            <span className="text-green-400">✓</span>
+          )}
           <div
             className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700"
             aria-hidden="true"

@@ -1,0 +1,47 @@
+key: estimates
+name: Estimates
+menuPath: /estimates
+icon: FileQuestion
+difficulty: 2
+category: transactions
+sortOrder: 45
+
+description:
+  short: "Create quotes and proposals for customers"
+  detailed: |
+    Estimates (also called quotes or proposals) let you give customers a price
+    before they commit to buying. Key points:
+    - Estimates don't affect your books until converted to an invoice
+    - Customers can review and approve estimates
+    - Approved estimates can be converted to invoices with one click
+
+    This helps you win business while keeping accurate records.
+
+capabilities:
+  - "Create estimates/quotes for customers"
+  - "Add line items with pricing"
+  - "Send estimates to customers for approval"
+  - "Convert accepted estimates to invoices"
+  - "Track estimate status (pending, accepted, declined)"
+
+accountingConcepts:
+  - term: "Non-posting transaction"
+    explanation: "Estimates don't affect your accounting books - they're just proposals. Only when converted to an invoice does the transaction count."
+
+prerequisites:
+  - customers
+  - products_services
+
+leadsTo:
+  - invoices
+
+experienceLevelNotes:
+  beginner: "Use estimates to give customers a price quote before you send a real invoice."
+  intermediate: "Same as QuickBooks estimates - create, send, convert to invoice when accepted."
+  advanced: "Quote-to-cash workflow beginning with non-posting estimate documents."
+
+sampleTasks:
+  - title: "Create an estimate"
+    description: "Build a quote for a potential job or sale"
+  - title: "Convert estimate to invoice"
+    description: "Once a customer accepts, convert the estimate to a real invoice"

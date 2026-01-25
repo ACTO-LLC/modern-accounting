@@ -55,6 +55,24 @@ services:
       - ./email-api:/app
       - /app/node_modules
 
+  ma-mcp-staging:
+    build:
+      context: ./ma-mcp-server
+      dockerfile: Dockerfile
+    container_name: accounting-ma-mcp-staging
+    depends_on:
+      sql-staging:
+        condition: service_healthy
+    ports:
+      - "5003:5002"
+    environment:
+      - MA_MCP_PORT=5002
+      - DB_SERVER=sql-staging,1433
+      - DB_NAME=AccountingDB
+      - DB_USER=sa
+      - DB_PASSWORD=${SQL_SA_PASSWORD_STAGING:-StagingPassword123}
+      - DB_TRUST_CERT=true
+
   client-staging:
     build:
       context: ./client

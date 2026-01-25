@@ -1,0 +1,44 @@
+key: customers
+name: Customers
+menuPath: /customers
+icon: Users
+difficulty: 1
+category: foundation
+sortOrder: 10
+
+description:
+  short: "People and businesses you sell to"
+  detailed: |
+    Customers are the individuals or companies that buy your products or services.
+    Keeping track of your customers helps you:
+    - Send invoices to the right people
+    - Track who owes you money
+    - Build relationships and see purchase history
+
+capabilities:
+  - "Add new customers with contact information"
+  - "View and edit customer details"
+  - "See customer transaction history"
+  - "Track outstanding balances"
+
+accountingConcepts:
+  - term: "Accounts Receivable"
+    explanation: "When a customer owes you money (from an invoice), it's called 'accounts receivable' - money you expect to receive."
+
+prerequisites: []
+
+leadsTo:
+  - invoices
+  - estimates
+  - payments_received
+
+experienceLevelNotes:
+  beginner: "Start here! Customers are the foundation of your business records."
+  intermediate: "Similar to QuickBooks - add the people and businesses you invoice."
+  advanced: "Standard customer master data management."
+
+sampleTasks:
+  - title: "Add your first customer"
+    description: "Click 'New Customer' and enter a customer's name and email"
+  - title: "View customer list"
+    description: "Browse all your customers in the customer list"

@@ -1,0 +1,48 @@
+key: bills
+name: Bills
+menuPath: /bills
+icon: Receipt
+difficulty: 2
+category: transactions
+sortOrder: 50
+
+description:
+  short: "Track what you owe to vendors"
+  detailed: |
+    Bills are invoices FROM your vendors - money you owe them. When you enter a bill:
+    - It records what you owe the vendor
+    - It increases your Accounts Payable
+    - It records an expense for your business
+
+    Bills help you track payment obligations and manage cash flow.
+
+capabilities:
+  - "Enter bills from vendors"
+  - "Add line items with expense categories"
+  - "Set payment due dates"
+  - "Track bill status (unpaid, partially paid, paid)"
+  - "Schedule bill payments"
+
+accountingConcepts:
+  - term: "Accounts Payable"
+    explanation: "Entering a bill increases your accounts payable - money you owe to vendors."
+  - term: "Expense Recognition"
+    explanation: "Expenses are recorded when you receive the bill, not when you pay it. This matches expenses to the period they occurred."
+
+prerequisites:
+  - vendors
+
+leadsTo:
+  - payments_made
+  - reports
+
+experienceLevelNotes:
+  beginner: "Bills are the opposite of invoices - they're what OTHER companies send YOU."
+  intermediate: "Like QuickBooks bills - enter vendor invoices to track what you owe."
+  advanced: "Standard AP bill entry with automatic journal entries to AP and expense accounts."
+
+sampleTasks:
+  - title: "Enter your first bill"
+    description: "Add a bill from a vendor like your internet provider"
+  - title: "View unpaid bills"
+    description: "See what bills need to be paid soon"

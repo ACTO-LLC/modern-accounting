@@ -269,12 +269,14 @@ if (client) {
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const DAB_MCP_URL = process.env.DAB_MCP_URL || 'http://localhost:5000/mcp';
 const QBO_MCP_URL = process.env.QBO_MCP_URL || 'http://localhost:8001/mcp';
+const MA_MCP_URL = process.env.MA_MCP_URL || 'http://localhost:5002/mcp';
 const DAB_REST_URL = process.env.DAB_REST_URL || 'http://localhost:5000/api';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
 // Initialize MCP servers
 mcpManager.addServer('dab', DAB_MCP_URL);
 mcpManager.addServer('qbo', QBO_MCP_URL);
+mcpManager.addServer('ma', MA_MCP_URL);
 
 // Dynamic tools discovered from MCP servers (populated at startup)
 let dynamicTools = [];

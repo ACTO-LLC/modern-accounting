@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { ChevronRight, LucideIcon } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useOnboarding } from '../../contexts/OnboardingContext';
 import { NavItem as NavItemType } from './navConfig';
 
 interface NavGroupProps {
@@ -15,11 +16,34 @@ interface NavGroupProps {
 export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps) {
   const location = useLocation();
   const { isCollapsed, isGroupExpanded, toggleGroup } = useSidebar();
+  const { isFeatureAccessible, getFeatureStatus, status: onboardingStatus } = useOnboarding();
   const [showFlyout, setShowFlyout] = useState(false);
   const [flyoutPosition, setFlyoutPosition] = useState({ top: 0, left: 0 });
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
+
+  // Filter items based on feature access
+  const visibleItems = useMemo(() => {
+    // If showAllFeatures is true, show all items
+    if (onboardingStatus?.showAllFeatures) {
+      return items;
+    }
+
+    // Check if user is in active onboarding (has assessment but not completed)
+    const isInOnboarding = onboardingStatus && !onboardingStatus.onboardingCompleted && onboardingStatus.experienceLevel;
+
+    return items.filter(item => {
+      // Always visible items are always shown
+      if (item.alwaysVisible) return true;
+      // If not in onboarding, show everything
+      if (!isInOnboarding) return true;
+      // Items with featureKey must be accessible
+      if (item.featureKey) return isFeatureAccessible(item.featureKey);
+      // Items without featureKey are hidden during onboarding
+      return false;
+    });
+  }, [items, onboardingStatus?.showAllFeatures, onboardingStatus?.onboardingCompleted, onboardingStatus?.experienceLevel, isFeatureAccessible]);
 
   // Calculate flyout position based on button location
   const updateFlyoutPosition = useCallback(() => {
@@ -68,11 +92,27 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
 
   const isExpanded = isGroupExpanded(id);
 
+  // If no items are visible, hide the entire group
+  // This must be AFTER all hooks to satisfy React's rules of hooks
+  if (visibleItems.length === 0) {
+    return null;
+  }
+
   // Check if any child is active
-  const hasActiveChild = items.some(item =>
+  const hasActiveChild = visibleItems.some(item =>
     location.pathname === item.href ||
     (item.href !== '/' && location.pathname.startsWith(item.href))
   );
+
+  // Helper to get feature status indicators
+  const getItemIndicators = (item: NavItemType) => {
+    if (!item.featureKey) return { showNew: false, showCompleted: false };
+    const status = getFeatureStatus(item.featureKey);
+    return {
+      showNew: status === 'unlocked',
+      showCompleted: status === 'completed'
+    };
+  };
 
   // Expanded sidebar mode - show inline expandable list
   if (!isCollapsed) {
@@ -107,10 +147,11 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
             isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
           )}
         >
-          {items.map(item => {
+          {visibleItems.map(item => {
             const ItemIcon = item.icon;
             const isActive = location.pathname === item.href ||
               (item.href !== '/' && location.pathname.startsWith(item.href));
+            const { showNew, showCompleted } = getItemIndicators(item);
 
             return (
               <Link
@@ -124,7 +165,15 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
                 )}
               >
                 <ItemIcon className="mr-3 h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{item.name}</span>
+                <span className="truncate flex-1">{item.name}</span>
+                {showNew && (
+                  <span className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">
+                    New
+                  </span>
+                )}
+                {showCompleted && (
+                  <span className="ml-2 text-green-500 dark:text-green-400">✓</span>
+                )}
               </Link>
             );
           })}
@@ -173,10 +222,11 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
             <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {name}
             </div>
-            {items.map(item => {
+            {visibleItems.map(item => {
               const ItemIcon = item.icon;
               const isActive = location.pathname === item.href ||
                 (item.href !== '/' && location.pathname.startsWith(item.href));
+              const { showNew, showCompleted } = getItemIndicators(item);
 
               return (
                 <Link
@@ -191,7 +241,15 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
                   )}
                 >
                   <ItemIcon className="mr-3 h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{item.name}</span>
+                  <span className="truncate flex-1">{item.name}</span>
+                  {showNew && (
+                    <span className="ml-2 px-1 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">
+                      New
+                    </span>
+                  )}
+                  {showCompleted && (
+                    <span className="ml-2 text-green-500 dark:text-green-400">✓</span>
+                  )}
                 </Link>
               );
             })}

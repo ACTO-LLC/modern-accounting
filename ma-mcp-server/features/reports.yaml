@@ -1,0 +1,54 @@
+key: reports
+name: Reports
+menuPath: /reports
+icon: BarChart
+difficulty: 3
+category: advanced
+sortOrder: 80
+
+description:
+  short: "See the big picture of your business finances"
+  detailed: |
+    Reports turn your transaction data into useful insights. Key reports include:
+
+    - **Profit & Loss (Income Statement)**: Revenue minus expenses = profit
+    - **Balance Sheet**: Assets, liabilities, and equity at a point in time
+    - **Cash Flow**: Where cash came from and where it went
+    - **Accounts Receivable Aging**: Who owes you and for how long
+    - **Accounts Payable Aging**: What you owe and when it's due
+
+    These reports help you make decisions, file taxes, and show stakeholders
+    how your business is doing.
+
+capabilities:
+  - "Run standard financial reports"
+  - "Filter by date range"
+  - "Compare periods (this month vs last month)"
+  - "Export to PDF or Excel"
+  - "Customize report layouts"
+
+accountingConcepts:
+  - term: "Profit & Loss (P&L)"
+    explanation: "Shows income minus expenses over a period. Also called an Income Statement. Tells you if you're making money."
+  - term: "Balance Sheet"
+    explanation: "Shows what you own (assets), owe (liabilities), and your equity at a specific moment. It always balances!"
+  - term: "Cash vs Accrual"
+    explanation: "Cash basis counts money when it moves. Accrual basis counts when transactions occur. Most reports can show either."
+
+prerequisites:
+  - invoices
+  - bills
+  - chart_of_accounts
+
+leadsTo: []
+
+experienceLevelNotes:
+  beginner: "Start with Profit & Loss to see if you're making money. Don't worry about understanding everything at first."
+  intermediate: "Standard financial reports like QuickBooks. Run P&L and Balance Sheet monthly."
+  advanced: "Full reporting suite with customization, comparisons, and export capabilities."
+
+sampleTasks:
+  - title: "Run a Profit & Loss report"
+    description: "See your income and expenses for this month"
+  - title: "View your Balance Sheet"
+    description: "See a snapshot of your assets, liabilities, and equity"

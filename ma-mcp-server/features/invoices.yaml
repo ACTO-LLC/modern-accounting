@@ -1,0 +1,53 @@
+key: invoices
+name: Invoices
+menuPath: /invoices
+icon: FileText
+difficulty: 2
+category: transactions
+sortOrder: 40
+
+description:
+  short: "Bill your customers for products and services"
+  detailed: |
+    An invoice is a bill you send to customers requesting payment for products
+    or services. When you create an invoice:
+    - It records what the customer owes you
+    - It increases your Accounts Receivable
+    - It records revenue for your business
+
+    Invoices are essential for tracking who owes you money and when payments are due.
+
+capabilities:
+  - "Create invoices for customers"
+  - "Add line items (products/services)"
+  - "Set payment terms and due dates"
+  - "Track invoice status (draft, sent, paid)"
+  - "Convert estimates to invoices"
+  - "View invoice history and aging"
+
+accountingConcepts:
+  - term: "Accounts Receivable"
+    explanation: "Creating an invoice increases your accounts receivable - money customers owe you."
+  - term: "Revenue Recognition"
+    explanation: "Revenue is typically recorded when you invoice, not when you receive payment. This is called 'accrual accounting'."
+  - term: "Aging"
+    explanation: "Invoice aging shows how long invoices have been outstanding (0-30 days, 31-60 days, etc.)."
+
+prerequisites:
+  - customers
+  - products_services
+
+leadsTo:
+  - payments_received
+  - reports
+
+experienceLevelNotes:
+  beginner: "Invoices are how you ask customers to pay you. Start simple with one customer and one item."
+  intermediate: "Works like QuickBooks invoices - select customer, add items, save and send."
+  advanced: "Standard AR invoice workflow with automatic journal entries to AR and revenue accounts."
+
+sampleTasks:
+  - title: "Create your first invoice"
+    description: "Select a customer, add a product or service, and save the invoice"
+  - title: "View outstanding invoices"
+    description: "Check which invoices haven't been paid yet"

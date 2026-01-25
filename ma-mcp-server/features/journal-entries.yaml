@@ -1,0 +1,53 @@
+key: journal_entries
+name: Journal Entries
+menuPath: /journal-entries
+icon: BookOpen
+difficulty: 4
+category: accounting
+sortOrder: 70
+
+description:
+  short: "The foundation of double-entry bookkeeping"
+  detailed: |
+    Journal entries are how accountants record transactions directly. Every
+    financial event is recorded with at least two lines:
+    - One account is DEBITED (increased for assets/expenses, decreased for liabilities/equity/income)
+    - One account is CREDITED (the opposite)
+
+    The total debits must ALWAYS equal total credits - this keeps the books balanced.
+
+    Most of the time, MA creates journal entries automatically (when you create
+    invoices, bills, etc.). Manual journal entries are for adjustments, corrections,
+    or special transactions.
+
+capabilities:
+  - "Create manual journal entries"
+  - "View auto-generated entries from transactions"
+  - "Make adjusting entries"
+  - "Reverse entries"
+  - "Search entry history"
+
+accountingConcepts:
+  - term: "Double-Entry Bookkeeping"
+    explanation: "Every transaction affects at least two accounts. Money doesn't appear or disappear - it moves between accounts."
+  - term: "Debits and Credits"
+    explanation: "These are the two sides of every entry. Debits increase assets and expenses; Credits increase liabilities, equity, and income."
+  - term: "Balanced Entry"
+    explanation: "Total debits must equal total credits. If they don't match, something is wrong."
+
+prerequisites:
+  - chart_of_accounts
+
+leadsTo:
+  - reports
+
+experienceLevelNotes:
+  beginner: "You may never need to create manual journal entries - MA handles most transactions automatically. But understanding the concept helps you understand your reports."
+  intermediate: "Same as QuickBooks journal entries. Used for adjustments and transactions that don't fit standard forms."
+  advanced: "Full journal entry capability for adjusting entries, accruals, corrections, and complex transactions."
+
+sampleTasks:
+  - title: "View an auto-generated entry"
+    description: "Look at how an invoice created journal entries automatically"
+  - title: "Create an adjusting entry"
+    description: "Make a manual entry to correct or adjust account balances"

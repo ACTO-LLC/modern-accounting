@@ -3,6 +3,7 @@ import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail, AlertCircle } fro
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
 import EmailSettingsForm from '../components/EmailSettingsForm';
+import OnboardingSettings from '../components/onboarding/OnboardingSettings';
 import { validateEIN } from '../lib/taxForms';
 
 export default function CompanySettings() {
@@ -376,6 +377,11 @@ export default function CompanySettings() {
           Configure SMTP settings to send invoices directly to customers via email.
         </p>
         <EmailSettingsForm />
+      </div>
+
+      {/* Onboarding & Learning Section */}
+      <div className="mt-8">
+        <OnboardingSettings />
       </div>
     </div>
   );
