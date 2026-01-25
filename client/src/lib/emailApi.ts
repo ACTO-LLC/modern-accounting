@@ -51,6 +51,11 @@ export interface SendEmailRequest {
   };
 }
 
+export interface SendStatementRequest extends SendEmailRequest {
+  startDate: string;
+  endDate: string;
+}
+
 // Email Settings API
 export const emailSettingsApi = {
   get: async (): Promise<EmailSettingsResponse> => {
@@ -76,6 +81,11 @@ export const emailSendApi = {
     return response.data;
   },
 
+  sendStatement: async (customerId: string, data: SendStatementRequest): Promise<{ success: boolean; message: string; logId: string }> => {
+    const response = await emailApi.post(`/send/statement/${customerId}`, data);
+    return response.data;
+  },
+
   getLogs: async (invoiceId: string): Promise<{ logs: EmailLog[] }> => {
     const response = await emailApi.get(`/logs/${invoiceId}`);
     return response.data;
@@ -91,6 +101,8 @@ export function replaceTemplateVariables(
     IssueDate?: string;
     DueDate?: string;
     TotalAmount?: string;
+    TotalDue?: string;
+    StatementPeriod?: string;
     CompanyName?: string;
     CompanyEmail?: string;
     CompanyPhone?: string;
