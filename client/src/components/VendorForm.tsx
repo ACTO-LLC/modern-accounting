@@ -48,6 +48,7 @@ export default function VendorForm({
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<VendorFormData>({
     resolver: zodResolver(vendorSchema),
@@ -147,6 +148,7 @@ export default function VendorForm({
           <AddressFields<VendorFormData>
             register={register}
             errors={errors}
+            setValue={setValue}
             showLine2={true}
             showCountry={false}
           />

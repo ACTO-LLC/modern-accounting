@@ -1,8 +1,9 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import AddressAutocomplete, { AddressSuggestion } from './AddressAutocomplete';
 
 // US States for dropdown
 const US_STATES = [
@@ -104,7 +105,7 @@ export default function EmployeeForm({
   submitButtonText = 'Save Employee'
 }: EmployeeFormProps) {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<EmployeeFormData>({
+  const { register, handleSubmit, formState: { errors }, watch, control, setValue } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
       PayType: 'Hourly',
@@ -116,6 +117,13 @@ export default function EmployeeForm({
       ...initialValues
     }
   });
+
+  // Handle address selection from autocomplete
+  const handleAddressSelect = (suggestion: AddressSuggestion) => {
+    setValue('City', suggestion.city, { shouldDirty: true });
+    setValue('State', suggestion.state, { shouldDirty: true });
+    setValue('ZipCode', suggestion.postalCode, { shouldDirty: true });
+  };
 
   const payType = watch('PayType');
 
@@ -314,10 +322,22 @@ export default function EmployeeForm({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Address</h2>
           <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label htmlFor="Address" className={labelClass}>Street Address</label>
-              <input id="Address" type="text" {...register('Address')} className={inputClass} />
-            </div>
+            <Controller
+              name="Address"
+              control={control}
+              render={({ field }) => (
+                <AddressAutocomplete
+                  id="Address"
+                  label="Street Address"
+                  labelClassName={labelClass}
+                  className={inputClass}
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  onAddressSelect={handleAddressSelect}
+                  error={errors.Address?.message}
+                />
+              )}
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="City" className={labelClass}>City</label>
