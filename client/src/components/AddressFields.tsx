@@ -241,9 +241,9 @@ export default function AddressFields<T extends AddressFieldValues>({
                 </div>
               </li>
             ))}
-            {/* Attribution - required by Nominatim */}
+            {/* Attribution */}
             <li className="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              Address data by OpenStreetMap
+              Address data by Geoapify
             </li>
           </ul>
         )}
