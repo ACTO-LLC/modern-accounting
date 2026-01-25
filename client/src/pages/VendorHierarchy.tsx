@@ -44,7 +44,7 @@ export default function VendorHierarchy() {
   }, [id, navigate]);
 
   // Fetch vendor details
-  const { data: vendor, isLoading: vendorLoading } = useQuery({
+  const { data: vendor, isLoading: vendorLoading, isError: vendorError } = useQuery({
     queryKey: ['vendor', id],
     queryFn: async () => {
       const response = await api.get<Vendor>(`/vendors/Id/${id}`);
@@ -54,7 +54,7 @@ export default function VendorHierarchy() {
   });
 
   // Fetch purchase orders for this vendor
-  const { data: purchaseOrders, isLoading: posLoading } = useQuery({
+  const { data: purchaseOrders, isLoading: posLoading, isError: posError } = useQuery({
     queryKey: ['vendor-purchaseorders', id],
     queryFn: async () => {
       const response = await api.get<{ value: PurchaseOrder[] }>(
@@ -66,7 +66,7 @@ export default function VendorHierarchy() {
   });
 
   // Fetch bills for this vendor
-  const { data: bills, isLoading: billsLoading } = useQuery({
+  const { data: bills, isLoading: billsLoading, isError: billsError } = useQuery({
     queryKey: ['vendor-bills', id],
     queryFn: async () => {
       const response = await api.get<{ value: Bill[] }>(
@@ -78,7 +78,7 @@ export default function VendorHierarchy() {
   });
 
   // Fetch purchase order lines
-  const { data: poLines, isLoading: poLinesLoading } = useQuery({
+  const { data: poLines, isLoading: poLinesLoading, isError: poLinesError } = useQuery({
     queryKey: ['purchaseorder-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: PurchaseOrderLine[] }>(
@@ -90,7 +90,7 @@ export default function VendorHierarchy() {
   });
 
   // Fetch bill lines
-  const { data: billLines, isLoading: billLinesLoading } = useQuery({
+  const { data: billLines, isLoading: billLinesLoading, isError: billLinesError } = useQuery({
     queryKey: ['bill-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: BillLine[] }>(
@@ -180,28 +180,41 @@ export default function VendorHierarchy() {
       entityType: 'purchaseorder', // Combined view of POs and Bills
       items: documentCards,
       loading: posLoading || billsLoading,
-      emptyMessage: 'No purchase orders or bills found for this vendor',
+      emptyMessage: posError || billsError 
+        ? 'Error loading purchase orders or bills. Please try again.'
+        : 'No purchase orders or bills found for this vendor',
     },
     {
       entityType: currentDocumentType === 'purchaseorders' ? 'purchaseorderline' : 'billline',
       items: lineItemCards,
       loading: poLinesLoading || billLinesLoading,
-      emptyMessage: 'No line items found',
+      emptyMessage: poLinesError || billLinesError
+        ? 'Error loading line items. Please try again.'
+        : 'No line items found',
     },
   ];
 
   if (vendorLoading || !vendor) {
     return (
       <div className="max-w-7xl mx-auto">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
+        {vendorError ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h2 className="text-red-800 font-semibold mb-2">Error Loading Vendor</h2>
+            <p className="text-red-600 text-sm">
+              Failed to load vendor details. Please try again or contact support if the problem persists.
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

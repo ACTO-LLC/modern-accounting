@@ -19,9 +19,9 @@ const statusVariants = {
 };
 
 const cardStateStyles = {
-  default: 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md',
-  hover: 'bg-white border-indigo-300 shadow-md',
-  selected: 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-200',
+  default: 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500',
+  hover: 'bg-white border-indigo-300 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500',
+  selected: 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-200 focus:outline-none',
   disabled: 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed',
 };
 
@@ -38,7 +38,14 @@ export default function EntityCard({
     onClick?.();
   };
 
-  const handleSelectClick = (e: React.MouseEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (state === 'disabled') return;
     onSelect?.();
@@ -47,6 +54,7 @@ export default function EntityCard({
   return (
     <div
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       className={`
         relative rounded-lg border p-4 transition-all duration-200 cursor-pointer
         ${cardStateStyles[state]}
@@ -61,8 +69,7 @@ export default function EntityCard({
           <input
             type="checkbox"
             checked={state === 'selected'}
-            onChange={() => {}}
-            onClick={handleSelectClick}
+            onChange={handleSelectChange}
             className="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
             disabled={state === 'disabled'}
           />

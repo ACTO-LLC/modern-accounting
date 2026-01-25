@@ -44,7 +44,7 @@ export default function CustomerHierarchy() {
   }, [id, navigate]);
 
   // Fetch customer details
-  const { data: customer, isLoading: customerLoading } = useQuery({
+  const { data: customer, isLoading: customerLoading, isError: customerError } = useQuery({
     queryKey: ['customer', id],
     queryFn: async () => {
       const response = await api.get<Customer>(`/customers/Id/${id}`);
@@ -54,7 +54,7 @@ export default function CustomerHierarchy() {
   });
 
   // Fetch invoices for this customer
-  const { data: invoices, isLoading: invoicesLoading } = useQuery({
+  const { data: invoices, isLoading: invoicesLoading, isError: invoicesError } = useQuery({
     queryKey: ['customer-invoices', id],
     queryFn: async () => {
       const response = await api.get<{ value: Invoice[] }>(
@@ -66,7 +66,7 @@ export default function CustomerHierarchy() {
   });
 
   // Fetch estimates for this customer
-  const { data: estimates, isLoading: estimatesLoading } = useQuery({
+  const { data: estimates, isLoading: estimatesLoading, isError: estimatesError } = useQuery({
     queryKey: ['customer-estimates', id],
     queryFn: async () => {
       const response = await api.get<{ value: Estimate[] }>(
@@ -78,7 +78,7 @@ export default function CustomerHierarchy() {
   });
 
   // Fetch invoice lines
-  const { data: invoiceLines, isLoading: invoiceLinesLoading } = useQuery({
+  const { data: invoiceLines, isLoading: invoiceLinesLoading, isError: invoiceLinesError } = useQuery({
     queryKey: ['invoice-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: InvoiceLine[] }>(
@@ -90,7 +90,7 @@ export default function CustomerHierarchy() {
   });
 
   // Fetch estimate lines
-  const { data: estimateLines, isLoading: estimateLinesLoading } = useQuery({
+  const { data: estimateLines, isLoading: estimateLinesLoading, isError: estimateLinesError } = useQuery({
     queryKey: ['estimate-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: EstimateLine[] }>(
@@ -179,28 +179,41 @@ export default function CustomerHierarchy() {
       entityType: 'invoice', // Combined view of Invoices and Estimates
       items: documentCards,
       loading: invoicesLoading || estimatesLoading,
-      emptyMessage: 'No invoices or estimates found for this customer',
+      emptyMessage: invoicesError || estimatesError
+        ? 'Error loading invoices or estimates. Please try again.'
+        : 'No invoices or estimates found for this customer',
     },
     {
       entityType: currentDocumentType === 'invoices' ? 'invoiceline' : 'estimateline',
       items: lineItemCards,
       loading: invoiceLinesLoading || estimateLinesLoading,
-      emptyMessage: 'No line items found',
+      emptyMessage: invoiceLinesError || estimateLinesError
+        ? 'Error loading line items. Please try again.'
+        : 'No line items found',
     },
   ];
 
   if (customerLoading || !customer) {
     return (
       <div className="max-w-7xl mx-auto">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
+        {customerError ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h2 className="text-red-800 font-semibold mb-2">Error Loading Customer</h2>
+            <p className="text-red-600 text-sm">
+              Failed to load customer details. Please try again or contact support if the problem persists.
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
