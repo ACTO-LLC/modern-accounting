@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Calculator, CheckCircle, DollarSign, AlertCircle, FileText, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Calculator, CheckCircle, DollarSign, AlertCircle, FileText, ShieldAlert, ShieldCheck, Server, Monitor } from 'lucide-react';
 import api from '../lib/api';
 import {
-  calculatePayStub,
   formatCurrency,
   getDefaultHours,
   Employee,
   PayStubCalculation,
   YTDTotals,
 } from '../lib/payrollCalculations';
+import {
+  calculateBatchPayroll,
+  EmployeePayInput,
+} from '../lib/payrollApi';
 
 // Extended Employee type with bank verification fields
 interface EmployeeWithVerification extends Employee {
@@ -133,45 +136,69 @@ export default function PayRunDetail() {
     }
   }, [employees, existingStubs]);
 
-  // Calculate all pay stubs
-  const handleCalculate = () => {
+  // Track calculation source for UI feedback
+  const [calculationSource, setCalculationSource] = useState<'azure-function' | 'client-side' | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  // Calculate all pay stubs - uses Azure Function for large batches
+  const handleCalculate = async () => {
     if (!employees || !payRun) return;
 
-    const payDate = new Date(payRun.PayDate);
-    const stubs: { [key: string]: PayStubCalculation } = {};
+    setIsCalculating(true);
 
-    employees.forEach(emp => {
-      const hours = employeeHours[emp.Id] || {
-        regularHours: getDefaultHours(emp),
-        overtimeHours: 0,
-        otherEarnings: 0,
-        otherDeductions: 0,
-      };
+    try {
+      // Build batch request
+      const employeeInputs: EmployeePayInput[] = employees.map(emp => {
+        const hours = employeeHours[emp.Id] || {
+          regularHours: getDefaultHours(emp),
+          overtimeHours: 0,
+          otherEarnings: 0,
+          otherDeductions: 0,
+        };
 
-      // TODO: Fetch actual YTD totals from previous pay stubs
-      const ytdTotals: YTDTotals = {
-        grossPay: 0,
-        federalWithholding: 0,
-        stateWithholding: 0,
-        socialSecurity: 0,
-        medicare: 0,
-        netPay: 0,
-      };
+        // TODO: Fetch actual YTD totals from previous pay stubs
+        const ytdTotals: YTDTotals = {
+          grossPay: 0,
+          federalWithholding: 0,
+          stateWithholding: 0,
+          socialSecurity: 0,
+          medicare: 0,
+          netPay: 0,
+        };
 
-      const stub = calculatePayStub(
-        emp,
-        hours.regularHours,
-        hours.overtimeHours,
-        hours.otherEarnings,
-        hours.otherDeductions,
-        ytdTotals,
-        payDate
-      );
+        return {
+          employee: emp,
+          regularHours: hours.regularHours,
+          overtimeHours: hours.overtimeHours,
+          otherEarnings: hours.otherEarnings,
+          otherDeductions: hours.otherDeductions,
+          ytdTotals,
+        };
+      });
 
-      stubs[emp.Id] = stub;
-    });
+      // Use batch API (auto-selects Azure Function vs client-side based on size)
+      const response = await calculateBatchPayroll({
+        payRunId: payRun.Id,
+        payDate: payRun.PayDate,
+        employees: employeeInputs,
+      });
 
-    setCalculatedStubs(stubs);
+      // Convert results array to keyed object
+      const stubs: { [key: string]: PayStubCalculation } = {};
+      response.results.forEach(stub => {
+        stubs[stub.employeeId] = stub;
+      });
+
+      setCalculatedStubs(stubs);
+      setCalculationSource(response.source);
+
+      console.log(`Payroll calculated via ${response.source} in ${response.summary.processingTimeMs}ms`);
+    } catch (error) {
+      console.error('Failed to calculate payroll:', error);
+      alert('Failed to calculate payroll');
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
   // Save pay stubs and update pay run totals
@@ -434,14 +461,30 @@ export default function PayRunDetail() {
       )}
 
       {canEdit && (
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-3 mb-6 items-center">
           <button
             onClick={handleCalculate}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={isCalculating}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
             <Calculator className="w-4 h-4 mr-2" />
-            Calculate Payroll
+            {isCalculating ? 'Calculating...' : 'Calculate Payroll'}
           </button>
+          {calculationSource && (
+            <span className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+              {calculationSource === 'azure-function' ? (
+                <>
+                  <Server className="w-3 h-3 mr-1" />
+                  Server
+                </>
+              ) : (
+                <>
+                  <Monitor className="w-3 h-3 mr-1" />
+                  Local
+                </>
+              )}
+            </span>
+          )}
           {hasCalculations && (
             <>
               <button

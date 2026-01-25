@@ -1,12 +1,30 @@
-import { AzureFunction, Context } from "@azure/functions"
+import { app, InvocationContext } from "@azure/functions";
 
-const trigger: AzureFunction = async function (context: Context, changes: any[]): Promise<void> {
-    context.log(`SQL Changes Detected: ${JSON.stringify(changes)}`);
-    
-    for (const change of changes) {
-        // TODO: Process change (e.g., send to Web PubSub)
-        context.log(`Processing change for Invoice ID: ${change.Item.Id}`);
-    }
-};
+interface InvoiceChange {
+  Item: {
+    Id: string;
+    [key: string]: any;
+  };
+}
 
-export default trigger;
+async function invoicesTrigger(changes: InvoiceChange[], context: InvocationContext): Promise<void> {
+  context.log(`SQL Changes Detected: ${JSON.stringify(changes)}`);
+
+  for (const change of changes) {
+    // TODO: Process change (e.g., send to Web PubSub)
+    context.log(`Processing change for Invoice ID: ${change.Item.Id}`);
+  }
+}
+
+// Register the SQL trigger with Azure Functions runtime
+app.generic("InvoicesTrigger", {
+  trigger: {
+    type: "sqlTrigger",
+    name: "changes",
+    tableName: "[dbo].[Invoices]",
+    connectionStringSetting: "SqlConnectionString",
+  },
+  handler: invoicesTrigger,
+});
+
+export default invoicesTrigger;
