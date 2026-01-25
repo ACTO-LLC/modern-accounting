@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 
@@ -16,6 +16,8 @@ interface Employee {
   PayFrequency: string;
   Status: string;
   HireDate: string;
+  BankVerificationStatus?: string;
+  BankRoutingNumber?: string;
 }
 
 export default function Employees() {
@@ -58,6 +60,38 @@ export default function Employees() {
         return (
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
             {status}
+          </span>
+        );
+      }
+    },
+    {
+      field: 'BankVerificationStatus',
+      headerName: 'Bank Verified',
+      width: 120,
+      renderCell: (params) => {
+        const row = params.row as Employee;
+        const status = row.BankVerificationStatus;
+        const hasBankInfo = !!row.BankRoutingNumber;
+
+        if (!hasBankInfo) {
+          return (
+            <span className="text-xs text-gray-400">No bank info</span>
+          );
+        }
+
+        if (status === 'Verified') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <ShieldCheck className="w-3 h-3" />
+              Verified
+            </span>
+          );
+        }
+
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+            <ShieldAlert className="w-3 h-3" />
+            Unverified
           </span>
         );
       }

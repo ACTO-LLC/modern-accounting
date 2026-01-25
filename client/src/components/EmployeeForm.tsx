@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import AddressAutocomplete, { AddressSuggestion } from './AddressAutocomplete';
 import { US_STATES } from './AddressFields';
+import PlaidBankVerification from './PlaidBankVerification';
 
 const FILING_STATUSES = [
   { value: 'Single', label: 'Single' },
@@ -74,6 +75,10 @@ interface EmployeeFormProps {
   title: string;
   isSubmitting?: boolean;
   submitButtonText?: string;
+  employeeId?: string; // For bank verification (only on edit)
+  bankVerificationStatus?: string;
+  bankInstitutionName?: string;
+  bankVerifiedAt?: string;
 }
 
 export default function EmployeeForm({
@@ -81,7 +86,11 @@ export default function EmployeeForm({
   onSubmit,
   title,
   isSubmitting,
-  submitButtonText = 'Save Employee'
+  submitButtonText = 'Save Employee',
+  employeeId,
+  bankVerificationStatus,
+  bankInstitutionName,
+  bankVerifiedAt,
 }: EmployeeFormProps) {
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors }, watch, control, setValue } = useForm<EmployeeFormData>({
@@ -277,6 +286,22 @@ export default function EmployeeForm({
         {/* Direct Deposit */}
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Direct Deposit (Optional)</h2>
+
+          {/* Plaid Bank Verification - only show on edit when employeeId is available */}
+          {employeeId && (
+            <div className="mb-6">
+              <PlaidBankVerification
+                employeeId={employeeId}
+                initialStatus={{
+                  status: (bankVerificationStatus as 'Unverified' | 'Pending' | 'Verified' | 'Failed' | 'Expired') || 'Unverified',
+                  verifiedAt: bankVerifiedAt,
+                  institutionName: bankInstitutionName,
+                  hasBankInfo: !!(initialValues?.BankRoutingNumber && initialValues?.BankAccountNumber),
+                }}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="BankRoutingNumber" className={labelClass}>Routing Number</label>
@@ -295,6 +320,12 @@ export default function EmployeeForm({
               </select>
             </div>
           </div>
+
+          {!employeeId && (
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+              Save the employee first to enable Plaid bank verification for secure direct deposits.
+            </p>
+          )}
         </div>
 
         {/* Address */}
