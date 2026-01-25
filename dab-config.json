@@ -97,68 +97,6 @@
                 "MatchedPaymentId": "MatchedPaymentId",
                 "MatchedAt": "MatchedAt"
             },
-            "relationships": {
-                "SourceAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "SourceAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "SuggestedAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "SuggestedAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "ApprovedAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ApprovedAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "JournalEntry": {
-                    "target.entity": "journalentries",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "JournalEntryId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Import": {
-                    "target.entity": "banktransactionimports",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ImportId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "MatchedPayment": {
-                    "target.entity": "payments",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "MatchedPaymentId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -204,10 +142,12 @@
             "source": {
                 "object": "dbo.v_Invoices",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -269,28 +209,6 @@
                 "PostedAt": "PostedAt",
                 "PostedBy": "PostedBy"
             },
-            "relationships": {
-                "JournalEntry": {
-                    "target.entity": "journalentries",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "JournalEntryId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "TaxRate": {
-                    "target.entity": "taxrates",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "TaxRateId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -317,28 +235,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "ProductService": {
-                    "target.entity": "productsservices",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ProductServiceId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "RevenueAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "RevenueAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -353,18 +249,6 @@
                     ]
                 }
             ],
-            "relationships": {
-                "JournalEntry": {
-                    "target.entity": "journalentries",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "JournalEntryId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -395,38 +279,6 @@
                 "Status": "Status",
                 "CreatedAt": "CreatedAt"
             },
-            "relationships": {
-                "IncomeAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "IncomeAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "ExpenseAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ExpenseAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "InventoryAssetAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "InventoryAssetAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -454,28 +306,6 @@
                 "CompletedBy": "CompletedBy",
                 "CreatedAt": "CreatedAt"
             },
-            "relationships": {
-                "BankAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "BankAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Items": {
-                    "target.entity": "reconciliationitems",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "ReconciliationId"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -500,18 +330,6 @@
                 "Amount": "Amount",
                 "IsCleared": "IsCleared",
                 "ClearedAt": "ClearedAt"
-            },
-            "relationships": {
-                "Reconciliation": {
-                    "target.entity": "bankreconciliations",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ReconciliationId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -541,18 +359,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "DefaultExpenseAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "DefaultExpenseAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -563,16 +369,20 @@
                 {
                     "role": "anonymous",
                     "actions": [
-                        "*"
+                        "read"
                     ]
                 }
             ],
             "mappings": {
                 "Id": "Id",
-                "Name": "Name",
+                "TaxType": "TaxType",
+                "StateCode": "StateCode",
+                "FilingStatus": "FilingStatus",
+                "BracketMin": "BracketMin",
+                "BracketMax": "BracketMax",
                 "Rate": "Rate",
-                "Description": "Description",
-                "IsDefault": "IsDefault",
+                "FlatAmount": "FlatAmount",
+                "EffectiveYear": "EffectiveYear",
                 "IsActive": "IsActive",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
@@ -585,10 +395,12 @@
             "source": {
                 "object": "dbo.v_Projects",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -617,10 +429,12 @@
             "source": {
                 "object": "dbo.v_TimeEntries",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -666,28 +480,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "ParentClass": {
-                    "target.entity": "classes",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ParentClassId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "SubClasses": {
-                    "target.entity": "classes",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "ParentClassId"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -711,28 +503,6 @@
                 "Status": "Status",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
-            },
-            "relationships": {
-                "ParentLocation": {
-                    "target.entity": "locations",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ParentLocationId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "SubLocations": {
-                    "target.entity": "locations",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "ParentLocationId"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -787,28 +557,6 @@
                 "CreatedBy": "CreatedBy",
                 "CreatedAt": "CreatedAt"
             },
-            "relationships": {
-                "Product": {
-                    "target.entity": "productsservices",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ProductId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Location": {
-                    "target.entity": "inventorylocations",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "LocationId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -817,7 +565,9 @@
             "source": {
                 "object": "dbo.v_Bills",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
                 "enabled": true
@@ -876,18 +626,6 @@
                 "PostedAt": "PostedAt",
                 "PostedBy": "PostedBy"
             },
-            "relationships": {
-                "JournalEntry": {
-                    "target.entity": "journalentries",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "JournalEntryId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -911,18 +649,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "Account": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "AccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -931,10 +657,12 @@
             "source": {
                 "object": "dbo.v_Estimates",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -1007,18 +735,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "ProductService": {
-                    "target.entity": "productsservices",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ProductServiceId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1027,10 +743,12 @@
             "source": {
                 "object": "dbo.v_PurchaseOrders",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -1082,28 +800,6 @@
                 "Subtotal": "Subtotal",
                 "Total": "Total",
                 "ConvertedToBillId": "ConvertedToBillId"
-            },
-            "relationships": {
-                "Vendor": {
-                    "target.entity": "vendors",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "VendorId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Bill": {
-                    "target.entity": "bills_write",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ConvertedToBillId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             }
         },
         "purchaseorderlines": {
@@ -1126,18 +822,6 @@
                 "Amount": "Amount",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
-            },
-            "relationships": {
-                "ProductService": {
-                    "target.entity": "productsservices",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ProductServiceId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -1174,18 +858,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "Schedules": {
-                    "target.entity": "recurringschedules",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "RecurringTemplateId"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1210,18 +882,6 @@
                 "Status": "Status",
                 "ErrorMessage": "ErrorMessage",
                 "CreatedAt": "CreatedAt"
-            },
-            "relationships": {
-                "Template": {
-                    "target.entity": "recurringtemplates",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "RecurringTemplateId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -1251,18 +911,6 @@
                 "UpdatedAt": "UpdatedAt",
                 "CreatedBy": "CreatedBy"
             },
-            "relationships": {
-                "Attachments": {
-                    "target.entity": "submissionattachments",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "SubmissionId"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1284,18 +932,6 @@
                 "ContentType": "ContentType",
                 "FileData": "FileData",
                 "CreatedAt": "CreatedAt"
-            },
-            "relationships": {
-                "Submission": {
-                    "target.entity": "submissions",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "SubmissionId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -1485,28 +1121,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "PlaidConnection": {
-                    "target.entity": "plaidconnections",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "PlaidConnectionId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "LinkedAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "LinkedAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1533,28 +1147,18 @@
                 "IsActive": "IsActive",
                 "CreatedAt": "CreatedAt",
                 "CreatedBy": "CreatedBy"
-            },
-            "relationships": {
-                "Account": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "AccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             }
         },
         "payments": {
             "source": {
                 "object": "dbo.v_Payments",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -1608,48 +1212,6 @@
                 "SourceId": "SourceId",
                 "JournalEntryId": "JournalEntryId"
             },
-            "relationships": {
-                "Customer": {
-                    "target.entity": "customers",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "CustomerId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "DepositAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "DepositAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Applications": {
-                    "target.entity": "paymentapplications",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "PaymentId"
-                    ]
-                },
-                "JournalEntry": {
-                    "target.entity": "journalentries",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "JournalEntryId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1671,18 +1233,6 @@
                 "AmountApplied": "AmountApplied",
                 "CreatedAt": "CreatedAt"
             },
-            "relationships": {
-                "Payment": {
-                    "target.entity": "payments",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "PaymentId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1691,10 +1241,12 @@
             "source": {
                 "object": "dbo.v_BillPayments",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -1748,48 +1300,6 @@
                 "SourceId": "SourceId",
                 "JournalEntryId": "JournalEntryId"
             },
-            "relationships": {
-                "Vendor": {
-                    "target.entity": "vendors",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "VendorId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "PaymentAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "PaymentAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Applications": {
-                    "target.entity": "billpaymentapplications",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "BillPaymentId"
-                    ]
-                },
-                "JournalEntry": {
-                    "target.entity": "journalentries",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "JournalEntryId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1810,18 +1320,6 @@
                 "BillId": "BillId",
                 "AmountApplied": "AmountApplied",
                 "CreatedAt": "CreatedAt"
-            },
-            "relationships": {
-                "BillPayment": {
-                    "target.entity": "billpayments",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "BillPaymentId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -1862,28 +1360,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "OnboardingProgress": {
-                    "target.entity": "onboardingprogress",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "CompanyId"
-                    ]
-                },
-                "OnboardingConversations": {
-                    "target.entity": "onboardingconversations",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "CompanyId"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -1912,18 +1388,6 @@
                 "StepData": "StepData",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
-            },
-            "relationships": {
-                "Company": {
-                    "target.entity": "companies",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "CompanyId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -1976,18 +1440,6 @@
                 "LastActivityAt": "LastActivityAt",
                 "CreatedAt": "CreatedAt"
             },
-            "relationships": {
-                "Company": {
-                    "target.entity": "companies",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "CompanyId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2013,18 +1465,6 @@
                 "PrNumber": "PrNumber",
                 "Notes": "Notes"
             },
-            "relationships": {
-                "Deployments": {
-                    "target.entity": "deployments",
-                    "cardinality": "many",
-                    "source.fields": [
-                        "Id"
-                    ],
-                    "target.fields": [
-                        "EnhancementId"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2047,18 +1487,6 @@
                 "DeployedAt": "DeployedAt",
                 "Notes": "Notes"
             },
-            "relationships": {
-                "Enhancement": {
-                    "target.entity": "enhancements",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "EnhancementId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2067,10 +1495,12 @@
             "source": {
                 "object": "dbo.v_Employees",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2170,10 +1600,12 @@
             "source": {
                 "object": "dbo.v_PayRuns",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2238,10 +1670,12 @@
             "source": {
                 "object": "dbo.v_PayStubs",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2330,34 +1764,6 @@
                 "Id"
             ]
         },
-        "taxrates": {
-            "source": "dbo.TaxRates",
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                }
-            ],
-            "mappings": {
-                "Id": "Id",
-                "TaxType": "TaxType",
-                "StateCode": "StateCode",
-                "FilingStatus": "FilingStatus",
-                "BracketMin": "BracketMin",
-                "BracketMax": "BracketMax",
-                "Rate": "Rate",
-                "FlatAmount": "FlatAmount",
-                "EffectiveYear": "EffectiveYear",
-                "IsActive": "IsActive",
-                "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
-            },
-            "key-fields": [
-                "Id"
-            ]
-        },
         "accountdefaults": {
             "source": "dbo.AccountDefaults",
             "permissions": [
@@ -2377,18 +1783,6 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
-            "relationships": {
-                "Account": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "AccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2397,10 +1791,12 @@
             "source": {
                 "object": "dbo.v_Expenses",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2476,58 +1872,6 @@
                 "JournalEntryId": "JournalEntryId",
                 "CreatedBy": "CreatedBy"
             },
-            "relationships": {
-                "Vendor": {
-                    "target.entity": "vendors",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "VendorId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Account": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "AccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "PaymentAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "PaymentAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Customer": {
-                    "target.entity": "customers",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "CustomerId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "JournalEntry": {
-                    "target.entity": "journalentries",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "JournalEntryId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2536,10 +1880,12 @@
             "source": {
                 "object": "dbo.v_Receipts",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2599,28 +1945,6 @@
                 "OcrErrorMessage": "OcrErrorMessage",
                 "UploadedBy": "UploadedBy"
             },
-            "relationships": {
-                "Expense": {
-                    "target.entity": "expenses_write",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "ExpenseId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "BankTransaction": {
-                    "target.entity": "banktransactions",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "BankTransactionId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2629,10 +1953,12 @@
             "source": {
                 "object": "dbo.v_EmployeeWorkStates",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2679,18 +2005,6 @@
                 "EndDate": "EndDate",
                 "IsPrimary": "IsPrimary",
                 "Notes": "Notes"
-            },
-            "relationships": {
-                "Employee": {
-                    "target.entity": "employees_write",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "EmployeeId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
@@ -2743,18 +2057,6 @@
                 "ReciprocityStateCode": "ReciprocityStateCode",
                 "CreatedAt": "CreatedAt"
             },
-            "relationships": {
-                "PayStub": {
-                    "target.entity": "paystubs_write",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "PayStubId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2763,10 +2065,12 @@
             "source": {
                 "object": "dbo.v_BankTransactionImports",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2816,18 +2120,6 @@
                 "ImportedBy": "ImportedBy",
                 "ErrorMessage": "ErrorMessage"
             },
-            "relationships": {
-                "BankAccount": {
-                    "target.entity": "accounts",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "BankAccountId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
-            },
             "key-fields": [
                 "Id"
             ]
@@ -2836,10 +2128,12 @@
             "source": {
                 "object": "dbo.v_BankTransactionMatches",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "graphql": {
-                "enabled": false
+                "enabled": true
             },
             "permissions": [
                 {
@@ -2893,28 +2187,6 @@
                 "Status": "Status",
                 "AcceptedAt": "AcceptedAt",
                 "AcceptedBy": "AcceptedBy"
-            },
-            "relationships": {
-                "BankTransaction": {
-                    "target.entity": "banktransactions",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "BankTransactionId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                },
-                "Invoice": {
-                    "target.entity": "invoices",
-                    "cardinality": "one",
-                    "source.fields": [
-                        "InvoiceId"
-                    ],
-                    "target.fields": [
-                        "Id"
-                    ]
-                }
             },
             "key-fields": [
                 "Id"
