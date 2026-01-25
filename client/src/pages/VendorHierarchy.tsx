@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
-import { formatGuidForOData } from '../lib/validation';
 import { formatDate } from '../lib/dateUtils';
 import {
   HierarchyView,
@@ -58,7 +57,7 @@ export default function VendorHierarchy() {
     queryKey: ['vendor-purchaseorders', id],
     queryFn: async () => {
       const response = await api.get<{ value: PurchaseOrder[] }>(
-        `/purchaseorders?$filter=VendorId eq ${formatGuidForOData(id!, 'VendorId')}`
+        `/purchaseorders?$filter=VendorId eq ${encodeURIComponent(id!)}`
       );
       return response.data.value;
     },
@@ -70,7 +69,7 @@ export default function VendorHierarchy() {
     queryKey: ['vendor-bills', id],
     queryFn: async () => {
       const response = await api.get<{ value: Bill[] }>(
-        `/bills?$filter=VendorId eq ${formatGuidForOData(id!, 'VendorId')}`
+        `/bills?$filter=VendorId eq ${encodeURIComponent(id!)}`
       );
       return response.data.value;
     },
@@ -82,7 +81,7 @@ export default function VendorHierarchy() {
     queryKey: ['purchaseorder-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: PurchaseOrderLine[] }>(
-        `/purchaseorderlines?$filter=PurchaseOrderId eq ${formatGuidForOData(selectedDocumentId!, 'PurchaseOrderId')}`
+        `/purchaseorderlines?$filter=PurchaseOrderId eq ${encodeURIComponent(selectedDocumentId!)}`
       );
       return response.data.value;
     },
@@ -94,7 +93,7 @@ export default function VendorHierarchy() {
     queryKey: ['bill-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: BillLine[] }>(
-        `/billlines?$filter=BillId eq ${formatGuidForOData(selectedDocumentId!, 'BillId')}`
+        `/billlines?$filter=BillId eq ${encodeURIComponent(selectedDocumentId!)}`
       );
       return response.data.value;
     },

@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
-import { formatGuidForOData } from '../lib/validation';
 import { formatDate } from '../lib/dateUtils';
 import {
   HierarchyView,
@@ -58,7 +57,7 @@ export default function CustomerHierarchy() {
     queryKey: ['customer-invoices', id],
     queryFn: async () => {
       const response = await api.get<{ value: Invoice[] }>(
-        `/invoices?$filter=CustomerId eq ${formatGuidForOData(id!, 'CustomerId')}`
+        `/invoices?$filter=CustomerId eq ${encodeURIComponent(id!)}`
       );
       return response.data.value;
     },
@@ -70,7 +69,7 @@ export default function CustomerHierarchy() {
     queryKey: ['customer-estimates', id],
     queryFn: async () => {
       const response = await api.get<{ value: Estimate[] }>(
-        `/estimates?$filter=CustomerId eq ${formatGuidForOData(id!, 'CustomerId')}`
+        `/estimates?$filter=CustomerId eq ${encodeURIComponent(id!)}`
       );
       return response.data.value;
     },
@@ -82,7 +81,7 @@ export default function CustomerHierarchy() {
     queryKey: ['invoice-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: InvoiceLine[] }>(
-        `/invoicelines?$filter=InvoiceId eq ${formatGuidForOData(selectedDocumentId!, 'InvoiceId')}`
+        `/invoicelines?$filter=InvoiceId eq ${encodeURIComponent(selectedDocumentId!)}`
       );
       return response.data.value;
     },
@@ -94,7 +93,7 @@ export default function CustomerHierarchy() {
     queryKey: ['estimate-lines', selectedDocumentId],
     queryFn: async () => {
       const response = await api.get<{ value: EstimateLine[] }>(
-        `/estimatelines?$filter=EstimateId eq ${formatGuidForOData(selectedDocumentId!, 'EstimateId')}`
+        `/estimatelines?$filter=EstimateId eq ${encodeURIComponent(selectedDocumentId!)}`
       );
       return response.data.value;
     },

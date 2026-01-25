@@ -35,7 +35,7 @@ export default function Breadcrumb({ items, onNavigate }: BreadcrumbProps) {
         <div key={`${item.entityType}-${item.id}`} className="flex items-center">
           <ChevronRight className="w-4 h-4 text-gray-400 mx-1" />
           {index === items.length - 1 ? (
-            <span className="font-medium text-gray-900">
+            <span className="font-semibold text-indigo-600">
               {item.label}
             </span>
           ) : (
