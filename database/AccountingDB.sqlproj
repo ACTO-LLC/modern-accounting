@@ -34,6 +34,7 @@
     <Build Include="dbo\Tables\Classes.sql" />
     <Build Include="dbo\Tables\Customers.sql" />
     <Build Include="dbo\Tables\EstimateLines.sql" />
+    <Build Include="dbo\Tables\Expenses.sql" />
     <Build Include="dbo\Tables\Estimates.sql" />
     <Build Include="dbo\Tables\InventoryLocations.sql" />
     <Build Include="dbo\Tables\InventoryTransactions.sql" />
@@ -46,6 +47,7 @@
     <Build Include="dbo\Tables\Projects.sql" />
     <Build Include="dbo\Tables\PurchaseOrderLines.sql" />
     <Build Include="dbo\Tables\PurchaseOrders.sql" />
+    <Build Include="dbo\Tables\Receipts.sql" />
     <Build Include="dbo\Tables\ReconciliationItems.sql" />
     <Build Include="dbo\Tables\RecurringSchedules.sql" />
     <Build Include="dbo\Tables\RecurringTemplates.sql" />
@@ -54,10 +56,12 @@
     <!-- Views -->
     <Build Include="dbo\Views\v_Bills.sql" />
     <Build Include="dbo\Views\v_Estimates.sql" />
+    <Build Include="dbo\Views\v_Expenses.sql" />
     <Build Include="dbo\Views\v_InvoiceLines.sql" />
     <Build Include="dbo\Views\v_Invoices.sql" />
     <Build Include="dbo\Views\v_Projects.sql" />
     <Build Include="dbo\Views\v_PurchaseOrders.sql" />
+    <Build Include="dbo\Views\v_Receipts.sql" />
     <Build Include="dbo\Views\v_TimeEntries.sql" />
     <!-- Stored Procedures -->
     <Build Include="dbo\StoredProcedures\CreateInvoice.sql" />
