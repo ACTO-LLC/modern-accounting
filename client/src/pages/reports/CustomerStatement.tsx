@@ -88,7 +88,7 @@ export default function CustomerStatement() {
   const printRef = useRef<HTMLDivElement>(null);
 
   // Fetch all customers
-  const { data: customers, isLoading: loadingCustomers } = useQuery({
+  const { data: customers, isLoading: loadingCustomers, error: customersError } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
       const response = await api.get<{ value: Customer[] }>('/customers?$orderby=Name');
@@ -97,11 +97,12 @@ export default function CustomerStatement() {
   });
 
   // Fetch selected customer details
-  const { data: customer } = useQuery({
+  const { data: customer, error: customerError } = useQuery({
     queryKey: ['customer', selectedCustomerId],
     queryFn: async () => {
+      const encodedId = encodeURIComponent(selectedCustomerId);
       const response = await api.get<{ value: Customer[] }>(
-        `/customers?$filter=Id eq ${selectedCustomerId}`
+        `/customers?$filter=Id eq ${encodedId}`
       );
       return response.data.value[0];
     },
@@ -109,11 +110,14 @@ export default function CustomerStatement() {
   });
 
   // Fetch invoices for the selected customer within date range
-  const { data: invoices, isLoading: loadingInvoices } = useQuery({
+  const { data: invoices, isLoading: loadingInvoices, error: invoicesError } = useQuery({
     queryKey: ['customer-invoices', selectedCustomerId, startDate, endDate],
     queryFn: async () => {
+      const encodedId = encodeURIComponent(selectedCustomerId);
+      const encodedStartDate = encodeURIComponent(startDate);
+      const encodedEndDate = encodeURIComponent(endDate);
       const response = await api.get<{ value: Invoice[] }>(
-        `/invoices?$filter=CustomerId eq ${selectedCustomerId} and IssueDate ge ${startDate} and IssueDate le ${endDate}&$orderby=IssueDate`
+        `/invoices?$filter=CustomerId eq ${encodedId} and IssueDate ge ${encodedStartDate} and IssueDate le ${encodedEndDate}&$orderby=IssueDate`
       );
       return response.data.value;
     },
@@ -121,11 +125,14 @@ export default function CustomerStatement() {
   });
 
   // Fetch payments for the selected customer within date range
-  const { data: payments, isLoading: loadingPayments } = useQuery({
+  const { data: payments, isLoading: loadingPayments, error: paymentsError } = useQuery({
     queryKey: ['customer-payments', selectedCustomerId, startDate, endDate],
     queryFn: async () => {
+      const encodedId = encodeURIComponent(selectedCustomerId);
+      const encodedStartDate = encodeURIComponent(startDate);
+      const encodedEndDate = encodeURIComponent(endDate);
       const response = await api.get<{ value: Payment[] }>(
-        `/payments?$filter=CustomerId eq ${selectedCustomerId} and PaymentDate ge ${startDate} and PaymentDate le ${endDate} and Status eq 'Completed'&$orderby=PaymentDate`
+        `/payments?$filter=CustomerId eq ${encodedId} and PaymentDate ge ${encodedStartDate} and PaymentDate le ${encodedEndDate} and Status eq 'Completed'&$orderby=PaymentDate`
       );
       return response.data.value;
     },
@@ -133,11 +140,39 @@ export default function CustomerStatement() {
   });
 
   // Fetch all outstanding invoices for aging calculation (regardless of date range)
-  const { data: outstandingInvoices } = useQuery({
+  const { data: outstandingInvoices, error: outstandingError } = useQuery({
     queryKey: ['customer-outstanding-invoices', selectedCustomerId],
     queryFn: async () => {
+      const encodedId = encodeURIComponent(selectedCustomerId);
       const response = await api.get<{ value: Invoice[] }>(
-        `/invoices?$filter=CustomerId eq ${selectedCustomerId} and Status ne 'Paid' and Status ne 'Cancelled' and Status ne 'Voided'`
+        `/invoices?$filter=CustomerId eq ${encodedId} and Status ne 'Paid' and Status ne 'Cancelled' and Status ne 'Voided'`
+      );
+      return response.data.value;
+    },
+    enabled: !!selectedCustomerId,
+  });
+
+  // Fetch invoices and payments before the start date to calculate beginning balance
+  const { data: priorInvoices } = useQuery({
+    queryKey: ['customer-prior-invoices', selectedCustomerId, startDate],
+    queryFn: async () => {
+      const encodedId = encodeURIComponent(selectedCustomerId);
+      const encodedStartDate = encodeURIComponent(startDate);
+      const response = await api.get<{ value: Invoice[] }>(
+        `/invoices?$filter=CustomerId eq ${encodedId} and IssueDate lt ${encodedStartDate} and Status ne 'Cancelled' and Status ne 'Voided'`
+      );
+      return response.data.value;
+    },
+    enabled: !!selectedCustomerId,
+  });
+
+  const { data: priorPayments } = useQuery({
+    queryKey: ['customer-prior-payments', selectedCustomerId, startDate],
+    queryFn: async () => {
+      const encodedId = encodeURIComponent(selectedCustomerId);
+      const encodedStartDate = encodeURIComponent(startDate);
+      const response = await api.get<{ value: Payment[] }>(
+        `/payments?$filter=CustomerId eq ${encodedId} and PaymentDate lt ${encodedStartDate} and Status eq 'Completed'`
       );
       return response.data.value;
     },
@@ -150,12 +185,23 @@ export default function CustomerStatement() {
       return { lines: [], beginningBalance: 0, endingBalance: 0 };
     }
 
+    // Calculate beginning balance from prior transactions
+    let beginningBalance = 0;
+    priorInvoices?.forEach((invoice: Invoice) => {
+      if (invoice.Status !== 'Cancelled' && invoice.Status !== 'Voided') {
+        beginningBalance += invoice.TotalAmount;
+      }
+    });
+    priorPayments?.forEach((payment: Payment) => {
+      beginningBalance -= payment.TotalAmount;
+    });
+
     // Combine and sort all transactions by date
     const allTransactions: StatementLine[] = [];
-    let runningBalance = 0;
+    let runningBalance = beginningBalance;
 
     // Add invoices (charges)
-    invoices?.forEach((invoice) => {
+    invoices?.forEach((invoice: Invoice) => {
       if (invoice.Status !== 'Cancelled' && invoice.Status !== 'Voided') {
         allTransactions.push({
           date: invoice.IssueDate,
@@ -169,7 +215,7 @@ export default function CustomerStatement() {
     });
 
     // Add payments (credits)
-    payments?.forEach((payment) => {
+    payments?.forEach((payment: Payment) => {
       allTransactions.push({
         date: payment.PaymentDate,
         description: `Payment #${payment.PaymentNumber}`,
@@ -191,10 +237,10 @@ export default function CustomerStatement() {
 
     return {
       lines: allTransactions,
-      beginningBalance: 0, // For simplicity, starting at 0 for the period
+      beginningBalance,
       endingBalance: runningBalance,
     };
-  }, [invoices, payments]);
+  }, [invoices, payments, priorInvoices, priorPayments]);
 
   // Calculate aging buckets
   const agingData = useMemo(() => {
@@ -205,12 +251,20 @@ export default function CustomerStatement() {
 
     const aging = createEmptyBucket();
 
-    outstandingInvoices.forEach((invoice) => {
+    outstandingInvoices.forEach((invoice: Invoice) => {
       const balanceDue = invoice.TotalAmount - (invoice.AmountPaid || 0);
       if (balanceDue <= 0) return;
 
-      const [year, month, day] = invoice.DueDate.split('T')[0].split('-').map(Number);
-      const dueDate = new Date(year, month - 1, day);
+      // Parse the due date more robustly
+      const dueDateStr = invoice.DueDate.split('T')[0]; // Get YYYY-MM-DD part
+      const dueDate = new Date(dueDateStr + 'T00:00:00'); // Parse as local date
+      
+      // Ensure valid date
+      if (isNaN(dueDate.getTime())) {
+        console.warn(`Invalid due date for invoice: ${invoice.InvoiceNumber}`);
+        return;
+      }
+
       const daysPastDue = Math.floor(
         (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -243,7 +297,7 @@ export default function CustomerStatement() {
     { key: 'balance', header: 'Balance', align: 'right', format: (v) => formatCurrency(v) },
   ];
 
-  const tableData: ReportRow[] = statementData.lines.map((line) => ({
+  const tableData: ReportRow[] = statementData.lines.map((line: StatementLine) => ({
     date: formatDate(line.date),
     description: line.description,
     reference: line.reference,
@@ -270,6 +324,7 @@ export default function CustomerStatement() {
   };
 
   const isLoading = loadingCustomers || loadingInvoices || loadingPayments;
+  const hasError = customersError || customerError || invoicesError || paymentsError || outstandingError;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -283,6 +338,29 @@ export default function CustomerStatement() {
           Back to Reports
         </Link>
       </div>
+
+      {/* Error Display */}
+      {hasError && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 print:hidden">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error loading statement data</h3>
+              <div className="mt-2 text-sm text-red-700">
+                {customersError && <p>Failed to load customers: {String(customersError)}</p>}
+                {customerError && <p>Failed to load customer details: {String(customerError)}</p>}
+                {invoicesError && <p>Failed to load invoices: {String(invoicesError)}</p>}
+                {paymentsError && <p>Failed to load payments: {String(paymentsError)}</p>}
+                {outstandingError && <p>Failed to load outstanding invoices: {String(outstandingError)}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="mb-6 bg-white shadow rounded-lg p-4 print:hidden">
@@ -441,6 +519,26 @@ export default function CustomerStatement() {
                 </tr>
               </thead>
               <tbody>
+                {/* Beginning Balance Row */}
+                {statementData.beginningBalance !== 0 && (
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <td className="py-3 text-sm text-gray-900 print:text-xs print:py-2">
+                      {formatDate(startDate)}
+                    </td>
+                    <td className="py-3 text-sm font-medium text-gray-900 print:text-xs print:py-2">
+                      Beginning Balance
+                    </td>
+                    <td className="py-3 text-sm text-gray-900 text-right print:text-xs print:py-2">
+                      -
+                    </td>
+                    <td className="py-3 text-sm text-gray-900 text-right print:text-xs print:py-2">
+                      -
+                    </td>
+                    <td className="py-3 text-sm text-gray-900 text-right font-medium print:text-xs print:py-2">
+                      {formatCurrency(statementData.beginningBalance)}
+                    </td>
+                  </tr>
+                )}
                 {statementData.lines.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-gray-500">
