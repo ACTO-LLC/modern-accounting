@@ -88,7 +88,14 @@
                 "CreatedDate": "CreatedDate",
                 "IsPersonal": "IsPersonal",
                 "PlaidTransactionId": "PlaidTransactionId",
-                "PlaidAccountId": "PlaidAccountId"
+                "PlaidAccountId": "PlaidAccountId",
+                "ImportId": "ImportId",
+                "BankTransactionId": "BankTransactionId",
+                "CheckNumber": "CheckNumber",
+                "ReferenceNumber": "ReferenceNumber",
+                "MatchConfidence": "MatchConfidence",
+                "MatchedPaymentId": "MatchedPaymentId",
+                "MatchedAt": "MatchedAt"
             },
             "relationships": {
                 "SourceAccount": {
@@ -126,6 +133,26 @@
                     "cardinality": "one",
                     "source.fields": [
                         "JournalEntryId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Import": {
+                    "target.entity": "banktransactionimports",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "ImportId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "MatchedPayment": {
+                    "target.entity": "payments",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "MatchedPaymentId"
                     ],
                     "target.fields": [
                         "Id"
@@ -2709,6 +2736,167 @@
                     "cardinality": "one",
                     "source.fields": [
                         "PayStubId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "banktransactionimports": {
+            "source": {
+                "object": "dbo.v_BankTransactionImports",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankAccountId": "BankAccountId",
+                "BankAccountName": "BankAccountName",
+                "BankAccountNumber": "BankAccountNumber",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "ImportDate": "ImportDate",
+                "TransactionCount": "TransactionCount",
+                "MatchedCount": "MatchedCount",
+                "Status": "Status",
+                "ImportedBy": "ImportedBy",
+                "ErrorMessage": "ErrorMessage",
+                "CreatedAt": "CreatedAt"
+            }
+        },
+        "banktransactionimports_write": {
+            "source": "dbo.BankTransactionImports",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankAccountId": "BankAccountId",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "ImportDate": "ImportDate",
+                "TransactionCount": "TransactionCount",
+                "MatchedCount": "MatchedCount",
+                "Status": "Status",
+                "ImportedBy": "ImportedBy",
+                "ErrorMessage": "ErrorMessage"
+            },
+            "relationships": {
+                "BankAccount": {
+                    "target.entity": "accounts",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "BankAccountId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                }
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "banktransactionmatches": {
+            "source": {
+                "object": "dbo.v_BankTransactionMatches",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "graphql": {
+                "enabled": false
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankTransactionId": "BankTransactionId",
+                "TransactionDate": "TransactionDate",
+                "TransactionDescription": "TransactionDescription",
+                "TransactionAmount": "TransactionAmount",
+                "InvoiceId": "InvoiceId",
+                "InvoiceNumber": "InvoiceNumber",
+                "InvoiceTotalAmount": "InvoiceTotalAmount",
+                "InvoiceAmountPaid": "InvoiceAmountPaid",
+                "InvoiceBalanceDue": "InvoiceBalanceDue",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "SuggestedAmount": "SuggestedAmount",
+                "Confidence": "Confidence",
+                "MatchReason": "MatchReason",
+                "Status": "Status",
+                "AcceptedAt": "AcceptedAt",
+                "AcceptedBy": "AcceptedBy",
+                "CreatedAt": "CreatedAt"
+            }
+        },
+        "banktransactionmatches_write": {
+            "source": "dbo.BankTransactionMatches",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankTransactionId": "BankTransactionId",
+                "InvoiceId": "InvoiceId",
+                "SuggestedAmount": "SuggestedAmount",
+                "Confidence": "Confidence",
+                "MatchReason": "MatchReason",
+                "Status": "Status",
+                "AcceptedAt": "AcceptedAt",
+                "AcceptedBy": "AcceptedBy"
+            },
+            "relationships": {
+                "BankTransaction": {
+                    "target.entity": "banktransactions",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "BankTransactionId"
+                    ],
+                    "target.fields": [
+                        "Id"
+                    ]
+                },
+                "Invoice": {
+                    "target.entity": "invoices",
+                    "cardinality": "one",
+                    "source.fields": [
+                        "InvoiceId"
                     ],
                     "target.fields": [
                         "Id"
