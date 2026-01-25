@@ -1,0 +1,410 @@
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { useEffect, ReactNode, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import VendorSelector from './VendorSelector';
+import api from '../lib/api';
+
+// Payment methods available
+const PAYMENT_METHODS = [
+  'Check',
+  'ACH/Bank Transfer',
+  'Credit Card',
+  'Wire Transfer',
+  'Cash',
+  'Other'
+] as const;
+
+// Schema for bill payment form
+export const payBillSchema = z.object({
+  PaymentNumber: z.string().min(1, 'Payment number is required'),
+  VendorId: z.string().uuid('Please select a vendor'),
+  PaymentDate: z.string().min(1, 'Payment date is required'),
+  TotalAmount: z.number().min(0.01, 'Amount must be greater than 0'),
+  PaymentMethod: z.string().min(1, 'Payment method is required'),
+  PaymentAccountId: z.string().uuid('Please select a payment account'),
+  Memo: z.string().nullish(),
+  Applications: z.array(z.object({
+    BillId: z.string().uuid('Please select a bill'),
+    AmountApplied: z.number().min(0, 'Amount must be positive'),
+    BillNumber: z.string().optional(),
+    BillTotalAmount: z.number().optional(),
+    BillBalanceDue: z.number().optional()
+  })).min(1, 'At least one bill application is required')
+});
+
+export type PayBillFormData = z.infer<typeof payBillSchema>;
+
+interface Account {
+  Id: string;
+  Name: string;
+  Type: string;
+  AccountNumber: string | null;
+}
+
+interface Bill {
+  Id: string;
+  BillNumber: string;
+  VendorId: string;
+  VendorName: string;
+  TotalAmount: number;
+  AmountPaid: number;
+  BalanceDue: number;
+  Status: string;
+  DueDate: string;
+}
+
+interface PayBillFormProps {
+  initialValues?: Partial<PayBillFormData>;
+  onSubmit: (data: PayBillFormData) => Promise<void>;
+  title: string;
+  isSubmitting?: boolean;
+  submitButtonText?: string;
+  headerActions?: ReactNode;
+}
+
+export default function PayBillForm({
+  initialValues,
+  onSubmit,
+  title,
+  isSubmitting: externalIsSubmitting,
+  submitButtonText = 'Pay Bills',
+  headerActions
+}: PayBillFormProps) {
+  const navigate = useNavigate();
+
+  // Fetch bank accounts (Asset type for payment)
+  const { data: bankAccounts } = useQuery({
+    queryKey: ['accounts-bank'],
+    queryFn: async (): Promise<Account[]> => {
+      const response = await api.get("/accounts?$filter=Type eq 'Asset' and Status eq 'Active'&$orderby=Name");
+      return response.data.value;
+    }
+  });
+
+  const { register, control, handleSubmit, setValue, watch, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<PayBillFormData>({
+    resolver: zodResolver(payBillSchema),
+    defaultValues: {
+      PaymentDate: new Date().toISOString().split('T')[0],
+      PaymentMethod: 'Check',
+      TotalAmount: 0,
+      Applications: [],
+      ...initialValues
+    }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "Applications"
+  });
+
+  const watchedVendorId = watch('VendorId');
+  const watchedApplications = watch('Applications');
+
+  // Fetch unpaid bills for the selected vendor
+  const { data: unpaidBills, isLoading: isLoadingBills } = useQuery({
+    queryKey: ['bills-unpaid', watchedVendorId],
+    queryFn: async (): Promise<Bill[]> => {
+      if (!watchedVendorId) return [];
+      const response = await api.get(
+        `/bills?$filter=VendorId eq ${watchedVendorId} and Status ne 'Paid'&$orderby=DueDate`
+      );
+      return response.data.value;
+    },
+    enabled: !!watchedVendorId
+  });
+
+  // Calculate total amount from applications
+  const calculatedTotal = useMemo(() => {
+    return watchedApplications?.reduce((sum, app) => sum + (app.AmountApplied || 0), 0) || 0;
+  }, [watchedApplications]);
+
+  // Update total amount when applications change
+  useEffect(() => {
+    setValue('TotalAmount', Math.round(calculatedTotal * 100) / 100);
+  }, [calculatedTotal, setValue]);
+
+  // Clear applications when vendor changes
+  useEffect(() => {
+    if (watchedVendorId && fields.length > 0) {
+      // Check if any existing applications are for a different vendor
+      const existingBillIds = fields.map(f => f.BillId);
+      const vendorBillIds = unpaidBills?.map(b => b.Id) || [];
+      const hasInvalidApplications = existingBillIds.some(id => !vendorBillIds.includes(id));
+
+      if (hasInvalidApplications && unpaidBills?.length) {
+        // Clear applications for different vendor
+        while (fields.length > 0) {
+          remove(0);
+        }
+      }
+    }
+  }, [watchedVendorId, unpaidBills]);
+
+  const isSubmitting = externalIsSubmitting || formIsSubmitting;
+
+  // Get bills that haven't been added yet
+  const availableBills = useMemo(() => {
+    const appliedBillIds = new Set(watchedApplications?.map(a => a.BillId) || []);
+    return unpaidBills?.filter(bill => !appliedBillIds.has(bill.Id)) || [];
+  }, [unpaidBills, watchedApplications]);
+
+  const handleAddBill = (bill: Bill) => {
+    append({
+      BillId: bill.Id,
+      AmountApplied: bill.BalanceDue,
+      BillNumber: bill.BillNumber,
+      BillTotalAmount: bill.TotalAmount,
+      BillBalanceDue: bill.BalanceDue
+    });
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString();
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center">
+          <button onClick={() => navigate(-1)} className="mr-4 text-gray-500 hover:text-gray-700">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        </div>
+        {headerActions && <div className="flex items-center">{headerActions}</div>}
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <label htmlFor="PaymentNumber" className="block text-sm font-medium text-gray-700">Payment Number</label>
+            <input
+              id="PaymentNumber"
+              type="text"
+              {...register('PaymentNumber')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              placeholder="BP-001"
+            />
+            {errors.PaymentNumber && <p className="mt-1 text-sm text-red-600">{errors.PaymentNumber.message}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="VendorId" className="block text-sm font-medium text-gray-700">Vendor</label>
+            <Controller
+              name="VendorId"
+              control={control}
+              render={({ field }) => (
+                <VendorSelector
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  error={errors.VendorId?.message}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="PaymentDate" className="block text-sm font-medium text-gray-700">Payment Date</label>
+            <input
+              id="PaymentDate"
+              type="date"
+              {...register('PaymentDate')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            />
+            {errors.PaymentDate && <p className="mt-1 text-sm text-red-600">{errors.PaymentDate.message}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700">Payment Method</label>
+            <select
+              id="PaymentMethod"
+              {...register('PaymentMethod')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            >
+              {PAYMENT_METHODS.map(method => (
+                <option key={method} value={method}>{method}</option>
+              ))}
+            </select>
+            {errors.PaymentMethod && <p className="mt-1 text-sm text-red-600">{errors.PaymentMethod.message}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="PaymentAccountId" className="block text-sm font-medium text-gray-700">Pay From Account</label>
+            <select
+              id="PaymentAccountId"
+              {...register('PaymentAccountId')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            >
+              <option value="">Select an account</option>
+              {bankAccounts?.map(account => (
+                <option key={account.Id} value={account.Id}>
+                  {account.Name} {account.AccountNumber ? `(${account.AccountNumber})` : ''}
+                </option>
+              ))}
+            </select>
+            {errors.PaymentAccountId && <p className="mt-1 text-sm text-red-600">{errors.PaymentAccountId.message}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="TotalAmount" className="block text-sm font-medium text-gray-700">Total Amount</label>
+            <div className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 p-2 text-lg font-semibold text-gray-900">
+              ${calculatedTotal.toFixed(2)}
+            </div>
+            <input type="hidden" {...register('TotalAmount', { valueAsNumber: true })} />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700">Memo</label>
+            <textarea
+              id="Memo"
+              {...register('Memo')}
+              rows={2}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              placeholder="Optional notes about this payment"
+            />
+          </div>
+        </div>
+
+        {/* Bill Applications */}
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Apply to Bills</h3>
+          </div>
+
+          {!watchedVendorId ? (
+            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-md">
+              Select a vendor to see their unpaid bills
+            </div>
+          ) : isLoadingBills ? (
+            <div className="text-center py-8 text-gray-500">Loading bills...</div>
+          ) : (
+            <>
+              {/* Available Bills */}
+              {availableBills.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Available Bills</h4>
+                  <div className="bg-gray-50 rounded-md overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Bill #</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Due Date</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Total</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Balance Due</th>
+                          <th className="px-4 py-2"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {availableBills.map(bill => (
+                          <tr key={bill.Id}>
+                            <td className="px-4 py-2 text-sm text-gray-900">{bill.BillNumber}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{formatDate(bill.DueDate)}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 text-right">${bill.TotalAmount.toFixed(2)}</td>
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">${bill.BalanceDue.toFixed(2)}</td>
+                            <td className="px-4 py-2 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleAddBill(bill)}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 rounded"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Apply
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Applied Bills */}
+              {fields.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Payment Applied To</h4>
+                  <div className="space-y-3">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="bg-green-50 p-4 rounded-md flex items-center gap-4">
+                        <div className="flex-grow">
+                          <div className="text-sm font-medium text-gray-900">
+                            Bill #{field.BillNumber}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Balance due: ${(field.BillBalanceDue || 0).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="w-40">
+                          <label className="block text-xs font-medium text-gray-500">Amount to Apply</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max={field.BillBalanceDue || undefined}
+                            {...register(`Applications.${index}.AmountApplied`, { valueAsNumber: true })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => remove(index)}
+                          className="text-red-600 hover:text-red-800 p-1"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {fields.length === 0 && availableBills.length === 0 && (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-md">
+                  No unpaid bills found for this vendor
+                </div>
+              )}
+            </>
+          )}
+
+          {errors.Applications && (
+            <p className="mt-2 text-sm text-red-600">{errors.Applications.message}</p>
+          )}
+        </div>
+
+        {/* Totals Section */}
+        <div className="border-t pt-4">
+          <div className="flex justify-end">
+            <div className="w-72 space-y-2">
+              <div className="flex justify-between text-lg font-bold">
+                <span className="text-gray-900">Total Payment:</span>
+                <span className="text-gray-900">${calculatedTotal.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end items-center border-t pt-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || fields.length === 0}
+            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Processing...' : submitButtonText}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
