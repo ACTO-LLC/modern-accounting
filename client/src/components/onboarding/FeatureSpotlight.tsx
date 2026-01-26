@@ -26,7 +26,7 @@ export default function FeatureSpotlight({ target, onDismiss, onNavigate }: Feat
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeHandlerRef = useRef<(() => void) | null>(null);
 
   // Find and measure the target element

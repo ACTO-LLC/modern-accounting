@@ -137,7 +137,7 @@ export default function SpotlightManager() {
       };
 
       // Initial delay before first check
-      let timer: NodeJS.Timeout = setTimeout(checkAndShow, 200);
+      let timer: ReturnType<typeof setTimeout> = setTimeout(checkAndShow, 200);
 
       return () => clearTimeout(timer);
     }
