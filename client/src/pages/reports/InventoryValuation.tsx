@@ -27,8 +27,8 @@ export default function InventoryValuation() {
   const [locationFilter, setLocationFilter] = useState<string>('all');
 
   // Fetch inventory items
-  const { data: inventoryItems, isLoading } = useQuery({
-    queryKey: ['inventory-valuation', asOfDate],
+  const { data: inventoryItems, isLoading, error } = useQuery({
+    queryKey: ['inventory-valuation', asOfDate, locationFilter],
     queryFn: async () => {
       const response = await api.get<{ value: ProductService[] }>(
         "/productsservices?$filter=Type eq 'Inventory'&$orderby=Name"
@@ -58,17 +58,21 @@ export default function InventoryValuation() {
     return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
   };
 
-  // Calculate totals
-  const totalQuantity = inventoryItems?.reduce((sum, item) => sum + (item.QuantityOnHand || 0), 0) || 0;
-  const totalValue = inventoryItems?.reduce((sum, item) => {
+  // Filter items by location (Note: location filtering would require inventory-location relationship in the database)
+  // For now, we filter client-side if we had location data on items. This is a placeholder for proper implementation.
+  const filteredItems = inventoryItems || [];
+
+  // Calculate totals based on filtered items
+  const totalQuantity = filteredItems.reduce((sum, item) => sum + (item.QuantityOnHand || 0), 0);
+  const totalValue = filteredItems.reduce((sum, item) => {
     return sum + ((item.QuantityOnHand || 0) * (item.PurchaseCost || 0));
-  }, 0) || 0;
+  }, 0);
 
   const handleExportCSV = () => {
-    if (!inventoryItems || inventoryItems.length === 0) return;
+    if (!filteredItems || filteredItems.length === 0) return;
 
     const headers = ['Product', 'SKU', 'Qty on Hand', 'Avg Cost', 'Asset Value', 'Valuation Method'];
-    const rows = inventoryItems.map((item) => {
+    const rows = filteredItems.map((item) => {
       const value = (item.QuantityOnHand || 0) * (item.PurchaseCost || 0);
       return [
         item.Name,
@@ -88,7 +92,7 @@ export default function InventoryValuation() {
       `As of ${asOfDate}`,
       '',
       headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -146,11 +150,16 @@ export default function InventoryValuation() {
       </div>
 
       {/* Report Content */}
-      {isLoading ? (
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-red-800 font-medium">Error loading inventory data</p>
+          <p className="text-red-600 text-sm mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
-      ) : inventoryItems && inventoryItems.length > 0 ? (
+      ) : filteredItems && filteredItems.length > 0 ? (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -173,7 +182,7 @@ export default function InventoryValuation() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {inventoryItems.map((item) => {
+              {filteredItems.map((item) => {
                 const value = (item.QuantityOnHand || 0) * (item.PurchaseCost || 0);
                 return (
                   <tr key={item.Id}>

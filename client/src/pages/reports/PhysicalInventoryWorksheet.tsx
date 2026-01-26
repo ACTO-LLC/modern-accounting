@@ -26,8 +26,8 @@ export default function PhysicalInventoryWorksheet() {
   const [showSystemQty, setShowSystemQty] = useState(true);
 
   // Fetch inventory items
-  const { data: inventoryItems, isLoading } = useQuery({
-    queryKey: ['physical-inventory-worksheet'],
+  const { data: inventoryItems, isLoading, error } = useQuery({
+    queryKey: ['physical-inventory-worksheet', asOfDate, locationFilter],
     queryFn: async () => {
       const response = await api.get<{ value: ProductService[] }>(
         "/productsservices?$filter=Type eq 'Inventory' and Status eq 'Active'&$orderby=Name"
@@ -52,15 +52,18 @@ export default function PhysicalInventoryWorksheet() {
     return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
   };
 
+  // Filter items by location (placeholder - would need LocationId on items)
+  const filteredItems = inventoryItems || [];
+
   const handleExportExcel = () => {
-    if (!inventoryItems || inventoryItems.length === 0) return;
+    if (!filteredItems || filteredItems.length === 0) return;
 
     // Create CSV with columns formatted for easy Excel use
     const headers = showSystemQty
       ? ['Product', 'SKU', 'Location', 'System Qty', 'Physical Count', 'Variance', 'Notes']
       : ['Product', 'SKU', 'Location', 'Physical Count', 'Notes'];
 
-    const rows = inventoryItems.map((item) => {
+    const rows = filteredItems.map((item) => {
       if (showSystemQty) {
         return [
           item.Name,
@@ -88,7 +91,7 @@ export default function PhysicalInventoryWorksheet() {
       `Counted By: _______________________`,
       ``,
       headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -170,11 +173,16 @@ export default function PhysicalInventoryWorksheet() {
       </div>
 
       {/* Report Content */}
-      {isLoading ? (
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-red-800 font-medium">Error loading inventory data</p>
+          <p className="text-red-600 text-sm mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
-      ) : inventoryItems && inventoryItems.length > 0 ? (
+      ) : filteredItems && filteredItems.length > 0 ? (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -204,7 +212,7 @@ export default function PhysicalInventoryWorksheet() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {inventoryItems.map((item, index) => (
+              {filteredItems.map((item, index) => (
                 <tr key={item.Id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">

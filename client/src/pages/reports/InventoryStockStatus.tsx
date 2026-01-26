@@ -71,8 +71,8 @@ export default function InventoryStockStatus() {
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
   // Fetch inventory items
-  const { data: inventoryItems, isLoading } = useQuery({
-    queryKey: ['inventory-stock-status', asOfDate],
+  const { data: inventoryItems, isLoading, error } = useQuery({
+    queryKey: ['inventory-stock-status', asOfDate, locationFilter],
     queryFn: async () => {
       const response = await api.get<{ value: ProductService[] }>(
         "/productsservices?$filter=Type eq 'Inventory'&$orderby=Name"
@@ -108,12 +108,17 @@ export default function InventoryStockStatus() {
     return { ...item, onHand, committed, available, reorderPoint, status };
   }) || [];
 
-  // Apply filters
+  // Apply filters (including location filter placeholder - would need location data on items)
   const filteredItems = itemsWithStatus.filter((item) => {
     if (showLowStockOnly && item.status === 'OK') return false;
     if (statusFilter !== 'all' && item.status.toLowerCase() !== statusFilter) return false;
+    // Location filter placeholder - inventory items would need a LocationId field
+    // if (locationFilter !== 'all' && item.LocationId !== locationFilter) return false;
     return true;
   });
+
+  // Detect conflicting filters
+  const hasConflictingFilters = showLowStockOnly && statusFilter === 'ok';
 
   // Calculate summary stats
   const stats = {
@@ -143,7 +148,7 @@ export default function InventoryStockStatus() {
       `As of ${asOfDate}`,
       '',
       headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -171,6 +176,8 @@ export default function InventoryStockStatus() {
         </div>
         <button
           onClick={() => setStatusFilter('ok')}
+          aria-label="Filter by OK status"
+          aria-pressed={statusFilter === 'ok'}
           className={`bg-white rounded-lg shadow p-4 text-left hover:ring-2 hover:ring-green-500 ${statusFilter === 'ok' ? 'ring-2 ring-green-500' : ''}`}
         >
           <p className="text-sm text-gray-500">OK</p>
@@ -178,6 +185,8 @@ export default function InventoryStockStatus() {
         </button>
         <button
           onClick={() => setStatusFilter('low')}
+          aria-label="Filter by Low Stock status"
+          aria-pressed={statusFilter === 'low'}
           className={`bg-white rounded-lg shadow p-4 text-left hover:ring-2 hover:ring-yellow-500 ${statusFilter === 'low' ? 'ring-2 ring-yellow-500' : ''}`}
         >
           <p className="text-sm text-gray-500">Low Stock</p>
@@ -185,6 +194,8 @@ export default function InventoryStockStatus() {
         </button>
         <button
           onClick={() => setStatusFilter('out')}
+          aria-label="Filter by Out of Stock status"
+          aria-pressed={statusFilter === 'out'}
           className={`bg-white rounded-lg shadow p-4 text-left hover:ring-2 hover:ring-red-500 ${statusFilter === 'out' ? 'ring-2 ring-red-500' : ''}`}
         >
           <p className="text-sm text-gray-500">Out of Stock</p>
@@ -192,6 +203,8 @@ export default function InventoryStockStatus() {
         </button>
         <button
           onClick={() => setStatusFilter('oversold')}
+          aria-label="Filter by Oversold status"
+          aria-pressed={statusFilter === 'oversold'}
           className={`bg-white rounded-lg shadow p-4 text-left hover:ring-2 hover:ring-purple-500 ${statusFilter === 'oversold' ? 'ring-2 ring-purple-500' : ''}`}
         >
           <p className="text-sm text-gray-500">Oversold</p>
@@ -292,8 +305,24 @@ export default function InventoryStockStatus() {
         </div>
       )}
 
+      {/* Conflicting Filters Warning */}
+      {hasConflictingFilters && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <p className="text-amber-800 font-medium">No results due to conflicting filters</p>
+          <p className="text-amber-600 text-sm mt-1">
+            "Show alerts only" excludes OK items, but you've also filtered to show only OK items.
+            Please disable "Show alerts only" or select a different status filter.
+          </p>
+        </div>
+      )}
+
       {/* Report Content */}
-      {isLoading ? (
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-red-800 font-medium">Error loading inventory data</p>
+          <p className="text-red-600 text-sm mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
