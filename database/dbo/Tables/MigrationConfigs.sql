@@ -1,0 +1,14 @@
+CREATE TABLE [dbo].[MigrationConfigs]
+(
+    [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+    [SourceSystem] NVARCHAR(50) NOT NULL,
+    [ConfigKey] NVARCHAR(100) NOT NULL,
+    [ConfigValue] NVARCHAR(MAX) NOT NULL,
+    [Description] NVARCHAR(500) NULL,
+    [IsActive] BIT NOT NULL DEFAULT 1,
+    [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+
+    CONSTRAINT [UQ_MigrationConfigs] UNIQUE ([SourceSystem], [ConfigKey])
+)
+GO
