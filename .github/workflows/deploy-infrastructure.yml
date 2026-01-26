@@ -72,7 +72,8 @@ jobs:
       # Azure login and deployment validation only run when credentials are configured
       # This allows syntax validation to pass on public PRs without exposing secrets
       - name: Setup Azure CLI
-        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+        id: azure-login
+        continue-on-error: true
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -80,7 +81,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Validate template against Azure (dev)
-        if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+        if: steps.azure-login.outcome == 'success'
         run: |
           az deployment sub validate \
             --location eastus \
@@ -90,28 +91,33 @@ jobs:
 
   # ============================================================================
   # Plan Job - What-if deployment preview
-  # Skipped when Azure credentials are not configured (e.g., public PRs)
+  # Will fail gracefully if Azure credentials are not configured
   # ============================================================================
   plan:
     name: Plan Infrastructure Changes
     runs-on: ubuntu-latest
     needs: validate
-    if: |
-      (github.event_name == 'pull_request' || github.event.inputs.action == 'plan') &&
-      secrets.AZURE_CLIENT_ID != ''
+    if: github.event_name == 'pull_request' || github.event.inputs.action == 'plan'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Azure CLI
+        id: azure-login
+        continue-on-error: true
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Skip notice (no credentials)
+        if: steps.azure-login.outcome != 'success'
+        run: echo "::notice::Skipping Azure deployment plan - credentials not configured"
+
       - name: Set environment
+        if: steps.azure-login.outcome == 'success'
         id: env
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
@@ -121,6 +127,7 @@ jobs:
           fi
 
       - name: What-if deployment
+        if: steps.azure-login.outcome == 'success'
         run: |
           echo "Running what-if deployment for ${{ steps.env.outputs.environment }} environment..."
           az deployment sub what-if \
