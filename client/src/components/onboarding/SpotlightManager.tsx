@@ -4,7 +4,7 @@ import { useOnboarding } from '../../contexts/OnboardingContext';
 import FeatureSpotlight, { getSpotlightTarget } from './FeatureSpotlight';
 
 // Track which spotlights have been shown in localStorage
-const STORAGE_KEY = 'ma-shown-spotlights';
+const STORAGE_KEY = 'modern-accounting:shown-spotlights';
 
 function getShownSpotlights(): Set<string> {
   try {
@@ -50,7 +50,7 @@ function isModalOpen(): boolean {
 export default function SpotlightManager() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { status } = useOnboarding();
+  const { status, features } = useOnboarding();
   const [currentSpotlight, setCurrentSpotlight] = useState<string | null>(null);
   const [spotlightQueue, setSpotlightQueue] = useState<string[]>([]);
   const previousUnlockedRef = useRef<Set<string>>(new Set());
@@ -152,7 +152,7 @@ export default function SpotlightManager() {
 
   const handleNavigate = useCallback(() => {
     if (currentSpotlight) {
-      const target = getSpotlightTarget(currentSpotlight);
+      const target = getSpotlightTarget(currentSpotlight, features);
       if (target) {
         try {
           // Extract path from selector
@@ -167,7 +167,7 @@ export default function SpotlightManager() {
         }
       }
     }
-  }, [currentSpotlight, navigate]);
+  }, [currentSpotlight, navigate, features]);
 
   // Don't show spotlight if we're not on the dashboard (user is already navigating)
   // Only show spotlights when user is on main pages, not in the middle of a form
@@ -178,7 +178,8 @@ export default function SpotlightManager() {
     return null;
   }
 
-  const target = getSpotlightTarget(currentSpotlight);
+  // Derive spotlight target from features data (data-driven approach)
+  const target = getSpotlightTarget(currentSpotlight, features);
 
   return (
     <FeatureSpotlight

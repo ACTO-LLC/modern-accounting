@@ -6,6 +6,10 @@ difficulty: 2
 category: transactions
 sortOrder: 40
 
+spotlight:
+  message: "Create and send invoices to your customers from here."
+  position: right
+
 description:
   short: "Bill your customers for products and services"
   detailed: |

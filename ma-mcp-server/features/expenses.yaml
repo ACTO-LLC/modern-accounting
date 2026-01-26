@@ -6,6 +6,10 @@ difficulty: 2
 category: transactions
 sortOrder: 55
 
+spotlight:
+  message: "Record business expenses like purchases and payments."
+  position: right
+
 description:
   short: "Record day-to-day business spending"
   detailed: |

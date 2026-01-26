@@ -117,7 +117,7 @@ export default function MiltonOnboardingHelper() {
   const lastFeatureHelpRef = useRef<string | null>(null);
   const hasShownInitialHelpRef = useRef<Set<string>>(
     (() => {
-      const saved = localStorage.getItem('ma-milton-feature-help');
+      const saved = localStorage.getItem('modern-accounting:milton-feature-help');
       return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
     })()
   );
@@ -186,7 +186,7 @@ export default function MiltonOnboardingHelper() {
       // Mark as shown
       lastFeatureHelpRef.current = featureKey;
       shownHelp.add(featureKey);
-      localStorage.setItem('ma-milton-feature-help', JSON.stringify([...shownHelp]));
+      localStorage.setItem('modern-accounting:milton-feature-help', JSON.stringify([...shownHelp]));
     }, 2000); // 2 second delay to let the page load
 
     return () => clearTimeout(timer);

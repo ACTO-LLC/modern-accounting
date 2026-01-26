@@ -6,6 +6,10 @@ difficulty: 4
 category: accounting
 sortOrder: 70
 
+spotlight:
+  message: "Make manual accounting entries when needed."
+  position: right
+
 description:
   short: "The foundation of double-entry bookkeeping"
   detailed: |

@@ -6,6 +6,10 @@ difficulty: 3
 category: advanced
 sortOrder: 80
 
+spotlight:
+  message: "See how your business is doing with financial reports."
+  position: right
+
 description:
   short: "See the big picture of your business finances"
   detailed: |

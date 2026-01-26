@@ -5,8 +5,8 @@ test.describe('Onboarding Spotlight System', () => {
     // Clear onboarding-related localStorage before each test
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.removeItem('ma-shown-spotlights');
-      localStorage.removeItem('ma-seen-feature-tours');
+      localStorage.removeItem('modern-accounting:shown-spotlights');
+      localStorage.removeItem('modern-accounting:seen-feature-tours');
     });
   });
 
@@ -47,21 +47,21 @@ test.describe('Onboarding Spotlight System', () => {
 
     // Mark a spotlight as shown
     await page.evaluate(() => {
-      const key = 'ma-shown-spotlights';
+      const key = 'modern-accounting:shown-spotlights';
       const shown = new Set(['customers']);
       localStorage.setItem(key, JSON.stringify([...shown]));
     });
 
     // Verify it was stored correctly
     const stored = await page.evaluate(() => {
-      return localStorage.getItem('ma-shown-spotlights');
+      return localStorage.getItem('modern-accounting:shown-spotlights');
     });
 
     expect(stored).toBe('["customers"]');
 
     // Verify it can be parsed back
     const parsed = await page.evaluate(() => {
-      const saved = localStorage.getItem('ma-shown-spotlights');
+      const saved = localStorage.getItem('modern-accounting:shown-spotlights');
       return saved ? JSON.parse(saved) : [];
     });
 

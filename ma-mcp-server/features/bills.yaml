@@ -6,6 +6,10 @@ difficulty: 2
 category: transactions
 sortOrder: 50
 
+spotlight:
+  message: "Track bills you receive from vendors."
+  position: right
+
 description:
   short: "Track what you owe to vendors"
   detailed: |

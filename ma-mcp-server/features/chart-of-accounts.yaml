@@ -1,10 +1,14 @@
 key: chart_of_accounts
 name: Chart of Accounts
-menuPath: /chart-of-accounts
+menuPath: /accounts
 icon: List
 difficulty: 3
 category: accounting
 sortOrder: 60
+
+spotlight:
+  message: "Your accounting categories live here."
+  position: right
 
 description:
   short: "The master list of categories for all money movement"

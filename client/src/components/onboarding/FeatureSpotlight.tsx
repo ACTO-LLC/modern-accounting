@@ -301,9 +301,50 @@ export default function FeatureSpotlight({ target, onDismiss, onNavigate }: Feat
   );
 }
 
-// Helper to generate spotlight targets for features
-export function getSpotlightTarget(featureKey: string): SpotlightTarget | null {
-  const targets: Record<string, Omit<SpotlightTarget, 'featureKey'>> = {
+// Feature type for spotlight generation (matches OnboardingContext.Feature)
+interface FeatureForSpotlight {
+  key: string;
+  name: string;
+  menuPath: string;
+  spotlight?: {
+    message: string;
+    position?: 'top' | 'bottom' | 'left' | 'right';
+  };
+}
+
+// Helper to generate spotlight targets from feature data
+// Derives selector from menuPath instead of hardcoding
+export function getSpotlightTarget(
+  featureKey: string,
+  features?: FeatureForSpotlight[]
+): SpotlightTarget | null {
+  // If features are provided, look up from there (data-driven approach)
+  if (features && features.length > 0) {
+    const feature = features.find(f => f.key === featureKey);
+    if (feature && feature.spotlight) {
+      return {
+        featureKey,
+        featureName: feature.name,
+        selector: `[href="${feature.menuPath}"]`,
+        message: feature.spotlight.message,
+        position: feature.spotlight.position || 'right',
+      };
+    }
+    // Feature found but no spotlight config
+    if (feature) {
+      return {
+        featureKey,
+        featureName: feature.name,
+        selector: `[href="${feature.menuPath}"]`,
+        message: `${feature.name} is now available!`,
+        position: 'right',
+      };
+    }
+  }
+
+  // Fallback to hardcoded targets for backwards compatibility
+  // This will be used if MCP server doesn't return spotlight data
+  const fallbackTargets: Record<string, Omit<SpotlightTarget, 'featureKey'>> = {
     customers: {
       featureName: 'Customers',
       selector: '[href="/customers"]',
@@ -366,7 +407,7 @@ export function getSpotlightTarget(featureKey: string): SpotlightTarget | null {
     },
   };
 
-  const config = targets[featureKey];
+  const config = fallbackTargets[featureKey];
   if (!config) return null;
 
   return {

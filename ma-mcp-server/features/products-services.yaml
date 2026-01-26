@@ -6,6 +6,10 @@ difficulty: 1
 category: foundation
 sortOrder: 30
 
+spotlight:
+  message: "Set up what you sell to make invoicing faster."
+  position: right
+
 description:
   short: "What you sell to customers"
   detailed: |

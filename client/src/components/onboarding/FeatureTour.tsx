@@ -27,7 +27,7 @@ export default function FeatureTour() {
   const [featureDetails, setFeatureDetails] = useState<FeatureDetails | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [seenFeatures, setSeenFeatures] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('ma-seen-feature-tours');
+    const saved = localStorage.getItem('modern-accounting:seen-feature-tours');
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
@@ -63,7 +63,7 @@ export default function FeatureTour() {
       const newSeen = new Set(seenFeatures);
       newSeen.add(currentFeatureKey);
       setSeenFeatures(newSeen);
-      localStorage.setItem('ma-seen-feature-tours', JSON.stringify([...newSeen]));
+      localStorage.setItem('modern-accounting:seen-feature-tours', JSON.stringify([...newSeen]));
 
       // Trigger spotlight to highlight the menu item
       // Small delay to let the modal close first

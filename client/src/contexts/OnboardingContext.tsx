@@ -6,6 +6,11 @@ export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 export type PrimaryGoal = 'invoicing' | 'expenses' | 'full_accounting';
 export type FeatureStatus = 'locked' | 'unlocked' | 'in_progress' | 'completed';
 
+export interface SpotlightConfig {
+  message: string;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+}
+
 export interface Feature {
   key: string;
   name: string;
@@ -15,6 +20,7 @@ export interface Feature {
   shortDescription: string;
   prerequisites: string[];
   capabilities: string[];
+  spotlight?: SpotlightConfig;
 }
 
 export interface FeatureDetails extends Feature {

@@ -19,6 +19,11 @@ export interface ExperienceLevelNotes {
   advanced: string;
 }
 
+export interface SpotlightConfig {
+  message: string;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+}
+
 export interface Feature {
   key: string;
   name: string;
@@ -34,6 +39,7 @@ export interface Feature {
   leadsTo: string[];
   experienceLevelNotes: ExperienceLevelNotes;
   sampleTasks: SampleTask[];
+  spotlight?: SpotlightConfig;
 }
 
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';

@@ -6,6 +6,10 @@ difficulty: 2
 category: transactions
 sortOrder: 45
 
+spotlight:
+  message: "Create quotes and proposals before sending official invoices."
+  position: right
+
 description:
   short: "Create quotes and proposals for customers"
   detailed: |

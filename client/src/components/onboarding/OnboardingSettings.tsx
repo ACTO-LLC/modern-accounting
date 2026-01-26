@@ -16,8 +16,8 @@ export default function OnboardingSettings() {
     try {
       setIsResetting(true);
       // Also reset spotlight tracking and feature tours
-      localStorage.removeItem('ma-seen-feature-tours');
-      localStorage.removeItem('ma-milton-feature-help');
+      localStorage.removeItem('modern-accounting:seen-feature-tours');
+      localStorage.removeItem('modern-accounting:milton-feature-help');
       resetSpotlights();
       await resetOnboarding();
     } catch (error) {

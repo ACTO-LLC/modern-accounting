@@ -6,6 +6,10 @@ difficulty: 1
 category: foundation
 sortOrder: 10
 
+spotlight:
+  message: "This is where you manage your customers. Click to add your first customer!"
+  position: right
+
 description:
   short: "People and businesses you sell to"
   detailed: |
