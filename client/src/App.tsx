@@ -113,6 +113,9 @@ import BankImportHistory from './pages/BankImportHistory';
 import BankRules from './pages/BankRules';
 import VendorHierarchy from './pages/VendorHierarchy';
 import CustomerHierarchy from './pages/CustomerHierarchy';
+import SalesReceipts from './pages/SalesReceipts';
+import NewSalesReceipt from './pages/NewSalesReceipt';
+import EditSalesReceipt from './pages/EditSalesReceipt';
 import AuditLog from './pages/AuditLog';
 import ChatInterface from './components/ChatInterface';
 import OnboardingWelcome from './components/onboarding/OnboardingWelcome';
@@ -149,6 +152,9 @@ function AppContent() {
             <Route path="invoices/new" element={<NewInvoice />} />
             <Route path="invoices/:id" element={<InvoiceView />} />
             <Route path="invoices/:id/edit" element={<EditInvoice />} />
+            <Route path="sales-receipts" element={<SalesReceipts />} />
+            <Route path="sales-receipts/new" element={<NewSalesReceipt />} />
+            <Route path="sales-receipts/:id/edit" element={<EditSalesReceipt />} />
             <Route path="estimates" element={<Estimates />} />
             <Route path="estimates/new" element={<NewEstimate />} />
             <Route path="estimates/:id/edit" element={<EditEstimate />} />

@@ -395,6 +395,74 @@
                     "actions": ["*"]
                 }
             ]
+        },
+        "salesreceipts": {
+            "source": "dbo.v_SalesReceipts",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["read"]
+                }
+            ]
+        },
+        "salesreceipts_write": {
+            "source": "dbo.SalesReceipts",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "salesreceiptlines": {
+            "source": "dbo.SalesReceiptLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update", "delete"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "auditlog": {
+            "source": "dbo.AuditLog",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["read"]
+                }
+            ]
         }
     }
 }

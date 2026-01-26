@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, ScrollText } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote, History } from 'lucide-react';
 
 export interface NavItem {
   id: string;
@@ -42,6 +42,7 @@ export const navigationConfig: NavEntry[] = [
     icon: FileText,
     items: [
       { id: 'invoices', name: 'Invoices', href: '/invoices', icon: FileText, featureKey: 'invoices' },
+      { id: 'sales-receipts', name: 'Sales Receipts', href: '/sales-receipts', icon: Banknote, featureKey: 'sales_receipts' },
       { id: 'estimates', name: 'Estimates', href: '/estimates', icon: ClipboardList, featureKey: 'estimates' },
     ],
   },
@@ -165,15 +166,30 @@ export const navigationConfig: NavEntry[] = [
     alwaysVisible: true,
   },
 
-  // Admin group - standalone items for admin functions
+  // AI Enhancements - standalone (always visible)
   {
-    id: 'admin',
-    name: 'Admin',
+    id: 'admin-enhancements',
+    name: 'AI Enhancements',
+    href: '/admin/enhancements',
+    icon: Sparkles,
+    alwaysVisible: true,
+  },
+
+  // Audit Log - standalone (always visible)
+  {
+    id: 'audit-log',
+    name: 'Audit Log',
+    href: '/admin/audit-log',
+    icon: History,
+    alwaysVisible: true,
+  },
+
+  // Settings - standalone (always visible)
+  {
+    id: 'settings',
+    name: 'Settings',
+    href: '/settings',
     icon: Settings,
-    items: [
-      { id: 'settings', name: 'Company Settings', href: '/settings', icon: Settings, alwaysVisible: true },
-      { id: 'admin-enhancements', name: 'AI Enhancements', href: '/admin/enhancements', icon: Sparkles, alwaysVisible: true },
-      { id: 'audit-log', name: 'Audit Log', href: '/admin/audit-log', icon: ScrollText, alwaysVisible: true },
-    ],
+    alwaysVisible: true,
   },
 ];
