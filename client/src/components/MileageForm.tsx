@@ -26,11 +26,11 @@ const mileageSchemaBase = z.object({
   Status: z.enum(['Recorded', 'Pending', 'Approved', 'Voided']),
 }).refine(
   (data) => {
-    // Validate date is not in the future
+    // Validate date is not in the future (compare to end of today)
     const tripDate = new Date(data.TripDate);
-    const today = new Date();
-    today.setHours(23, 59, 59, 999); // End of today
-    return tripDate <= today;
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    return tripDate <= endOfToday;
   },
   { message: 'Trip date cannot be in the future', path: ['TripDate'] }
 ).refine(
@@ -52,10 +52,11 @@ const mileageSchemaBase = z.object({
 ).refine(
   (data) => {
     // Validate distance matches odometer difference if both are provided
+    // Allow 1 mile tolerance for rounding or minor odometer discrepancies
+    const ODOMETER_TOLERANCE_MILES = 1;
     if (data.StartOdometer != null && data.EndOdometer != null) {
       const odometerDistance = data.EndOdometer - data.StartOdometer;
-      // Allow small rounding tolerance (1 mile)
-      return Math.abs(data.Distance - odometerDistance) <= 1;
+      return Math.abs(data.Distance - odometerDistance) <= ODOMETER_TOLERANCE_MILES;
     }
     return true;
   },

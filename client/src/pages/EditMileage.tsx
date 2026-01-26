@@ -39,8 +39,9 @@ export default function EditMileage() {
       if (!id || !uuidRegex.test(id)) {
         throw new Error('Invalid trip ID format');
       }
+      // Use encodeURIComponent for additional safety even with validated UUID
       const response = await api.get<{ value: MileageTrip[] }>(
-        `/mileagetrips?$filter=Id eq ${id}`
+        `/mileagetrips?$filter=Id eq ${encodeURIComponent(id)}`
       );
       return response.data.value[0];
     },
