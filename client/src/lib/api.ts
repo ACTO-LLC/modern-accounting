@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { PublicClientApplication, SilentRequest, InteractionRequiredAuthError } from '@azure/msal-browser';
 import { apiRequest } from './authConfig';
+import { formatDateForOData } from './dateUtils';
 
 const api = axios.create({
   baseURL: '/api',
@@ -233,8 +234,10 @@ export const timeEntriesApi = {
   },
 
   getByDateRange: async (startDate: string, endDate: string): Promise<TimeEntry[]> => {
+    const start = formatDateForOData(startDate);
+    const end = formatDateForOData(endDate, true);
     const response = await api.get(
-      `/timeentries?$filter=EntryDate ge '${startDate}' and EntryDate le '${endDate}'`
+      `/timeentries?$filter=EntryDate ge ${start} and EntryDate le ${end}`
     );
     return response.data.value;
   },

@@ -12,6 +12,7 @@ import {
   getAvailableTaxYears,
 } from '../lib/taxForms';
 import { formatCurrency } from '../lib/payrollCalculations';
+import { formatDateForOData } from '../lib/dateUtils';
 
 interface Vendor {
   Id: string;
@@ -27,19 +28,11 @@ interface Vendor {
   Status: string;
 }
 
-interface Bill {
-  Id: string;
-  VendorId: string;
-  BillDate: string;
-  TotalAmount: number;
-  Status: string;
-}
-
 interface BillPayment {
   Id: string;
-  BillId: string;
+  VendorId: string;
   PaymentDate: string;
-  Amount: number;
+  TotalAmount: number;
 }
 
 export default function Form1099NEC() {
@@ -65,42 +58,28 @@ export default function Form1099NEC() {
   const { data: billPayments, isLoading: paymentsLoading } = useQuery({
     queryKey: ['billpayments', 'year', selectedYear],
     queryFn: async () => {
-      const startDate = `${selectedYear}-01-01`;
-      const endDate = `${selectedYear}-12-31`;
+      const startDate = formatDateForOData(`${selectedYear}-01-01`);
+      const endDate = formatDateForOData(`${selectedYear}-12-31`, true);
       const response = await api.get<{ value: BillPayment[] }>(
-        `/billpayments?$filter=PaymentDate ge '${startDate}' and PaymentDate le '${endDate}'`
+        `/billpayments?$filter=PaymentDate ge ${startDate} and PaymentDate le ${endDate}`
       );
       return response.data.value;
     },
   });
 
-  // Fetch bills to link payments to vendors
-  const { data: bills, isLoading: billsLoading } = useQuery({
-    queryKey: ['bills'],
-    queryFn: async () => {
-      const response = await api.get<{ value: Bill[] }>('/bills');
-      return response.data.value;
-    },
-  });
-
   // Calculate annual payments per vendor
+  // Note: BillPayments has VendorId directly, no need to join through Bills
   const vendorPayments = useMemo(() => {
-    if (!billPayments || !bills || !vendors) return new Map<string, AnnualVendorPayments>();
+    if (!billPayments || !vendors) return new Map<string, AnnualVendorPayments>();
 
-    // Create a map of bill ID to vendor ID
-    const billToVendor = new Map<string, string>();
-    bills.forEach((bill) => {
-      billToVendor.set(bill.Id, bill.VendorId);
-    });
-
-    // Create a set of 1099 vendor IDs
+    // Create a set of 1099 vendor IDs for quick lookup
     const vendor1099Ids = new Set(vendors.map((v) => v.Id));
 
     // Calculate total payments per vendor
     const payments = new Map<string, AnnualVendorPayments>();
 
     billPayments.forEach((payment) => {
-      const vendorId = billToVendor.get(payment.BillId);
+      const vendorId = payment.VendorId;
       if (!vendorId || !vendor1099Ids.has(vendorId)) return;
 
       const vendor = vendors.find((v) => v.Id === vendorId);
@@ -108,13 +87,13 @@ export default function Form1099NEC() {
 
       const existing = payments.get(vendorId);
       if (existing) {
-        existing.totalPayments += payment.Amount;
+        existing.totalPayments += payment.TotalAmount;
       } else {
         payments.set(vendorId, {
           vendorId,
           vendorName: vendor.Name,
           taxYear: selectedYear,
-          totalPayments: payment.Amount,
+          totalPayments: payment.TotalAmount,
           is1099Vendor: vendor.Is1099Vendor,
           taxId: vendor.TaxId || '',
         });
@@ -122,7 +101,7 @@ export default function Form1099NEC() {
     });
 
     return payments;
-  }, [billPayments, bills, vendors, selectedYear]);
+  }, [billPayments, vendors, selectedYear]);
 
   // Filter to vendors requiring 1099 ($600+ payments)
   const vendorsRequiring1099 = useMemo(() => {
@@ -171,7 +150,7 @@ export default function Form1099NEC() {
     window.print();
   };
 
-  const isLoading = vendorsLoading || paymentsLoading || billsLoading;
+  const isLoading = vendorsLoading || paymentsLoading;
 
   if (isLoading) {
     return (

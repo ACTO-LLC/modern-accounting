@@ -6,7 +6,7 @@ import { useCompanySettings } from '../../contexts/CompanySettingsContext';
 import { DateRangePicker, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
 import api from '../../lib/api';
-import { formatDate } from '../../lib/dateUtils';
+import { formatDate, formatDateForOData } from '../../lib/dateUtils';
 import EmailStatementModal from '../../components/EmailStatementModal';
 
 interface Customer {
@@ -113,11 +113,10 @@ export default function CustomerStatement() {
   const { data: invoices, isLoading: loadingInvoices, error: invoicesError } = useQuery({
     queryKey: ['customer-invoices', selectedCustomerId, startDate, endDate],
     queryFn: async () => {
-      const encodedId = encodeURIComponent(selectedCustomerId);
-      const encodedStartDate = encodeURIComponent(startDate);
-      const encodedEndDate = encodeURIComponent(endDate);
+      const odataStart = formatDateForOData(startDate);
+      const odataEnd = formatDateForOData(endDate, true);
       const response = await api.get<{ value: Invoice[] }>(
-        `/invoices?$filter=CustomerId eq ${encodedId} and IssueDate ge ${encodedStartDate} and IssueDate le ${encodedEndDate}&$orderby=IssueDate`
+        `/invoices?$filter=CustomerId eq ${selectedCustomerId} and IssueDate ge ${odataStart} and IssueDate le ${odataEnd}&$orderby=IssueDate`
       );
       return response.data.value;
     },
@@ -128,11 +127,10 @@ export default function CustomerStatement() {
   const { data: payments, isLoading: loadingPayments, error: paymentsError } = useQuery({
     queryKey: ['customer-payments', selectedCustomerId, startDate, endDate],
     queryFn: async () => {
-      const encodedId = encodeURIComponent(selectedCustomerId);
-      const encodedStartDate = encodeURIComponent(startDate);
-      const encodedEndDate = encodeURIComponent(endDate);
+      const odataStart = formatDateForOData(startDate);
+      const odataEnd = formatDateForOData(endDate, true);
       const response = await api.get<{ value: Payment[] }>(
-        `/payments?$filter=CustomerId eq ${encodedId} and PaymentDate ge ${encodedStartDate} and PaymentDate le ${encodedEndDate} and Status eq 'Completed'&$orderby=PaymentDate`
+        `/payments?$filter=CustomerId eq ${selectedCustomerId} and PaymentDate ge ${odataStart} and PaymentDate le ${odataEnd} and Status eq 'Completed'&$orderby=PaymentDate`
       );
       return response.data.value;
     },
@@ -156,10 +154,9 @@ export default function CustomerStatement() {
   const { data: priorInvoices } = useQuery({
     queryKey: ['customer-prior-invoices', selectedCustomerId, startDate],
     queryFn: async () => {
-      const encodedId = encodeURIComponent(selectedCustomerId);
-      const encodedStartDate = encodeURIComponent(startDate);
+      const odataStart = formatDateForOData(startDate);
       const response = await api.get<{ value: Invoice[] }>(
-        `/invoices?$filter=CustomerId eq ${encodedId} and IssueDate lt ${encodedStartDate} and Status ne 'Cancelled' and Status ne 'Voided'`
+        `/invoices?$filter=CustomerId eq ${selectedCustomerId} and IssueDate lt ${odataStart} and Status ne 'Cancelled' and Status ne 'Voided'`
       );
       return response.data.value;
     },
@@ -169,10 +166,9 @@ export default function CustomerStatement() {
   const { data: priorPayments } = useQuery({
     queryKey: ['customer-prior-payments', selectedCustomerId, startDate],
     queryFn: async () => {
-      const encodedId = encodeURIComponent(selectedCustomerId);
-      const encodedStartDate = encodeURIComponent(startDate);
+      const odataStart = formatDateForOData(startDate);
       const response = await api.get<{ value: Payment[] }>(
-        `/payments?$filter=CustomerId eq ${encodedId} and PaymentDate lt ${encodedStartDate} and Status eq 'Completed'`
+        `/payments?$filter=CustomerId eq ${selectedCustomerId} and PaymentDate lt ${odataStart} and Status eq 'Completed'`
       );
       return response.data.value;
     },
