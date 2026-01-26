@@ -168,26 +168,36 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
         });
 
         try {
-            // Generate PDF
-            console.log(`Generating PDF for invoice ${invoiceId}...`);
-            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL);
+            let pdfBuffer;
+            let invoiceNumber;
+            let decryptedPassword;
+            
+            // Step 1: Generate PDF
+            try {
+                console.log(`Generating PDF for invoice ${invoiceId}...`);
+                pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL);
+            } catch (pdfError) {
+                console.error('PDF generation error:', pdfError);
+                await updateEmailLog(logId, 'Failed', `PDF Generation Error: ${pdfError.message}`);
+                return res.status(500).json({ success: false, error: `PDF generation failed: ${pdfError.message}` });
+            }
 
             // Get invoice number for filename
             const invoiceResponse = await fetch(`${DAB_API_URL}/invoices?$filter=Id eq '${invoiceId}'`);
             const invoiceData = await invoiceResponse.json();
             const invoice = invoiceData.value?.[0];
-            const invoiceNumber = invoice?.InvoiceNumber || invoiceId;
+            invoiceNumber = invoice?.InvoiceNumber || invoiceId;
 
-            // Decrypt password
-            let decryptedPassword;
+            // Step 2: Decrypt password
             try {
                 decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
             } catch (decryptError) {
                 console.error('Decryption error:', decryptError);
-                throw new Error('Failed to decrypt SMTP password');
+                await updateEmailLog(logId, 'Failed', 'Failed to decrypt SMTP password');
+                return res.status(500).json({ success: false, error: 'Failed to decrypt SMTP password. Check encryption key configuration.' });
             }
 
-            // Send email
+            // Step 3: Send email
             console.log(`Sending email to ${recipientEmail}...`);
             await sendEmail({
                 host: settings.SmtpHost,
@@ -218,7 +228,7 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
             res.json({ success: true, message: 'Email sent successfully', logId });
         } catch (sendError) {
             // Update log as failed
-            await updateEmailLog(logId, 'Failed', sendError.message);
+            await updateEmailLog(logId, 'Failed', `Email Sending Error: ${sendError.message}`);
             throw sendError;
         }
     } catch (error) {
@@ -567,20 +577,29 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
         });
 
         try {
-            // Decrypt password
+            let pdfBuffer;
             let decryptedPassword;
+            
+            // Step 1: Decrypt password
             try {
                 decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
             } catch (decryptError) {
                 console.error('Decryption error:', decryptError);
-                throw new Error('Failed to decrypt SMTP password');
+                await updateEmailLog(logId, 'Failed', 'Failed to decrypt SMTP password');
+                return res.status(500).json({ success: false, error: 'Failed to decrypt SMTP password. Check encryption key configuration.' });
             }
 
-            // Generate PDF attachment
-            console.log(`Generating PDF for reminder - invoice ${invoiceId}...`);
-            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL);
+            // Step 2: Generate PDF attachment
+            try {
+                console.log(`Generating PDF for reminder - invoice ${invoiceId}...`);
+                pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL);
+            } catch (pdfError) {
+                console.error('PDF generation error:', pdfError);
+                await updateEmailLog(logId, 'Failed', `PDF Generation Error: ${pdfError.message}`);
+                return res.status(500).json({ success: false, error: `PDF generation failed: ${pdfError.message}` });
+            }
 
-            // Send email
+            // Step 3: Send email
             console.log(`Sending reminder to ${recipientEmail || customer?.Email}...`);
             await sendEmail({
                 host: settings.SmtpHost,
@@ -610,7 +629,7 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
 
             res.json({ success: true, message: 'Reminder sent successfully', logId });
         } catch (sendError) {
-            await updateEmailLog(logId, 'Failed', sendError.message);
+            await updateEmailLog(logId, 'Failed', `Email Sending Error: ${sendError.message}`);
             throw sendError;
         }
     } catch (error) {
@@ -725,18 +744,42 @@ app.post('/email-api/process-reminders', async (req, res) => {
                     });
 
                     try {
-                        // Generate PDF
-                        const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
-
-                        // Send email
+                        let pdfBuffer;
                         let decryptedPassword;
+                        
+                        // Step 1: Generate PDF
+                        try {
+                            pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
+                        } catch (pdfError) {
+                            console.error(`[Batch] PDF generation failed for ${invoice.InvoiceNumber}:`, pdfError);
+                            await updateEmailLog(logId, 'Failed', `PDF Generation Error: ${pdfError.message}`);
+                            results.failed++;
+                            results.errors.push({ 
+                                invoiceId: invoice.InvoiceId, 
+                                invoiceNumber: invoice.InvoiceNumber,
+                                error: `PDF generation failed: ${pdfError.message}`,
+                                errorType: 'pdf_generation'
+                            });
+                            continue; // Skip to next invoice
+                        }
+
+                        // Step 2: Decrypt password
                         try {
                             decryptedPassword = decrypt(emailSettings.SmtpPasswordEncrypted);
                         } catch (decryptError) {
                             console.error('Decryption error:', decryptError);
-                            throw new Error('Failed to decrypt SMTP password');
+                            await updateEmailLog(logId, 'Failed', 'Failed to decrypt SMTP password');
+                            results.failed++;
+                            results.errors.push({ 
+                                invoiceId: invoice.InvoiceId, 
+                                invoiceNumber: invoice.InvoiceNumber,
+                                error: 'Failed to decrypt SMTP password',
+                                errorType: 'decryption'
+                            });
+                            continue; // Skip to next invoice
                         }
                         
+                        // Step 3: Send email
                         await sendEmail({
                             host: emailSettings.SmtpHost,
                             port: emailSettings.SmtpPort,
@@ -762,14 +805,26 @@ app.post('/email-api/process-reminders', async (req, res) => {
 
                         await updateEmailLog(logId, 'Sent', null);
                         results.sent++;
+                        console.log(`[Batch] Sent reminder for ${invoice.InvoiceNumber}`);
                     } catch (sendError) {
-                        await updateEmailLog(logId, 'Failed', sendError.message);
+                        await updateEmailLog(logId, 'Failed', `Email Sending Error: ${sendError.message}`);
                         results.failed++;
-                        results.errors.push({ invoiceId: invoice.InvoiceId, error: sendError.message });
+                        results.errors.push({ 
+                            invoiceId: invoice.InvoiceId, 
+                            invoiceNumber: invoice.InvoiceNumber,
+                            error: `Email sending failed: ${sendError.message}`,
+                            errorType: 'email_sending'
+                        });
+                        console.error(`[Batch] Failed to send reminder for ${invoice.InvoiceNumber}:`, sendError.message);
                     }
                 } catch (invoiceError) {
                     results.failed++;
-                    results.errors.push({ invoiceId: invoice.InvoiceId, error: invoiceError.message });
+                    results.errors.push({ 
+                        invoiceId: invoice.InvoiceId, 
+                        error: invoiceError.message,
+                        errorType: 'unknown'
+                    });
+                    console.error('[Batch] Unexpected error processing invoice:', invoiceError);
                 }
             }
         }

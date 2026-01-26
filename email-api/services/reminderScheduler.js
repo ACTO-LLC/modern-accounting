@@ -150,20 +150,44 @@ export async function processReminders() {
                     });
 
                     try {
-                        // Generate PDF
-                        console.log(`[Reminder Scheduler] Generating PDF for ${invoice.InvoiceNumber}...`);
-                        const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
-
-                        // Send email
-                        console.log(`[Reminder Scheduler] Sending email to ${invoice.CustomerEmail}...`);
+                        let pdfBuffer;
                         let decryptedPassword;
+                        
+                        // Step 1: Generate PDF
+                        try {
+                            console.log(`[Reminder Scheduler] Generating PDF for ${invoice.InvoiceNumber}...`);
+                            pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
+                        } catch (pdfError) {
+                            console.error(`[Reminder Scheduler] PDF generation failed for ${invoice.InvoiceNumber}:`, pdfError);
+                            await updateEmailLog(logId, 'Failed', `PDF Generation Error: ${pdfError.message}`);
+                            results.failed++;
+                            results.errors.push({ 
+                                invoiceId: invoice.InvoiceId, 
+                                invoiceNumber: invoice.InvoiceNumber, 
+                                error: `PDF generation failed: ${pdfError.message}`,
+                                errorType: 'pdf_generation'
+                            });
+                            continue; // Skip to next invoice
+                        }
+
+                        // Step 2: Decrypt password
                         try {
                             decryptedPassword = decrypt(emailSettings.SmtpPasswordEncrypted);
                         } catch (decryptError) {
                             console.error('[Reminder Scheduler] Decryption error:', decryptError);
-                            throw new Error('Failed to decrypt SMTP password');
+                            await updateEmailLog(logId, 'Failed', 'Failed to decrypt SMTP password');
+                            results.failed++;
+                            results.errors.push({ 
+                                invoiceId: invoice.InvoiceId, 
+                                invoiceNumber: invoice.InvoiceNumber, 
+                                error: 'Failed to decrypt SMTP password',
+                                errorType: 'decryption'
+                            });
+                            continue; // Skip to next invoice
                         }
                         
+                        // Step 3: Send email
+                        console.log(`[Reminder Scheduler] Sending email to ${invoice.CustomerEmail}...`);
                         await sendEmail({
                             host: emailSettings.SmtpHost,
                             port: emailSettings.SmtpPort,
@@ -191,15 +215,25 @@ export async function processReminders() {
                         results.sent++;
                         console.log(`[Reminder Scheduler] Sent reminder for ${invoice.InvoiceNumber}`);
                     } catch (sendError) {
-                        await updateEmailLog(logId, 'Failed', sendError.message);
+                        await updateEmailLog(logId, 'Failed', `Email Sending Error: ${sendError.message}`);
                         results.failed++;
-                        results.errors.push({ invoiceId: invoice.InvoiceId, invoiceNumber: invoice.InvoiceNumber, error: sendError.message });
+                        results.errors.push({ 
+                            invoiceId: invoice.InvoiceId, 
+                            invoiceNumber: invoice.InvoiceNumber, 
+                            error: `Email sending failed: ${sendError.message}`,
+                            errorType: 'email_sending'
+                        });
                         console.error(`[Reminder Scheduler] Failed to send reminder for ${invoice.InvoiceNumber}:`, sendError.message);
                     }
                 } catch (invoiceError) {
                     results.failed++;
-                    results.errors.push({ invoiceId: invoice.InvoiceId, invoiceNumber: invoice.InvoiceNumber, error: invoiceError.message });
-                    console.error(`[Reminder Scheduler] Error processing ${invoice.InvoiceNumber}:`, invoiceError.message);
+                    results.errors.push({ 
+                        invoiceId: invoice.InvoiceId, 
+                        invoiceNumber: invoice.InvoiceNumber, 
+                        error: invoiceError.message,
+                        errorType: 'unknown'
+                    });
+                    console.error(`[Reminder Scheduler] Unexpected error processing ${invoice.InvoiceNumber}:`, invoiceError.message);
                 }
             }
         }
