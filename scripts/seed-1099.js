@@ -112,11 +112,6 @@ function randomDateInMonth(year, month) {
   return new Date(year, month, day);
 }
 
-// Format date as YYYY-MM-DD
-function formatDate(date) {
-  return date.toISOString().split('T')[0];
-}
-
 // Generate bill number
 function generateBillNumber(vendorIndex, year, billIndex) {
   return `BILL-${year}-${String(vendorIndex + 1).padStart(2, '0')}-${String(billIndex + 1).padStart(3, '0')}`;
