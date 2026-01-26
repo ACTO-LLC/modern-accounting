@@ -15,7 +15,7 @@
     node scripts/deploy-db.js (with the node flag)
 -->
 <Project DefaultTargets="Build">
-  <Sdk Name="Microsoft.Build.Sql" Version="0.2.0-preview" />
+  <Sdk Name="Microsoft.Build.Sql" Version="2.0.0" />
   <PropertyGroup>
     <Name>AccountingDB</Name>
     <DSP>Microsoft.Data.Tools.Schema.Sql.SqlAzureV12DatabaseSchemaProvider</DSP>
