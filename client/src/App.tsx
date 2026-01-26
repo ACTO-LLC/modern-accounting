@@ -12,6 +12,7 @@ import { TenantProvider } from './contexts/TenantContext';
 import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { OnboardingProvider } from './contexts/OnboardingContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -97,6 +98,11 @@ import BankImportHistory from './pages/BankImportHistory';
 import VendorHierarchy from './pages/VendorHierarchy';
 import CustomerHierarchy from './pages/CustomerHierarchy';
 import ChatInterface from './components/ChatInterface';
+import OnboardingWelcome from './components/onboarding/OnboardingWelcome';
+import FeatureTour from './components/onboarding/FeatureTour';
+import OnboardingNotifications from './components/onboarding/OnboardingNotifications';
+import MiltonOnboardingHelper from './components/onboarding/MiltonOnboardingHelper';
+import SpotlightManager from './components/onboarding/SpotlightManager';
 
 const queryClient = new QueryClient();
 
@@ -209,6 +215,11 @@ function AppContent() {
         </Route>
       </Routes>
       <ChatInterface />
+      <OnboardingWelcome />
+      <FeatureTour />
+      <OnboardingNotifications />
+      <MiltonOnboardingHelper />
+      <SpotlightManager />
     </BrowserRouter>
   );
 }
@@ -223,7 +234,9 @@ function App() {
               <Toaster position="top-right" richColors />
               <ToastProvider>
                 <ChatProvider>
-                  <AppContent />
+                  <OnboardingProvider>
+                    <AppContent />
+                  </OnboardingProvider>
                 </ChatProvider>
               </ToastProvider>
             </ThemeProvider>

@@ -1,0 +1,50 @@
+key: products_services
+name: Products & Services
+menuPath: /products-services
+icon: Package
+difficulty: 1
+category: foundation
+sortOrder: 30
+
+spotlight:
+  message: "Set up what you sell to make invoicing faster."
+  position: right
+
+description:
+  short: "What you sell to customers"
+  detailed: |
+    Products and services are the items you sell. They can be:
+    - Physical products (inventory items)
+    - Services (consulting, labor, etc.)
+    - Non-inventory items (items you don't track stock for)
+
+    Setting these up makes creating invoices faster and more consistent.
+
+capabilities:
+  - "Create products with prices and descriptions"
+  - "Create service items for labor or consulting"
+  - "Set default prices for quick invoicing"
+  - "Categorize items by type"
+
+accountingConcepts:
+  - term: "Revenue"
+    explanation: "When you sell a product or service, the money earned is called 'revenue' or 'income'."
+  - term: "Cost of Goods Sold (COGS)"
+    explanation: "For products, the cost you paid for items you sell is tracked separately from the selling price."
+
+prerequisites: []
+
+leadsTo:
+  - invoices
+  - estimates
+
+experienceLevelNotes:
+  beginner: "Set up your products/services once, then use them on invoices."
+  intermediate: "Like QuickBooks items - products and services you sell."
+  advanced: "Item master for AR transactions with revenue account mapping."
+
+sampleTasks:
+  - title: "Add a service you provide"
+    description: "Create a service item like 'Consulting' or 'Design Services'"
+  - title: "Add a product you sell"
+    description: "Create a product with a name, description, and price"

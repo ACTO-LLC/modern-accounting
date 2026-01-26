@@ -50,13 +50,29 @@ const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
 
 // Provider for when auth is bypassed (no MSAL)
 function BypassAuthProvider({ children }: { children: ReactNode }) {
+  // Mock user for bypass auth mode with stable oid for onboarding
+  const mockUser = {
+    username: 'dev@localhost',
+    name: 'Development User',
+    localAccountId: 'dev-local-account',
+    homeAccountId: 'dev-home-account',
+    environment: 'localhost',
+    tenantId: 'dev-tenant',
+    idTokenClaims: {
+      oid: '00000000-0000-0000-0000-000000000001', // Valid UUID format for onboarding
+      name: 'Development User',
+      preferred_username: 'dev@localhost',
+      roles: ['Admin'],
+    },
+  };
+
   const value: AuthContextType = {
     isAuthenticated: true,
     isLoading: false,
-    user: null,
+    user: mockUser as AccountInfo,
     userRole: 'Admin',
     userRoles: ['Admin'],
-    tenantId: null,
+    tenantId: 'dev-tenant',
     mfaCompleted: true,
     authProvider: 'EntraID',
     login: async () => { console.log('Auth bypassed - login skipped'); },

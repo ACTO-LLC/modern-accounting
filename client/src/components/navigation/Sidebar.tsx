@@ -161,6 +161,8 @@ export default function Sidebar({ isMobileMenuOpen }: SidebarProps) {
               name={entry.name}
               href={entry.href}
               icon={entry.icon}
+              featureKey={entry.featureKey}
+              alwaysVisible={entry.alwaysVisible}
             />
           );
         })}

@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { MessageCircle, X, Send, AlertTriangle, Sparkles, RefreshCw, Paperclip, Edit2, RotateCcw, XCircle, FileIcon, Image as ImageIcon, ChevronDown, ChevronRight, Copy, Check, Settings, Lightbulb } from 'lucide-react';
+import { MessageCircle, X, Send, AlertTriangle, Sparkles, Trash2, Paperclip, Edit2, RotateCcw, XCircle, FileIcon, Image as ImageIcon, ChevronDown, ChevronRight, Copy, Check, Settings, Lightbulb } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useChat, Insight, FileAttachment, ProactiveSuggestion, SuggestionFrequency } from '../contexts/ChatContext';
@@ -819,7 +819,7 @@ What would you like to do?`
             aria-label="Clear conversation"
             title="Clear conversation"
           >
-            <RefreshCw className="w-4 h-4" />
+            <Trash2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsOpen(false)}

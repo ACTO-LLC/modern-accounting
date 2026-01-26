@@ -84,6 +84,26 @@ services:
       retries: 5
       start_period: 30s
 
+  ma-mcp:
+    build:
+      context: ../ma-mcp-server
+      dockerfile: Dockerfile
+    container_name: accounting-ma-mcp
+    ports:
+      - "5002:5002"
+    environment:
+      - MA_MCP_PORT=5002
+      - DB_SERVER=database,1433
+      - DB_NAME=AccountingDB
+      - DB_USER=sa
+      - DB_PASSWORD=StrongPassword123!
+      - DB_TRUST_CERT=true
+    networks:
+      - devnet
+    depends_on:
+      database:
+        condition: service_healthy
+
 volumes:
   sql-data:
   claude-config:  # Persists Claude Code auth between container rebuilds

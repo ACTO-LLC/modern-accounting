@@ -1,0 +1,53 @@
+key: expenses
+name: Expenses
+menuPath: /expenses
+icon: CreditCard
+difficulty: 2
+category: transactions
+sortOrder: 55
+
+spotlight:
+  message: "Record business expenses like purchases and payments."
+  position: right
+
+description:
+  short: "Record day-to-day business spending"
+  detailed: |
+    Expenses are purchases you make for your business that are paid immediately
+    (unlike bills which you pay later). Examples:
+    - Credit card purchases
+    - Cash payments
+    - Debit card transactions
+
+    Recording expenses helps you track where your money goes and reduces your taxable income.
+
+capabilities:
+  - "Record expenses quickly"
+  - "Categorize by expense type"
+  - "Attach receipts"
+  - "Link to bank accounts or credit cards"
+  - "Track expenses by vendor"
+
+accountingConcepts:
+  - term: "Expense Categories"
+    explanation: "Expenses are categorized (office supplies, travel, etc.) to help you understand spending and for tax purposes."
+  - term: "Tax Deductions"
+    explanation: "Business expenses reduce your taxable income, so tracking them accurately saves money at tax time."
+
+prerequisites:
+  - vendors
+
+leadsTo:
+  - reports
+  - bank_reconciliation
+
+experienceLevelNotes:
+  beginner: "Use expenses for things you pay for right away, like office supplies or meals."
+  intermediate: "Quick expense entry - similar to QuickBooks expense transactions."
+  advanced: "Direct expense recording (as opposed to AP bills) for immediate-payment transactions."
+
+sampleTasks:
+  - title: "Record an expense"
+    description: "Add a recent business purchase like office supplies"
+  - title: "Categorize expenses"
+    description: "Make sure expenses are in the right category for reporting"

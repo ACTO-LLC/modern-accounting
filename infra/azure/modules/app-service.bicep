@@ -165,3 +165,4 @@ output appServiceUrl string = 'https://${appService.properties.defaultHostName}'
 output principalId string = appService.identity.principalId
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
+output appServicePlanId string = appServicePlan.id

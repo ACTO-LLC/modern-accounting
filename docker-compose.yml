@@ -41,6 +41,23 @@ services:
       - QBO_CLIENT_SECRET=${QBO_CLIENT_SECRET}
       - QBO_REDIRECT_URI=${QBO_REDIRECT_URI:-http://localhost:8001/oauth/callback}
 
+  ma-mcp:
+    build:
+      context: ./ma-mcp-server
+      dockerfile: Dockerfile
+    container_name: accounting-ma-mcp
+    depends_on:
+      - database
+    ports:
+      - "5002:5002"
+    environment:
+      - MA_MCP_PORT=5002
+      - DB_SERVER=database,1433
+      - DB_NAME=AccountingDB
+      - DB_USER=sa
+      - DB_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123!}
+      - DB_TRUST_CERT=true
+
   email-api:
     build:
       context: ./email-api

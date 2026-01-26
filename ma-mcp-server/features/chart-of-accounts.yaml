@@ -1,0 +1,59 @@
+key: chart_of_accounts
+name: Chart of Accounts
+menuPath: /accounts
+icon: List
+difficulty: 3
+category: accounting
+sortOrder: 60
+
+spotlight:
+  message: "Your accounting categories live here."
+  position: right
+
+description:
+  short: "The master list of categories for all money movement"
+  detailed: |
+    The Chart of Accounts is like a filing system for your money. Every dollar
+    that moves through your business gets categorized into an account:
+
+    - **Assets**: Things you own (cash, equipment, money owed to you)
+    - **Liabilities**: Things you owe (loans, credit cards, bills to pay)
+    - **Equity**: Your ownership stake (what's left after liabilities)
+    - **Income/Revenue**: Money coming in from sales
+    - **Expenses**: Money going out for business costs
+
+    This structure is the foundation of all accounting and financial reports.
+
+capabilities:
+  - "View all accounts by type"
+  - "Create custom accounts"
+  - "Set account numbers and categories"
+  - "Mark accounts as active/inactive"
+  - "See account balances"
+
+accountingConcepts:
+  - term: "Account Types"
+    explanation: "Every account is one of 5 types: Asset, Liability, Equity, Income, or Expense. This determines how it appears on financial reports."
+  - term: "The Accounting Equation"
+    explanation: "Assets = Liabilities + Equity. This equation ALWAYS balances - it's the fundamental rule of accounting."
+  - term: "Sub-accounts"
+    explanation: "Accounts can have sub-accounts for more detail. Example: 'Travel Expense' might have sub-accounts for 'Airfare' and 'Hotels'."
+
+prerequisites:
+  - invoices
+  - bills
+
+leadsTo:
+  - journal_entries
+  - reports
+
+experienceLevelNotes:
+  beginner: "Don't worry - MA sets up common accounts for you. You can customize later as you learn."
+  intermediate: "Same as QuickBooks chart of accounts. You can add accounts as needed."
+  advanced: "Full chart of accounts management with account types, sub-accounts, and numbering."
+
+sampleTasks:
+  - title: "Explore the chart of accounts"
+    description: "Browse the account list to see how transactions are categorized"
+  - title: "Add a new expense account"
+    description: "Create an account for a specific expense type you want to track"

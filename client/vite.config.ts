@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
   const emailApiUrl = env.VITE_EMAIL_API_URL || 'http://localhost:7073'
   const port = parseInt(env.VITE_PORT) || 5173
 
+  const chatApiUrl = env.VITE_CHAT_API_URL || 'http://localhost:7071'
+
   return {
     plugins: [react()],
     server: {
@@ -16,6 +18,11 @@ export default defineConfig(({ mode }) => {
       host: true,
       allowedHosts: ['host.docker.internal'],
       proxy: {
+        // Route post-transactions to chat-api
+        '/api/post-transactions': {
+          target: chatApiUrl,
+          changeOrigin: true,
+        },
         '/api': {
           target: apiUrl,
           changeOrigin: true,
