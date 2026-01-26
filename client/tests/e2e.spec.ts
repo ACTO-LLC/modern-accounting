@@ -153,10 +153,10 @@ test('can use AI chat to get invoices', async ({ page }) => {
   await page.getByLabel('Open chat').click();
   
   // Wait for chat to open
-  await expect(page.getByText('Accounting Assistant')).toBeVisible();
-  
+  await expect(page.getByText('Milton')).toBeVisible();
+
   // Send message
-  await page.getByPlaceholder('Ask me anything...').fill('show me all invoices');
+  await page.getByPlaceholder('Ask Milton anything...').fill('show me all invoices');
   await page.getByLabel('Send message').click();
   
   // Wait for response (with longer timeout for AI)

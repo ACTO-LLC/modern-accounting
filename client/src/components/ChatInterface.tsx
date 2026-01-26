@@ -547,7 +547,7 @@ export default function ChatInterface() {
       // Add welcome message from assistant
       addMessage({
         role: 'assistant',
-        content: `Welcome to ACTO! I'm your accounting assistant and I'm here to help you get started.
+        content: `Welcome to ACTO! I'm Milton, your accounting assistant, and I'm here to help you get started.
 
 **Are you migrating from another accounting platform** like QuickBooks, Xero, or FreshBooks? I can help import your existing data to make the transition seamless!
 
@@ -805,7 +805,7 @@ What would you like to do?`
       <div className="bg-indigo-600 dark:bg-indigo-700 text-white p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageCircle className="w-5 h-5" />
-          <h3 className="font-semibold">Accounting Assistant</h3>
+          <h3 className="font-semibold">Milton</h3>
         </div>
         <div className="flex items-center gap-1">
           <CopyAllButton messages={messages} />
@@ -1086,7 +1086,7 @@ What would you like to do?`
           <input
             ref={inputRef}
             type="text"
-            placeholder="Ask me anything... (↑ to edit last message)"
+            placeholder="Ask Milton anything... (↑ to edit last message)"
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2
               focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
               text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
