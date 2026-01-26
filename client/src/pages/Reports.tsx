@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch } from 'lucide-react';
 
 const reports = [
   {
@@ -36,6 +36,13 @@ const reports = [
     href: '/reports/ar-aging',
     icon: Clock,
     color: 'bg-orange-100 text-orange-600',
+  },
+  {
+    name: 'AP Aging Summary',
+    description: 'Outstanding vendor bills organized by age',
+    href: '/reports/ap-aging',
+    icon: ClipboardList,
+    color: 'bg-red-100 text-red-600',
   },
   {
     name: 'Customer Statement',
