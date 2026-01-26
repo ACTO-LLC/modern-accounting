@@ -76,8 +76,8 @@ When all acceptance criteria pass:
 After PR is created:
 
 #### Step 1: Request Copilot Review
-- Add comment to PR: `@Copilot please review this pull request`
-- Wait briefly, then check for Copilot's response
+- Run: `gh pr comment <PR_NUMBER> --body "@copilot review"`
+- Wait briefly, then check for Copilot's response: `gh pr view <PR_NUMBER> --comments`
 - Parse any suggestions from Copilot's review
 
 #### Step 2: Implement Suggestions
