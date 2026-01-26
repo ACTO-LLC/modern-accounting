@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car, BookOpen, Package, AlertTriangle, Clipboard, ShoppingCart } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car, BookOpen, Package, AlertTriangle, Clipboard, ShoppingCart, ArrowRightLeft } from 'lucide-react';
 
 const reports = [
   {
@@ -15,6 +15,13 @@ const reports = [
     href: '/reports/balance-sheet',
     icon: Scale,
     color: 'bg-blue-100 text-blue-600',
+  },
+  {
+    name: 'Statement of Cash Flows',
+    description: 'Cash inflows and outflows from operating, investing, and financing activities',
+    href: '/reports/cash-flow',
+    icon: ArrowRightLeft,
+    color: 'bg-emerald-100 text-emerald-600',
   },
   {
     name: 'Trial Balance',

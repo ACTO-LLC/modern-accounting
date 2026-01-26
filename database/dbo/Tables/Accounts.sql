@@ -5,6 +5,7 @@ CREATE TABLE [dbo].[Accounts]
     [Name] NVARCHAR(200) NOT NULL,
     [Type] NVARCHAR(50) NOT NULL, -- Asset, Liability, Equity, Revenue, Expense
     [Subtype] NVARCHAR(50) NULL,
+    [CashFlowCategory] NVARCHAR(50) NULL, -- Operating, Investing, Financing, or NULL for cash accounts
     [AccountNumber] NVARCHAR(50) NULL,
     [Description] NVARCHAR(MAX) NULL,
     [IsActive] BIT NOT NULL DEFAULT 1,
