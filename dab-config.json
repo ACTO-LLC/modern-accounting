@@ -2342,6 +2342,140 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "vehicles": {
+            "source": "dbo.Vehicles",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Make": "Make",
+                "Model": "Model",
+                "Year": "Year",
+                "LicensePlate": "LicensePlate",
+                "OdometerStart": "OdometerStart",
+                "OdometerCurrent": "OdometerCurrent",
+                "IsDefault": "IsDefault",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "mileagerates": {
+            "source": "dbo.MileageRates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EffectiveDate": "EffectiveDate",
+                "Category": "Category",
+                "RatePerMile": "RatePerMile",
+                "Description": "Description",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "mileagetrips": {
+            "source": {
+                "object": "dbo.v_MileageTrips",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VehicleId": "VehicleId",
+                "VehicleName": "VehicleName",
+                "VehicleDescription": "VehicleDescription",
+                "TripDate": "TripDate",
+                "StartLocation": "StartLocation",
+                "EndLocation": "EndLocation",
+                "StartOdometer": "StartOdometer",
+                "EndOdometer": "EndOdometer",
+                "Distance": "Distance",
+                "Purpose": "Purpose",
+                "Category": "Category",
+                "RatePerMile": "RatePerMile",
+                "DeductibleAmount": "DeductibleAmount",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "Notes": "Notes",
+                "IsRoundTrip": "IsRoundTrip",
+                "Status": "Status",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "mileagetrips_write": {
+            "source": "dbo.MileageTrips",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VehicleId": "VehicleId",
+                "TripDate": "TripDate",
+                "StartLocation": "StartLocation",
+                "EndLocation": "EndLocation",
+                "StartOdometer": "StartOdometer",
+                "EndOdometer": "EndOdometer",
+                "Distance": "Distance",
+                "Purpose": "Purpose",
+                "Category": "Category",
+                "RatePerMile": "RatePerMile",
+                "DeductibleAmount": "DeductibleAmount",
+                "CustomerId": "CustomerId",
+                "ProjectId": "ProjectId",
+                "Notes": "Notes",
+                "IsRoundTrip": "IsRoundTrip",
+                "Status": "Status",
+                "CreatedBy": "CreatedBy"
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }

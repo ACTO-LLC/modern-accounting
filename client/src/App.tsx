@@ -86,6 +86,11 @@ import NewExpense from './pages/NewExpense';
 import EditExpense from './pages/EditExpense';
 import Receipts from './pages/Receipts';
 import ExpenseReport from './pages/reports/ExpenseReport';
+import Mileage from './pages/Mileage';
+import NewMileage from './pages/NewMileage';
+import EditMileage from './pages/EditMileage';
+import Vehicles from './pages/Vehicles';
+import MileageReport from './pages/reports/MileageReport';
 import Payments from './pages/Payments';
 import NewPayment from './pages/NewPayment';
 import BillPayments from './pages/BillPayments';
@@ -169,6 +174,10 @@ function AppContent() {
             <Route path="expenses/new" element={<NewExpense />} />
             <Route path="expenses/:id/edit" element={<EditExpense />} />
             <Route path="receipts" element={<Receipts />} />
+            <Route path="mileage" element={<Mileage />} />
+            <Route path="mileage/new" element={<NewMileage />} />
+            <Route path="mileage/:id/edit" element={<EditMileage />} />
+            <Route path="mileage/vehicles" element={<Vehicles />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/new" element={<NewProject />} />
             <Route path="projects/:id/edit" element={<EditProject />} />
@@ -203,6 +212,7 @@ function AppContent() {
             <Route path="reports/payroll-summary" element={<PayrollSummary />} />
             <Route path="reports/sales-tax" element={<SalesTaxLiability />} />
             <Route path="reports/expenses" element={<ExpenseReport />} />
+            <Route path="reports/mileage" element={<MileageReport />} />
             <Route path="tax-rates" element={<TaxRates />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />

@@ -1,0 +1,222 @@
+import { Link } from 'react-router-dom';
+import { Plus, Car, BarChart3 } from 'lucide-react';
+import { GridColDef } from '@mui/x-data-grid';
+import RestDataGrid from '../components/RestDataGrid';
+import { formatDate } from '../lib/dateUtils';
+
+interface MileageTrip {
+  Id: string;
+  TripDate: string;
+  VehicleName: string;
+  VehicleDescription: string;
+  StartLocation: string;
+  EndLocation: string;
+  Distance: number;
+  Purpose: string;
+  Category: string;
+  RatePerMile: number;
+  DeductibleAmount: number;
+  CustomerName: string;
+  ProjectName: string;
+  IsRoundTrip: boolean;
+  Status: string;
+}
+
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case 'Business':
+      return 'bg-green-100 text-green-800';
+    case 'Medical':
+      return 'bg-blue-100 text-blue-800';
+    case 'Charity':
+      return 'bg-purple-100 text-purple-800';
+    case 'Personal':
+      return 'bg-gray-100 text-gray-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Recorded':
+      return 'bg-green-100 text-green-800';
+    case 'Pending':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'Approved':
+      return 'bg-blue-100 text-blue-800';
+    case 'Voided':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+export default function Mileage() {
+  const columns: GridColDef[] = [
+    {
+      field: 'TripDate',
+      headerName: 'Date',
+      width: 110,
+      filterable: true,
+      renderCell: (params) => formatDate(params.value),
+    },
+    {
+      field: 'VehicleName',
+      headerName: 'Vehicle',
+      width: 140,
+      filterable: true,
+      renderCell: (params) => (
+        <div className="flex items-center">
+          <Car className="w-4 h-4 mr-2 text-gray-500" />
+          <span>{params.value || 'No vehicle'}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'StartLocation',
+      headerName: 'From',
+      width: 150,
+      filterable: true,
+      renderCell: (params) => (
+        <span className="truncate" title={params.value}>
+          {params.value || '-'}
+        </span>
+      ),
+    },
+    {
+      field: 'EndLocation',
+      headerName: 'To',
+      width: 150,
+      filterable: true,
+      renderCell: (params) => (
+        <span className="truncate" title={params.value}>
+          {params.value || '-'}
+        </span>
+      ),
+    },
+    {
+      field: 'Distance',
+      headerName: 'Miles',
+      width: 90,
+      type: 'number',
+      filterable: true,
+      renderCell: (params) => {
+        const row = params.row as MileageTrip;
+        return (
+          <span>
+            {params.value?.toFixed(1)}
+            {row.IsRoundTrip && <span className="text-xs text-gray-500 ml-1">(RT)</span>}
+          </span>
+        );
+      },
+    },
+    {
+      field: 'Purpose',
+      headerName: 'Purpose',
+      width: 180,
+      filterable: true,
+      renderCell: (params) => (
+        <span className="truncate" title={params.value}>
+          {params.value || '-'}
+        </span>
+      ),
+    },
+    {
+      field: 'Category',
+      headerName: 'Category',
+      width: 110,
+      filterable: true,
+      renderCell: (params) => (
+        <span
+          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(
+            params.value
+          )}`}
+        >
+          {params.value}
+        </span>
+      ),
+    },
+    {
+      field: 'DeductibleAmount',
+      headerName: 'Deduction',
+      width: 110,
+      type: 'number',
+      filterable: true,
+      renderCell: (params) =>
+        params.value ? (
+          <span className="text-green-600 font-medium">
+            ${params.value.toFixed(2)}
+          </span>
+        ) : (
+          <span className="text-gray-400">-</span>
+        ),
+    },
+    {
+      field: 'CustomerName',
+      headerName: 'Customer',
+      width: 130,
+      filterable: true,
+      renderCell: (params) => params.value || <span className="text-gray-400">-</span>,
+    },
+    {
+      field: 'Status',
+      headerName: 'Status',
+      width: 100,
+      filterable: true,
+      renderCell: (params) => (
+        <span
+          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+            params.value
+          )}`}
+        >
+          {params.value}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Mileage Tracking</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Log business trips and track mileage for tax deductions
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            to="/mileage/vehicles"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <Car className="w-4 h-4 mr-2" />
+            Vehicles
+          </Link>
+          <Link
+            to="/reports/mileage"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Report
+          </Link>
+          <Link
+            to="/mileage/new"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Trip
+          </Link>
+        </div>
+      </div>
+
+      <RestDataGrid<MileageTrip>
+        endpoint="/mileagetrips?$orderby=TripDate desc"
+        columns={columns}
+        editPath="/mileage/{id}/edit"
+        initialPageSize={25}
+        emptyMessage="No trips recorded yet. Click 'New Trip' to log a trip."
+      />
+    </div>
+  );
+}
