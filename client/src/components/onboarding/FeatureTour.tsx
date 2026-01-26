@@ -116,7 +116,7 @@ export default function FeatureTour() {
     // Add a user message asking about the concept
     addMessage({
       role: 'user',
-      content: `Explain "${term}" in more detail. The brief explanation says: "${explanation}" - can you expand on this and provide examples?`,
+      content: `I'd like to learn more about "${term}". ${explanation} Can you help me understand this better with some practical examples?`,
     });
 
     // Open Milton's chat panel
@@ -218,10 +218,11 @@ export default function FeatureTour() {
                 Click any concept to ask Milton for more details
               </p>
               <div className="space-y-3">
-                {featureDetails.accountingConcepts.slice(0, 3).map((concept, i) => (
+                {featureDetails.accountingConcepts.map((concept, i) => (
                   <button
                     key={i}
                     onClick={() => handleConceptClick(concept.term, concept.explanation)}
+                    aria-label={`Learn more about ${concept.term} from Milton`}
                     className={clsx(
                       "w-full text-left p-3 rounded-lg transition-all duration-200",
                       "bg-gray-50 dark:bg-gray-700/50",
