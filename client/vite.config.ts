@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
   const port = parseInt(env.VITE_PORT) || 5173
 
   const chatApiUrl = env.VITE_CHAT_API_URL || 'http://localhost:7071'
+  const csvImportApiUrl = env.VITE_CSV_IMPORT_API_URL || 'http://localhost:7072'
 
   return {
     plugins: [react()],
@@ -18,9 +19,9 @@ export default defineConfig(({ mode }) => {
       host: true,
       allowedHosts: ['host.docker.internal'],
       proxy: {
-        // Route post-transactions to chat-api
+        // Route post-transactions to csv-import-api (port 7072)
         '/api/post-transactions': {
-          target: chatApiUrl,
+          target: csvImportApiUrl,
           changeOrigin: true,
         },
         '/api': {
