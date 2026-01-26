@@ -45,6 +45,7 @@ import EditAccount from './pages/EditAccount';
 import Reports from './pages/Reports';
 import ProfitAndLoss from './pages/reports/ProfitAndLoss';
 import BalanceSheet from './pages/reports/BalanceSheet';
+import CashFlowStatement from './pages/reports/CashFlowStatement';
 import TrialBalance from './pages/reports/TrialBalance';
 import ARAgingSummary from './pages/reports/ARAgingSummary';
 import APAgingSummary from './pages/reports/APAgingSummary';
@@ -209,6 +210,7 @@ function AppContent() {
             <Route path="reports" element={<Reports />} />
             <Route path="reports/profit-loss" element={<ProfitAndLoss />} />
             <Route path="reports/balance-sheet" element={<BalanceSheet />} />
+            <Route path="reports/cash-flow" element={<CashFlowStatement />} />
             <Route path="reports/trial-balance" element={<TrialBalance />} />
             <Route path="reports/ar-aging" element={<ARAgingSummary />} />
             <Route path="reports/ap-aging" element={<APAgingSummary />} />
