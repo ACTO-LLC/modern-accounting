@@ -134,6 +134,25 @@ module appService 'modules/app-service.bicep' = {
 }
 
 // -----------------------------------------------------------------------------
+// MA MCP Server Module (Onboarding/Feature MCP)
+// -----------------------------------------------------------------------------
+
+module maMcpServer 'modules/mcp-service.bicep' = {
+  name: 'maMcpServer-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    serviceName: 'mcp-ma-${baseName}-${environment}'
+    appServicePlanId: appService.outputs.appServicePlanId
+    location: location
+    tags: tags
+    keyVaultName: keyVault.outputs.keyVaultName
+    appInsightsConnectionString: appService.outputs.appInsightsConnectionString
+    mcpType: 'ma-mcp'
+    port: 5002
+  }
+}
+
+// -----------------------------------------------------------------------------
 // SendGrid Module
 // -----------------------------------------------------------------------------
 
@@ -162,3 +181,4 @@ output sqlServerFqdn string = sqlServer.outputs.sqlServerFqdn
 output sqlDatabaseName string = sqlServer.outputs.databaseName
 output appServiceUrl string = appService.outputs.appServiceUrl
 output appServicePrincipalId string = appService.outputs.principalId
+output maMcpServerUrl string = maMcpServer.outputs.serviceUrl
