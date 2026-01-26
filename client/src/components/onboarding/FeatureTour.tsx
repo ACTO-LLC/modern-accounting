@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, CheckCircle } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, Sparkles, BookOpen, CheckCircle, MessageCircle } from 'lucide-react';
 import { useOnboarding, FeatureDetails } from '../../contexts/OnboardingContext';
+import { useChat } from '../../contexts/ChatContext';
 import { triggerSpotlight } from './SpotlightManager';
 import clsx from 'clsx';
 
@@ -22,6 +23,7 @@ const pathToFeatureKey: Record<string, string> = {
 export default function FeatureTour() {
   const location = useLocation();
   const { getFeatureStatus, getFeatureDetails, completeFeature, status: onboardingStatus } = useOnboarding();
+  const { addMessage, setIsOpen } = useChat();
 
   const [showTour, setShowTour] = useState(false);
   const [featureDetails, setFeatureDetails] = useState<FeatureDetails | null>(null);
@@ -107,6 +109,21 @@ export default function FeatureTour() {
     if (featureDetails.accountingConcepts?.length > 0) steps++;
     if (featureDetails.sampleTasks?.length > 0) steps++;
     return steps;
+  };
+
+  // Handle clicking on a Key Concept to ask Milton for more details
+  const handleConceptClick = (term: string, explanation: string) => {
+    // Add a user message asking about the concept
+    addMessage({
+      role: 'user',
+      content: `I'd like to learn more about "${term}". ${explanation} Can you help me understand this better with some practical examples?`,
+    });
+
+    // Open Milton's chat panel
+    setIsOpen(true);
+
+    // Close the feature tour modal
+    handleClose();
   };
 
   if (!showTour || !featureDetails) {
@@ -197,14 +214,35 @@ export default function FeatureTour() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Key Concepts
               </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Click any concept to ask Milton for more details
+              </p>
               <div className="space-y-3">
-                {featureDetails.accountingConcepts.slice(0, 3).map((concept, i) => (
-                  <div key={i} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                    <div className="font-medium text-gray-900 dark:text-white">{concept.term}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {concept.explanation}
+                {featureDetails.accountingConcepts.map((concept, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleConceptClick(concept.term, concept.explanation)}
+                    aria-label={`Learn more about ${concept.term} from Milton`}
+                    className={clsx(
+                      "w-full text-left p-3 rounded-lg transition-all duration-200",
+                      "bg-gray-50 dark:bg-gray-700/50",
+                      "hover:bg-indigo-50 dark:hover:bg-indigo-900/30",
+                      "hover:ring-2 hover:ring-indigo-300 dark:hover:ring-indigo-600",
+                      "cursor-pointer group"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                          {concept.term}
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {concept.explanation}
+                        </div>
+                      </div>
+                      <MessageCircle className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 flex-shrink-0 mt-1 transition-colors" />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
