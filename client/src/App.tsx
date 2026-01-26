@@ -47,6 +47,7 @@ import ProfitAndLoss from './pages/reports/ProfitAndLoss';
 import BalanceSheet from './pages/reports/BalanceSheet';
 import TrialBalance from './pages/reports/TrialBalance';
 import ARAgingSummary from './pages/reports/ARAgingSummary';
+import APAgingSummary from './pages/reports/APAgingSummary';
 import CustomerStatement from './pages/reports/CustomerStatement';
 import TransactionDetail from './pages/reports/TransactionDetail';
 import Projects from './pages/Projects';
@@ -183,6 +184,7 @@ function AppContent() {
             <Route path="reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="reports/trial-balance" element={<TrialBalance />} />
             <Route path="reports/ar-aging" element={<ARAgingSummary />} />
+            <Route path="reports/ap-aging" element={<APAgingSummary />} />
             <Route path="reports/customer-statement" element={<CustomerStatement />} />
             <Route path="reports/transaction-detail" element={<TransactionDetail />} />
             <Route path="submissions" element={<Submissions />} />
