@@ -2,12 +2,13 @@ import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Zap, Info } from 'lucide-react';
 import { useEffect, ReactNode, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import CustomerSelector from './CustomerSelector';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
 import api from '../lib/api';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
 
 // Tax rate interface
 interface TaxRate {
@@ -53,6 +54,7 @@ interface InvoiceFormProps {
 
 export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Invoice', headerActions }: InvoiceFormProps) {
   const navigate = useNavigate();
+  const { settings } = useCompanySettings();
 
   // Track taxable status for each line item (keyed by ProductServiceId)
   const [lineTaxableStatus, setLineTaxableStatus] = useState<Record<number, boolean>>({});
@@ -104,6 +106,10 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
   });
 
   const selectedTaxRateId = watch('TaxRateId');
+  const watchedStatus = watch('Status');
+
+  // Determine if invoice will be auto-posted on save
+  const willAutoPost = settings.invoicePostingMode === 'simple' && watchedStatus !== 'Draft';
 
   // Get the selected tax rate
   const selectedTaxRate = useMemo(() => {
@@ -425,6 +431,31 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             </div>
           </div>
         </div>
+
+        {/* Auto-posting indicator */}
+        {settings.invoicePostingMode === 'simple' && (
+          <div className={`flex items-center gap-2 p-3 rounded-lg ${
+            willAutoPost
+              ? 'bg-amber-50 border border-amber-200'
+              : 'bg-gray-50 border border-gray-200'
+          }`}>
+            {willAutoPost ? (
+              <>
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span className="text-sm text-amber-700">
+                  This invoice will <strong>post to your books</strong> when saved (AR + Revenue entries).
+                </span>
+              </>
+            ) : (
+              <>
+                <Info className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  Draft invoices don't affect your books until the status is changed.
+                </span>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex justify-end items-center border-t pt-4">
           <button

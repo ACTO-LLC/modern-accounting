@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail, AlertCircle } from 'lucide-react';
-import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail, AlertCircle, Zap, ClipboardCheck, HelpCircle } from 'lucide-react';
+import { useCompanySettings, InvoicePostingMode } from '../contexts/CompanySettingsContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
 import EmailSettingsForm from '../components/EmailSettingsForm';
 import OnboardingSettings from '../components/onboarding/OnboardingSettings';
@@ -111,6 +111,101 @@ export default function CompanySettings() {
               Choose how the application appears. System will follow your device settings.
             </p>
           </div>
+        </div>
+
+        {/* Transaction Posting Mode Section */}
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Transaction Posting Mode</h2>
+            <div className="relative group">
+              <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+              <div className="absolute left-0 bottom-full mb-2 w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                <p className="mb-2"><strong>Simple Mode</strong> (like QuickBooks): Invoices and bills immediately affect your accounting records when saved.</p>
+                <p><strong>Advanced Mode</strong>: Documents stay as drafts until you explicitly post them, giving you more control over your books.</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Choose how invoices and bills affect your general ledger.
+          </p>
+
+          <div className="space-y-4">
+            {/* Simple Mode Option */}
+            <label
+              className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                formData.invoicePostingMode === 'simple'
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              <input
+                type="radio"
+                name="invoicePostingMode"
+                value="simple"
+                checked={formData.invoicePostingMode === 'simple'}
+                onChange={() => setFormData(prev => ({ ...prev, invoicePostingMode: 'simple' as InvoicePostingMode }))}
+                className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-500" />
+                  <span className="font-semibold text-gray-900 dark:text-white">Simple Mode</span>
+                  <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">Recommended</span>
+                </div>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Like QuickBooks Online. Invoices and bills immediately post to your general ledger when saved.
+                  Perfect for small businesses that want straightforward accounting.
+                </p>
+                <ul className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                  <li>- Invoices: Save = Post to AR & Revenue</li>
+                  <li>- Bills: Save = Post to AP & Expense</li>
+                  <li>- Corrections via credit memos or adjusting entries</li>
+                </ul>
+              </div>
+            </label>
+
+            {/* Advanced Mode Option */}
+            <label
+              className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                formData.invoicePostingMode === 'advanced'
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              <input
+                type="radio"
+                name="invoicePostingMode"
+                value="advanced"
+                checked={formData.invoicePostingMode === 'advanced'}
+                onChange={() => setFormData(prev => ({ ...prev, invoicePostingMode: 'advanced' as InvoicePostingMode }))}
+                className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="h-5 w-5 text-blue-500" />
+                  <span className="font-semibold text-gray-900 dark:text-white">Advanced Mode</span>
+                </div>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  For businesses needing review steps. Documents remain as drafts until explicitly posted.
+                  Ideal for approval workflows and accountant review.
+                </p>
+                <ul className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                  <li>- Draft documents don't affect GL</li>
+                  <li>- Edit freely before posting</li>
+                  <li>- Supports approval workflows</li>
+                </ul>
+              </div>
+            </label>
+          </div>
+
+          {formData.invoicePostingMode !== settings.invoicePostingMode && (
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                <strong>Note:</strong> Changing this setting only affects new transactions.
+                Existing documents will retain their current posting status.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Logo Section */}

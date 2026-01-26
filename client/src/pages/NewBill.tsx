@@ -3,16 +3,25 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '../lib/api';
 import BillForm, { BillFormData } from '../components/BillForm';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { createBillJournalEntry } from '../lib/autoPostingService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Bill {
   Id: string;
   BillNumber: string;
 }
 
+interface BillWithVendor extends Bill {
+  VendorName?: string;
+}
+
 export default function NewBill() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { settings } = useCompanySettings();
+  const { user } = useAuth();
 
   const mutation = useMutation({
     mutationFn: async (data: BillFormData) => {
@@ -22,7 +31,7 @@ export default function NewBill() {
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedBillNumber = String(billData.BillNumber).replace(/'/g, "''");
-      const queryResponse = await api.get<{ value: Bill[] }>(
+      const queryResponse = await api.get<{ value: BillWithVendor[] }>(
         `/bills?$filter=BillNumber eq '${escapedBillNumber}'`
       );
       const bill = queryResponse.data.value[0];
@@ -43,6 +52,28 @@ export default function NewBill() {
             })
           )
         );
+      }
+
+      // In Simple mode, auto-post to GL
+      if (settings.invoicePostingMode === 'simple' && billData.Status !== 'Draft') {
+        try {
+          await createBillJournalEntry(
+            bill.Id,
+            billData.TotalAmount,
+            billData.BillNumber || '',
+            bill.VendorName || 'Vendor',
+            billData.BillDate,
+            Lines.map(line => ({
+              AccountId: line.AccountId,
+              Amount: line.Amount,
+              Description: line.Description || undefined
+            })),
+            user?.name || user?.username
+          );
+        } catch (postingError) {
+          console.warn('Auto-posting failed, bill still created:', postingError);
+          // Don't fail the whole operation if posting fails
+        }
       }
 
       return bill;
