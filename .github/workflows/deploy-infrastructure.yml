@@ -6,11 +6,13 @@ on:
       - main
     paths:
       - 'infra/**'
+      - '.github/workflows/deploy-infrastructure.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'infra/**'
+      - '.github/workflows/deploy-infrastructure.yml'
   workflow_dispatch:
     inputs:
       environment:
