@@ -529,3 +529,51 @@ const schema = z.object({
 ```
 
 The `z.preprocess` approach breaks TypeScript inference because the preprocessor returns `unknown` before the schema validates it.
+
+---
+
+### DAB OData Date Filtering (Jan 2026)
+
+**Problem:** Date filters in DAB API queries fail with errors like:
+- `"A binary operator with incompatible types was detected. Found operand types 'Edm.DateTimeOffset' and 'Edm.String'"` (quoted dates)
+- `"No mapping exists from object type Microsoft.OData.Edm.Date to a known managed provider native type"` (plain dates like `2025-01-01`)
+
+**Root Cause:** DAB has two issues with date filtering:
+1. Quoted dates (`'2025-01-01'`) are treated as strings, causing type mismatch
+2. Unquoted plain dates (`2025-01-01`) are parsed as `Edm.Date` which SQL Server's SqlClient can't map
+
+**Solution:** Use ISO 8601 datetime format with time component (`T00:00:00Z`):
+
+```typescript
+// WRONG - quoted dates treated as strings
+`/paystubs?$filter=PayDate ge '${startDate}'`
+
+// WRONG - plain dates cause Edm.Date mapping error
+`/paystubs?$filter=PayDate ge 2025-01-01`
+
+// CORRECT - datetime format with time component
+`/paystubs?$filter=PayDate ge 2025-01-01T00:00:00Z and PayDate le 2025-12-31T23:59:59Z`
+```
+
+**Helper Function (dateUtils.ts):**
+```typescript
+import { formatDateForOData } from '../lib/dateUtils';
+
+// For start dates (ge comparisons)
+const odataStart = formatDateForOData(startDate);        // "2025-01-01T00:00:00Z"
+
+// For end dates (le comparisons)
+const odataEnd = formatDateForOData(endDate, true);      // "2025-12-31T23:59:59Z"
+```
+
+**Common Symptoms:**
+- API returns 500 Internal Server Error
+- DAB logs show "No mapping exists from Edm.Date"
+- UI shows "No data found" even when data exists
+
+**Files Fixed:**
+- `W2Forms.tsx` - Pay stubs date range filter
+- `Form1099NEC.tsx` - Bill payments date range filter
+- `CustomerStatement.tsx` - Invoice and payment date filters
+- `api.ts` - Time entries date range filter (getByDateRange)
+- `dateUtils.ts` - Added `formatDateForOData()` helper function

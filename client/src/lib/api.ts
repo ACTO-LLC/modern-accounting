@@ -233,8 +233,12 @@ export const timeEntriesApi = {
   },
 
   getByDateRange: async (startDate: string, endDate: string): Promise<TimeEntry[]> => {
+    // OData date filter: DAB requires datetime format (with T00:00:00Z) for DATE columns
+    // Append time component if not already present
+    const start = startDate.includes('T') ? startDate : `${startDate}T00:00:00Z`;
+    const end = endDate.includes('T') ? endDate : `${endDate}T23:59:59Z`;
     const response = await api.get(
-      `/timeentries?$filter=EntryDate ge '${startDate}' and EntryDate le '${endDate}'`
+      `/timeentries?$filter=EntryDate ge ${start} and EntryDate le ${end}`
     );
     return response.data.value;
   },

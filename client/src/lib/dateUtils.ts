@@ -78,3 +78,25 @@ export function formatTime(date: string | Date | null | undefined): string {
     minute: '2-digit',
   });
 }
+
+/**
+ * Format a date for DAB OData filter queries
+ * DAB requires ISO 8601 datetime format (with T and Z) for DATE columns
+ * Plain dates like 2025-01-01 cause "No mapping exists from Edm.Date" errors
+ *
+ * @param date - Date string in YYYY-MM-DD format or Date object
+ * @param endOfDay - If true, sets time to 23:59:59Z (for "le" comparisons)
+ * @returns ISO 8601 datetime string like "2025-01-01T00:00:00Z"
+ */
+export function formatDateForOData(
+  date: string | Date | null | undefined,
+  endOfDay = false
+): string {
+  if (!date) return '';
+  // If already has time component, return as-is
+  if (typeof date === 'string' && date.includes('T')) {
+    return date;
+  }
+  const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+  return endOfDay ? `${dateStr}T23:59:59Z` : `${dateStr}T00:00:00Z`;
+}

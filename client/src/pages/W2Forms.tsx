@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Printer, FileText, AlertCircle, CheckCircle } from 'lucide-react';
@@ -64,10 +64,12 @@ export default function W2Forms() {
   const { data: payStubs, isLoading: payStubsLoading } = useQuery({
     queryKey: ['paystubs', 'year', selectedYear],
     queryFn: async () => {
-      const startDate = `${selectedYear}-01-01`;
-      const endDate = `${selectedYear}-12-31`;
+      // OData date filter: DAB requires datetime format (with T00:00:00Z) for DATE columns
+      // Plain dates like 2025-01-01 cause "No mapping exists from Edm.Date" error
+      const startDate = `${selectedYear}-01-01T00:00:00Z`;
+      const endDate = `${selectedYear}-12-31T23:59:59Z`;
       const response = await api.get<{ value: PayStub[] }>(
-        `/paystubs?$filter=PayDate ge '${startDate}' and PayDate le '${endDate}'`
+        `/paystubs?$filter=PayDate ge ${startDate} and PayDate le ${endDate}`
       );
       return response.data.value;
     },
@@ -535,8 +537,8 @@ export default function W2Forms() {
                 </div>
                 <div className="grid grid-cols-5 gap-4 text-sm">
                   {selectedW2Data.stateInfo.map((state, idx) => (
-                    <>
-                      <div key={`state-${idx}`}>
+                    <React.Fragment key={`state-${idx}`}>
+                      <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">15 State</div>
                         <div className="font-medium text-gray-900 dark:text-white">{state.state}</div>
                       </div>
@@ -553,7 +555,7 @@ export default function W2Forms() {
                         <div className="text-gray-900 dark:text-white">{formatCurrency(state.stateTax)}</div>
                       </div>
                       <div></div>
-                    </>
+                    </React.Fragment>
                   ))}
                 </div>
               </div>
