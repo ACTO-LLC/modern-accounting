@@ -33,6 +33,7 @@
     <Build Include="dbo\Tables\BankTransactionMatches.sql" />
     <Build Include="dbo\Tables\BankTransactions.sql" />
     <Build Include="dbo\Tables\BillLines.sql" />
+    <Build Include="dbo\Tables\BankRules.sql" />
     <Build Include="dbo\Tables\BillPaymentApplications.sql" />
     <Build Include="dbo\Tables\BillPayments.sql" />
     <Build Include="dbo\Tables\Bills.sql" />

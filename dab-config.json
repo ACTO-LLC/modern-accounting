@@ -50,6 +50,40 @@
                 "Id"
             ]
         },
+        "bankrules": {
+            "source": "dbo.BankRules",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "BankAccountId": "BankAccountId",
+                "MatchField": "MatchField",
+                "MatchType": "MatchType",
+                "MatchValue": "MatchValue",
+                "MinAmount": "MinAmount",
+                "MaxAmount": "MaxAmount",
+                "TransactionType": "TransactionType",
+                "AssignAccountId": "AssignAccountId",
+                "AssignVendorId": "AssignVendorId",
+                "AssignCustomerId": "AssignCustomerId",
+                "AssignClassId": "AssignClassId",
+                "AssignMemo": "AssignMemo",
+                "Priority": "Priority",
+                "IsEnabled": "IsEnabled",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
         "banktransactions": {
             "source": "dbo.BankTransactions",
             "permissions": [
