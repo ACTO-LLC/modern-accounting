@@ -42,6 +42,12 @@ CREATE TABLE [dbo].[Employees]
     -- Timestamps and versioning
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    -- Additional columns from database
+[PlaidItemId] NVARCHAR(100) NULL,
+    [PlaidAccountId] NVARCHAR(100) NULL,
+    [BankVerificationStatus] NVARCHAR(20) NOT NULL DEFAULT ('Unverified'),
+    [BankVerifiedAt] DATETIME2 NULL,
+    [BankInstitutionName] NVARCHAR(200) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo])

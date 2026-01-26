@@ -43,6 +43,17 @@ CREATE TABLE [dbo].[BankTransactions]
     [CreatedDate] DATETIME DEFAULT GETDATE(),
 
     -- Temporal table columns (system-versioned)
+    -- Additional columns from database
+[PlaidTransactionId] NVARCHAR(100) NULL,
+    [PlaidAccountId] UNIQUEIDENTIFIER NULL,
+    [TenantId] UNIQUEIDENTIFIER NULL,
+    [ImportId] UNIQUEIDENTIFIER NULL,
+    [BankTransactionId] NVARCHAR(100) NULL,
+    [CheckNumber] NVARCHAR(20) NULL,
+    [ReferenceNumber] NVARCHAR(100) NULL,
+    [MatchConfidence] NVARCHAR(20) NULL,
+    [MatchedPaymentId] UNIQUEIDENTIFIER NULL,
+    [MatchedAt] DATETIME2 NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),

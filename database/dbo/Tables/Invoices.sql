@@ -19,6 +19,10 @@ CREATE TABLE [dbo].[Invoices]
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
     -- Temporal table columns (system-versioned)
+    -- Additional columns from database
+[JournalEntryId] UNIQUEIDENTIFIER NULL,
+    [PostedAt] DATETIME2 NULL,
+    [PostedBy] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),

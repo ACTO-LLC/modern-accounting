@@ -15,6 +15,8 @@ CREATE TABLE [dbo].[TimeEntries]
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
     -- Temporal table columns (system-versioned)
+    -- Additional columns from database
+[TenantId] UNIQUEIDENTIFIER NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),

@@ -10,6 +10,13 @@ CREATE TABLE [dbo].[Locations]
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
     -- Temporal table columns (system-versioned)
+    -- Additional columns from database
+[AddressLine1] NVARCHAR(100) NULL,
+    [AddressLine2] NVARCHAR(100) NULL,
+    [City] NVARCHAR(50) NULL,
+    [State] NVARCHAR(50) NULL,
+    [PostalCode] NVARCHAR(20) NULL,
+    [Country] NVARCHAR(50) NULL DEFAULT ('US'),
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),

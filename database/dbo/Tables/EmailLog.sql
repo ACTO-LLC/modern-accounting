@@ -11,6 +11,12 @@ CREATE TABLE [dbo].[EmailLog]
     [SentAt] DATETIME2 NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
+    -- Additional columns from database
+[EntityType] NVARCHAR(50) NULL DEFAULT ('Invoice'),
+    [EntityId] UNIQUEIDENTIFIER NULL,
+    [ReminderSettingId] UNIQUEIDENTIFIER NULL,
+    [IsAutomatic] BIT NOT NULL DEFAULT ((0)),
+    [TemplateId] UNIQUEIDENTIFIER NULL,
     CONSTRAINT [FK_EmailLog_Invoice] FOREIGN KEY ([InvoiceId]) REFERENCES [dbo].[Invoices]([Id])
 )
 GO

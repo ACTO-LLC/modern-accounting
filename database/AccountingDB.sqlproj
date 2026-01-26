@@ -43,6 +43,8 @@
     <Build Include="dbo\Tables\Deployments.sql" />
     <Build Include="dbo\Tables\EmailLog.sql" />
     <Build Include="dbo\Tables\EmailSettings.sql" />
+    <Build Include="dbo\Tables\EmailReminderSettings.sql" />
+    <Build Include="dbo\Tables\EmailTemplates.sql" />
     <Build Include="dbo\Tables\Employees.sql" />
     <Build Include="dbo\Tables\EmployeeWorkStates.sql" />
     <Build Include="dbo\Tables\Enhancements.sql" />

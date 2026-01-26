@@ -11,7 +11,7 @@ SELECT
     sr.[Reference],
     sr.[Subtotal],
     sr.[TaxRateId],
-    tr.[Name] AS TaxRateName,
+    CONCAT(tr.[TaxType], ' - ', tr.[StateCode], ' (', tr.[Rate], '%)') AS TaxRateName,
     tr.[Rate] AS TaxRate,
     sr.[TaxAmount],
     sr.[TotalAmount],
