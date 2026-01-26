@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+export type InvoicePostingMode = 'simple' | 'advanced';
+
 export interface CompanySettings {
   name: string;
   logoUrl: string;
@@ -12,6 +14,10 @@ export interface CompanySettings {
   website: string;
   taxId: string; // EIN (Employer Identification Number)
   stateEmployerId: string; // State employer ID for W-2 forms
+  // Invoice/Bill Posting Mode:
+  // - 'simple': QBO-like behavior - documents post to GL immediately on save
+  // - 'advanced': Draft documents don't create journal entries until explicitly posted
+  invoicePostingMode: InvoicePostingMode;
 }
 
 const defaultSettings: CompanySettings = {
@@ -26,6 +32,7 @@ const defaultSettings: CompanySettings = {
   website: '',
   taxId: '',
   stateEmployerId: '',
+  invoicePostingMode: 'simple', // Default to QBO-like simple mode
 };
 
 interface CompanySettingsContextType {

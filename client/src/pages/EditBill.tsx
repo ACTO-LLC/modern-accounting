@@ -3,6 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '../lib/api';
 import BillForm, { BillFormData } from '../components/BillForm';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { createBillJournalEntry } from '../lib/autoPostingService';
+import { useAuth } from '../contexts/AuthContext';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -22,6 +25,7 @@ interface BillLine {
 interface Bill {
   Id: string;
   VendorId: string;
+  VendorName?: string;
   BillNumber: string;
   BillDate: string;
   DueDate: string;
@@ -30,6 +34,7 @@ interface Bill {
   Status: 'Draft' | 'Open' | 'Paid' | 'Partial' | 'Overdue';
   Terms: string;
   Memo: string;
+  JournalEntryId?: string | null;
   Lines?: BillLine[];
 }
 
@@ -38,6 +43,8 @@ export default function EditBill() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { settings } = useCompanySettings();
+  const { user } = useAuth();
 
   // Validate ID before using in query
   const isIdValid = isValidUUID(id);
@@ -68,6 +75,10 @@ export default function EditBill() {
       if (!isIdValid) {
         throw new Error('Invalid bill ID format');
       }
+
+      // Check if bill was previously Draft and is now being posted
+      const wasNotPosted = !bill?.JournalEntryId;
+      const isNowPosted = data.Status !== 'Draft';
 
       // 1. Update Bill (exclude Lines)
       const { Lines, ...billData } = data;
@@ -104,6 +115,28 @@ export default function EditBill() {
       ];
 
       await Promise.all(promises);
+
+      // 3. In Simple mode, auto-post to GL if bill is transitioning from Draft to a posted status
+      if (settings.invoicePostingMode === 'simple' && wasNotPosted && isNowPosted) {
+        try {
+          await createBillJournalEntry(
+            id,
+            billData.TotalAmount,
+            billData.BillNumber || '',
+            bill?.VendorName || 'Vendor',
+            billData.BillDate,
+            incomingLines.map(line => ({
+              AccountId: line.AccountId,
+              Amount: line.Amount,
+              Description: line.Description || undefined
+            })),
+            user?.name || user?.username
+          );
+        } catch (postingError) {
+          console.warn('Auto-posting failed, bill still updated:', postingError);
+          // Don't fail the whole operation if posting fails
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bills'] });

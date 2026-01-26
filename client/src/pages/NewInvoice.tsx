@@ -1,14 +1,23 @@
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import InvoiceForm, { InvoiceFormData } from '../components/InvoiceForm';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { createInvoiceJournalEntry } from '../lib/autoPostingService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Invoice {
   Id: string;
   InvoiceNumber: string;
 }
 
+interface InvoiceWithCustomer extends Invoice {
+  CustomerName?: string;
+}
+
 export default function NewInvoice() {
   const navigate = useNavigate();
+  const { settings } = useCompanySettings();
+  const { user } = useAuth();
 
   const onSubmit = async (data: InvoiceFormData) => {
     try {
@@ -20,7 +29,7 @@ export default function NewInvoice() {
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedInvoiceNumber = String(invoiceData.InvoiceNumber).replace(/'/g, "''");
-      const queryResponse = await api.get<{ value: Invoice[] }>(
+      const queryResponse = await api.get<{ value: InvoiceWithCustomer[] }>(
         `/invoices?$filter=InvoiceNumber eq '${escapedInvoiceNumber}'`
       );
       const invoice = queryResponse.data.value[0];
@@ -42,6 +51,24 @@ export default function NewInvoice() {
             })
           )
         );
+      }
+
+      // In Simple mode, auto-post to GL
+      if (settings.invoicePostingMode === 'simple' && invoiceData.Status !== 'Draft') {
+        try {
+          await createInvoiceJournalEntry(
+            invoice.Id,
+            invoiceData.TotalAmount,
+            invoiceData.TaxAmount,
+            invoiceData.InvoiceNumber,
+            invoice.CustomerName || 'Customer',
+            invoiceData.IssueDate,
+            user?.name || user?.username
+          );
+        } catch (postingError) {
+          console.warn('Auto-posting failed, invoice still created:', postingError);
+          // Don't fail the whole operation if posting fails
+        }
       }
 
       navigate('/invoices');

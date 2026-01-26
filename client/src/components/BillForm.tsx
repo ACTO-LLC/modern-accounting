@@ -2,10 +2,11 @@ import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Zap, Info } from 'lucide-react';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
 
 export const billSchema = z.object({
   VendorId: z.string().uuid('Please select a vendor'),
@@ -49,6 +50,7 @@ interface BillFormProps {
 
 export default function BillForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Bill' }: BillFormProps) {
   const navigate = useNavigate();
+  const { settings } = useCompanySettings();
 
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
@@ -98,6 +100,14 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
     control,
     name: "VendorId"
   });
+
+  const watchedStatus = useWatch({
+    control,
+    name: "Status"
+  });
+
+  // Determine if bill will be auto-posted on save
+  const willAutoPost = settings.invoicePostingMode === 'simple' && watchedStatus !== 'Draft';
 
   // Update Terms when vendor is selected
   useEffect(() => {
@@ -293,6 +303,31 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
             <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>
           )}
         </div>
+
+        {/* Auto-posting indicator */}
+        {settings.invoicePostingMode === 'simple' && (
+          <div className={`flex items-center gap-2 p-3 rounded-lg ${
+            willAutoPost
+              ? 'bg-amber-50 border border-amber-200'
+              : 'bg-gray-50 border border-gray-200'
+          }`}>
+            {willAutoPost ? (
+              <>
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span className="text-sm text-amber-700">
+                  This bill will <strong>post to your books</strong> when saved (AP + Expense entries).
+                </span>
+              </>
+            ) : (
+              <>
+                <Info className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  Draft bills don't affect your books until the status is changed.
+                </span>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex justify-end items-center border-t pt-4">
           <div className="text-xl font-bold text-gray-900 mr-6">

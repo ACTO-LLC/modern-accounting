@@ -4,15 +4,18 @@ import api from '../lib/api';
 import InvoiceForm, { InvoiceFormData } from '../components/InvoiceForm';
 import { Copy } from 'lucide-react';
 import { useState } from 'react';
-import { 
-  generateNextInvoiceNumber, 
-  calculateInvoiceTotal, 
-  getCurrentDate, 
+import {
+  generateNextInvoiceNumber,
+  calculateInvoiceTotal,
+  getCurrentDate,
   getDateNDaysFromNow,
-  type Invoice 
+  type Invoice
 } from '../lib/invoiceUtils';
 import { formatGuidForOData } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { createInvoiceJournalEntry } from '../lib/autoPostingService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface InvoiceLine {
   Id: string;
@@ -26,6 +29,7 @@ interface InvoiceWithLines {
   Id: string;
   InvoiceNumber: string;
   CustomerId: string;
+  CustomerName?: string;
   IssueDate: string;
   DueDate: string;
   Subtotal: number;
@@ -33,6 +37,7 @@ interface InvoiceWithLines {
   TaxAmount: number;
   TotalAmount: number;
   Status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+  JournalEntryId?: string | null;
   Lines?: InvoiceLine[];
 }
 
@@ -42,6 +47,8 @@ export default function EditInvoice() {
   const queryClient = useQueryClient();
   const [isDuplicating, setIsDuplicating] = useState(false);
   const { showToast } = useToast();
+  const { settings } = useCompanySettings();
+  const { user } = useAuth();
 
   // Fetch all invoices to generate new invoice number
   const { data: allInvoices } = useQuery({
@@ -74,7 +81,11 @@ export default function EditInvoice() {
   const mutation = useMutation({
     mutationFn: async (data: InvoiceFormData) => {
       if (!id) throw new Error('Invoice ID is required');
-      
+
+      // Check if invoice was previously Draft and is now being posted
+      const wasNotPosted = !invoice?.JournalEntryId;
+      const isNowPosted = data.Status !== 'Draft';
+
       // 1. Update Invoice (exclude Lines)
       const { Lines, ...invoiceData } = data;
       await api.patch(`/invoices_write/Id/${id}`, invoiceData);
@@ -108,6 +119,24 @@ export default function EditInvoice() {
           UnitPrice: l.UnitPrice
         }))
       ]);
+
+      // 3. In Simple mode, auto-post to GL if invoice is transitioning from Draft to a posted status
+      if (settings.invoicePostingMode === 'simple' && wasNotPosted && isNowPosted) {
+        try {
+          await createInvoiceJournalEntry(
+            id,
+            invoiceData.TotalAmount,
+            invoiceData.TaxAmount,
+            invoiceData.InvoiceNumber,
+            invoice?.CustomerName || 'Customer',
+            invoiceData.IssueDate,
+            user?.name || user?.username
+          );
+        } catch (postingError) {
+          console.warn('Auto-posting failed, invoice still updated:', postingError);
+          // Don't fail the whole operation if posting fails
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
