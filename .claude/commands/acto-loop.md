@@ -77,13 +77,27 @@ After PR is created:
 
 #### Step 1: Request Copilot Review
 - Run: `gh pr comment <PR_NUMBER> --body "@copilot review"`
-- Wait briefly, then check for Copilot's response: `gh pr view <PR_NUMBER> --comments`
-- Parse any suggestions from Copilot's review
+- Wait 30-60 seconds for Copilot to respond
+- Check for response: `gh pr view <PR_NUMBER> --comments --json comments`
 
-#### Step 2: Implement Suggestions
-For each Copilot suggestion:
-- Evaluate if it's valid and improves the code
-- Implement the change
+#### Step 2: Handle Copilot's Response
+Copilot responds in one of two ways:
+
+**Option A: Copilot creates a follow-up PR**
+- Copilot comments: "I've opened a new pull request, #NNN, to work on those changes"
+- Check the follow-up PR: `gh pr view <COPILOT_PR> --json title,body,additions,deletions,files`
+- If `[WIP]` in title: Wait and check back later, or proceed without it
+- If ready (no WIP):
+  - Review the changes Copilot proposes
+  - If changes are valid improvements:
+    - Merge Copilot's PR first: `gh pr merge <COPILOT_PR> --squash --delete-branch`
+    - Rebase your PR on main: `git fetch origin && git rebase origin/main`
+    - Push updated branch: `git push --force-with-lease`
+  - If changes are review-only (0 additions/deletions): Note recommendations for follow-up
+  - If changes are problematic: Close Copilot's PR with explanation
+
+**Option B: Copilot leaves inline comments**
+- Review each comment and implement valid suggestions
 - Track what was implemented
 
 #### Step 3: Independent Review Check
@@ -173,9 +187,13 @@ ALL must pass before `<acto-complete>`:
 <acto-pr-created>PR #155 created: https://github.com/ACTO-LLC/modern-accounting/pull/155</acto-pr-created>
 
 [Phase 4: PR Review]
-- Requesting Copilot review...
-- Copilot suggests: Add error handling for edge case
-- Implementing suggestion...
+- Requesting Copilot review: `gh pr comment 155 --body "@copilot review"`
+- Waiting for response...
+- Copilot responded: "I've opened a new pull request, #156, to work on those changes"
+- Checking Copilot's PR: `gh pr view 156 --json title,body,additions,deletions`
+- PR #156 has 3 additions, 1 deletion - standardizes error handling
+- Changes look valid, merging Copilot's PR...
+- Rebasing our branch on main...
 - Independent review: Code follows CLAUDE.md patterns ✅
 - Final tests: Build ✅, Tests ✅
 
