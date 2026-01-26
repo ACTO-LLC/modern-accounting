@@ -89,7 +89,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const initialMessage: Message = {
   id: '1',
   role: 'assistant',
-  content: "Hi! I'm your accounting assistant. I can help you with:\n\n" +
+  content: "Hi! I'm Milton, your accounting assistant. I can help you with:\n\n" +
     "- **Data queries**: \"Show all invoices\", \"Who are my top customers?\", \"What's overdue?\"\n" +
     "- **Financial summaries**: \"Revenue this month\", \"How much do we owe vendors?\"\n" +
     "- **Accounting guidance**: \"Where should I expense a phone bill?\", \"What is depreciation?\"\n\n" +

@@ -14,10 +14,10 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Verify chat is open
-    await expect(page.getByText('Accounting Assistant')).toBeVisible();
+    await expect(page.getByText('Milton')).toBeVisible();
     
     // Verify initial welcome message
-    await expect(page.getByText(/Hi! I'm your accounting assistant/)).toBeVisible();
+    await expect(page.getByText(/Hi! I'm Milton, your accounting assistant/)).toBeVisible();
   });
 
   test('should display file attachment button', async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Type a message
-    await page.fill('input[placeholder*="Ask me anything"]', 'What is double-entry accounting?');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'What is double-entry accounting?');
     
     // Send the message
     await page.click('button[aria-label="Send message"]');
@@ -57,7 +57,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Send a message
-    await page.fill('input[placeholder*="Ask me anything"]', 'Test message');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'Test message');
     await page.click('button[aria-label="Send message"]');
     
     // Wait for the message to appear
@@ -80,7 +80,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Verify the chat interface loads
-    await expect(page.getByText('Accounting Assistant')).toBeVisible();
+    await expect(page.getByText('Milton')).toBeVisible();
     
     // Note: Testing actual retry functionality would require mocking the API
     // or creating a test scenario that produces an error
@@ -102,7 +102,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Send a message
-    await page.fill('input[placeholder*="Ask me anything"]', 'Test message');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'Test message');
     await page.click('button[aria-label="Send message"]');
     
     // Wait for the message
@@ -121,7 +121,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Verify chat is open
-    await expect(page.getByText('Accounting Assistant')).toBeVisible();
+    await expect(page.getByText('Milton')).toBeVisible();
     
     // Close chat
     await page.click('button[aria-label="Close chat"]');

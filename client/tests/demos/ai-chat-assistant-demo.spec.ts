@@ -23,7 +23,7 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 2: Open the Chat Interface
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Accounting Assistant')).toBeVisible();
+    await expect(page.getByText('Milton')).toBeVisible();
     await demoPause(1500);
 
     // Scene 3: Show the welcome message
@@ -46,7 +46,7 @@ test.describe('AI Chat Assistant Demo', () => {
     }
 
     // Scene 5: Ask about revenue
-    await page.fill('input[placeholder*="Ask me anything"]', 'What was my revenue this month?');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'What was my revenue this month?');
     await demoPause(1000);
     await page.click('button[aria-label="Send message"]');
 
@@ -56,7 +56,7 @@ test.describe('AI Chat Assistant Demo', () => {
     await demoPause(3000);
 
     // Scene 6: Ask a follow-up question
-    await page.fill('input[placeholder*="Ask me anything"]', 'Who are my top 3 customers?');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'Who are my top 3 customers?');
     await demoPause(1000);
     await page.click('button[aria-label="Send message"]');
 
@@ -78,7 +78,7 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 2: Open Chat
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Accounting Assistant')).toBeVisible();
+    await expect(page.getByText('Milton')).toBeVisible();
     await demoPause(1500);
 
     // Wait for welcome message
@@ -86,7 +86,7 @@ test.describe('AI Chat Assistant Demo', () => {
     await demoPause(1000);
 
     // Scene 3: Ask about accounting concepts
-    await page.fill('input[placeholder*="Ask me anything"]', 'Explain double-entry accounting in simple terms');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'Explain double-entry accounting in simple terms');
     await demoPause(800);
     await page.click('button[aria-label="Send message"]');
 
@@ -96,7 +96,7 @@ test.describe('AI Chat Assistant Demo', () => {
     await demoPause(4000);
 
     // Scene 4: Ask practical question
-    await page.fill('input[placeholder*="Ask me anything"]', 'How do I record a customer payment?');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'How do I record a customer payment?');
     await demoPause(800);
     await page.click('button[aria-label="Send message"]');
 
@@ -117,11 +117,11 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 2: Open Chat - it should show context-aware suggestions
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Accounting Assistant')).toBeVisible();
+    await expect(page.getByText('Milton')).toBeVisible();
     await demoPause(2000);
 
     // Scene 3: Ask about current page context
-    await page.fill('input[placeholder*="Ask me anything"]', 'What can I do on this page?');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'What can I do on this page?');
     await demoPause(800);
     await page.click('button[aria-label="Send message"]');
 
@@ -140,11 +140,11 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 5: Open chat again on new page
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Accounting Assistant')).toBeVisible();
+    await expect(page.getByText('Milton')).toBeVisible();
     await demoPause(1500);
 
     // Scene 6: Ask about customers
-    await page.fill('input[placeholder*="Ask me anything"]', 'Show me customers with outstanding balances');
+    await page.fill('input[placeholder*="Ask Milton anything"]', 'Show me customers with outstanding balances');
     await demoPause(800);
     await page.click('button[aria-label="Send message"]');
 
