@@ -3,6 +3,14 @@ import crypto from 'crypto';
 
 const connectionString = process.env.DATABASE_URL || process.env.DB_CONNECTION_STRING;
 
+/**
+ * Connection pool management:
+ * - The mssql library uses connection pooling by default
+ * - sql.connect() returns a connection from the pool (or creates the pool on first call)
+ * - DO NOT call sql.close() after each operation - it closes the entire pool!
+ * - The pool is automatically managed and reused across requests
+ * - Only close the pool on application shutdown
+ */
 async function getConnection() {
     return await sql.connect(connectionString);
 }
@@ -18,8 +26,7 @@ export async function getEmailSettings() {
     } catch (error) {
         console.error('Error getting email settings:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -103,8 +110,7 @@ export async function saveEmailSettings(settings) {
     } catch (error) {
         console.error('Error saving email settings:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -124,8 +130,7 @@ export async function updateTestResult(settingsId, success, message) {
     } catch (error) {
         console.error('Error updating test result:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -151,8 +156,7 @@ export async function createEmailLog(logData) {
     } catch (error) {
         console.error('Error creating email log:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -173,8 +177,7 @@ export async function updateEmailLog(logId, status, errorMessage) {
     } catch (error) {
         console.error('Error updating email log:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -195,8 +198,7 @@ export async function getEmailLogs(invoiceId) {
     } catch (error) {
         console.error('Error getting email logs:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -221,8 +223,7 @@ export async function getEmailTemplates(type = null) {
     } catch (error) {
         console.error('Error getting email templates:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -237,8 +238,7 @@ export async function getEmailTemplateById(id) {
     } catch (error) {
         console.error('Error getting email template:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -305,8 +305,7 @@ export async function saveEmailTemplate(template) {
     } catch (error) {
         console.error('Error saving email template:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -321,8 +320,7 @@ export async function deleteEmailTemplate(id) {
     } catch (error) {
         console.error('Error deleting email template:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -343,8 +341,7 @@ export async function getReminderSettings() {
     } catch (error) {
         console.error('Error getting reminder settings:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -364,8 +361,7 @@ export async function getReminderSettingById(id) {
     } catch (error) {
         console.error('Error getting reminder setting:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -420,8 +416,7 @@ export async function saveReminderSetting(setting) {
     } catch (error) {
         console.error('Error saving reminder setting:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -435,8 +430,7 @@ export async function deleteReminderSetting(id) {
     } catch (error) {
         console.error('Error deleting reminder setting:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -455,8 +449,7 @@ export async function getOverdueInvoicesForReminder() {
     } catch (error) {
         console.error('Error getting overdue invoices:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -478,8 +471,7 @@ export async function getInvoicesForReminderSetting(reminderDays) {
     } catch (error) {
         console.error('Error getting invoices for reminder:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -510,8 +502,7 @@ export async function createReminderLog(logData) {
     } catch (error) {
         console.error('Error creating reminder log:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -534,8 +525,7 @@ export async function getLastReminderForInvoice(invoiceId, reminderSettingId) {
     } catch (error) {
         console.error('Error getting last reminder:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }
 
@@ -558,7 +548,6 @@ export async function getReminderCountForInvoice(invoiceId, reminderSettingId) {
     } catch (error) {
         console.error('Error getting reminder count:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } // Connection pool managed automatically
     }
 }

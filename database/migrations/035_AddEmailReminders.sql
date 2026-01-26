@@ -268,8 +268,25 @@ GO
 
 -- ============================================================================
 -- View for Overdue Invoices with Reminder Status
+-- Optimized to use LEFT JOINs instead of correlated subqueries for better performance
 -- ============================================================================
 CREATE OR ALTER VIEW [dbo].[v_OverdueInvoicesForReminder] AS
+WITH PaymentTotals AS (
+    SELECT 
+        InvoiceId,
+        SUM(Amount) AS TotalPaid
+    FROM Payments
+    GROUP BY InvoiceId
+),
+ReminderStats AS (
+    SELECT 
+        EntityId AS InvoiceId,
+        COUNT(*) AS RemindersSent,
+        MAX(CreatedAt) AS LastReminderDate
+    FROM EmailLog
+    WHERE IsAutomatic = 1
+    GROUP BY EntityId
+)
 SELECT
     i.Id AS InvoiceId,
     i.InvoiceNumber,
@@ -279,16 +296,15 @@ SELECT
     i.IssueDate,
     i.DueDate,
     i.TotalAmount,
-    i.TotalAmount - ISNULL(
-        (SELECT SUM(Amount) FROM Payments WHERE InvoiceId = i.Id),
-        0
-    ) AS AmountDue,
+    i.TotalAmount - ISNULL(pt.TotalPaid, 0) AS AmountDue,
     DATEDIFF(DAY, i.DueDate, GETDATE()) AS DaysOverdue,
     i.Status,
-    (SELECT COUNT(*) FROM EmailLog el WHERE el.EntityId = i.Id AND el.IsAutomatic = 1) AS RemindersSent,
-    (SELECT MAX(el.CreatedAt) FROM EmailLog el WHERE el.EntityId = i.Id AND el.IsAutomatic = 1) AS LastReminderDate
+    ISNULL(rs.RemindersSent, 0) AS RemindersSent,
+    rs.LastReminderDate
 FROM Invoices i
 INNER JOIN Customers c ON i.CustomerId = c.Id
+LEFT JOIN PaymentTotals pt ON i.Id = pt.InvoiceId
+LEFT JOIN ReminderStats rs ON i.Id = rs.InvoiceId
 WHERE
     i.Status IN ('Sent', 'Overdue')
     AND i.DueDate < GETDATE()

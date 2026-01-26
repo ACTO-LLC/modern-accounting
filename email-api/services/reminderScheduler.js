@@ -156,7 +156,14 @@ export async function processReminders() {
 
                         // Send email
                         console.log(`[Reminder Scheduler] Sending email to ${invoice.CustomerEmail}...`);
-                        const decryptedPassword = decrypt(emailSettings.SmtpPasswordEncrypted);
+                        let decryptedPassword;
+                        try {
+                            decryptedPassword = decrypt(emailSettings.SmtpPasswordEncrypted);
+                        } catch (decryptError) {
+                            console.error('[Reminder Scheduler] Decryption error:', decryptError);
+                            throw new Error('Failed to decrypt SMTP password');
+                        }
+                        
                         await sendEmail({
                             host: emailSettings.SmtpHost,
                             port: emailSettings.SmtpPort,

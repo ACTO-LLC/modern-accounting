@@ -38,6 +38,18 @@ app.use(express.json());
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
 const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:5173';
 
+// UUID validation helper
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUUID(uuid) {
+    return UUID_REGEX.test(uuid);
+}
+
+// Email validation helper
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(email) {
+    return EMAIL_REGEX.test(email);
+}
+
 // Health check
 app.get('/email-api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -90,7 +102,13 @@ app.post('/email-api/settings/test', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Email settings not configured' });
         }
 
-        const decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+        let decryptedPassword;
+        try {
+            decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+        } catch (decryptError) {
+            console.error('Decryption error:', decryptError);
+            return res.status(500).json({ success: false, error: 'Failed to decrypt password. Check encryption key configuration.' });
+        }
 
         const result = await testConnection({
             host: settings.SmtpHost,
@@ -120,7 +138,18 @@ app.post('/email-api/settings/test', async (req, res) => {
 app.post('/email-api/send/invoice/:id', async (req, res) => {
     try {
         const invoiceId = req.params.id;
+        
+        // Validate UUID to prevent SQL injection
+        if (!isValidUUID(invoiceId)) {
+            return res.status(400).json({ success: false, error: 'Invalid invoice ID format' });
+        }
+        
         const { recipientEmail, recipientName, subject, body, companySettings } = req.body;
+
+        // Validate email address
+        if (!recipientEmail || !isValidEmail(recipientEmail)) {
+            return res.status(400).json({ success: false, error: 'Invalid recipient email address' });
+        }
 
         // Get email settings
         const settings = await getEmailSettings();
@@ -150,7 +179,13 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
             const invoiceNumber = invoice?.InvoiceNumber || invoiceId;
 
             // Decrypt password
-            const decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+            let decryptedPassword;
+            try {
+                decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+            } catch (decryptError) {
+                console.error('Decryption error:', decryptError);
+                throw new Error('Failed to decrypt SMTP password');
+            }
 
             // Send email
             console.log(`Sending email to ${recipientEmail}...`);
@@ -446,7 +481,18 @@ app.get('/email-api/overdue-invoices', async (req, res) => {
 app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
     try {
         const { invoiceId } = req.params;
+        
+        // Validate UUID to prevent SQL injection
+        if (!isValidUUID(invoiceId)) {
+            return res.status(400).json({ success: false, error: 'Invalid invoice ID format' });
+        }
+        
         const { recipientEmail, recipientName, templateId, customSubject, customBody, companySettings } = req.body;
+
+        // Validate email address if provided
+        if (recipientEmail && !isValidEmail(recipientEmail)) {
+            return res.status(400).json({ success: false, error: 'Invalid recipient email address' });
+        }
 
         // Get email settings
         const settings = await getEmailSettings();
@@ -522,7 +568,13 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
 
         try {
             // Decrypt password
-            const decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+            let decryptedPassword;
+            try {
+                decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+            } catch (decryptError) {
+                console.error('Decryption error:', decryptError);
+                throw new Error('Failed to decrypt SMTP password');
+            }
 
             // Generate PDF attachment
             console.log(`Generating PDF for reminder - invoice ${invoiceId}...`);
@@ -677,7 +729,14 @@ app.post('/email-api/process-reminders', async (req, res) => {
                         const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
 
                         // Send email
-                        const decryptedPassword = decrypt(emailSettings.SmtpPasswordEncrypted);
+                        let decryptedPassword;
+                        try {
+                            decryptedPassword = decrypt(emailSettings.SmtpPasswordEncrypted);
+                        } catch (decryptError) {
+                            console.error('Decryption error:', decryptError);
+                            throw new Error('Failed to decrypt SMTP password');
+                        }
+                        
                         await sendEmail({
                             host: emailSettings.SmtpHost,
                             port: emailSettings.SmtpPort,
