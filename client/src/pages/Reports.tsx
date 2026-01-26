@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car } from 'lucide-react';
 
 const reports = [
   {
@@ -64,6 +64,13 @@ const reports = [
     href: '/reports/expenses',
     icon: CreditCard,
     color: 'bg-amber-100 text-amber-600',
+  },
+  {
+    name: 'Mileage Report',
+    description: 'Business mileage summary with tax deduction calculations',
+    href: '/reports/mileage',
+    icon: Car,
+    color: 'bg-lime-100 text-lime-600',
   },
   {
     name: 'Tax Forms (W-2/1099)',
