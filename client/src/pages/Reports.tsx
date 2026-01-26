@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car, BookOpen } from 'lucide-react';
 
 const reports = [
   {
@@ -22,6 +22,13 @@ const reports = [
     href: '/reports/trial-balance',
     icon: List,
     color: 'bg-purple-100 text-purple-600',
+  },
+  {
+    name: 'General Ledger',
+    description: 'All transactions by account with running balances and beginning/ending balances',
+    href: '/reports/general-ledger',
+    icon: BookOpen,
+    color: 'bg-slate-100 text-slate-600',
   },
   {
     name: 'Transaction Detail by Account',
