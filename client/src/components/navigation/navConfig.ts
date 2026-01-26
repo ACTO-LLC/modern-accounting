@@ -1,4 +1,5 @@
 import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote, Mail, History } from 'lucide-react';
+import { FeatureKey } from '../../contexts/FeatureFlagsContext';
 
 export interface NavItem {
   id: string;
@@ -7,6 +8,7 @@ export interface NavItem {
   icon: LucideIcon;
   featureKey?: string; // Maps to MA MCP feature key for onboarding
   alwaysVisible?: boolean; // If true, shown regardless of onboarding state
+  visibilityFlag?: FeatureKey; // Admin-configurable feature flag for visibility
 }
 
 export interface NavGroup {
@@ -15,6 +17,7 @@ export interface NavGroup {
   icon: LucideIcon;
   items: NavItem[];
   featureKey?: string; // If set, entire group is gated by this feature
+  visibilityFlag?: FeatureKey; // Admin-configurable feature flag for entire group
 }
 
 export type NavEntry = NavItem | NavGroup;
@@ -42,7 +45,7 @@ export const navigationConfig: NavEntry[] = [
     icon: FileText,
     items: [
       { id: 'invoices', name: 'Invoices', href: '/invoices', icon: FileText, featureKey: 'invoices' },
-      { id: 'sales-receipts', name: 'Sales Receipts', href: '/sales-receipts', icon: Banknote, featureKey: 'sales_receipts' },
+      { id: 'sales-receipts', name: 'Sales Receipts', href: '/sales-receipts', icon: Banknote, featureKey: 'sales_receipts', visibilityFlag: 'sales_receipts' },
       { id: 'estimates', name: 'Estimates', href: '/estimates', icon: ClipboardList, featureKey: 'estimates' },
     ],
   },
@@ -57,7 +60,7 @@ export const navigationConfig: NavEntry[] = [
       { id: 'bills', name: 'Bills', href: '/bills', icon: Receipt, featureKey: 'bills' },
       { id: 'vendor-credits', name: 'Vendor Credits', href: '/vendor-credits', icon: FileMinus },
       { id: 'expenses', name: 'Expenses', href: '/expenses', icon: CreditCard, featureKey: 'expenses' },
-      { id: 'mileage', name: 'Mileage', href: '/mileage', icon: Car },
+      { id: 'mileage', name: 'Mileage', href: '/mileage', icon: Car, visibilityFlag: 'mileage' },
     ],
   },
 
@@ -80,7 +83,7 @@ export const navigationConfig: NavEntry[] = [
     icon: Package,
     items: [
       { id: 'products-services', name: 'Products & Services', href: '/products-services', icon: Package, featureKey: 'products_services' },
-      { id: 'inventory', name: 'Inventory', href: '/inventory', icon: Warehouse },
+      { id: 'inventory', name: 'Inventory', href: '/inventory', icon: Warehouse, visibilityFlag: 'inventory' },
     ],
   },
 
@@ -89,6 +92,7 @@ export const navigationConfig: NavEntry[] = [
     id: 'payroll',
     name: 'Payroll',
     icon: DollarSign,
+    visibilityFlag: 'payroll',
     items: [
       { id: 'payruns', name: 'Run Payroll', href: '/payruns', icon: DollarSign },
       { id: 'time-entries', name: 'Time Tracking', href: '/time-entries', icon: Clock },

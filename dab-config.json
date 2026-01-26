@@ -1398,6 +1398,31 @@
                 "Id"
             ]
         },
+        "companyfeatureflags": {
+            "source": "dbo.CompanyFeatureFlags",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "SalesReceiptsEnabled": "SalesReceiptsEnabled",
+                "MileageTrackingEnabled": "MileageTrackingEnabled",
+                "InventoryManagementEnabled": "InventoryManagementEnabled",
+                "PayrollEnabled": "PayrollEnabled",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "UpdatedBy": "UpdatedBy"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
         "onboardingprogress": {
             "source": "dbo.OnboardingProgress",
             "permissions": [
