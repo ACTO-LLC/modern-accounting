@@ -15,22 +15,24 @@ import {
   WifiOff,
 } from 'lucide-react';
 import api from '../lib/api';
+import { useToast } from '../hooks/useToast';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
 
 // Check if the Plaid service is available
 async function checkPlaidServiceAvailable(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
     const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections`, {
       method: 'GET',
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
     return response.ok || response.status === 404; // 404 means service is up but no connections
   } catch {
     return false;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -69,6 +71,7 @@ interface LedgerAccount {
 
 export default function PlaidConnections() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [linkingAccountId, setLinkingAccountId] = useState<string | null>(null);
@@ -200,6 +203,12 @@ export default function PlaidConnections() {
       queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
     },
+    onError: (error) => {
+      console.error('Sync failed:', error);
+      const message = error instanceof Error ? error.message : 'Failed to sync connection';
+      showToast(message, 'error');
+    },
+    retry: false,
   });
 
   // Disconnect mutation
@@ -215,6 +224,12 @@ export default function PlaidConnections() {
       queryClient.invalidateQueries({ queryKey: ['plaid-connections'] });
       queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] });
     },
+    onError: (error) => {
+      console.error('Disconnect failed:', error);
+      const message = error instanceof Error ? error.message : 'Failed to disconnect bank';
+      showToast(message, 'error');
+    },
+    retry: false,
   });
 
   // Link account mutation
@@ -233,6 +248,12 @@ export default function PlaidConnections() {
       setLinkingAccountId(null);
       setSelectedLedgerAccount('');
     },
+    onError: (error) => {
+      console.error('Link account failed:', error);
+      const message = error instanceof Error ? error.message : 'Failed to link account';
+      showToast(message, 'error');
+    },
+    retry: false,
   });
 
   // Sync all mutation
@@ -249,6 +270,12 @@ export default function PlaidConnections() {
       queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
     },
+    onError: (error) => {
+      console.error('Sync all failed:', error);
+      const message = error instanceof Error ? error.message : 'Failed to sync all connections';
+      showToast(message, 'error');
+    },
+    retry: false,
   });
 
   const getStatusIcon = (status: string) => {
