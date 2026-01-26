@@ -110,6 +110,7 @@ import Form1099NEC from './pages/Form1099NEC';
 import BankImport from './pages/BankImport';
 import BankImportMatches from './pages/BankImportMatches';
 import BankImportHistory from './pages/BankImportHistory';
+import BankRules from './pages/BankRules';
 import VendorHierarchy from './pages/VendorHierarchy';
 import CustomerHierarchy from './pages/CustomerHierarchy';
 import ChatInterface from './components/ChatInterface';
@@ -241,6 +242,7 @@ function AppContent() {
             <Route path="bank-import" element={<BankImport />} />
             <Route path="bank-import/matches" element={<BankImportMatches />} />
             <Route path="bank-import/history" element={<BankImportHistory />} />
+            <Route path="bank-rules" element={<BankRules />} />
           </Route>
         </Route>
       </Routes>
