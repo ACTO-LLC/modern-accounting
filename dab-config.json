@@ -2624,6 +2624,89 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "emailtemplates": {
+            "source": "dbo.EmailTemplates",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Type": "Type",
+                "Subject": "Subject",
+                "Body": "Body",
+                "IsDefault": "IsDefault",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "emailremindersettings": {
+            "source": "dbo.EmailReminderSettings",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "ReminderDays": "ReminderDays",
+                "TemplateId": "TemplateId",
+                "IsEnabled": "IsEnabled",
+                "SendTime": "SendTime",
+                "CooldownDays": "CooldownDays",
+                "MaxReminders": "MaxReminders",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "overdueinvoicesforreminder": {
+            "source": {
+                "object": "dbo.v_OverdueInvoicesForReminder",
+                "type": "view",
+                "key-fields": [
+                    "InvoiceId"
+                ]
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "InvoiceId": "InvoiceId",
+                "InvoiceNumber": "InvoiceNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "CustomerEmail": "CustomerEmail",
+                "IssueDate": "IssueDate",
+                "DueDate": "DueDate",
+                "TotalAmount": "TotalAmount",
+                "AmountDue": "AmountDue",
+                "DaysOverdue": "DaysOverdue",
+                "Status": "Status",
+                "RemindersSent": "RemindersSent",
+                "LastReminderDate": "LastReminderDate"
+            }
         }
     }
 }

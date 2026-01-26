@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote, Mail } from 'lucide-react';
 
 export interface NavItem {
   id: string;
@@ -172,6 +172,15 @@ export const navigationConfig: NavEntry[] = [
     name: 'AI Enhancements',
     href: '/admin/enhancements',
     icon: Sparkles,
+    alwaysVisible: true,
+  },
+
+  // Email Reminders - standalone (always visible)
+  {
+    id: 'email-reminders',
+    name: 'Email Reminders',
+    href: '/email-reminders',
+    icon: Mail,
     alwaysVisible: true,
   },
 

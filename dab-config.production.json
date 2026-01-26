@@ -448,6 +448,55 @@
                     "actions": ["*"]
                 }
             ]
+        },
+        "emailtemplates": {
+            "source": "dbo.EmailTemplates",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "emailremindersettings": {
+            "source": "dbo.EmailReminderSettings",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "overdueinvoicesforreminder": {
+            "source": {
+                "object": "dbo.v_OverdueInvoicesForReminder",
+                "type": "view",
+                "key-fields": ["InvoiceId"]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["read"]
+                }
+            ]
         }
     }
 }
