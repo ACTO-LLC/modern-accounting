@@ -65,3 +65,8 @@ nul
 .mcp.json
 
 scratch
+# Build artifacts
+infra/azure/*.json
+
+# Local logs
+logs/
