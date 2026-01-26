@@ -113,6 +113,7 @@ import BankImportHistory from './pages/BankImportHistory';
 import BankRules from './pages/BankRules';
 import VendorHierarchy from './pages/VendorHierarchy';
 import CustomerHierarchy from './pages/CustomerHierarchy';
+import EmailReminders from './pages/EmailReminders';
 import ChatInterface from './components/ChatInterface';
 import OnboardingWelcome from './components/onboarding/OnboardingWelcome';
 import FeatureTour from './components/onboarding/FeatureTour';
@@ -243,6 +244,7 @@ function AppContent() {
             <Route path="bank-import/matches" element={<BankImportMatches />} />
             <Route path="bank-import/history" element={<BankImportHistory />} />
             <Route path="bank-rules" element={<BankRules />} />
+            <Route path="email-reminders" element={<EmailReminders />} />
           </Route>
         </Route>
       </Routes>
