@@ -12,6 +12,7 @@ import {
   getAvailableTaxYears,
 } from '../lib/taxForms';
 import { formatCurrency } from '../lib/payrollCalculations';
+import { formatDateForOData } from '../lib/dateUtils';
 
 interface Vendor {
   Id: string;
@@ -57,9 +58,8 @@ export default function Form1099NEC() {
   const { data: billPayments, isLoading: paymentsLoading } = useQuery({
     queryKey: ['billpayments', 'year', selectedYear],
     queryFn: async () => {
-      // OData date filter: DAB requires datetime format (with T00:00:00Z) for DATE columns
-      const startDate = `${selectedYear}-01-01T00:00:00Z`;
-      const endDate = `${selectedYear}-12-31T23:59:59Z`;
+      const startDate = formatDateForOData(`${selectedYear}-01-01`);
+      const endDate = formatDateForOData(`${selectedYear}-12-31`, true);
       const response = await api.get<{ value: BillPayment[] }>(
         `/billpayments?$filter=PaymentDate ge ${startDate} and PaymentDate le ${endDate}`
       );

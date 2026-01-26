@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { PublicClientApplication, SilentRequest, InteractionRequiredAuthError } from '@azure/msal-browser';
 import { apiRequest } from './authConfig';
+import { formatDateForOData } from './dateUtils';
 
 const api = axios.create({
   baseURL: '/api',
@@ -233,10 +234,8 @@ export const timeEntriesApi = {
   },
 
   getByDateRange: async (startDate: string, endDate: string): Promise<TimeEntry[]> => {
-    // OData date filter: DAB requires datetime format (with T00:00:00Z) for DATE columns
-    // Append time component if not already present
-    const start = startDate.includes('T') ? startDate : `${startDate}T00:00:00Z`;
-    const end = endDate.includes('T') ? endDate : `${endDate}T23:59:59Z`;
+    const start = formatDateForOData(startDate);
+    const end = formatDateForOData(endDate, true);
     const response = await api.get(
       `/timeentries?$filter=EntryDate ge ${start} and EntryDate le ${end}`
     );

@@ -14,6 +14,7 @@ import {
   getAvailableTaxYears,
 } from '../lib/taxForms';
 import { formatCurrency } from '../lib/payrollCalculations';
+import { formatDateForOData } from '../lib/dateUtils';
 
 interface Employee {
   Id: string;
@@ -64,10 +65,8 @@ export default function W2Forms() {
   const { data: payStubs, isLoading: payStubsLoading } = useQuery({
     queryKey: ['paystubs', 'year', selectedYear],
     queryFn: async () => {
-      // OData date filter: DAB requires datetime format (with T00:00:00Z) for DATE columns
-      // Plain dates like 2025-01-01 cause "No mapping exists from Edm.Date" error
-      const startDate = `${selectedYear}-01-01T00:00:00Z`;
-      const endDate = `${selectedYear}-12-31T23:59:59Z`;
+      const startDate = formatDateForOData(`${selectedYear}-01-01`);
+      const endDate = formatDateForOData(`${selectedYear}-12-31`, true);
       const response = await api.get<{ value: PayStub[] }>(
         `/paystubs?$filter=PayDate ge ${startDate} and PayDate le ${endDate}`
       );
