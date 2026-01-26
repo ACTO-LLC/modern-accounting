@@ -13,7 +13,7 @@ SELECT
     srl.[AccountId],
     a.[Name] AS AccountName,
     srl.[TaxRateId],
-    CONCAT(tr.[TaxType], ' - ', tr.[StateCode], ' (', tr.[Rate], '%)') AS LineTaxRateName,
+    tr.[Name] AS LineTaxRateName,
     tr.[Rate] AS LineTaxRate,
     srl.[ClassId],
     cl.[Name] AS ClassName,

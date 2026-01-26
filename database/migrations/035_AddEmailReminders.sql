@@ -273,8 +273,8 @@ GO
 CREATE OR ALTER VIEW [dbo].[v_OverdueInvoicesForReminder] AS
 WITH PaymentTotals AS (
     -- Pre-aggregate payment totals per invoice
-    SELECT InvoiceId, SUM(AmountApplied) AS TotalPaid
-    FROM PaymentApplications
+    SELECT InvoiceId, SUM(Amount) AS TotalPaid
+    FROM Payments
     GROUP BY InvoiceId
 ),
 ReminderStats AS (
