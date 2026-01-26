@@ -12,10 +12,27 @@ import {
   CreditCard,
   Landmark,
   Settings,
+  WifiOff,
 } from 'lucide-react';
 import api from '../lib/api';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+
+// Check if the Plaid service is available
+async function checkPlaidServiceAvailable(): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections`, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response.ok || response.status === 404; // 404 means service is up but no connections
+  } catch {
+    return false;
+  }
+}
 
 interface PlaidConnection {
   id: string;
@@ -56,8 +73,14 @@ export default function PlaidConnections() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [linkingAccountId, setLinkingAccountId] = useState<string | null>(null);
   const [selectedLedgerAccount, setSelectedLedgerAccount] = useState<string>('');
+  const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
 
-  // Fetch connections
+  // Check if Plaid service is available on mount
+  useEffect(() => {
+    checkPlaidServiceAvailable().then(setServiceAvailable);
+  }, []);
+
+  // Fetch connections - only if service is available
   const { data: connectionsData, isLoading: connectionsLoading } = useQuery({
     queryKey: ['plaid-connections'],
     queryFn: async () => {
@@ -65,9 +88,12 @@ export default function PlaidConnections() {
       if (!response.ok) throw new Error('Failed to fetch connections');
       return response.json();
     },
+    enabled: serviceAvailable === true,
+    retry: false, // Don't retry on failure to avoid console spam
+    staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Fetch accounts
+  // Fetch accounts - only if service is available
   const { data: accountsData, isLoading: accountsLoading } = useQuery({
     queryKey: ['plaid-accounts'],
     queryFn: async () => {
@@ -75,6 +101,9 @@ export default function PlaidConnections() {
       if (!response.ok) throw new Error('Failed to fetch accounts');
       return response.json();
     },
+    enabled: serviceAvailable === true,
+    retry: false, // Don't retry on failure to avoid console spam
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   // Fetch chart of accounts (for linking)
@@ -95,8 +124,9 @@ export default function PlaidConnections() {
     (a) => a.Type === 'Bank' || a.Type === 'Credit Card'
   );
 
-  // Create link token
+  // Create link token - only if service is available
   const createLinkToken = useCallback(async () => {
+    if (!serviceAvailable) return;
     try {
       const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/link-token`, {
         method: 'POST',
@@ -109,11 +139,13 @@ export default function PlaidConnections() {
     } catch (error) {
       console.error('Failed to create link token:', error);
     }
-  }, []);
+  }, [serviceAvailable]);
 
   useEffect(() => {
-    createLinkToken();
-  }, [createLinkToken]);
+    if (serviceAvailable) {
+      createLinkToken();
+    }
+  }, [createLinkToken, serviceAvailable]);
 
   // Plaid Link success handler
   const onPlaidSuccess = useCallback(
@@ -241,7 +273,41 @@ export default function PlaidConnections() {
     }
   };
 
-  const isLoading = connectionsLoading || accountsLoading;
+  const isLoading = connectionsLoading || accountsLoading || serviceAvailable === null;
+
+  // Service unavailable state
+  if (serviceAvailable === false) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Bank Connections</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Connect your bank accounts for automatic transaction import
+          </p>
+        </div>
+        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 p-6 text-center">
+          <WifiOff className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-amber-800 dark:text-amber-200 mb-2">
+            Plaid Integration Service Unavailable
+          </h3>
+          <p className="text-sm text-amber-700 dark:text-amber-300 mb-4 max-w-md mx-auto">
+            The bank connection service is not running. This feature requires the Plaid API service
+            to be started on port 7071.
+          </p>
+          <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 rounded p-3 max-w-md mx-auto font-mono">
+            Expected endpoint: {CHAT_API_BASE_URL}/api/plaid
+          </div>
+          <button
+            onClick={() => checkPlaidServiceAvailable().then(setServiceAvailable)}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
