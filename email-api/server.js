@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { validate as uuidValidate } from 'uuid';
 import {
     getEmailSettings,
     saveEmailSettings,
@@ -37,6 +38,29 @@ app.use(express.json());
 
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
 const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:5173';
+
+// Helper to validate UUID before using in OData queries (prevents SQL injection)
+function validateUuid(id, paramName = 'id') {
+    if (!id || !uuidValidate(id)) {
+        const error = new Error(`Invalid ${paramName}: must be a valid UUID`);
+        error.statusCode = 400;
+        throw error;
+    }
+    return id;
+}
+
+// Helper to safely decrypt passwords with error handling
+function safeDecrypt(encryptedValue, context = 'password') {
+    if (!encryptedValue) {
+        throw new Error(`No encrypted ${context} found`);
+    }
+    try {
+        return decrypt(encryptedValue);
+    } catch (error) {
+        console.error(`Failed to decrypt ${context}:`, error.message);
+        throw new Error(`Failed to decrypt ${context}. The encryption key may have changed.`);
+    }
+}
 
 // Health check
 app.get('/email-api/health', (req, res) => {
@@ -90,7 +114,7 @@ app.post('/email-api/settings/test', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Email settings not configured' });
         }
 
-        const decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+        const decryptedPassword = safeDecrypt(settings.SmtpPasswordEncrypted, 'SMTP password');
 
         const result = await testConnection({
             host: settings.SmtpHost,
@@ -119,8 +143,13 @@ app.post('/email-api/settings/test', async (req, res) => {
 // Send invoice email
 app.post('/email-api/send/invoice/:id', async (req, res) => {
     try {
-        const invoiceId = req.params.id;
+        const invoiceId = validateUuid(req.params.id, 'invoiceId');
         const { recipientEmail, recipientName, subject, body, companySettings } = req.body;
+
+        // Validate email format
+        if (!recipientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+            return res.status(400).json({ success: false, error: 'Invalid recipient email address' });
+        }
 
         // Get email settings
         const settings = await getEmailSettings();
@@ -150,7 +179,7 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
             const invoiceNumber = invoice?.InvoiceNumber || invoiceId;
 
             // Decrypt password
-            const decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+            const decryptedPassword = safeDecrypt(settings.SmtpPasswordEncrypted, 'SMTP password');
 
             // Send email
             console.log(`Sending email to ${recipientEmail}...`);
@@ -445,7 +474,7 @@ app.get('/email-api/overdue-invoices', async (req, res) => {
 // Send manual reminder for a specific invoice
 app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
     try {
-        const { invoiceId } = req.params;
+        const invoiceId = validateUuid(req.params.invoiceId, 'invoiceId');
         const { recipientEmail, recipientName, templateId, customSubject, customBody, companySettings } = req.body;
 
         // Get email settings
@@ -520,9 +549,15 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
             IsAutomatic: false
         });
 
+        // Validate email before sending
+        const targetEmail = recipientEmail || customer?.Email;
+        if (!targetEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+            return res.status(400).json({ success: false, error: 'Invalid recipient email address' });
+        }
+
         try {
             // Decrypt password
-            const decryptedPassword = decrypt(settings.SmtpPasswordEncrypted);
+            const decryptedPassword = safeDecrypt(settings.SmtpPasswordEncrypted, 'SMTP password');
 
             // Generate PDF attachment
             console.log(`Generating PDF for reminder - invoice ${invoiceId}...`);
@@ -672,12 +707,19 @@ app.post('/email-api/process-reminders', async (req, res) => {
                         IsAutomatic: true
                     });
 
+                    // Validate email before sending
+                    if (!invoice.CustomerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoice.CustomerEmail)) {
+                        results.skipped++;
+                        results.errors.push({ invoiceId: invoice.InvoiceId, error: 'Invalid customer email address' });
+                        continue;
+                    }
+
                     try {
                         // Generate PDF
                         const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
 
                         // Send email
-                        const decryptedPassword = decrypt(emailSettings.SmtpPasswordEncrypted);
+                        const decryptedPassword = safeDecrypt(emailSettings.SmtpPasswordEncrypted, 'SMTP password');
                         await sendEmail({
                             host: emailSettings.SmtpHost,
                             port: emailSettings.SmtpPort,

@@ -18,8 +18,8 @@ export async function getEmailSettings() {
     } catch (error) {
         console.error('Error getting email settings:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -103,8 +103,8 @@ export async function saveEmailSettings(settings) {
     } catch (error) {
         console.error('Error saving email settings:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -124,8 +124,8 @@ export async function updateTestResult(settingsId, success, message) {
     } catch (error) {
         console.error('Error updating test result:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -151,8 +151,8 @@ export async function createEmailLog(logData) {
     } catch (error) {
         console.error('Error creating email log:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -173,8 +173,8 @@ export async function updateEmailLog(logId, status, errorMessage) {
     } catch (error) {
         console.error('Error updating email log:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -195,8 +195,8 @@ export async function getEmailLogs(invoiceId) {
     } catch (error) {
         console.error('Error getting email logs:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -221,8 +221,8 @@ export async function getEmailTemplates(type = null) {
     } catch (error) {
         console.error('Error getting email templates:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -237,8 +237,8 @@ export async function getEmailTemplateById(id) {
     } catch (error) {
         console.error('Error getting email template:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -305,8 +305,8 @@ export async function saveEmailTemplate(template) {
     } catch (error) {
         console.error('Error saving email template:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -321,8 +321,8 @@ export async function deleteEmailTemplate(id) {
     } catch (error) {
         console.error('Error deleting email template:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -343,8 +343,8 @@ export async function getReminderSettings() {
     } catch (error) {
         console.error('Error getting reminder settings:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -364,8 +364,8 @@ export async function getReminderSettingById(id) {
     } catch (error) {
         console.error('Error getting reminder setting:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -420,8 +420,8 @@ export async function saveReminderSetting(setting) {
     } catch (error) {
         console.error('Error saving reminder setting:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -435,8 +435,8 @@ export async function deleteReminderSetting(id) {
     } catch (error) {
         console.error('Error deleting reminder setting:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -455,8 +455,8 @@ export async function getOverdueInvoicesForReminder() {
     } catch (error) {
         console.error('Error getting overdue invoices:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -478,8 +478,8 @@ export async function getInvoicesForReminderSetting(reminderDays) {
     } catch (error) {
         console.error('Error getting invoices for reminder:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -510,8 +510,8 @@ export async function createReminderLog(logData) {
     } catch (error) {
         console.error('Error creating reminder log:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -534,8 +534,8 @@ export async function getLastReminderForInvoice(invoiceId, reminderSettingId) {
     } catch (error) {
         console.error('Error getting last reminder:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -558,7 +558,7 @@ export async function getReminderCountForInvoice(invoiceId, reminderSettingId) {
     } catch (error) {
         console.error('Error getting reminder count:', error);
         throw error;
-    } finally {
-        await sql.close();
+    } catch (error) {
+        throw error;
     }
 }
