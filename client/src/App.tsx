@@ -50,6 +50,7 @@ import ARAgingSummary from './pages/reports/ARAgingSummary';
 import APAgingSummary from './pages/reports/APAgingSummary';
 import CustomerStatement from './pages/reports/CustomerStatement';
 import TransactionDetail from './pages/reports/TransactionDetail';
+import GeneralLedger from './pages/reports/GeneralLedger';
 import Projects from './pages/Projects';
 import NewProject from './pages/NewProject';
 import EditProject from './pages/EditProject';
@@ -199,6 +200,7 @@ function AppContent() {
             <Route path="reports/ap-aging" element={<APAgingSummary />} />
             <Route path="reports/customer-statement" element={<CustomerStatement />} />
             <Route path="reports/transaction-detail" element={<TransactionDetail />} />
+            <Route path="reports/general-ledger" element={<GeneralLedger />} />
             <Route path="submissions" element={<Submissions />} />
             <Route path="submissions/new" element={<NewSubmission />} />
             <Route path="submissions/:id/edit" element={<EditSubmission />} />
