@@ -2511,6 +2511,120 @@
                 "Id"
             ]
         },
+        "salesreceipts": {
+            "source": {
+                "object": "dbo.v_SalesReceipts",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SalesReceiptNumber": "SalesReceiptNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "SaleDate": "SaleDate",
+                "DepositAccountId": "DepositAccountId",
+                "DepositAccountName": "DepositAccountName",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxRateName": "TaxRateName",
+                "TaxRate": "TaxRate",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName",
+                "LocationId": "LocationId",
+                "LocationName": "LocationName",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "TenantId": "TenantId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "salesreceipts_write": {
+            "source": "dbo.SalesReceipts",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SalesReceiptNumber": "SalesReceiptNumber",
+                "CustomerId": "CustomerId",
+                "SaleDate": "SaleDate",
+                "DepositAccountId": "DepositAccountId",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ClassId": "ClassId",
+                "LocationId": "LocationId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "salesreceiptlines": {
+            "source": "dbo.SalesReceiptLines",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SalesReceiptId": "SalesReceiptId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId",
+                "TaxRateId": "TaxRateId",
+                "ClassId": "ClassId",
+                "SortOrder": "SortOrder",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
         "emailtemplates": {
             "source": "dbo.EmailTemplates",
             "permissions": [

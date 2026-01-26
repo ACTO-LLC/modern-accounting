@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Mail } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote, Mail } from 'lucide-react';
 
 export interface NavItem {
   id: string;
@@ -42,6 +42,7 @@ export const navigationConfig: NavEntry[] = [
     icon: FileText,
     items: [
       { id: 'invoices', name: 'Invoices', href: '/invoices', icon: FileText, featureKey: 'invoices' },
+      { id: 'sales-receipts', name: 'Sales Receipts', href: '/sales-receipts', icon: Banknote, featureKey: 'sales_receipts' },
       { id: 'estimates', name: 'Estimates', href: '/estimates', icon: ClipboardList, featureKey: 'estimates' },
     ],
   },
