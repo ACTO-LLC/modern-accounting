@@ -158,6 +158,47 @@ ALL must pass before `<acto-complete>`:
 5. **Document learning** - If you discover something novel, suggest adding to CLAUDE.md
 6. **Always do Phase 4** - PR review is not optional; it catches issues
 7. **NEVER create a PR without passing build** - Run `npm run build` in client/ and verify it succeeds with zero errors before committing. TypeScript errors that reach main break CI for everyone.
+8. **Database changes use sqlproj** - See "Database Schema Changes" section below
+
+## Database Schema Changes
+
+**CRITICAL:** Use the hybrid approach documented in CLAUDE.md.
+
+### For NEW Tables/Views (use sqlproj):
+1. Create SQL file: `database/dbo/Tables/NewTable.sql` or `database/dbo/Views/v_NewView.sql`
+2. Add to `database/AccountingDB.sqlproj`:
+   ```xml
+   <Build Include="dbo\Tables\NewTable.sql" />
+   ```
+3. Update `dab-config.json` with new entity endpoints
+
+### DO NOT create migration files for:
+- CREATE TABLE
+- CREATE VIEW
+- ALTER TABLE ADD COLUMN
+- CREATE INDEX
+- Stored procedures, triggers, functions
+
+### Only use migrations (`database/migrations/`) for:
+- Seed data (INSERT statements)
+- Data transforms (UPDATE existing data)
+- One-time fixes
+- Complex operations DACPAC can't handle
+
+### Example - Adding a new entity:
+
+```
+# Files to create:
+database/dbo/Tables/Vehicles.sql      # CREATE TABLE
+database/dbo/Views/v_Vehicles.sql     # CREATE VIEW (if needed)
+
+# Files to update:
+database/AccountingDB.sqlproj         # Add <Build Include="..."/>
+dab-config.json                       # Add entity endpoints
+
+# DO NOT create:
+database/migrations/034_AddVehicles.sql  # WRONG!
+```
 
 ## References
 

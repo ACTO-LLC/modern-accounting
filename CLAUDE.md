@@ -69,6 +69,70 @@ When users say:
 
 ---
 
+### Database Schema Management (Hybrid Approach)
+
+**We use a hybrid approach:**
+- **sqlproj (DACPAC)** → All schema (tables, views, stored procedures, constraints, indexes)
+- **migrations/** → Data seeding, complex data transforms, one-time fixes only
+
+**Why Hybrid?**
+- SqlPackage handles incremental schema deployment automatically (compares target DB to DACPAC, generates ALTER scripts)
+- Migrations are needed for data operations that DACPAC can't handle (INSERT/UPDATE data, complex transforms)
+
+#### Adding New Tables/Views (USE SQLPROJ)
+
+1. **Create the SQL file:**
+   ```
+   database/dbo/Tables/NewTable.sql
+   database/dbo/Views/v_NewTable.sql
+   ```
+
+2. **Follow existing patterns:**
+   ```sql
+   -- database/dbo/Tables/Vehicles.sql
+   CREATE TABLE [dbo].[Vehicles] (
+       [Id] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+       [Name] NVARCHAR(100) NOT NULL,
+       [Status] NVARCHAR(20) NOT NULL DEFAULT 'Active',
+       [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+       [UpdatedAt] DATETIME2 NULL,
+       CONSTRAINT [PK_Vehicles] PRIMARY KEY ([Id])
+   );
+   ```
+
+3. **Add to AccountingDB.sqlproj:**
+   ```xml
+   <ItemGroup>
+     <!-- Tables -->
+     <Build Include="dbo\Tables\Vehicles.sql" />
+     <!-- Views -->
+     <Build Include="dbo\Views\v_Vehicles.sql" />
+   </ItemGroup>
+   ```
+
+4. **Update dab-config.json** with the new entity endpoints
+
+5. **Deploy:** SqlPackage will automatically ALTER the database
+
+#### When to Use Migrations (RARE)
+
+Only use `database/migrations/` for:
+- **Seed data** - INSERT statements for lookup tables, default values
+- **Data transforms** - UPDATE existing data during schema evolution
+- **One-time fixes** - Correcting bad data, backfilling columns
+- **Complex operations** - Things DACPAC can't express (cursor-based updates, etc.)
+
+**Migration naming:** `NNN_Description.sql` (e.g., `034_SeedMileageRates.sql`)
+
+#### NEVER Use Migrations For:
+- CREATE TABLE (use sqlproj)
+- CREATE VIEW (use sqlproj)
+- ALTER TABLE ADD COLUMN (use sqlproj)
+- CREATE INDEX (use sqlproj)
+- Stored procedures, functions, triggers (use sqlproj)
+
+---
+
 ### Common Pitfalls
 
 1. **MUI + Tailwind Dark Mode:** They don't sync automatically. MUI uses system preference or its own theme; Tailwind uses `.dark` class.
