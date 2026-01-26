@@ -90,6 +90,9 @@ import Payments from './pages/Payments';
 import NewPayment from './pages/NewPayment';
 import BillPayments from './pages/BillPayments';
 import NewBillPayment from './pages/NewBillPayment';
+import VendorCredits from './pages/VendorCredits';
+import NewVendorCredit from './pages/NewVendorCredit';
+import EditVendorCredit from './pages/EditVendorCredit';
 import TaxForms from './pages/TaxForms';
 import W2Forms from './pages/W2Forms';
 import Form1099NEC from './pages/Form1099NEC';
@@ -207,6 +210,9 @@ function AppContent() {
             <Route path="payments/new" element={<NewPayment />} />
             <Route path="bill-payments" element={<BillPayments />} />
             <Route path="bill-payments/new" element={<NewBillPayment />} />
+            <Route path="vendor-credits" element={<VendorCredits />} />
+            <Route path="vendor-credits/new" element={<NewVendorCredit />} />
+            <Route path="vendor-credits/:id/edit" element={<EditVendorCredit />} />
             <Route path="tax-forms" element={<TaxForms />} />
             <Route path="tax-forms/w2" element={<W2Forms />} />
             <Route path="tax-forms/1099-nec" element={<Form1099NEC />} />
