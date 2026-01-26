@@ -4,6 +4,7 @@ import { useCompanySettings, InvoicePostingMode } from '../contexts/CompanySetti
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
 import EmailSettingsForm from '../components/EmailSettingsForm';
 import OnboardingSettings from '../components/onboarding/OnboardingSettings';
+import FeatureVisibilitySettings from '../components/FeatureVisibilitySettings';
 import { validateEIN } from '../lib/taxForms';
 
 export default function CompanySettings() {
@@ -472,6 +473,11 @@ export default function CompanySettings() {
           Configure SMTP settings to send invoices directly to customers via email.
         </p>
         <EmailSettingsForm />
+      </div>
+
+      {/* Feature Visibility Section */}
+      <div className="mt-8">
+        <FeatureVisibilitySettings />
       </div>
 
       {/* Onboarding & Learning Section */}

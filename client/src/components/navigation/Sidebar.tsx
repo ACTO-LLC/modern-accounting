@@ -152,6 +152,7 @@ export default function Sidebar({ isMobileMenuOpen }: SidebarProps) {
                 name={entry.name}
                 icon={entry.icon}
                 items={entry.items}
+                visibilityFlag={entry.visibilityFlag}
               />
             );
           }
@@ -163,6 +164,7 @@ export default function Sidebar({ isMobileMenuOpen }: SidebarProps) {
               icon={entry.icon}
               featureKey={entry.featureKey}
               alwaysVisible={entry.alwaysVisible}
+              visibilityFlag={entry.visibilityFlag}
             />
           );
         })}

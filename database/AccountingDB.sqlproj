@@ -39,6 +39,7 @@
     <Build Include="dbo\Tables\Bills.sql" />
     <Build Include="dbo\Tables\Classes.sql" />
     <Build Include="dbo\Tables\Companies.sql" />
+    <Build Include="dbo\Tables\CompanyFeatureFlags.sql" />
     <Build Include="dbo\Tables\Customers.sql" />
     <Build Include="dbo\Tables\Deployments.sql" />
     <Build Include="dbo\Tables\EmailLog.sql" />

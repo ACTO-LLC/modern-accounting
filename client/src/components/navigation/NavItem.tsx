@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { LucideIcon } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useFeatureAccess } from '../../contexts/OnboardingContext';
+import { useFeatureFlags, FeatureKey } from '../../contexts/FeatureFlagsContext';
 import { useState, useRef, useCallback } from 'react';
 
 interface NavItemProps {
@@ -12,17 +13,22 @@ interface NavItemProps {
   isNested?: boolean;
   featureKey?: string;
   alwaysVisible?: boolean;
+  visibilityFlag?: FeatureKey;
 }
 
-export default function NavItem({ name, href, icon: Icon, isNested = false, featureKey, alwaysVisible }: NavItemProps) {
+export default function NavItem({ name, href, icon: Icon, isNested = false, featureKey, alwaysVisible, visibilityFlag }: NavItemProps) {
   const location = useLocation();
   const { isCollapsed } = useSidebar();
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const linkRef = useRef<HTMLAnchorElement>(null);
 
-  // Check feature access
+  // Check feature access (onboarding)
   const { isAccessible, status: featureStatus } = useFeatureAccess(featureKey);
+
+  // Check admin feature flag visibility
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isVisibleByFlag = !visibilityFlag || isFeatureEnabled(visibilityFlag);
 
   const isActive = location.pathname === href ||
     (href !== '/' && location.pathname.startsWith(href));
@@ -38,8 +44,13 @@ export default function NavItem({ name, href, icon: Icon, isNested = false, feat
     }
   }, [isCollapsed]);
 
-  // During onboarding, hide items unless they're always visible or accessible
+  // Hide item if admin has disabled the feature flag
   // This must be AFTER all hooks to satisfy React's rules of hooks
+  if (!isVisibleByFlag) {
+    return null;
+  }
+
+  // During onboarding, hide items unless they're always visible or accessible
   if (!alwaysVisible && !isAccessible) {
     return null;
   }
