@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car, Package, AlertTriangle, Clipboard } from 'lucide-react';
 
 const reports = [
   {
@@ -88,6 +88,30 @@ const reports = [
   },
 ];
 
+const inventoryReports = [
+  {
+    name: 'Inventory Valuation Summary',
+    description: 'Shows product, SKU, quantity on hand, average cost, and asset value',
+    href: '/reports/inventory-valuation',
+    icon: Package,
+    color: 'bg-emerald-100 text-emerald-600',
+  },
+  {
+    name: 'Inventory Stock Status',
+    description: 'Shows on hand, committed, available quantities with reorder alerts',
+    href: '/reports/inventory-stock-status',
+    icon: AlertTriangle,
+    color: 'bg-amber-100 text-amber-600',
+  },
+  {
+    name: 'Physical Inventory Worksheet',
+    description: 'Printable worksheet for cycle counting with Excel export',
+    href: '/reports/physical-inventory',
+    icon: Clipboard,
+    color: 'bg-sky-100 text-sky-600',
+  },
+];
+
 export default function Reports() {
   return (
     <div className="max-w-4xl mx-auto">
@@ -100,6 +124,34 @@ export default function Reports() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {reports.map((report) => (
+          <Link
+            key={report.name}
+            to={report.href}
+            className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-lg ${report.color}`}>
+                <report.icon className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{report.name}</h2>
+                <p className="mt-1 text-sm text-gray-500">{report.description}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Inventory Reports Section */}
+      <div className="mt-10 mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Inventory Reports</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Track stock levels, valuation, and movement
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {inventoryReports.map((report) => (
           <Link
             key={report.name}
             to={report.href}
