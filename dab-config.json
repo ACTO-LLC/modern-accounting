@@ -2191,6 +2191,157 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "vendorcredits": {
+            "source": {
+                "object": "dbo.v_VendorCredits",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditNumber": "CreditNumber",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "BalanceRemaining": "BalanceRemaining",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "vendorcredits_write": {
+            "source": "dbo.VendorCredits",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditNumber": "CreditNumber",
+                "VendorId": "VendorId",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "vendorcreditlines": {
+            "source": "dbo.VendorCreditLines",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorCreditId": "VendorCreditId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "vendorcreditapplications": {
+            "source": {
+                "object": "dbo.v_VendorCreditApplications",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorCreditId": "VendorCreditId",
+                "CreditNumber": "CreditNumber",
+                "BillId": "BillId",
+                "BillNumber": "BillNumber",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "CreatedAt": "CreatedAt",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName"
+            }
+        },
+        "vendorcreditapplications_write": {
+            "source": "dbo.VendorCreditApplications",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorCreditId": "VendorCreditId",
+                "BillId": "BillId",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate"
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
