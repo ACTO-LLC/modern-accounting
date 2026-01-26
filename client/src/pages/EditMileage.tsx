@@ -1,8 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tantml:parameter>
 import { useState } from 'react';
 import api from '../lib/api';
 import MileageForm, { MileageFormData } from '../components/MileageForm';
+import { formatDateForInput } from '../lib/dateUtils';
 
 interface MileageTrip {
   Id: string;
@@ -33,6 +34,11 @@ export default function EditMileage() {
   const { data: trip, isLoading } = useQuery({
     queryKey: ['mileagetrip', id],
     queryFn: async () => {
+      // Validate UUID format to prevent OData injection
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!id || !uuidRegex.test(id)) {
+        throw new Error('Invalid trip ID format');
+      }
       const response = await api.get<{ value: MileageTrip[] }>(
         `/mileagetrips?$filter=Id eq ${id}`
       );
@@ -81,7 +87,7 @@ export default function EditMileage() {
   // Transform trip data for the form
   const initialValues: Partial<MileageFormData> = {
     VehicleId: trip.VehicleId,
-    TripDate: trip.TripDate,
+    TripDate: formatDateForInput(trip.TripDate), // Format for HTML date input
     StartLocation: trip.StartLocation,
     EndLocation: trip.EndLocation,
     StartOdometer: trip.StartOdometer,

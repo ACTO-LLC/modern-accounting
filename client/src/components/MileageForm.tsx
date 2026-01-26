@@ -12,8 +12,8 @@ const mileageSchemaBase = z.object({
   TripDate: z.string().min(1, 'Trip date is required'),
   StartLocation: z.string().min(1, 'Start location is required'),
   EndLocation: z.string().min(1, 'End location is required'),
-  StartOdometer: z.number().nullish(),
-  EndOdometer: z.number().nullish(),
+  StartOdometer: z.number().int('Odometer must be a whole number').nullish(),
+  EndOdometer: z.number().int('Odometer must be a whole number').nullish(),
   Distance: z.number().min(0.1, 'Distance must be greater than 0'),
   Purpose: z.string().min(1, 'Purpose is required'),
   Category: z.enum(['Business', 'Personal', 'Medical', 'Charity']),
@@ -24,7 +24,43 @@ const mileageSchemaBase = z.object({
   Notes: z.string().nullish(),
   IsRoundTrip: z.boolean(),
   Status: z.enum(['Recorded', 'Pending', 'Approved', 'Voided']),
-});
+}).refine(
+  (data) => {
+    // Validate date is not in the future
+    const tripDate = new Date(data.TripDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    return tripDate <= today;
+  },
+  { message: 'Trip date cannot be in the future', path: ['TripDate'] }
+).refine(
+  (data) => {
+    // Validate date is not unreasonably old (e.g., before 1990)
+    const tripDate = new Date(data.TripDate);
+    return tripDate.getFullYear() >= 1990;
+  },
+  { message: 'Trip date is too far in the past', path: ['TripDate'] }
+).refine(
+  (data) => {
+    // Validate end odometer >= start odometer if both are provided
+    if (data.StartOdometer != null && data.EndOdometer != null) {
+      return data.EndOdometer >= data.StartOdometer;
+    }
+    return true;
+  },
+  { message: 'End odometer must be greater than or equal to start odometer', path: ['EndOdometer'] }
+).refine(
+  (data) => {
+    // Validate distance matches odometer difference if both are provided
+    if (data.StartOdometer != null && data.EndOdometer != null) {
+      const odometerDistance = data.EndOdometer - data.StartOdometer;
+      // Allow small rounding tolerance (1 mile)
+      return Math.abs(data.Distance - odometerDistance) <= 1;
+    }
+    return true;
+  },
+  { message: 'Distance must match the difference between start and end odometer readings', path: ['Distance'] }
+);
 
 export const mileageSchema = mileageSchemaBase;
 
@@ -150,6 +186,8 @@ export default function MileageForm({
   const applicableRate = getApplicableRate();
 
   // Auto-calculate deductible amount when distance, category, or rate changes
+  // Note: Distance field stores one-way miles. For round trips, we multiply by 2
+  // when calculating the deduction, but store the deduction amount in DeductibleAmount.
   useEffect(() => {
     if (category === 'Personal') {
       setValue('RatePerMile', null);
@@ -214,6 +252,7 @@ export default function MileageForm({
             <input
               id="TripDate"
               type="date"
+              max={new Date().toISOString().split('T')[0]}
               {...register('TripDate')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
             />
@@ -321,10 +360,15 @@ export default function MileageForm({
             <input
               id="StartOdometer"
               type="number"
+              min="0"
+              max="999999"
               {...register('StartOdometer', { valueAsNumber: true })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
               placeholder="e.g., 45230"
             />
+            {errors.StartOdometer && (
+              <p className="mt-1 text-sm text-red-600">{errors.StartOdometer.message}</p>
+            )}
           </div>
 
           <div>
@@ -334,10 +378,15 @@ export default function MileageForm({
             <input
               id="EndOdometer"
               type="number"
+              min="0"
+              max="999999"
               {...register('EndOdometer', { valueAsNumber: true })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
               placeholder="e.g., 45255"
             />
+            {errors.EndOdometer && (
+              <p className="mt-1 text-sm text-red-600">{errors.EndOdometer.message}</p>
+            )}
           </div>
 
           {/* Distance and Round Trip */}
@@ -349,6 +398,8 @@ export default function MileageForm({
               id="Distance"
               type="number"
               step="0.1"
+              min="0.1"
+              max="9999"
               {...register('Distance', { valueAsNumber: true })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
               placeholder="e.g., 25.5"
