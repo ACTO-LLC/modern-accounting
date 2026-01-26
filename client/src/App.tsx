@@ -95,6 +95,8 @@ import MileageReport from './pages/reports/MileageReport';
 import InventoryValuation from './pages/reports/InventoryValuation';
 import InventoryStockStatus from './pages/reports/InventoryStockStatus';
 import PhysicalInventoryWorksheet from './pages/reports/PhysicalInventoryWorksheet';
+import SalesByCustomer from './pages/reports/SalesByCustomer';
+import SalesByProduct from './pages/reports/SalesByProduct';
 import Payments from './pages/Payments';
 import NewPayment from './pages/NewPayment';
 import BillPayments from './pages/BillPayments';
@@ -221,6 +223,8 @@ function AppContent() {
             <Route path="reports/inventory-valuation" element={<InventoryValuation />} />
             <Route path="reports/inventory-stock-status" element={<InventoryStockStatus />} />
             <Route path="reports/physical-inventory" element={<PhysicalInventoryWorksheet />} />
+            <Route path="reports/sales-by-customer" element={<SalesByCustomer />} />
+            <Route path="reports/sales-by-product" element={<SalesByProduct />} />
             <Route path="tax-rates" element={<TaxRates />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
