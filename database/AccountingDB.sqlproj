@@ -27,15 +27,28 @@
   <ItemGroup>
     <!-- Tables -->
     <Build Include="dbo\Tables\Accounts.sql" />
+    <Build Include="dbo\Tables\AuthAuditLog.sql" />
     <Build Include="dbo\Tables\BankReconciliations.sql" />
+    <Build Include="dbo\Tables\BankTransactionImports.sql" />
+    <Build Include="dbo\Tables\BankTransactionMatches.sql" />
     <Build Include="dbo\Tables\BankTransactions.sql" />
     <Build Include="dbo\Tables\BillLines.sql" />
+    <Build Include="dbo\Tables\BillPaymentApplications.sql" />
+    <Build Include="dbo\Tables\BillPayments.sql" />
     <Build Include="dbo\Tables\Bills.sql" />
     <Build Include="dbo\Tables\Classes.sql" />
+    <Build Include="dbo\Tables\Companies.sql" />
     <Build Include="dbo\Tables\Customers.sql" />
+    <Build Include="dbo\Tables\Deployments.sql" />
+    <Build Include="dbo\Tables\EmailLog.sql" />
+    <Build Include="dbo\Tables\EmailSettings.sql" />
+    <Build Include="dbo\Tables\Employees.sql" />
+    <Build Include="dbo\Tables\EmployeeWorkStates.sql" />
+    <Build Include="dbo\Tables\Enhancements.sql" />
     <Build Include="dbo\Tables\EstimateLines.sql" />
-    <Build Include="dbo\Tables\Expenses.sql" />
     <Build Include="dbo\Tables\Estimates.sql" />
+    <Build Include="dbo\Tables\Expenses.sql" />
+    <Build Include="dbo\Tables\IndustryTemplates.sql" />
     <Build Include="dbo\Tables\InventoryLocations.sql" />
     <Build Include="dbo\Tables\InventoryTransactions.sql" />
     <Build Include="dbo\Tables\InvoiceLines.sql" />
@@ -43,35 +56,80 @@
     <Build Include="dbo\Tables\JournalEntries.sql" />
     <Build Include="dbo\Tables\JournalEntryLines.sql" />
     <Build Include="dbo\Tables\Locations.sql" />
+    <Build Include="dbo\Tables\MigrationConfigs.sql" />
+    <Build Include="dbo\Tables\MigrationEntityMaps.sql" />
+    <Build Include="dbo\Tables\MigrationFieldMaps.sql" />
+    <Build Include="dbo\Tables\MigrationTypeMaps.sql" />
+    <Build Include="dbo\Tables\MileageRates.sql" />
+    <Build Include="dbo\Tables\MileageTrips.sql" />
+    <Build Include="dbo\Tables\OnboardingConversations.sql" />
+    <Build Include="dbo\Tables\OnboardingProgress.sql" />
+    <Build Include="dbo\Tables\PaymentApplications.sql" />
+    <Build Include="dbo\Tables\Payments.sql" />
+    <Build Include="dbo\Tables\PayRuns.sql" />
+    <Build Include="dbo\Tables\PayStubs.sql" />
+    <Build Include="dbo\Tables\PayStubStateWithholdings.sql" />
+    <Build Include="dbo\Tables\PlaidAccounts.sql" />
+    <Build Include="dbo\Tables\PlaidConnections.sql" />
     <Build Include="dbo\Tables\ProductsServices.sql" />
     <Build Include="dbo\Tables\Projects.sql" />
     <Build Include="dbo\Tables\PurchaseOrderLines.sql" />
     <Build Include="dbo\Tables\PurchaseOrders.sql" />
+    <Build Include="dbo\Tables\QBOConnections.sql" />
     <Build Include="dbo\Tables\Receipts.sql" />
     <Build Include="dbo\Tables\ReconciliationItems.sql" />
     <Build Include="dbo\Tables\RecurringSchedules.sql" />
     <Build Include="dbo\Tables\RecurringTemplates.sql" />
+    <Build Include="dbo\Tables\Roles.sql" />
+    <Build Include="dbo\Tables\StateTaxReciprocity.sql" />
+    <Build Include="dbo\Tables\SubmissionAttachments.sql" />
+    <Build Include="dbo\Tables\Submissions.sql" />
+    <Build Include="dbo\Tables\TaxRates.sql" />
+    <Build Include="dbo\Tables\Tenants.sql" />
     <Build Include="dbo\Tables\TimeEntries.sql" />
+    <Build Include="dbo\Tables\UserRoles.sql" />
+    <Build Include="dbo\Tables\Users.sql" />
+    <Build Include="dbo\Tables\Vehicles.sql" />
+    <Build Include="dbo\Tables\VendorCreditApplications.sql" />
+    <Build Include="dbo\Tables\VendorCreditLines.sql" />
+    <Build Include="dbo\Tables\VendorCredits.sql" />
     <Build Include="dbo\Tables\Vendors.sql" />
     <!-- Views -->
+    <Build Include="dbo\Views\v_BankTransactionImports.sql" />
+    <Build Include="dbo\Views\v_BankTransactionMatches.sql" />
+    <Build Include="dbo\Views\v_BillPaymentApplications.sql" />
+    <Build Include="dbo\Views\v_BillPayments.sql" />
     <Build Include="dbo\Views\v_Bills.sql" />
+    <Build Include="dbo\Views\v_Employees.sql" />
+    <Build Include="dbo\Views\v_EmployeeWorkStates.sql" />
     <Build Include="dbo\Views\v_Estimates.sql" />
     <Build Include="dbo\Views\v_Expenses.sql" />
     <Build Include="dbo\Views\v_InvoiceLines.sql" />
     <Build Include="dbo\Views\v_Invoices.sql" />
+    <Build Include="dbo\Views\v_MileageTrips.sql" />
+    <Build Include="dbo\Views\v_PaymentApplications.sql" />
+    <Build Include="dbo\Views\v_Payments.sql" />
+    <Build Include="dbo\Views\v_PayRuns.sql" />
+    <Build Include="dbo\Views\v_PayStubs.sql" />
     <Build Include="dbo\Views\v_Projects.sql" />
     <Build Include="dbo\Views\v_PurchaseOrders.sql" />
     <Build Include="dbo\Views\v_Receipts.sql" />
     <Build Include="dbo\Views\v_TimeEntries.sql" />
+    <Build Include="dbo\Views\v_VendorCreditApplications.sql" />
+    <Build Include="dbo\Views\v_VendorCredits.sql" />
     <!-- Stored Procedures -->
     <Build Include="dbo\StoredProcedures\CreateInvoice.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="Script.PostDeployment.sql" />
   </ItemGroup>
-  <!-- Explicitly exclude migration and script directories -->
+  <!-- Explicitly exclude migration and script directories from build -->
   <ItemGroup>
-    <None Remove="migrations\**" />
-    <None Remove="scripts\**" />
+    <Build Remove="migrations\**" />
+    <Build Remove="scripts\**" />
+    <Compile Remove="migrations\**" />
+    <Compile Remove="scripts\**" />
+    <Content Remove="migrations\**" />
+    <Content Remove="scripts\**" />
   </ItemGroup>
 </Project>

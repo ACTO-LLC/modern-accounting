@@ -1,6 +1,3 @@
-SET QUOTED_IDENTIFIER ON;
-GO
-
 CREATE TABLE [dbo].[InvoiceLines] (
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [InvoiceId] UNIQUEIDENTIFIER NOT NULL,
@@ -8,7 +5,7 @@ CREATE TABLE [dbo].[InvoiceLines] (
     [Description] NVARCHAR(255) NOT NULL,
     [Quantity] DECIMAL(18, 2) NOT NULL DEFAULT 1,
     [UnitPrice] DECIMAL(18, 2) NOT NULL DEFAULT 0,
-    [Amount] AS ([Quantity] * [UnitPrice]) PERSISTED,
+    [Amount] DECIMAL(18, 2) NOT NULL DEFAULT 0,
     [RevenueAccountId] UNIQUEIDENTIFIER NULL, -- FK to Accounts for revenue override
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
