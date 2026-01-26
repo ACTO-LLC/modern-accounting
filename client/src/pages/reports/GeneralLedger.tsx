@@ -384,7 +384,7 @@ export default function GeneralLedger() {
   // Handle row click to drill down to journal entry
   const handleRowClick = (row: ReportRow) => {
     if (row.journalEntryId) {
-      navigate(`/journal-entries`);
+      navigate(`/journal-entries?entry=${row.journalEntryId}`);
     }
   };
 
@@ -502,10 +502,10 @@ export default function GeneralLedger() {
 
                 return (
                   <tr
-                    key={rowIndex}
+                    key={row.journalEntryId || `row-${rowIndex}`}
                     className={rowClasses}
                     onClick={row.journalEntryId ? () => handleRowClick(row) : undefined}
-                    title={row.journalEntryId ? 'Click to view journal entries' : undefined}
+                    title={row.journalEntryId ? 'Click to view journal entry' : undefined}
                   >
                     {columns.map((column) => {
                       const cellClasses = [
