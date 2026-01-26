@@ -92,6 +92,9 @@ import NewMileage from './pages/NewMileage';
 import EditMileage from './pages/EditMileage';
 import Vehicles from './pages/Vehicles';
 import MileageReport from './pages/reports/MileageReport';
+import InventoryValuation from './pages/reports/InventoryValuation';
+import InventoryStockStatus from './pages/reports/InventoryStockStatus';
+import PhysicalInventoryWorksheet from './pages/reports/PhysicalInventoryWorksheet';
 import Payments from './pages/Payments';
 import NewPayment from './pages/NewPayment';
 import BillPayments from './pages/BillPayments';
@@ -215,6 +218,9 @@ function AppContent() {
             <Route path="reports/sales-tax" element={<SalesTaxLiability />} />
             <Route path="reports/expenses" element={<ExpenseReport />} />
             <Route path="reports/mileage" element={<MileageReport />} />
+            <Route path="reports/inventory-valuation" element={<InventoryValuation />} />
+            <Route path="reports/inventory-stock-status" element={<InventoryStockStatus />} />
+            <Route path="reports/physical-inventory" element={<PhysicalInventoryWorksheet />} />
             <Route path="tax-rates" element={<TaxRates />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
