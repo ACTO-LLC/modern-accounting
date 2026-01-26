@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { ChevronRight, LucideIcon } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useOnboarding } from '../../contexts/OnboardingContext';
+import { useFeatureFlags, FeatureKey } from '../../contexts/FeatureFlagsContext';
 import { NavItem as NavItemType } from './navConfig';
 
 interface NavGroupProps {
@@ -11,29 +12,40 @@ interface NavGroupProps {
   name: string;
   icon: LucideIcon;
   items: NavItemType[];
+  visibilityFlag?: FeatureKey;
 }
 
-export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps) {
+export default function NavGroup({ id, name, icon: Icon, items, visibilityFlag }: NavGroupProps) {
   const location = useLocation();
   const { isCollapsed, isGroupExpanded, toggleGroup } = useSidebar();
   const { isFeatureAccessible, getFeatureStatus, status: onboardingStatus } = useOnboarding();
+  const { isFeatureEnabled } = useFeatureFlags();
+
+  // If the entire group has a visibility flag and it's disabled, hide the group
+  const isGroupVisibleByFlag = !visibilityFlag || isFeatureEnabled(visibilityFlag);
   const [showFlyout, setShowFlyout] = useState(false);
   const [flyoutPosition, setFlyoutPosition] = useState({ top: 0, left: 0 });
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
 
-  // Filter items based on feature access
+  // Filter items based on feature access and admin feature flags
   const visibleItems = useMemo(() => {
-    // If showAllFeatures is true, show all items
+    // First, filter by admin feature flags (this always applies)
+    const flagFilteredItems = items.filter(item => {
+      if (!item.visibilityFlag) return true;
+      return isFeatureEnabled(item.visibilityFlag);
+    });
+
+    // If showAllFeatures is true, show all flag-filtered items
     if (onboardingStatus?.showAllFeatures) {
-      return items;
+      return flagFilteredItems;
     }
 
     // Check if user is in active onboarding (has assessment but not completed)
     const isInOnboarding = onboardingStatus && !onboardingStatus.onboardingCompleted && onboardingStatus.experienceLevel;
 
-    return items.filter(item => {
+    return flagFilteredItems.filter(item => {
       // Always visible items are always shown
       if (item.alwaysVisible) return true;
       // If not in onboarding, show everything
@@ -43,7 +55,7 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
       // Items without featureKey are hidden during onboarding
       return false;
     });
-  }, [items, onboardingStatus?.showAllFeatures, onboardingStatus?.onboardingCompleted, onboardingStatus?.experienceLevel, isFeatureAccessible]);
+  }, [items, onboardingStatus?.showAllFeatures, onboardingStatus?.onboardingCompleted, onboardingStatus?.experienceLevel, isFeatureAccessible, isFeatureEnabled]);
 
   // Calculate flyout position based on button location
   const updateFlyoutPosition = useCallback(() => {
@@ -92,8 +104,13 @@ export default function NavGroup({ id, name, icon: Icon, items }: NavGroupProps)
 
   const isExpanded = isGroupExpanded(id);
 
-  // If no items are visible, hide the entire group
+  // If the entire group is disabled by admin feature flag, hide it
   // This must be AFTER all hooks to satisfy React's rules of hooks
+  if (!isGroupVisibleByFlag) {
+    return null;
+  }
+
+  // If no items are visible, hide the entire group
   if (visibleItems.length === 0) {
     return null;
   }

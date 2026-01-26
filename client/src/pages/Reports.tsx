@@ -1,7 +1,17 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car, BookOpen, Package, AlertTriangle, Clipboard, ShoppingCart } from 'lucide-react';
+import { TrendingUp, Scale, List, Clock, ClipboardList, DollarSign, Receipt, CreditCard, FileText, Users, FileSearch, Car, BookOpen, Package, AlertTriangle, Clipboard, ShoppingCart, LucideIcon } from 'lucide-react';
+import { useFeatureFlags, FeatureKey } from '../contexts/FeatureFlagsContext';
 
-const reports = [
+interface ReportItem {
+  name: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  color: string;
+  visibilityFlag?: FeatureKey; // Admin-configurable feature flag
+}
+
+const reports: ReportItem[] = [
   {
     name: 'Profit & Loss',
     description: 'Income statement showing revenues, expenses, and net income over a period',
@@ -64,6 +74,7 @@ const reports = [
     href: '/reports/payroll-summary',
     icon: DollarSign,
     color: 'bg-teal-100 text-teal-600',
+    visibilityFlag: 'payroll',
   },
   {
     name: 'Sales Tax Liability',
@@ -85,6 +96,7 @@ const reports = [
     href: '/reports/mileage',
     icon: Car,
     color: 'bg-lime-100 text-lime-600',
+    visibilityFlag: 'mileage',
   },
   {
     name: 'Tax Forms (W-2/1099)',
@@ -92,10 +104,11 @@ const reports = [
     href: '/tax-forms',
     icon: FileText,
     color: 'bg-indigo-100 text-indigo-600',
+    visibilityFlag: 'payroll',
   },
 ];
 
-const salesReports = [
+const salesReports: ReportItem[] = [
   {
     name: 'Sales by Customer',
     description: 'Sales breakdown showing customer, invoice count, amount, and percentage of total sales',
@@ -112,7 +125,7 @@ const salesReports = [
   },
 ];
 
-const inventoryReports = [
+const inventoryReports: ReportItem[] = [
   {
     name: 'Inventory Valuation Summary',
     description: 'Shows product, SKU, quantity on hand, average cost, and asset value',
@@ -137,6 +150,20 @@ const inventoryReports = [
 ];
 
 export default function Reports() {
+  const { isFeatureEnabled } = useFeatureFlags();
+
+  // Filter reports based on feature flags
+  const visibleReports = reports.filter(
+    (report) => !report.visibilityFlag || isFeatureEnabled(report.visibilityFlag)
+  );
+
+  const visibleInventoryReports = inventoryReports.filter(
+    (report) => !report.visibilityFlag || isFeatureEnabled(report.visibilityFlag)
+  );
+
+  // Only show inventory section if inventory feature is enabled
+  const showInventorySection = isFeatureEnabled('inventory') && visibleInventoryReports.length > 0;
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
@@ -147,7 +174,7 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {reports.map((report) => (
+        {visibleReports.map((report) => (
           <Link
             key={report.name}
             to={report.href}
@@ -194,33 +221,37 @@ export default function Reports() {
         ))}
       </div>
 
-      {/* Inventory Reports Section */}
-      <div className="mt-10 mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Inventory Reports</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Track stock levels, valuation, and movement
-        </p>
-      </div>
+      {/* Inventory Reports Section - only shown if inventory feature is enabled */}
+      {showInventorySection && (
+        <>
+          <div className="mt-10 mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Inventory Reports</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Track stock levels, valuation, and movement
+            </p>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {inventoryReports.map((report) => (
-          <Link
-            key={report.name}
-            to={report.href}
-            className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-lg ${report.color}`}>
-                <report.icon className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">{report.name}</h2>
-                <p className="mt-1 text-sm text-gray-500">{report.description}</p>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {visibleInventoryReports.map((report) => (
+              <Link
+                key={report.name}
+                to={report.href}
+                className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-3 rounded-lg ${report.color}`}>
+                    <report.icon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">{report.name}</h2>
+                    <p className="mt-1 text-sm text-gray-500">{report.description}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

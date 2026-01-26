@@ -13,6 +13,7 @@ import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
+import { FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -276,9 +277,11 @@ function App() {
               <Toaster position="top-right" richColors />
               <ToastProvider>
                 <ChatProvider>
-                  <OnboardingProvider>
-                    <AppContent />
-                  </OnboardingProvider>
+                  <FeatureFlagsProvider>
+                    <OnboardingProvider>
+                      <AppContent />
+                    </OnboardingProvider>
+                  </FeatureFlagsProvider>
                 </ChatProvider>
               </ToastProvider>
             </ThemeProvider>
