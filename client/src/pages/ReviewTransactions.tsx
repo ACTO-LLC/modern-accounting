@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Edit2, FileText, AlertTriangle } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
+import api from '../lib/api';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
 
@@ -270,16 +271,10 @@ export default function ReviewTransactions() {
   // Post transactions mutation
   const postMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const response = await fetch('http://localhost:7072/api/post-transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionIds: ids })
+      const response = await api.post('/post-transactions', {
+        transactionIds: ids
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.details || 'Failed to post transactions');
-      }
-      return response.json();
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
