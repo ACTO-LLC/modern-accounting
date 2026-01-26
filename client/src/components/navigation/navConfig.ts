@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, ScrollText } from 'lucide-react';
 
 export interface NavItem {
   id: string;
@@ -165,21 +165,15 @@ export const navigationConfig: NavEntry[] = [
     alwaysVisible: true,
   },
 
-  // AI Enhancements - standalone (always visible)
+  // Admin group - standalone items for admin functions
   {
-    id: 'admin-enhancements',
-    name: 'AI Enhancements',
-    href: '/admin/enhancements',
-    icon: Sparkles,
-    alwaysVisible: true,
-  },
-
-  // Settings - standalone (always visible)
-  {
-    id: 'settings',
-    name: 'Settings',
-    href: '/settings',
+    id: 'admin',
+    name: 'Admin',
     icon: Settings,
-    alwaysVisible: true,
+    items: [
+      { id: 'settings', name: 'Company Settings', href: '/settings', icon: Settings, alwaysVisible: true },
+      { id: 'admin-enhancements', name: 'AI Enhancements', href: '/admin/enhancements', icon: Sparkles, alwaysVisible: true },
+      { id: 'audit-log', name: 'Audit Log', href: '/admin/audit-log', icon: ScrollText, alwaysVisible: true },
+    ],
   },
 ];

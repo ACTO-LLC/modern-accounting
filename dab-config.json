@@ -2510,6 +2510,40 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "auditlog": {
+            "source": "dbo.AuditLog",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Timestamp": "Timestamp",
+                "UserId": "UserId",
+                "UserName": "UserName",
+                "UserEmail": "UserEmail",
+                "Action": "Action",
+                "EntityType": "EntityType",
+                "EntityId": "EntityId",
+                "EntityDescription": "EntityDescription",
+                "OldValues": "OldValues",
+                "NewValues": "NewValues",
+                "Changes": "Changes",
+                "IpAddress": "IpAddress",
+                "UserAgent": "UserAgent",
+                "SessionId": "SessionId",
+                "TenantId": "TenantId",
+                "RequestId": "RequestId",
+                "Source": "Source"
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
