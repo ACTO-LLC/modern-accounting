@@ -166,5 +166,11 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- CASH FLOW CATEGORIES
+-- ============================================================================
+-- Seed CashFlowCategory values for accounts
+:r ./migrations/037_SeedCashFlowCategories.sql
+
 PRINT 'Seed data deployment complete.'
 GO

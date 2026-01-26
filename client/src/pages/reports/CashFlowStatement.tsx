@@ -4,13 +4,14 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
+import { formatDateForOData } from '../../lib/dateUtils';
 
 interface Account {
   Id: string;
   Name: string;
   Type: string;
   Subtype: string | null;
-  CashFlowCategory: string | null;
+  CashFlowCategory: 'Operating' | 'Investing' | 'Financing' | null;
 }
 
 interface JournalEntry {
@@ -64,9 +65,13 @@ export default function CashFlowStatement() {
     isLoading: journalEntriesLoading,
     error: journalEntriesError,
   } = useQuery({
-    queryKey: ['journal-entries'],
+    queryKey: ['journal-entries', endDate],
     queryFn: async () => {
-      const r = await fetch('/api/journalentries');
+      // Fetch all journal entries up to and including the end date
+      // We need historical data to calculate beginning balances
+      const odataEndDate = formatDateForOData(endDate, true);
+      const url = `/api/journalentries?$filter=TransactionDate le ${odataEndDate}`;
+      const r = await fetch(url);
       if (!r.ok) {
         throw new Error('Failed to load journal entries');
       }
@@ -80,8 +85,10 @@ export default function CashFlowStatement() {
     isLoading: linesLoading,
     error: linesError,
   } = useQuery({
-    queryKey: ['journal-entry-lines'],
+    queryKey: ['journal-entry-lines', endDate],
     queryFn: async () => {
+      // Note: We fetch ALL lines and filter by entry date in memory
+      // because DAB doesn't support $expand with $filter on parent entity
       const r = await fetch('/api/journalentrylines');
       if (!r.ok) {
         throw new Error('Failed to load journal entry lines');
@@ -117,6 +124,10 @@ export default function CashFlowStatement() {
       journalEntries.map((e) => [e.Id, new Date(e.TransactionDate)])
     );
 
+    // Only process lines that belong to fetched entries (optimization)
+    const validEntryIds = new Set(journalEntries.map((e) => e.Id));
+    const relevantLines = lines.filter((line) => validEntryIds.has(line.JournalEntryId));
+
     // Parse dates explicitly to avoid timezone issues
     const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
     const start = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
@@ -129,13 +140,13 @@ export default function CashFlowStatement() {
     periodStart.setMilliseconds(periodStart.getMilliseconds() - 1);
 
     // Filter lines for the period
-    const periodLines = lines.filter((line) => {
+    const periodLines = relevantLines.filter((line) => {
       const date = entryDateMap.get(line.JournalEntryId);
       return date && date >= start && date <= end;
     });
 
     // Filter lines for before period (for beginning balances)
-    const beforePeriodLines = lines.filter((line) => {
+    const beforePeriodLines = relevantLines.filter((line) => {
       const date = entryDateMap.get(line.JournalEntryId);
       return date && date < start;
     });
@@ -480,6 +491,9 @@ export default function CashFlowStatement() {
   const isReconciled =
     Math.abs(reportData.netCashChange - reportData.actualCashChange) < 0.01;
 
+  // Check if there's any data in the period
+  const hasData = journalEntries && journalEntries.length > 0;
+
   if (isLoading) {
     return <div className="max-w-4xl mx-auto p-4">Loading statement of cash flows...</div>;
   }
@@ -525,7 +539,15 @@ export default function CashFlowStatement() {
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <ReportTable columns={columns} data={tableData} />
       </div>
-      {!isReconciled && (
+      {!hasData && (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>Info:</strong> No journal entries found for the selected date range. All values shown are zero.
+            Try selecting a different date range or create journal entries to see cash flow activity.
+          </p>
+        </div>
+      )}
+      {!isReconciled && hasData && (
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
           <p className="text-sm text-yellow-800">
             <strong>Warning:</strong> The calculated net change in cash (
