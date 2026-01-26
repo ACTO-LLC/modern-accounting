@@ -497,6 +497,21 @@
                     "actions": ["read"]
                 }
             ]
+        },
+        "auditlog": {
+            "source": "dbo.AuditLog",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["read"]
+                }
+            ]
         }
     }
 }

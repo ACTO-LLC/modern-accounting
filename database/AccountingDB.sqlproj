@@ -95,6 +95,7 @@
     <Build Include="dbo\Tables\VendorCreditLines.sql" />
     <Build Include="dbo\Tables\VendorCredits.sql" />
     <Build Include="dbo\Tables\Vendors.sql" />
+    <Build Include="dbo\Tables\AuditLog.sql" />
     <!-- Views -->
     <Build Include="dbo\Views\v_BankTransactionImports.sql" />
     <Build Include="dbo\Views\v_BankTransactionMatches.sql" />
@@ -120,6 +121,9 @@
     <Build Include="dbo\Views\v_VendorCredits.sql" />
     <!-- Stored Procedures -->
     <Build Include="dbo\StoredProcedures\CreateInvoice.sql" />
+    <Build Include="dbo\StoredProcedures\sp_LogAuditEvent.sql" />
+    <!-- Triggers -->
+    <Build Include="dbo\Triggers\TR_AuditLog_PreventModification.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="Script.PostDeployment.sql" />
