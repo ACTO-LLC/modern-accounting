@@ -1,8 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePlaidLink, PlaidLinkOptions, PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
-import { Link2, Link2Off, Loader2, Building2, RefreshCw } from 'lucide-react';
+import { Link2, Link2Off, Loader2, Building2, RefreshCw, WifiOff } from 'lucide-react';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+
+// Check if the Plaid service is available
+async function checkPlaidServiceAvailable(): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections`, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response.ok || response.status === 404;
+  } catch {
+    return false;
+  }
+}
 
 interface PlaidConnection {
   id: string;
@@ -24,9 +40,25 @@ export default function PlaidLinkButton({ onConnectionChange, compact = false }:
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState<string | null>(null);
+  const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
+  const hasCheckedService = useRef(false);
 
-  // Fetch existing connections
+  // Check service availability once on mount
+  useEffect(() => {
+    if (!hasCheckedService.current) {
+      hasCheckedService.current = true;
+      checkPlaidServiceAvailable().then((available) => {
+        setServiceAvailable(available);
+        if (!available) {
+          setIsLoading(false);
+        }
+      });
+    }
+  }, []);
+
+  // Fetch existing connections - only if service is available
   const fetchConnections = useCallback(async () => {
+    if (!serviceAvailable) return;
     try {
       const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections`);
       if (!response.ok) throw new Error('Failed to fetch connections');
@@ -39,10 +71,11 @@ export default function PlaidLinkButton({ onConnectionChange, compact = false }:
     } finally {
       setIsLoading(false);
     }
-  }, [onConnectionChange]);
+  }, [onConnectionChange, serviceAvailable]);
 
-  // Create link token for Plaid Link
+  // Create link token for Plaid Link - only if service is available
   const createLinkToken = useCallback(async () => {
+    if (!serviceAvailable) return;
     try {
       const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/link-token`, {
         method: 'POST',
@@ -56,13 +89,15 @@ export default function PlaidLinkButton({ onConnectionChange, compact = false }:
     } catch (error) {
       console.error('Failed to create link token:', error);
     }
-  }, []);
+  }, [serviceAvailable]);
 
-  // Initialize on mount
+  // Initialize when service becomes available
   useEffect(() => {
-    fetchConnections();
-    createLinkToken();
-  }, [fetchConnections, createLinkToken]);
+    if (serviceAvailable) {
+      fetchConnections();
+      createLinkToken();
+    }
+  }, [fetchConnections, createLinkToken, serviceAvailable]);
 
   // Handle Plaid Link success
   const onSuccess = useCallback(async (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
@@ -153,6 +188,29 @@ export default function PlaidLinkButton({ onConnectionChange, compact = false }:
       <div className={`flex items-center gap-2 text-gray-500 dark:text-gray-400 ${compact ? 'text-xs' : 'text-sm'}`}>
         <Loader2 className="w-4 h-4 animate-spin" />
         {!compact && <span>Loading bank connections...</span>}
+      </div>
+    );
+  }
+
+  // Service unavailable state
+  if (serviceAvailable === false) {
+    if (compact) {
+      return (
+        <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+          <WifiOff className="w-4 h-4" />
+          <span>Bank service offline</span>
+        </div>
+      );
+    }
+    return (
+      <div className="bg-amber-50 dark:bg-amber-900/20 px-4 py-3 rounded-lg border border-amber-200 dark:border-amber-800">
+        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+          <WifiOff className="w-5 h-5" />
+          <span className="text-sm font-medium">Bank connection service unavailable</span>
+        </div>
+        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+          The Plaid API service is not running.
+        </p>
       </div>
     );
   }
