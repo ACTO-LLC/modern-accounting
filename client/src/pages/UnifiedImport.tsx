@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FileUp, Upload, CheckSquare } from 'lucide-react';
 import BankImport from './BankImport';
@@ -15,8 +15,16 @@ const tabs: { id: TabType; name: string; icon: React.ComponentType<{ className?:
 
 export default function UnifiedImport() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') as TabType) || 'bank-import';
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const tabFromUrl = useMemo(() => 
+    (searchParams.get('tab') as TabType) || 'bank-import',
+    [searchParams]
+  );
+  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl);
+
+  // Sync state with URL when URL changes (e.g., from redirects)
+  useEffect(() => {
+    setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
