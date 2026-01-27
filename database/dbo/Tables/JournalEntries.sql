@@ -15,6 +15,7 @@ CREATE TABLE [dbo].[JournalEntries]
 [SourceSystem] NVARCHAR(50) NULL,
     [SourceId] NVARCHAR(100) NULL,
     [TenantId] UNIQUEIDENTIFIER NULL,
+    [IsPersonal] BIT NOT NULL DEFAULT 0, -- 0 = Business (default), 1 = Personal
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo])

@@ -15,6 +15,7 @@ CREATE TABLE [dbo].[Invoices]
     [SourceId] NVARCHAR(100) NULL,
     [ClaimId] UNIQUEIDENTIFIER NULL,
     [TenantId] UNIQUEIDENTIFIER NULL,
+    [IsPersonal] BIT NOT NULL DEFAULT 0, -- 0 = Business (default), 1 = Personal
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 

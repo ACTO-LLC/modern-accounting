@@ -24,6 +24,7 @@ SELECT
     cl.[Name] AS ClassName,
     e.[BankTransactionId],
     e.[Status],
+    e.[IsPersonal],
     e.[JournalEntryId],
     e.[CreatedBy],
     e.[CreatedAt],

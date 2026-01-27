@@ -23,6 +23,7 @@ SELECT
     i.[SourceSystem],
     i.[SourceId],
     i.[ClaimId],
+    i.[IsPersonal],
     i.[CreatedAt],
     i.[UpdatedAt]
 FROM

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Plus, Receipt, FileText } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Receipt, FileText, User } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
@@ -14,9 +15,12 @@ interface Expense {
   PaymentMethod: string;
   Description: string;
   IsReimbursable: boolean;
+  IsPersonal: boolean;
   Status: string;
   ReceiptCount: number;
 }
+
+type PersonalFilter = 'all' | 'business' | 'personal';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -34,6 +38,19 @@ const getStatusColor = (status: string) => {
 };
 
 export default function Expenses() {
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
+
+  // Build endpoint with filter
+  const getEndpoint = () => {
+    let endpoint = '/expenses?$orderby=ExpenseDate desc';
+    if (personalFilter === 'business') {
+      endpoint += '&$filter=IsPersonal eq false';
+    } else if (personalFilter === 'personal') {
+      endpoint += '&$filter=IsPersonal eq true';
+    }
+    return endpoint;
+  };
+
   const columns: GridColDef[] = [
     {
       field: 'ExpenseDate',
@@ -94,6 +111,20 @@ export default function Expenses() {
       ),
     },
     {
+      field: 'IsPersonal',
+      headerName: 'Type',
+      width: 100,
+      renderCell: (params) =>
+        params.value ? (
+          <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+            <User className="w-3 h-3 mr-1" />
+            Personal
+          </span>
+        ) : (
+          <span className="text-xs text-gray-500">Business</span>
+        ),
+    },
+    {
       field: 'IsReimbursable',
       headerName: 'Reimb.',
       width: 80,
@@ -130,7 +161,16 @@ export default function Expenses() {
             Track and manage business expenses with receipt capture
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <select
+            value={personalFilter}
+            onChange={(e) => setPersonalFilter(e.target.value as PersonalFilter)}
+            className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border p-2"
+          >
+            <option value="business">Business Only</option>
+            <option value="personal">Personal Only</option>
+            <option value="all">All Expenses</option>
+          </select>
           <Link
             to="/receipts"
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
@@ -149,7 +189,8 @@ export default function Expenses() {
       </div>
 
       <RestDataGrid<Expense>
-        endpoint="/expenses?$orderby=ExpenseDate desc"
+        key={personalFilter}
+        endpoint={getEndpoint()}
         columns={columns}
         editPath="/expenses/{id}/edit"
         initialPageSize={25}

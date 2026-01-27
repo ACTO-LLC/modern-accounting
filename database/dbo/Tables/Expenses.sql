@@ -18,6 +18,7 @@ CREATE TABLE [dbo].[Expenses]
     [ClassId] UNIQUEIDENTIFIER NULL,
     [BankTransactionId] UNIQUEIDENTIFIER NULL,
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Recorded', -- Recorded, Pending, Reimbursed, Voided
+    [IsPersonal] BIT NOT NULL DEFAULT 0, -- 0 = Business (default), 1 = Personal
     [JournalEntryId] UNIQUEIDENTIFIER NULL,
     [CreatedBy] NVARCHAR(255) NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),

@@ -17,6 +17,7 @@ CREATE TABLE [dbo].[MileageTrips]
     [Notes] NVARCHAR(1000) NULL,
     [IsRoundTrip] BIT NOT NULL DEFAULT 0,
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Recorded',
+    [IsPersonal] BIT NOT NULL DEFAULT 0, -- 0 = Business (default), 1 = Personal
     [CreatedBy] NVARCHAR(255) NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),

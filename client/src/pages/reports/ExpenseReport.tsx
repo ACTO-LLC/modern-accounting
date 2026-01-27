@@ -15,11 +15,14 @@ interface Expense {
   PaymentMethod: string;
   Description: string;
   IsReimbursable: boolean;
+  IsPersonal: boolean;
   Status: string;
   CustomerName: string;
   ProjectName: string;
   ClassName: string;
 }
+
+type PersonalFilter = 'business' | 'personal' | 'all';
 
 interface GroupedExpenses {
   [category: string]: {
@@ -39,13 +42,19 @@ export default function ExpenseReport() {
   });
   const [groupBy, setGroupBy] = useState<'category' | 'vendor' | 'project'>('category');
   const [showReimbursableOnly, setShowReimbursableOnly] = useState(false);
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
 
   const { data: expenses, isLoading } = useQuery({
-    queryKey: ['expense-report', startDate, endDate, showReimbursableOnly],
+    queryKey: ['expense-report', startDate, endDate, showReimbursableOnly, personalFilter],
     queryFn: async () => {
       let filter = `ExpenseDate ge ${startDate} and ExpenseDate le ${endDate}`;
       if (showReimbursableOnly) {
         filter += ' and IsReimbursable eq true';
+      }
+      if (personalFilter === 'business') {
+        filter += ' and IsPersonal eq false';
+      } else if (personalFilter === 'personal') {
+        filter += ' and IsPersonal eq true';
       }
       const response = await api.get<{ value: Expense[] }>(
         `/expenses?$filter=${filter}&$orderby=ExpenseDate desc`
@@ -87,7 +96,7 @@ export default function ExpenseReport() {
   const handleExportCSV = () => {
     if (!expenses || expenses.length === 0) return;
 
-    const headers = ['Date', 'Vendor', 'Category', 'Description', 'Amount', 'Payment Method', 'Reimbursable', 'Status'];
+    const headers = ['Date', 'Vendor', 'Category', 'Description', 'Amount', 'Payment Method', 'Reimbursable', 'Personal', 'Status'];
     const rows = expenses.map((e) => [
       e.ExpenseDate,
       e.VendorName || '',
@@ -96,6 +105,7 @@ export default function ExpenseReport() {
       e.Amount.toFixed(2),
       e.PaymentMethod || '',
       e.IsReimbursable ? 'Yes' : 'No',
+      e.IsPersonal ? 'Yes' : 'No',
       e.Status,
     ]);
 
@@ -142,6 +152,21 @@ export default function ExpenseReport() {
               <option value="category">Category</option>
               <option value="vendor">Vendor</option>
               <option value="project">Project</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Show
+            </label>
+            <select
+              value={personalFilter}
+              onChange={(e) => setPersonalFilter(e.target.value as PersonalFilter)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            >
+              <option value="business">Business Only</option>
+              <option value="personal">Personal Only</option>
+              <option value="all">All Expenses</option>
             </select>
           </div>
 

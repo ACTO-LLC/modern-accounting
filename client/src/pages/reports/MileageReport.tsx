@@ -21,8 +21,11 @@ interface MileageTrip {
   CustomerName: string;
   ProjectName: string;
   IsRoundTrip: boolean;
+  IsPersonal: boolean;
   Status: string;
 }
+
+type PersonalFilter = 'business' | 'personal' | 'all';
 
 interface CategorySummary {
   trips: MileageTrip[];
@@ -46,13 +49,19 @@ export default function MileageReport() {
   });
   const [groupBy, setGroupBy] = useState<'category' | 'vehicle' | 'customer'>('category');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
 
   const { data: trips, isLoading } = useQuery({
-    queryKey: ['mileage-report', startDate, endDate, categoryFilter],
+    queryKey: ['mileage-report', startDate, endDate, categoryFilter, personalFilter],
     queryFn: async () => {
       let filter = `TripDate ge ${startDate} and TripDate le ${endDate}`;
       if (categoryFilter !== 'all') {
         filter += ` and Category eq '${categoryFilter}'`;
+      }
+      if (personalFilter === 'business') {
+        filter += ' and IsPersonal eq false';
+      } else if (personalFilter === 'personal') {
+        filter += ' and IsPersonal eq true';
       }
       const response = await api.get<{ value: MileageTrip[] }>(
         `/mileagetrips?$filter=${filter}&$orderby=TripDate desc`
@@ -107,6 +116,7 @@ export default function MileageReport() {
       'Miles',
       'Round Trip',
       'Category',
+      'Personal',
       'Purpose',
       'Rate/Mile',
       'Deduction',
@@ -123,6 +133,7 @@ export default function MileageReport() {
         effectiveMiles.toFixed(1),
         t.IsRoundTrip ? 'Yes' : 'No',
         t.Category,
+        t.IsPersonal ? 'Yes' : 'No',
         t.Purpose || '',
         t.RatePerMile?.toFixed(4) || '',
         t.DeductibleAmount?.toFixed(2) || '',
@@ -209,6 +220,19 @@ export default function MileageReport() {
               <option value="Medical">Medical</option>
               <option value="Charity">Charity</option>
               <option value="Personal">Personal</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Show</label>
+            <select
+              value={personalFilter}
+              onChange={(e) => setPersonalFilter(e.target.value as PersonalFilter)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            >
+              <option value="business">Business Only</option>
+              <option value="personal">Personal Only</option>
+              <option value="all">All Trips</option>
             </select>
           </div>
 
