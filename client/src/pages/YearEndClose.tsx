@@ -64,6 +64,18 @@ export default function YearEndClose() {
     enabled: !!periodId,
   });
 
+  // Check if year is already closed
+  const { data: existingClose } = useQuery({
+    queryKey: ['year-end-close-check', periodId],
+    queryFn: async () => {
+      const response = await api.get<{ value: any[] }>(
+        `/yearendcloseentries?$filter=AccountingPeriodId eq '${periodId}'`
+      );
+      return response.data.value.length > 0 ? response.data.value[0] : null;
+    },
+    enabled: !!periodId,
+  });
+
   // Fetch all accounts
   const { data: accounts } = useQuery({
     queryKey: ['accounts'],
@@ -81,15 +93,23 @@ export default function YearEndClose() {
       const startDate = period.FiscalYearStart + 'T00:00:00Z';
       const endDate = period.FiscalYearEnd + 'T23:59:59Z';
 
-      // Get all journal entries in the fiscal year
+      // Get all journal entries in the fiscal year, EXCLUDING prior closing entries
+      // Closing entries have Reference starting with "YE-CLOSE"
       const journalResponse = await api.get<{ value: any[] }>(
-        `/journalentries?$filter=TransactionDate ge ${startDate} and TransactionDate le ${endDate} and Status eq 'Posted'`
+        `/journalentries?$filter=TransactionDate ge ${startDate} and TransactionDate le ${endDate} and Status eq 'Posted' and not startswith(Reference,'YE-CLOSE')`
       );
 
       if (!journalResponse.data.value.length) return [];
 
-      // Get all journal entry lines
-      const linesResponse = await api.get<{ value: any[] }>('/journalentrylines');
+      // Get the journal entry IDs to filter lines
+      const journalEntryIds = journalResponse.data.value.map((je: any) => je.Id);
+
+      // Fetch journal entry lines only for the filtered journal entries
+      // Build OData IN filter for the journal entry IDs
+      const idFilter = journalEntryIds.map((id: string) => `JournalEntryId eq '${id}'`).join(' or ');
+      const linesResponse = await api.get<{ value: any[] }>(
+        `/journalentrylines?$filter=${encodeURIComponent(idFilter)}`
+      );
       return linesResponse.data.value;
     },
     enabled: !!period,
@@ -102,10 +122,18 @@ export default function YearEndClose() {
     const revenueAccounts = accounts.filter(a => a.Type === 'Revenue');
     const expenseAccounts = accounts.filter(a => a.Type === 'Expense');
 
-    // Calculate balances for each account
-    const calculateBalance = (accountId: string): number => {
+    // Calculate balance based on account's normal balance
+    // Revenue: normal CREDIT balance = Credits - Debits (positive when more credits)
+    // Expense: normal DEBIT balance = Debits - Credits (positive when more debits)
+    const calculateBalance = (accountId: string, isExpense: boolean): number => {
       const lines = journalEntryLines.filter(l => l.AccountId === accountId);
-      return lines.reduce((sum, line) => sum + (line.Credit || 0) - (line.Debit || 0), 0);
+      if (isExpense) {
+        // Expense accounts have normal debit balance
+        return lines.reduce((sum, line) => sum + (line.Debit || 0) - (line.Credit || 0), 0);
+      } else {
+        // Revenue accounts have normal credit balance
+        return lines.reduce((sum, line) => sum + (line.Credit || 0) - (line.Debit || 0), 0);
+      }
     };
 
     const revenueBalances: AccountBalance[] = revenueAccounts
@@ -114,7 +142,7 @@ export default function YearEndClose() {
         accountCode: a.Code,
         accountName: a.Name,
         accountType: a.Type,
-        balance: calculateBalance(a.Id),
+        balance: calculateBalance(a.Id, false),
       }))
       .filter(b => Math.abs(b.balance) > 0.01);
 
@@ -124,7 +152,7 @@ export default function YearEndClose() {
         accountCode: a.Code,
         accountName: a.Name,
         accountType: a.Type,
-        balance: -calculateBalance(a.Id), // Expenses have debit balances
+        balance: calculateBalance(a.Id, true),
       }))
       .filter(b => Math.abs(b.balance) > 0.01);
 
@@ -268,6 +296,39 @@ export default function YearEndClose() {
       <div className="p-4 text-red-600">
         <AlertCircle className="h-6 w-6 inline mr-2" />
         Accounting period not found.
+      </div>
+    );
+  }
+
+  // Already closed warning
+  if (existingClose) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6 flex items-center">
+          <button onClick={() => navigate('/accounting-periods')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Year-End Close</h1>
+        </div>
+        <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <Lock className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+            <div>
+              <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                Fiscal Year Already Closed
+              </h2>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                This fiscal year was closed on {formatDate(existingClose.CloseDate)}.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded border border-yellow-200 dark:border-yellow-700">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Closing Entry Reference:</p>
+            <p className="font-mono text-sm text-gray-900 dark:text-white">YE-CLOSE-{new Date(period.FiscalYearEnd).getFullYear()}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Net Income:</p>
+            <p className="font-semibold text-gray-900 dark:text-white">${existingClose.NetIncome?.toLocaleString() || '0'}</p>
+          </div>
+        </div>
       </div>
     );
   }
