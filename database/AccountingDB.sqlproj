@@ -99,6 +99,8 @@
     <Build Include="dbo\Tables\VendorCredits.sql" />
     <Build Include="dbo\Tables\Vendors.sql" />
     <Build Include="dbo\Tables\AuditLog.sql" />
+    <Build Include="dbo\Tables\AccountingPeriods.sql" />
+    <Build Include="dbo\Tables\YearEndCloseEntries.sql" />
     <!-- Views -->
     <Build Include="dbo\Views\v_BankTransactionImports.sql" />
     <Build Include="dbo\Views\v_BankTransactionMatches.sql" />
@@ -122,6 +124,7 @@
     <Build Include="dbo\Views\v_TimeEntries.sql" />
     <Build Include="dbo\Views\v_VendorCreditApplications.sql" />
     <Build Include="dbo\Views\v_VendorCredits.sql" />
+    <Build Include="dbo\Views\v_YearEndCloseEntries.sql" />
     <!-- Stored Procedures -->
     <Build Include="dbo\StoredProcedures\CreateInvoice.sql" />
     <Build Include="dbo\StoredProcedures\sp_LogAuditEvent.sql" />

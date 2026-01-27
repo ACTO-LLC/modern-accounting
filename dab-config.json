@@ -2766,6 +2766,104 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "accountingperiods": {
+            "source": "dbo.AccountingPeriods",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "FiscalYearStart": "FiscalYearStart",
+                "FiscalYearEnd": "FiscalYearEnd",
+                "ClosingDate": "ClosingDate",
+                "ClosingPassword": "ClosingPassword",
+                "IsLocked": "IsLocked",
+                "ClosedBy": "ClosedBy",
+                "ClosedAt": "ClosedAt",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "TenantId": "TenantId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "yearendcloseentries": {
+            "source": {
+                "object": "dbo.v_YearEndCloseEntries",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "AccountingPeriodId": "AccountingPeriodId",
+                "FiscalYear": "FiscalYear",
+                "CloseDate": "CloseDate",
+                "RetainedEarningsAccountId": "RetainedEarningsAccountId",
+                "RetainedEarningsAccountName": "RetainedEarningsAccountName",
+                "RetainedEarningsAccountCode": "RetainedEarningsAccountCode",
+                "JournalEntryId": "JournalEntryId",
+                "JournalEntryReference": "JournalEntryReference",
+                "NetIncome": "NetIncome",
+                "TotalRevenue": "TotalRevenue",
+                "TotalExpenses": "TotalExpenses",
+                "Status": "Status",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt",
+                "TenantId": "TenantId",
+                "FiscalYearStart": "FiscalYearStart",
+                "FiscalYearEnd": "FiscalYearEnd",
+                "PeriodIsLocked": "PeriodIsLocked"
+            }
+        },
+        "yearendcloseentries_write": {
+            "source": "dbo.YearEndCloseEntries",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "AccountingPeriodId": "AccountingPeriodId",
+                "FiscalYear": "FiscalYear",
+                "CloseDate": "CloseDate",
+                "RetainedEarningsAccountId": "RetainedEarningsAccountId",
+                "JournalEntryId": "JournalEntryId",
+                "NetIncome": "NetIncome",
+                "TotalRevenue": "TotalRevenue",
+                "TotalExpenses": "TotalExpenses",
+                "Status": "Status",
+                "CreatedBy": "CreatedBy",
+                "TenantId": "TenantId"
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }

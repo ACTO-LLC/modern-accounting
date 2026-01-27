@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote, Mail, History } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote, Mail, History, Calendar } from 'lucide-react';
 import { FeatureKey } from '../../contexts/FeatureFlagsContext';
 
 export interface NavItem {
@@ -141,6 +141,7 @@ export const navigationConfig: NavEntry[] = [
       { id: 'classes', name: 'Classes', href: '/classes', icon: Tag },
       { id: 'locations', name: 'Locations', href: '/locations', icon: MapPin },
       { id: 'recurring', name: 'Recurring', href: '/recurring', icon: RefreshCw },
+      { id: 'accounting-periods', name: 'Closing Books', href: '/accounting-periods', icon: Calendar },
     ],
   },
 
