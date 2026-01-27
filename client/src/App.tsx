@@ -118,6 +118,9 @@ import BankImportHistory from './pages/BankImportHistory';
 import BankRules from './pages/BankRules';
 import VendorHierarchy from './pages/VendorHierarchy';
 import CustomerHierarchy from './pages/CustomerHierarchy';
+import CreditMemos from './pages/CreditMemos';
+import NewCreditMemo from './pages/NewCreditMemo';
+import ApplyCreditMemo from './pages/ApplyCreditMemo';
 import SalesReceipts from './pages/SalesReceipts';
 import NewSalesReceipt from './pages/NewSalesReceipt';
 import EditSalesReceipt from './pages/EditSalesReceipt';
@@ -252,6 +255,9 @@ function AppContent() {
             <Route path="customer-deposits/:id/apply" element={<ApplyDeposit />} />
             <Route path="bill-payments" element={<BillPayments />} />
             <Route path="bill-payments/new" element={<NewBillPayment />} />
+            <Route path="credit-memos" element={<CreditMemos />} />
+            <Route path="credit-memos/new" element={<NewCreditMemo />} />
+            <Route path="credit-memos/:id/apply" element={<ApplyCreditMemo />} />
             <Route path="vendor-credits" element={<VendorCredits />} />
             <Route path="vendor-credits/new" element={<NewVendorCredit />} />
             <Route path="vendor-credits/:id/edit" element={<EditVendorCredit />} />

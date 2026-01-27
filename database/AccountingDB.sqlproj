@@ -40,6 +40,9 @@
     <Build Include="dbo\Tables\Classes.sql" />
     <Build Include="dbo\Tables\Companies.sql" />
     <Build Include="dbo\Tables\CompanyFeatureFlags.sql" />
+    <Build Include="dbo\Tables\CreditApplications.sql" />
+    <Build Include="dbo\Tables\CreditMemoLines.sql" />
+    <Build Include="dbo\Tables\CreditMemos.sql" />
     <Build Include="dbo\Tables\CustomerDeposits.sql" />
     <Build Include="dbo\Tables\Customers.sql" />
     <Build Include="dbo\Tables\DepositApplications.sql" />
@@ -86,6 +89,7 @@
     <Build Include="dbo\Tables\ReconciliationItems.sql" />
     <Build Include="dbo\Tables\RecurringSchedules.sql" />
     <Build Include="dbo\Tables\RecurringTemplates.sql" />
+    <Build Include="dbo\Tables\Refunds.sql" />
     <Build Include="dbo\Tables\Roles.sql" />
     <Build Include="dbo\Tables\StateTaxReciprocity.sql" />
     <Build Include="dbo\Tables\SubmissionAttachments.sql" />
@@ -107,6 +111,9 @@
     <Build Include="dbo\Views\v_BankTransactionImports.sql" />
     <Build Include="dbo\Views\v_BankTransactionMatches.sql" />
     <Build Include="dbo\Views\v_BillPaymentApplications.sql" />
+    <Build Include="dbo\Views\v_CreditApplications.sql" />
+    <Build Include="dbo\Views\v_CreditMemoLines.sql" />
+    <Build Include="dbo\Views\v_CreditMemos.sql" />
     <Build Include="dbo\Views\v_BillPayments.sql" />
     <Build Include="dbo\Views\v_CustomerDeposits.sql" />
     <Build Include="dbo\Views\v_DepositApplications.sql" />
@@ -125,6 +132,7 @@
     <Build Include="dbo\Views\v_Projects.sql" />
     <Build Include="dbo\Views\v_PurchaseOrders.sql" />
     <Build Include="dbo\Views\v_Receipts.sql" />
+    <Build Include="dbo\Views\v_Refunds.sql" />
     <Build Include="dbo\Views\v_TimeEntries.sql" />
     <Build Include="dbo\Views\v_VendorCreditApplications.sql" />
     <Build Include="dbo\Views\v_VendorCredits.sql" />
