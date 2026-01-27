@@ -8,7 +8,8 @@ import {
   GridRowParams,
   GridValidRowModel,
 } from '@mui/x-data-grid';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import dataGridTheme from '../lib/dataGridTheme';
 import { graphql } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -310,20 +311,6 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
       </div>
     );
   }
-
-  // Create MUI theme forcing light mode (prevents auto dark mode from system preferences)
-  const dataGridTheme = createTheme({
-    colorSchemes: {
-      light: {
-        palette: {
-          text: {
-            primary: '#111827',
-            secondary: '#374151',
-          },
-        },
-      },
-    },
-  });
 
   return (
     <div>
