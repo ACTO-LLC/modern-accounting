@@ -816,6 +816,28 @@ Year-end close zeroes out revenue and expense accounts to Retained Earnings:
 - Use dab_query on "fiscalyearcloses" to check close status
 - IMPORTANT: Year-end close should only be done ONCE per fiscal year
 
+CREDIT MEMOS & CUSTOMER REFUNDS:
+Credit memos handle returns, adjustments, and overpayments for customers:
+- Located under Sales > Credit Memos
+- Accounting flow:
+  1. Issue credit memo: Debit Sales/Revenue, Credit Accounts Receivable (reduces AR)
+  2. Apply to invoice: Reduces invoice balance, updates AmountApplied on credit memo
+  3. Issue refund: Debit Accounts Receivable, Credit Cash/Bank
+- Status: Open, PartiallyApplied, Applied, Refunded, Voided
+- Credit memos have line items (products/services) just like invoices
+- Use dab_query on "creditmemos" to check credit balances (includes BalanceRemaining)
+- Use dab_query on "creditapplications" to see how credits were applied to invoices
+- Use dab_query on "refunds" to check refund status
+- Help users understand: credits reduce what the customer owes, refunds return cash
+
+IMPORT & SYNC:
+The Import page consolidates bank import, CSV import, and match review into one tabbed interface:
+- Located under Import & Sync > Import
+- Three tabs: Bank Import, CSV Import, Review Matches
+- Bank Connections: manage Plaid bank links (separate page)
+- Bank Rules: auto-categorization rules for imported transactions (separate page)
+- Old URLs (/bank-import, /bank-import/matches) redirect to the unified Import page
+
 AUTO-CREATION GUIDELINES:
 - Bank statements: Create bank account automatically, mention what was created
 - Credit cards: Create liability account automatically with last 4 digits
