@@ -38,11 +38,47 @@ export default function NewCustomerDeposit() {
 
   const mutation = useMutation({
     mutationFn: async (data: CustomerDepositFormData) => {
+      // Create journal entry for the deposit (Debit Cash, Credit Unearned Revenue)
+      let journalEntryId: string | null = null;
+
+      if (data.DepositAccountId && data.LiabilityAccountId && data.Amount > 0) {
+        // Create journal entry header
+        const jeResponse = await api.post('/journalentries', {
+          Reference: `DEP-${data.DepositNumber}`,
+          TransactionDate: data.DepositDate,
+          Description: `Customer deposit ${data.DepositNumber}`,
+          Status: 'Posted',
+          CreatedBy: 'system',
+        });
+        journalEntryId = jeResponse.data.Id || jeResponse.data.value?.[0]?.Id;
+
+        if (journalEntryId) {
+          // Debit Cash/Bank account (Asset increases)
+          await api.post('/journalentrylines', {
+            JournalEntryId: journalEntryId,
+            AccountId: data.DepositAccountId,
+            Description: `Deposit received - ${data.DepositNumber}`,
+            Debit: data.Amount,
+            Credit: 0,
+          });
+
+          // Credit Unearned Revenue (Liability increases)
+          await api.post('/journalentrylines', {
+            JournalEntryId: journalEntryId,
+            AccountId: data.LiabilityAccountId,
+            Description: `Deposit received - ${data.DepositNumber}`,
+            Debit: 0,
+            Credit: data.Amount,
+          });
+        }
+      }
+
       // Create the deposit
       const depositData = {
         ...data,
         Status: 'Open',
         AmountApplied: 0,
+        JournalEntryId: journalEntryId,
         // Convert empty strings to null for optional UUID fields
         ProjectId: data.ProjectId || null,
         EstimateId: data.EstimateId || null,

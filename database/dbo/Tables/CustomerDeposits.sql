@@ -28,9 +28,11 @@ CREATE TABLE [dbo].[CustomerDeposits]
     CONSTRAINT [FK_CustomerDeposits_Customers] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers]([Id]),
     CONSTRAINT [FK_CustomerDeposits_DepositAccount] FOREIGN KEY ([DepositAccountId]) REFERENCES [dbo].[Accounts]([Id]),
     CONSTRAINT [FK_CustomerDeposits_LiabilityAccount] FOREIGN KEY ([LiabilityAccountId]) REFERENCES [dbo].[Accounts]([Id]),
+    CONSTRAINT [FK_CustomerDeposits_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id]),
     CONSTRAINT [FK_CustomerDeposits_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
     CONSTRAINT [FK_CustomerDeposits_Estimates] FOREIGN KEY ([EstimateId]) REFERENCES [dbo].[Estimates]([Id]),
-    CONSTRAINT [CK_CustomerDeposits_Status] CHECK ([Status] IN ('Open', 'PartiallyApplied', 'Applied', 'Refunded'))
+    CONSTRAINT [CK_CustomerDeposits_Status] CHECK ([Status] IN ('Open', 'PartiallyApplied', 'Applied', 'Refunded')),
+    CONSTRAINT [CK_CustomerDeposits_AmountApplied] CHECK ([AmountApplied] >= 0 AND [AmountApplied] <= [Amount])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[CustomerDeposits_History]))
 GO
