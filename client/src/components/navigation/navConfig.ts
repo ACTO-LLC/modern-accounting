@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileMinus, Car, ListFilter, Banknote, Mail, History, Calendar, PiggyBank } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileMinus, Car, ListFilter, Banknote, Mail, History, Calendar, PiggyBank, FileX } from 'lucide-react';
 import { FeatureKey } from '../../contexts/FeatureFlagsContext';
 
 export interface NavItem {
@@ -48,6 +48,7 @@ export const navigationConfig: NavEntry[] = [
       { id: 'sales-receipts', name: 'Sales Receipts', href: '/sales-receipts', icon: Banknote, featureKey: 'sales_receipts', visibilityFlag: 'sales_receipts' },
       { id: 'estimates', name: 'Estimates', href: '/estimates', icon: ClipboardList, featureKey: 'estimates' },
       { id: 'customer-deposits', name: 'Customer Deposits', href: '/customer-deposits', icon: PiggyBank },
+      { id: 'credit-memos', name: 'Credit Memos', href: '/credit-memos', icon: FileX },
     ],
   },
 
