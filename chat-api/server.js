@@ -930,7 +930,22 @@ Note: QBO line items are embedded in parent objects (Invoice.Line), not separate
 WHEN TO USE WHICH:
 - For ACTO/Modern Accounting data → use dab_query
 - For QuickBooks Online data → use qbo_query or qbo_get_invoice
-- For migration comparisons → query both systems`;
+- For migration comparisons → query both systems
+
+BALANCE SHEET DIAGNOSTICS:
+When users ask about balance sheet issues, out-of-balance problems, or accounting discrepancies, ALWAYS use the diagnostic tools to query actual data instead of giving generic advice:
+- diagnose_balance_sheet: Checks the balance sheet equation (Assets = Liabilities + Equity), finds accounts with wrong-sign balances, and summarizes totals by account type. Use this FIRST for any balance sheet question.
+- find_unbalanced_entries: Finds journal entries where debits do not equal credits. Use this to identify specific problematic entries.
+
+Example questions that should trigger diagnostics:
+- "Why is our balance sheet out of balance?"
+- "Is the balance sheet correct?"
+- "Are there any accounting errors?"
+- "Check our books for issues"
+- "Why don't my assets match liabilities plus equity?"
+- "Find problems with our journal entries"
+
+ALWAYS run the diagnostic tools and report specific findings with actual numbers. Never give generic educational answers when the user is asking about THEIR data.`;
 
 
 
@@ -1661,6 +1676,31 @@ const tools = [
                     skip_duplicate_check: { type: 'boolean', description: 'Skip duplicate check if user confirmed they want to create anyway' }
                 },
                 required: ['name']
+            }
+        }
+    },
+    // ========== Balance Sheet Diagnostic Tools ==========
+    {
+        type: 'function',
+        function: {
+            name: 'diagnose_balance_sheet',
+            description: 'Diagnose balance sheet issues by querying actual account data. Checks the balance sheet equation (Assets = Liabilities + Equity), finds accounts with unexpected sign balances, and summarizes totals by account type. Use this when users ask "why is my balance sheet out of balance?" or similar questions about balance sheet problems.',
+            parameters: {
+                type: 'object',
+                properties: {}
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'find_unbalanced_entries',
+            description: 'Find journal entries where total debits do not equal total credits. These unbalanced entries are a common cause of balance sheet problems. Returns specific entry details so the user can fix them.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Max number of unbalanced entries to return (default 20)' }
+                }
             }
         }
     }
@@ -3954,6 +3994,214 @@ async function executeCreateVendorFromContact(params) {
 }
 
 // ============================================================================
+// Balance Sheet Diagnostic Tool Execution Functions
+// ============================================================================
+
+async function executeDiagnoseBalanceSheet() {
+    try {
+        // Fetch all accounts with their types and balances
+        const accountsResult = await dab.get('accounts', {
+            select: 'Id,Code,Name,AccountType,Balance',
+            first: 1000
+        });
+
+        if (!accountsResult.success) {
+            return { success: false, error: `Failed to fetch accounts: ${accountsResult.error}` };
+        }
+
+        const accounts = accountsResult.value || [];
+
+        if (accounts.length === 0) {
+            return { success: false, error: 'No accounts found in the chart of accounts. Please set up your chart of accounts first.' };
+        }
+
+        // Sum balances by account type
+        const typeTotals = {};
+        const wrongSignAccounts = [];
+
+        for (const acct of accounts) {
+            const type = acct.AccountType || 'Unknown';
+            const balance = Number(acct.Balance) || 0;
+
+            if (!typeTotals[type]) {
+                typeTotals[type] = { total: 0, count: 0, accounts: [] };
+            }
+            typeTotals[type].total += balance;
+            typeTotals[type].count += 1;
+
+            // Check for wrong-sign balances
+            // Assets and Expenses normally have debit (positive) balances
+            // Liabilities, Equity, and Revenue normally have credit (positive in our system means credit for these)
+            if (balance !== 0) {
+                const isDebitType = (type === 'Asset' || type === 'Expense');
+                const isCreditType = (type === 'Liability' || type === 'Equity' || type === 'Revenue');
+
+                if ((isDebitType && balance < 0) || (isCreditType && balance < 0)) {
+                    wrongSignAccounts.push({
+                        code: acct.Code,
+                        name: acct.Name,
+                        type: type,
+                        balance: balance,
+                        issue: isDebitType
+                            ? 'Negative balance on debit-normal account (Assets/Expenses should normally be positive)'
+                            : 'Negative balance on credit-normal account (may indicate reversed entries)'
+                    });
+                }
+            }
+        }
+
+        // Calculate balance sheet equation: Assets = Liabilities + Equity
+        const totalAssets = typeTotals['Asset']?.total || 0;
+        const totalLiabilities = typeTotals['Liability']?.total || 0;
+        const totalEquity = typeTotals['Equity']?.total || 0;
+        const totalRevenue = typeTotals['Revenue']?.total || 0;
+        const totalExpenses = typeTotals['Expense']?.total || 0;
+
+        const liabilitiesPlusEquity = totalLiabilities + totalEquity;
+        const difference = Math.round((totalAssets - liabilitiesPlusEquity) * 100) / 100;
+        const isBalanced = Math.abs(difference) < 0.01;
+
+        // Net income = Revenue - Expenses (this affects equity via retained earnings)
+        const netIncome = totalRevenue - totalExpenses;
+
+        return {
+            success: true,
+            balanceSheetEquation: {
+                totalAssets: Math.round(totalAssets * 100) / 100,
+                totalLiabilities: Math.round(totalLiabilities * 100) / 100,
+                totalEquity: Math.round(totalEquity * 100) / 100,
+                liabilitiesPlusEquity: Math.round(liabilitiesPlusEquity * 100) / 100,
+                difference: difference,
+                isBalanced: isBalanced
+            },
+            incomeStatement: {
+                totalRevenue: Math.round(totalRevenue * 100) / 100,
+                totalExpenses: Math.round(totalExpenses * 100) / 100,
+                netIncome: Math.round(netIncome * 100) / 100,
+                note: 'Net income flows into Equity via Retained Earnings. If year-end close has not been run, this may explain an equity imbalance.'
+            },
+            accountTypeSummary: Object.entries(typeTotals).map(([type, data]) => ({
+                type,
+                totalBalance: Math.round(data.total * 100) / 100,
+                accountCount: data.count
+            })),
+            wrongSignAccounts: wrongSignAccounts,
+            totalAccounts: accounts.length,
+            diagnosis: isBalanced
+                ? 'Balance sheet is balanced. Assets equal Liabilities plus Equity.'
+                : `Balance sheet is OUT OF BALANCE by ${formatCurrency(Math.abs(difference))}. Assets (${formatCurrency(totalAssets)}) do not equal Liabilities (${formatCurrency(totalLiabilities)}) + Equity (${formatCurrency(totalEquity)}) = ${formatCurrency(liabilitiesPlusEquity)}.`
+        };
+    } catch (error) {
+        console.error('Diagnose balance sheet error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeFindUnbalancedEntries(params) {
+    try {
+        const limit = params?.limit || 20;
+
+        // Fetch all journal entry lines with their entry IDs and amounts
+        const linesResult = await dab.get('journalentrylines', {
+            select: 'Id,JournalEntryId,AccountId,DebitAmount,CreditAmount,Description',
+            first: 5000
+        });
+
+        if (!linesResult.success) {
+            return { success: false, error: `Failed to fetch journal entry lines: ${linesResult.error}` };
+        }
+
+        const lines = linesResult.value || [];
+
+        if (lines.length === 0) {
+            return { success: true, message: 'No journal entry lines found.', unbalancedEntries: [], totalEntriesChecked: 0 };
+        }
+
+        // Group lines by JournalEntryId and sum debits/credits
+        const entrySums = {};
+        for (const line of lines) {
+            const entryId = line.JournalEntryId;
+            if (!entryId) continue;
+
+            if (!entrySums[entryId]) {
+                entrySums[entryId] = { totalDebits: 0, totalCredits: 0, lineCount: 0, lines: [] };
+            }
+            entrySums[entryId].totalDebits += Number(line.DebitAmount) || 0;
+            entrySums[entryId].totalCredits += Number(line.CreditAmount) || 0;
+            entrySums[entryId].lineCount += 1;
+            entrySums[entryId].lines.push({
+                lineId: line.Id,
+                accountId: line.AccountId,
+                debit: Number(line.DebitAmount) || 0,
+                credit: Number(line.CreditAmount) || 0,
+                description: line.Description
+            });
+        }
+
+        // Find entries where debits != credits
+        const unbalanced = [];
+        for (const [entryId, sums] of Object.entries(entrySums)) {
+            const diff = Math.round((sums.totalDebits - sums.totalCredits) * 100) / 100;
+            if (Math.abs(diff) >= 0.01) {
+                unbalanced.push({
+                    journalEntryId: entryId,
+                    totalDebits: Math.round(sums.totalDebits * 100) / 100,
+                    totalCredits: Math.round(sums.totalCredits * 100) / 100,
+                    difference: diff,
+                    lineCount: sums.lineCount,
+                    lines: sums.lines
+                });
+            }
+        }
+
+        // Sort by absolute difference descending
+        unbalanced.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
+
+        // Also fetch journal entry headers for the unbalanced ones to get dates/descriptions
+        const limitedUnbalanced = unbalanced.slice(0, limit);
+        if (limitedUnbalanced.length > 0) {
+            const entriesResult = await dab.get('journalentries', {
+                select: 'Id,EntryNumber,EntryDate,Description,Status',
+                first: 1000
+            });
+
+            if (entriesResult.success) {
+                const entriesMap = {};
+                for (const entry of (entriesResult.value || [])) {
+                    entriesMap[entry.Id] = entry;
+                }
+
+                // Enrich unbalanced entries with header info
+                for (const ub of limitedUnbalanced) {
+                    const header = entriesMap[ub.journalEntryId];
+                    if (header) {
+                        ub.entryNumber = header.EntryNumber;
+                        ub.entryDate = header.EntryDate;
+                        ub.description = header.Description;
+                        ub.status = header.Status;
+                    }
+                }
+            }
+        }
+
+        const totalEntries = Object.keys(entrySums).length;
+
+        return {
+            success: true,
+            totalEntriesChecked: totalEntries,
+            totalUnbalanced: unbalanced.length,
+            unbalancedEntries: limitedUnbalanced,
+            message: unbalanced.length === 0
+                ? `All ${totalEntries} journal entries are balanced (debits equal credits).`
+                : `Found ${unbalanced.length} unbalanced journal ${unbalanced.length === 1 ? 'entry' : 'entries'} out of ${totalEntries} total. These entries have debits that do not equal credits.`
+        };
+    } catch (error) {
+        console.error('Find unbalanced entries error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================================================
 // Function Dispatcher
 // ============================================================================
 
@@ -3981,7 +4229,9 @@ function getAllTools() {
             t.function.name.startsWith('get_onboarding') ||
             t.function.name.startsWith('update_onboarding') ||
             t.function.name.startsWith('list_') ||
-            t.function.name.startsWith('generate_')
+            t.function.name.startsWith('generate_') ||
+            t.function.name.startsWith('diagnose_') ||
+            t.function.name.startsWith('find_unbalanced')
         );
         // Put essential static tools FIRST so AI prefers them for migration tasks
         return [...essentialStaticTools, ...filteredDynamicTools];
@@ -4096,6 +4346,11 @@ async function executeFunction(name, args) {
             return executeCreateCustomerFromContact(args);
         case 'create_vendor_from_contact':
             return executeCreateVendorFromContact(args);
+        // Balance Sheet Diagnostic Tools
+        case 'diagnose_balance_sheet':
+            return executeDiagnoseBalanceSheet();
+        case 'find_unbalanced_entries':
+            return executeFindUnbalancedEntries(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }
