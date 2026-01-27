@@ -2999,6 +2999,259 @@
             "key-fields": [
                 "Id"
             ]
+        },
+        "creditmemos": {
+            "source": {
+                "object": "dbo.v_CreditMemos",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "AmountRefunded": "AmountRefunded",
+                "BalanceRemaining": "BalanceRemaining",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "JournalEntryReference": "JournalEntryReference",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "creditmemos_write": {
+            "source": "dbo.CreditMemos",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "CustomerId": "CustomerId",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "AmountRefunded": "AmountRefunded",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "creditmemolines": {
+            "source": {
+                "object": "dbo.v_CreditMemoLines",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "ProductServiceId": "ProductServiceId",
+                "ProductServiceName": "ProductServiceName",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId",
+                "AccountName": "AccountName",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "creditmemolines_write": {
+            "source": "dbo.CreditMemoLines",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "creditapplications": {
+            "source": {
+                "object": "dbo.v_CreditApplications",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "InvoiceId": "InvoiceId",
+                "InvoiceNumber": "InvoiceNumber",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedAt": "CreatedAt",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName"
+            }
+        },
+        "creditapplications_write": {
+            "source": "dbo.CreditApplications",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "InvoiceId": "InvoiceId",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "refunds": {
+            "source": {
+                "object": "dbo.v_Refunds",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RefundNumber": "RefundNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "CreditMemoId": "CreditMemoId",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "RefundDate": "RefundDate",
+                "Amount": "Amount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentAccountName": "PaymentAccountName",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedAt": "CreatedAt"
+            }
+        },
+        "refunds_write": {
+            "source": "dbo.Refunds",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RefundNumber": "RefundNumber",
+                "CustomerId": "CustomerId",
+                "CreditMemoId": "CreditMemoId",
+                "RefundDate": "RefundDate",
+                "Amount": "Amount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId"
+            },
+            "key-fields": [
+                "Id"
+            ]
         }
     }
 }
