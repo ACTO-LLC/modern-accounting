@@ -172,6 +172,141 @@
                 "Id"
             ]
         },
+        "customerdeposits": {
+            "source": {
+                "object": "dbo.v_CustomerDeposits",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "DepositNumber": "DepositNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "DepositDate": "DepositDate",
+                "Amount": "Amount",
+                "AmountApplied": "AmountApplied",
+                "BalanceRemaining": "BalanceRemaining",
+                "DepositAccountId": "DepositAccountId",
+                "DepositAccountName": "DepositAccountName",
+                "LiabilityAccountId": "LiabilityAccountId",
+                "LiabilityAccountName": "LiabilityAccountName",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "EstimateId": "EstimateId",
+                "EstimateNumber": "EstimateNumber",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "customerdeposits_write": {
+            "source": "dbo.CustomerDeposits",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "DepositNumber": "DepositNumber",
+                "CustomerId": "CustomerId",
+                "DepositDate": "DepositDate",
+                "Amount": "Amount",
+                "AmountApplied": "AmountApplied",
+                "DepositAccountId": "DepositAccountId",
+                "LiabilityAccountId": "LiabilityAccountId",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ProjectId": "ProjectId",
+                "EstimateId": "EstimateId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "depositapplications": {
+            "source": {
+                "object": "dbo.v_DepositApplications",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CustomerDepositId": "CustomerDepositId",
+                "DepositNumber": "DepositNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "InvoiceId": "InvoiceId",
+                "InvoiceNumber": "InvoiceNumber",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId",
+                "Memo": "Memo",
+                "CreatedAt": "CreatedAt"
+            }
+        },
+        "depositapplications_write": {
+            "source": "dbo.DepositApplications",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CustomerDepositId": "CustomerDepositId",
+                "InvoiceId": "InvoiceId",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId",
+                "Memo": "Memo"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
         "invoices": {
             "source": {
                 "object": "dbo.v_Invoices",
