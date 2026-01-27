@@ -28,7 +28,7 @@ import NewEstimate from './pages/NewEstimate';
 import EditEstimate from './pages/EditEstimate';
 import JournalEntries from './pages/JournalEntries';
 import NewJournalEntry from './pages/NewJournalEntry';
-import ImportTransactions from './pages/ImportTransactions';
+import UnifiedImport from './pages/UnifiedImport';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
 import EditCustomer from './pages/EditCustomer';
@@ -112,8 +112,6 @@ import EditVendorCredit from './pages/EditVendorCredit';
 import TaxForms from './pages/TaxForms';
 import W2Forms from './pages/W2Forms';
 import Form1099NEC from './pages/Form1099NEC';
-import BankImport from './pages/BankImport';
-import BankImportMatches from './pages/BankImportMatches';
 import BankImportHistory from './pages/BankImportHistory';
 import BankRules from './pages/BankRules';
 import VendorHierarchy from './pages/VendorHierarchy';
@@ -170,7 +168,7 @@ function AppContent() {
             <Route path="plaid-connections" element={<PlaidConnections />} />
             <Route path="journal-entries" element={<JournalEntries />} />
             <Route path="journal-entries/new" element={<NewJournalEntry />} />
-            <Route path="import" element={<ImportTransactions />} />
+            <Route path="import" element={<UnifiedImport />} />
             <Route path="review" element={<Navigate to="/transactions?view=review" replace />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<NewCustomer />} />
@@ -258,8 +256,8 @@ function AppContent() {
             <Route path="tax-forms" element={<TaxForms />} />
             <Route path="tax-forms/w2" element={<W2Forms />} />
             <Route path="tax-forms/1099-nec" element={<Form1099NEC />} />
-            <Route path="bank-import" element={<BankImport />} />
-            <Route path="bank-import/matches" element={<BankImportMatches />} />
+            <Route path="bank-import" element={<Navigate to="/import?tab=bank-import" replace />} />
+            <Route path="bank-import/matches" element={<Navigate to="/import?tab=review-matches" replace />} />
             <Route path="bank-import/history" element={<BankImportHistory />} />
             <Route path="bank-rules" element={<BankRules />} />
             <Route path="email-reminders" element={<EmailReminders />} />
