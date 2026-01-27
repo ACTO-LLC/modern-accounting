@@ -50,13 +50,16 @@ const statusConfig: Record<Deployment['status'], { label: string; color: string;
 };
 
 export function DeploymentScheduler({
-  deployments,
-  approvedEnhancements,
+  deployments: rawDeployments,
+  approvedEnhancements: rawApprovedEnhancements,
   isLoading,
   onSchedule,
   onCancel,
   onRefresh
 }: DeploymentSchedulerProps) {
+  // Defensive: ensure array props are always arrays
+  const deployments = Array.isArray(rawDeployments) ? rawDeployments : [];
+  const approvedEnhancements = Array.isArray(rawApprovedEnhancements) ? rawApprovedEnhancements : [];
   const [selectedEnhancement, setSelectedEnhancement] = useState<number | ''>('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('09:00');
