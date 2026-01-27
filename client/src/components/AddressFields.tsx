@@ -204,7 +204,7 @@ export default function AddressFields<T extends AddressFieldValues>({
           <p className="mt-1 text-sm text-amber-600">{error}</p>
         )}
         {getError('AddressLine1') && (
-          <p className="mt-1 text-sm text-red-600">{getError('AddressLine1')}</p>
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{getError('AddressLine1')}</p>
         )}
 
         {/* Suggestions dropdown */}
@@ -263,7 +263,7 @@ export default function AddressFields<T extends AddressFieldValues>({
             className={inputClassName}
           />
           {getError('AddressLine2') && (
-            <p className="mt-1 text-sm text-red-600">{getError('AddressLine2')}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{getError('AddressLine2')}</p>
           )}
         </div>
       )}
@@ -281,7 +281,7 @@ export default function AddressFields<T extends AddressFieldValues>({
             className={inputClassName}
           />
           {getError('City') && (
-            <p className="mt-1 text-sm text-red-600">{getError('City')}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{getError('City')}</p>
           )}
         </div>
 
@@ -301,7 +301,7 @@ export default function AddressFields<T extends AddressFieldValues>({
             ))}
           </select>
           {getError('State') && (
-            <p className="mt-1 text-sm text-red-600">{getError('State')}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{getError('State')}</p>
           )}
         </div>
 
@@ -318,7 +318,7 @@ export default function AddressFields<T extends AddressFieldValues>({
             className={inputClassName}
           />
           {getError('PostalCode') && (
-            <p className="mt-1 text-sm text-red-600">{getError('PostalCode')}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{getError('PostalCode')}</p>
           )}
         </div>
       </div>
@@ -337,7 +337,7 @@ export default function AddressFields<T extends AddressFieldValues>({
             className={inputClassName}
           />
           {getError('Country') && (
-            <p className="mt-1 text-sm text-red-600">{getError('Country')}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{getError('Country')}</p>
           )}
         </div>
       )}

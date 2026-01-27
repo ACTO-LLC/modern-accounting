@@ -134,17 +134,17 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
         <button onClick={() => navigate('/bills')} className="mr-4 text-gray-500 hover:text-gray-700">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label htmlFor="VendorId" className="block text-sm font-medium text-gray-700">Vendor</label>
+            <label htmlFor="VendorId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Vendor</label>
             <select
               id="VendorId"
               {...register('VendorId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select a vendor...</option>
               {vendors?.map((vendor) => (
@@ -153,49 +153,49 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                 </option>
               ))}
             </select>
-            {errors.VendorId && <p className="mt-1 text-sm text-red-600">{errors.VendorId.message}</p>}
+            {errors.VendorId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.VendorId.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="BillNumber" className="block text-sm font-medium text-gray-700">Bill Number</label>
+            <label htmlFor="BillNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bill Number</label>
             <input
               id="BillNumber"
               type="text"
               {...register('BillNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="BILL-001"
             />
-            {errors.BillNumber && <p className="mt-1 text-sm text-red-600">{errors.BillNumber.message}</p>}
+            {errors.BillNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BillNumber.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="BillDate" className="block text-sm font-medium text-gray-700">Bill Date</label>
+            <label htmlFor="BillDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bill Date</label>
             <input
               id="BillDate"
               type="date"
               {...register('BillDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.BillDate && <p className="mt-1 text-sm text-red-600">{errors.BillDate.message}</p>}
+            {errors.BillDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BillDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="DueDate" className="block text-sm font-medium text-gray-700">Due Date</label>
+            <label htmlFor="DueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
             <input
               id="DueDate"
               type="date"
               {...register('DueDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.DueDate && <p className="mt-1 text-sm text-red-600">{errors.DueDate.message}</p>}
+            {errors.DueDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.DueDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Terms" className="block text-sm font-medium text-gray-700">Payment Terms</label>
+            <label htmlFor="Terms" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Terms</label>
             <select
               id="Terms"
               {...register('Terms')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select terms...</option>
               <option value="Due on Receipt">Due on Receipt</option>
@@ -207,11 +207,11 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
           </div>
 
           <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700">Status</label>
+            <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
             <select
               id="Status"
               {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Draft">Draft</option>
               <option value="Open">Open</option>
@@ -219,16 +219,16 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
               <option value="Paid">Paid</option>
               <option value="Overdue">Overdue</option>
             </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>}
+            {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
           </div>
 
           <div className="sm:col-span-2">
-            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700">Memo</label>
+            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Memo</label>
             <textarea
               id="Memo"
               {...register('Memo')}
               rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="Add notes about this bill..."
             />
           </div>
@@ -237,7 +237,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
         {/* Line Items */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Line Items</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Line Items</h3>
             <button
               type="button"
               onClick={() => append({ AccountId: '', Description: '', Amount: 0 })}
@@ -255,7 +255,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                   <label className="block text-xs font-medium text-gray-500">Account</label>
                   <select
                     {...register(`Lines.${index}.AccountId`)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                   >
                     <option value="">Select account...</option>
                     {expenseAccounts.map((account) => (
@@ -272,7 +272,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                   <label className="block text-xs font-medium text-gray-500">Description</label>
                   <input
                     {...register(`Lines.${index}.Description`)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                     placeholder="Item description"
                   />
                 </div>
@@ -282,7 +282,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                     type="number"
                     step="0.01"
                     {...register(`Lines.${index}.Amount`, { valueAsNumber: true })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                   />
                   {errors.Lines?.[index]?.Amount && (
                     <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Amount?.message}</p>
@@ -300,7 +300,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
             ))}
           </div>
           {errors.Lines && typeof errors.Lines === 'object' && 'message' in errors.Lines && (
-            <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.Lines.message}</p>
           )}
         </div>
 
@@ -336,7 +336,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
           <button
             type="button"
             onClick={() => navigate('/bills')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

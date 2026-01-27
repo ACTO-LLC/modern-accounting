@@ -116,33 +116,33 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
         <button onClick={() => navigate('/purchase-orders')} className="mr-4 text-gray-500 hover:text-gray-700">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label htmlFor="PONumber" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="PONumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               PO Number <span className="text-red-500">*</span>
             </label>
             <input
               id="PONumber"
               type="text"
               {...register('PONumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="PO-001"
             />
-            {errors.PONumber && <p className="mt-1 text-sm text-red-600">{errors.PONumber.message}</p>}
+            {errors.PONumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PONumber.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="VendorId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="VendorId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Vendor <span className="text-red-500">*</span>
             </label>
             <select
               id="VendorId"
               {...register('VendorId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select a vendor...</option>
               {vendors?.map((vendor) => (
@@ -151,41 +151,41 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                 </option>
               ))}
             </select>
-            {errors.VendorId && <p className="mt-1 text-sm text-red-600">{errors.VendorId.message}</p>}
+            {errors.VendorId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.VendorId.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="PODate" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="PODate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               PO Date <span className="text-red-500">*</span>
             </label>
             <input
               id="PODate"
               type="date"
               {...register('PODate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.PODate && <p className="mt-1 text-sm text-red-600">{errors.PODate.message}</p>}
+            {errors.PODate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PODate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="ExpectedDate" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="ExpectedDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Expected Delivery Date
             </label>
             <input
               id="ExpectedDate"
               type="date"
               {...register('ExpectedDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.ExpectedDate && <p className="mt-1 text-sm text-red-600">{errors.ExpectedDate.message}</p>}
+            {errors.ExpectedDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ExpectedDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700">Status</label>
+            <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
             <select
               id="Status"
               {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Draft">Draft</option>
               <option value="Sent">Sent</option>
@@ -193,18 +193,18 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
               <option value="Partial">Partial</option>
               <option value="Cancelled">Cancelled</option>
             </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>}
+            {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
           </div>
         </div>
 
         {/* Notes */}
         <div>
-          <label htmlFor="Notes" className="block text-sm font-medium text-gray-700">Notes</label>
+          <label htmlFor="Notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
           <textarea
             id="Notes"
             rows={3}
             {...register('Notes')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             placeholder="Additional notes for this purchase order..."
           />
         </div>
@@ -212,7 +212,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
         {/* Line Items */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Line Items <span className="text-red-500">*</span>
             </h3>
             <button
@@ -268,7 +268,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                       </label>
                       <input
                         {...register(`Lines.${index}.Description`)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                         placeholder="Item description"
                       />
                       {errors.Lines?.[index]?.Description && (
@@ -284,7 +284,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                         step="0.0001"
                         min="0.0001"
                         {...register(`Lines.${index}.Quantity`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                       {errors.Lines?.[index]?.Quantity && (
                         <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Quantity?.message}</p>
@@ -299,7 +299,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                         step="0.01"
                         min="0"
                         {...register(`Lines.${index}.UnitPrice`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                       {errors.Lines?.[index]?.UnitPrice && (
                         <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.UnitPrice?.message}</p>
@@ -326,7 +326,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
             })}
           </div>
           {errors.Lines && typeof errors.Lines.message === 'string' && (
-            <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.Lines.message}</p>
           )}
         </div>
 
@@ -337,7 +337,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
           <button
             type="button"
             onClick={() => navigate('/purchase-orders')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

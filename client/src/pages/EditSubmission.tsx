@@ -183,7 +183,7 @@ export default function EditSubmission() {
           <button onClick={() => navigate('/submissions')} className="mr-4 text-gray-500 hover:text-gray-700">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-semibold text-gray-900">Edit Submission</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Edit Submission</h1>
         </div>
         <button
           onClick={handleDelete}
@@ -195,129 +195,129 @@ export default function EditSubmission() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit((data) => updateMutation.mutateAsync(data))} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit((data) => updateMutation.mutateAsync(data))} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         {/* Title */}
         <div>
-          <label htmlFor="Title" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="Title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Title <span className="text-red-500">*</span>
           </label>
           <input
             id="Title"
             type="text"
             {...register('Title')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
-          {errors.Title && <p className="mt-1 text-sm text-red-600">{errors.Title.message}</p>}
+          {errors.Title && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Title.message}</p>}
         </div>
 
         {/* Type, Priority, Status row */}
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label htmlFor="Type" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="Type" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Type <span className="text-red-500">*</span>
             </label>
             <select
               id="Type"
               {...register('Type')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Bug">Bug</option>
               <option value="Enhancement">Enhancement</option>
               <option value="Question">Question</option>
             </select>
-            {errors.Type && <p className="mt-1 text-sm text-red-600">{errors.Type.message}</p>}
+            {errors.Type && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Type.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Priority" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="Priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Priority
             </label>
             <select
               id="Priority"
               {...register('Priority')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Low">Low</option>
               <option value="Medium">Medium</option>
               <option value="High">High</option>
               <option value="Critical">Critical</option>
             </select>
-            {errors.Priority && <p className="mt-1 text-sm text-red-600">{errors.Priority.message}</p>}
+            {errors.Priority && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Priority.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Status
             </label>
             <select
               id="Status"
               {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Open">Open</option>
               <option value="InProgress">In Progress</option>
               <option value="Resolved">Resolved</option>
               <option value="Closed">Closed</option>
             </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>}
+            {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
           </div>
         </div>
 
         {/* Description */}
         <div>
-          <label htmlFor="Description" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Description
           </label>
           <textarea
             id="Description"
             rows={4}
             {...register('Description')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
-          {errors.Description && <p className="mt-1 text-sm text-red-600">{errors.Description.message}</p>}
+          {errors.Description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Description.message}</p>}
         </div>
 
         {/* Bug-specific fields */}
         {submissionType === 'Bug' && (
           <>
             <div>
-              <label htmlFor="StepsToReproduce" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="StepsToReproduce" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Steps to Reproduce
               </label>
               <textarea
                 id="StepsToReproduce"
                 rows={4}
                 {...register('StepsToReproduce')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               />
-              {errors.StepsToReproduce && <p className="mt-1 text-sm text-red-600">{errors.StepsToReproduce.message}</p>}
+              {errors.StepsToReproduce && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.StepsToReproduce.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="ExpectedBehavior" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="ExpectedBehavior" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Expected Behavior
                 </label>
                 <textarea
                   id="ExpectedBehavior"
                   rows={3}
                   {...register('ExpectedBehavior')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 />
-                {errors.ExpectedBehavior && <p className="mt-1 text-sm text-red-600">{errors.ExpectedBehavior.message}</p>}
+                {errors.ExpectedBehavior && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ExpectedBehavior.message}</p>}
               </div>
 
               <div>
-                <label htmlFor="ActualBehavior" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="ActualBehavior" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Actual Behavior
                 </label>
                 <textarea
                   id="ActualBehavior"
                   rows={3}
                   {...register('ActualBehavior')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 />
-                {errors.ActualBehavior && <p className="mt-1 text-sm text-red-600">{errors.ActualBehavior.message}</p>}
+                {errors.ActualBehavior && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ActualBehavior.message}</p>}
               </div>
             </div>
           </>
@@ -325,7 +325,7 @@ export default function EditSubmission() {
 
         {/* Screenshot Uploader */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Screenshots / Attachments
           </label>
           <ScreenshotUploader
@@ -346,7 +346,7 @@ export default function EditSubmission() {
           <button
             type="button"
             onClick={() => navigate('/submissions')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

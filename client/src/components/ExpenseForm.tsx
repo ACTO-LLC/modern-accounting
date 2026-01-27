@@ -224,13 +224,13 @@ export default function ExpenseForm({
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         {/* Receipt Upload Area */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Receipt(s)
           </label>
           <div
@@ -296,22 +296,22 @@ export default function ExpenseForm({
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {/* Date and Amount */}
           <div>
-            <label htmlFor="ExpenseDate" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="ExpenseDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Date
             </label>
             <input
               id="ExpenseDate"
               type="date"
               {...register('ExpenseDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
             {errors.ExpenseDate && (
-              <p className="mt-1 text-sm text-red-600">{errors.ExpenseDate.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ExpenseDate.message}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="Amount" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="Amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Amount
             </label>
             <div className="mt-1 relative rounded-md shadow-sm">
@@ -328,14 +328,14 @@ export default function ExpenseForm({
               />
             </div>
             {errors.Amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.Amount.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Amount.message}</p>
             )}
           </div>
 
           {/* Vendor Selection */}
           <div className="sm:col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Vendor / Payee
               </label>
               <button
@@ -377,13 +377,13 @@ export default function ExpenseForm({
 
           {/* Expense Category */}
           <div>
-            <label htmlFor="AccountId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="AccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Category / Account
             </label>
             <select
               id="AccountId"
               {...register('AccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select a category...</option>
               {expenseAccounts.map((account) => (
@@ -393,19 +393,19 @@ export default function ExpenseForm({
               ))}
             </select>
             {errors.AccountId && (
-              <p className="mt-1 text-sm text-red-600">{errors.AccountId.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.AccountId.message}</p>
             )}
           </div>
 
           {/* Payment Method */}
           <div>
-            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Payment Method
             </label>
             <select
               id="PaymentMethod"
               {...register('PaymentMethod')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select method...</option>
               <option value="Cash">Cash</option>
@@ -419,13 +419,13 @@ export default function ExpenseForm({
 
           {/* Payment Account */}
           <div>
-            <label htmlFor="PaymentAccountId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="PaymentAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Paid From Account
             </label>
             <select
               id="PaymentAccountId"
               {...register('PaymentAccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select account...</option>
               {paymentAccounts.map((account) => (
@@ -438,28 +438,28 @@ export default function ExpenseForm({
 
           {/* Reference */}
           <div>
-            <label htmlFor="Reference" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="Reference" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Reference / Check #
             </label>
             <input
               id="Reference"
               type="text"
               {...register('Reference')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="Check # or transaction ID"
             />
           </div>
 
           {/* Description */}
           <div className="sm:col-span-2">
-            <label htmlFor="Description" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Description
             </label>
             <textarea
               id="Description"
               {...register('Description')}
               rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="What was this expense for?"
             />
           </div>
@@ -493,13 +493,13 @@ export default function ExpenseForm({
           {/* Customer (for billable expenses) */}
           {isReimbursable && (
             <div>
-              <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Bill to Customer (optional)
               </label>
               <select
                 id="CustomerId"
                 {...register('CustomerId')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="">Select customer...</option>
                 {customers?.map((customer) => (
@@ -513,13 +513,13 @@ export default function ExpenseForm({
 
           {/* Project */}
           <div>
-            <label htmlFor="ProjectId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="ProjectId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Project (optional)
             </label>
             <select
               id="ProjectId"
               {...register('ProjectId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select project...</option>
               {projects?.map((project) => (
@@ -532,13 +532,13 @@ export default function ExpenseForm({
 
           {/* Class */}
           <div>
-            <label htmlFor="ClassId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="ClassId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Class (optional)
             </label>
             <select
               id="ClassId"
               {...register('ClassId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select class...</option>
               {classes?.map((cls) => (
@@ -555,7 +555,7 @@ export default function ExpenseForm({
           <button
             type="button"
             onClick={() => navigate('/expenses')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

@@ -64,9 +64,9 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Add New Account</h2>
+          <h2 className="text-xl font-bold dark:text-gray-100">Add New Account</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-6 w-6" />
           </button>
@@ -74,22 +74,22 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Account Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Name *</label>
             <input
               type="text"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="e.g. Chase Business Checking"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Account Type *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Type *</label>
             <select
               value={formData.subtype}
               onChange={e => setFormData({ ...formData, subtype: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Bank">Bank</option>
               <option value="Credit Card">Credit Card</option>
@@ -97,22 +97,22 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Account Number</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Number</label>
             <input
               type="text"
               value={formData.accountNumber}
               onChange={e => setFormData({ ...formData, accountNumber: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="e.g. 1234"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               rows={3}
             />
           </div>
@@ -120,7 +120,7 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
           <div className="flex justify-end space-x-3 mt-6">
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             >
               Cancel
             </button>

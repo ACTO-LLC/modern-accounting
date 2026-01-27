@@ -174,27 +174,27 @@ export default function ReceivePaymentForm({
           <button onClick={() => navigate(-1)} className="mr-4 text-gray-500 hover:text-gray-700">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
         </div>
         {headerActions && <div className="flex items-center">{headerActions}</div>}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label htmlFor="PaymentNumber" className="block text-sm font-medium text-gray-700">Payment Number</label>
+            <label htmlFor="PaymentNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Number</label>
             <input
               id="PaymentNumber"
               type="text"
               {...register('PaymentNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="PMT-001"
             />
-            {errors.PaymentNumber && <p className="mt-1 text-sm text-red-600">{errors.PaymentNumber.message}</p>}
+            {errors.PaymentNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PaymentNumber.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">Customer</label>
+            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Customer</label>
             <Controller
               name="CustomerId"
               control={control}
@@ -210,36 +210,36 @@ export default function ReceivePaymentForm({
           </div>
 
           <div>
-            <label htmlFor="PaymentDate" className="block text-sm font-medium text-gray-700">Payment Date</label>
+            <label htmlFor="PaymentDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Date</label>
             <input
               id="PaymentDate"
               type="date"
               {...register('PaymentDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.PaymentDate && <p className="mt-1 text-sm text-red-600">{errors.PaymentDate.message}</p>}
+            {errors.PaymentDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PaymentDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700">Payment Method</label>
+            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
             <select
               id="PaymentMethod"
               {...register('PaymentMethod')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               {PAYMENT_METHODS.map(method => (
                 <option key={method} value={method}>{method}</option>
               ))}
             </select>
-            {errors.PaymentMethod && <p className="mt-1 text-sm text-red-600">{errors.PaymentMethod.message}</p>}
+            {errors.PaymentMethod && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PaymentMethod.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="DepositAccountId" className="block text-sm font-medium text-gray-700">Deposit To Account</label>
+            <label htmlFor="DepositAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Deposit To Account</label>
             <select
               id="DepositAccountId"
               {...register('DepositAccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select an account</option>
               {bankAccounts?.map(account => (
@@ -248,11 +248,11 @@ export default function ReceivePaymentForm({
                 </option>
               ))}
             </select>
-            {errors.DepositAccountId && <p className="mt-1 text-sm text-red-600">{errors.DepositAccountId.message}</p>}
+            {errors.DepositAccountId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.DepositAccountId.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="TotalAmount" className="block text-sm font-medium text-gray-700">Total Amount</label>
+            <label htmlFor="TotalAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Amount</label>
             <div className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 p-2 text-lg font-semibold text-gray-900">
               ${calculatedTotal.toFixed(2)}
             </div>
@@ -260,12 +260,12 @@ export default function ReceivePaymentForm({
           </div>
 
           <div className="sm:col-span-2">
-            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700">Memo</label>
+            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Memo</label>
             <textarea
               id="Memo"
               {...register('Memo')}
               rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="Optional notes about this payment"
             />
           </div>
@@ -274,7 +274,7 @@ export default function ReceivePaymentForm({
         {/* Invoice Applications */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Apply to Invoices</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Apply to Invoices</h3>
           </div>
 
           {!watchedCustomerId ? (
@@ -348,7 +348,7 @@ export default function ReceivePaymentForm({
                             min="0"
                             max={field.InvoiceBalanceDue || undefined}
                             {...register(`Applications.${index}.AmountApplied`, { valueAsNumber: true })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                           />
                         </div>
                         <button
@@ -373,7 +373,7 @@ export default function ReceivePaymentForm({
           )}
 
           {errors.Applications && (
-            <p className="mt-2 text-sm text-red-600">{errors.Applications.message}</p>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.Applications.message}</p>
           )}
         </div>
 
@@ -393,7 +393,7 @@ export default function ReceivePaymentForm({
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

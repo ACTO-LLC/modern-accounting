@@ -53,91 +53,91 @@ export default function AccountForm({ initialValues, onSubmit, title, isSubmitti
         <button onClick={() => navigate('/accounts')} className="mr-4 text-gray-500 hover:text-gray-700">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="Code" className="block text-sm font-medium text-gray-700">Code *</label>
+            <label htmlFor="Code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Code *</label>
             <input
               id="Code"
               type="text"
               placeholder="e.g., 1000"
               {...register('Code')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.Code && <p className="mt-1 text-sm text-red-600">{errors.Code.message}</p>}
+            {errors.Code && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Code.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="AccountNumber" className="block text-sm font-medium text-gray-700">Account Number</label>
+            <label htmlFor="AccountNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Number</label>
             <input
               id="AccountNumber"
               type="text"
               placeholder="Optional"
               {...register('AccountNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.AccountNumber && <p className="mt-1 text-sm text-red-600">{errors.AccountNumber.message}</p>}
+            {errors.AccountNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.AccountNumber.message}</p>}
           </div>
         </div>
 
         <div>
-          <label htmlFor="Name" className="block text-sm font-medium text-gray-700">Name *</label>
+          <label htmlFor="Name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name *</label>
           <input
             id="Name"
             type="text"
             placeholder="e.g., Cash in Bank"
             {...register('Name')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
-          {errors.Name && <p className="mt-1 text-sm text-red-600">{errors.Name.message}</p>}
+          {errors.Name && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Name.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="Type" className="block text-sm font-medium text-gray-700">Type *</label>
+            <label htmlFor="Type" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type *</label>
             <select
               id="Type"
               {...register('Type')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select a type...</option>
               {accountTypes.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
-            {errors.Type && <p className="mt-1 text-sm text-red-600">{errors.Type.message}</p>}
+            {errors.Type && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Type.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Subtype" className="block text-sm font-medium text-gray-700">Subtype</label>
+            <label htmlFor="Subtype" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Subtype</label>
             <select
               id="Subtype"
               {...register('Subtype')}
               disabled={!selectedType}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 disabled:bg-gray-100"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">{selectedType ? 'Select a subtype...' : 'Select type first'}</option>
               {availableSubtypes.map(subtype => (
                 <option key={subtype} value={subtype}>{subtype}</option>
               ))}
             </select>
-            {errors.Subtype && <p className="mt-1 text-sm text-red-600">{errors.Subtype.message}</p>}
+            {errors.Subtype && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Subtype.message}</p>}
           </div>
         </div>
 
         <div>
-          <label htmlFor="Description" className="block text-sm font-medium text-gray-700">Description</label>
+          <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
           <textarea
             id="Description"
             rows={3}
             placeholder="Optional description of the account"
             {...register('Description')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
-          {errors.Description && <p className="mt-1 text-sm text-red-600">{errors.Description.message}</p>}
+          {errors.Description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Description.message}</p>}
         </div>
 
         <div className="flex items-center">
@@ -147,7 +147,7 @@ export default function AccountForm({ initialValues, onSubmit, title, isSubmitti
             {...register('IsActive')}
             className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
           />
-          <label htmlFor="IsActive" className="ml-2 block text-sm text-gray-700">
+          <label htmlFor="IsActive" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
             Active account
           </label>
         </div>
@@ -156,7 +156,7 @@ export default function AccountForm({ initialValues, onSubmit, title, isSubmitti
           <button
             type="button"
             onClick={() => navigate('/accounts')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>
