@@ -7,10 +7,12 @@ import {
   GridRowSelectionModel,
   GridRenderCellParams,
 } from '@mui/x-data-grid';
+import { ThemeProvider } from '@mui/material/styles';
 import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import dataGridTheme from '../lib/dataGridTheme';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
 import BulkActionsBar from '../components/transactions/BulkActionsBar';
 import PlaidLinkButton from '../components/PlaidLinkButton';
@@ -610,24 +612,26 @@ export default function UnifiedTransactions() {
 
       {/* DataGrid */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow" style={{ height: 600, width: '100%' }}>
-        <DataGrid
-          rows={transactions}
-          columns={columns}
-          getRowId={(row) => row.Id}
-          loading={transactionsLoading}
-          checkboxSelection
-          disableRowSelectionOnClick
-          rowSelectionModel={selectedIds}
-          onRowSelectionModelChange={setSelectedIds}
-          pageSizeOptions={[10, 25, 50, 100]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 25 } },
-            sorting: { sortModel: [{ field: 'TransactionDate', sort: 'desc' }] },
-          }}
-          localeText={{
-            noRowsLabel: 'No transactions found. Sync your bank feed or import a CSV to get started.',
-          }}
-        />
+        <ThemeProvider theme={dataGridTheme}>
+          <DataGrid
+            rows={transactions}
+            columns={columns}
+            getRowId={(row) => row.Id}
+            loading={transactionsLoading}
+            checkboxSelection
+            disableRowSelectionOnClick
+            rowSelectionModel={selectedIds}
+            onRowSelectionModelChange={setSelectedIds}
+            pageSizeOptions={[10, 25, 50, 100]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 25 } },
+              sorting: { sortModel: [{ field: 'TransactionDate', sort: 'desc' }] },
+            }}
+            localeText={{
+              noRowsLabel: 'No transactions found. Sync your bank feed or import a CSV to get started.',
+            }}
+          />
+        </ThemeProvider>
       </div>
 
       {/* Post Confirmation Modal */}

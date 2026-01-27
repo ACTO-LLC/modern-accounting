@@ -20,8 +20,9 @@ import {
   Info
 } from 'lucide-react';
 import { GridColDef, GridRowParams } from '@mui/x-data-grid';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import { DataGrid, GridPaginationModel } from '@mui/x-data-grid';
+import dataGridTheme from '../lib/dataGridTheme';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 
@@ -481,20 +482,6 @@ export default function AuditLog() {
       ),
     },
   ];
-
-  // MUI theme for DataGrid
-  const dataGridTheme = createTheme({
-    colorSchemes: {
-      light: {
-        palette: {
-          text: {
-            primary: '#111827',
-            secondary: '#374151',
-          },
-        },
-      },
-    },
-  });
 
   if (error) {
     return (
