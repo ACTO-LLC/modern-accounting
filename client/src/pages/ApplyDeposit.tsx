@@ -110,10 +110,74 @@ export default function ApplyDeposit() {
     }));
   };
 
+  // Fetch deposit details including account IDs
+  const { data: depositDetails } = useQuery({
+    queryKey: ['customerdeposit-details', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const response = await api.get<{ value: any[] }>(`/customerdeposits_write?$filter=Id eq ${id}`);
+      return response.data.value[0] || null;
+    },
+    enabled: !!id,
+  });
+
+  // Fetch Accounts Receivable account
+  const { data: arAccount } = useQuery({
+    queryKey: ['ar-account'],
+    queryFn: async () => {
+      const response = await api.get<{ value: any[] }>(
+        `/accounts?$filter=Type eq 'Asset' and (contains(Name,'Accounts Receivable') or contains(Name,'A/R'))&$top=1`
+      );
+      return response.data.value[0] || null;
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (!deposit || applications.length === 0) {
         throw new Error('No applications to process');
+      }
+
+      // Get the liability account (Unearned Revenue) from deposit details
+      const liabilityAccountId = depositDetails?.LiabilityAccountId;
+      const accountsReceivableId = arAccount?.Id;
+
+      if (!liabilityAccountId || !accountsReceivableId) {
+        console.warn('Missing account IDs for journal entry - skipping journal entry creation');
+      }
+
+      // Create a single journal entry for all applications
+      let journalEntryId: string | null = null;
+      if (liabilityAccountId && accountsReceivableId && totalToApply > 0) {
+        // Create journal entry header
+        const jeResponse = await api.post('/journalentries', {
+          Reference: `DEP-APPLY-${deposit.DepositNumber}`,
+          TransactionDate: applicationDate,
+          Description: `Apply deposit ${deposit.DepositNumber} to invoices`,
+          Status: 'Posted',
+          CreatedBy: 'system',
+        });
+        journalEntryId = jeResponse.data.Id || jeResponse.data.value?.[0]?.Id;
+
+        if (journalEntryId) {
+          // Debit Unearned Revenue (reduce liability)
+          await api.post('/journalentrylines', {
+            JournalEntryId: journalEntryId,
+            AccountId: liabilityAccountId,
+            Description: `Apply deposit ${deposit.DepositNumber}`,
+            Debit: totalToApply,
+            Credit: 0,
+          });
+
+          // Credit Accounts Receivable (reduce AR)
+          await api.post('/journalentrylines', {
+            JournalEntryId: journalEntryId,
+            AccountId: accountsReceivableId,
+            Description: `Apply deposit ${deposit.DepositNumber}`,
+            Debit: 0,
+            Credit: totalToApply,
+          });
+        }
       }
 
       // Create deposit applications and update invoice amounts
@@ -124,6 +188,7 @@ export default function ApplyDeposit() {
           InvoiceId: app.InvoiceId,
           AmountApplied: app.AmountToApply,
           ApplicationDate: applicationDate,
+          JournalEntryId: journalEntryId,
           Memo: memo || null,
         });
 

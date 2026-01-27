@@ -15,7 +15,8 @@ CREATE TABLE [dbo].[DepositApplications]
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
 
     CONSTRAINT [FK_DepositApplications_CustomerDeposits] FOREIGN KEY ([CustomerDepositId]) REFERENCES [dbo].[CustomerDeposits]([Id]) ON DELETE CASCADE,
-    CONSTRAINT [FK_DepositApplications_Invoices] FOREIGN KEY ([InvoiceId]) REFERENCES [dbo].[Invoices]([Id])
+    CONSTRAINT [FK_DepositApplications_Invoices] FOREIGN KEY ([InvoiceId]) REFERENCES [dbo].[Invoices]([Id]),
+    CONSTRAINT [FK_DepositApplications_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[DepositApplications_History]))
 GO
