@@ -101,6 +101,9 @@ import SalesByCustomer from './pages/reports/SalesByCustomer';
 import SalesByProduct from './pages/reports/SalesByProduct';
 import Payments from './pages/Payments';
 import NewPayment from './pages/NewPayment';
+import CustomerDeposits from './pages/CustomerDeposits';
+import NewCustomerDeposit from './pages/NewCustomerDeposit';
+import ApplyDeposit from './pages/ApplyDeposit';
 import BillPayments from './pages/BillPayments';
 import NewBillPayment from './pages/NewBillPayment';
 import VendorCredits from './pages/VendorCredits';
@@ -244,6 +247,9 @@ function AppContent() {
             <Route path="settings" element={<CompanySettings />} />
             <Route path="payments" element={<Payments />} />
             <Route path="payments/new" element={<NewPayment />} />
+            <Route path="customer-deposits" element={<CustomerDeposits />} />
+            <Route path="customer-deposits/new" element={<NewCustomerDeposit />} />
+            <Route path="customer-deposits/:id/apply" element={<ApplyDeposit />} />
             <Route path="bill-payments" element={<BillPayments />} />
             <Route path="bill-payments/new" element={<NewBillPayment />} />
             <Route path="vendor-credits" element={<VendorCredits />} />

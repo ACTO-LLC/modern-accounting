@@ -40,7 +40,9 @@
     <Build Include="dbo\Tables\Classes.sql" />
     <Build Include="dbo\Tables\Companies.sql" />
     <Build Include="dbo\Tables\CompanyFeatureFlags.sql" />
+    <Build Include="dbo\Tables\CustomerDeposits.sql" />
     <Build Include="dbo\Tables\Customers.sql" />
+    <Build Include="dbo\Tables\DepositApplications.sql" />
     <Build Include="dbo\Tables\Deployments.sql" />
     <Build Include="dbo\Tables\EmailLog.sql" />
     <Build Include="dbo\Tables\EmailSettings.sql" />
@@ -106,6 +108,8 @@
     <Build Include="dbo\Views\v_BankTransactionMatches.sql" />
     <Build Include="dbo\Views\v_BillPaymentApplications.sql" />
     <Build Include="dbo\Views\v_BillPayments.sql" />
+    <Build Include="dbo\Views\v_CustomerDeposits.sql" />
+    <Build Include="dbo\Views\v_DepositApplications.sql" />
     <Build Include="dbo\Views\v_Bills.sql" />
     <Build Include="dbo\Views\v_Employees.sql" />
     <Build Include="dbo\Views\v_EmployeeWorkStates.sql" />
