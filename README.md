@@ -432,53 +432,52 @@ See [SECURITY.md](SECURITY.md) for detailed secrets management documentation.
 
 ## UI Screenshots
 
-The Modern Accounting interface provides a clean, professional experience for managing your accounting operations.
+The Modern Accounting interface provides a clean, professional experience across desktop and mobile.
 
-### Main Features
-
-| Feature | Description |
-|---------|-------------|
-| **Dashboard** | Financial overview with charts and key metrics |
-| **Invoices** | Create, edit, and email professional invoices |
-| **Bills** | Track vendor payables and payments |
-| **Banking** | Import transactions and reconcile accounts |
-| **Payroll** | Manage employees, run payroll, generate pay stubs |
-| **Reports** | P&L, Balance Sheet, Trial Balance, AR Aging |
-
-### Adding Screenshots
-
-To add screenshots to this documentation:
-
-1. **Capture screenshots** of the main UI features
-2. **Save them** to `docs/assets/screenshots/`
-3. **Reference them** in this section:
-
-```markdown
 ### Dashboard
+Financial overview with key metrics, cash flow charts, pending actions, and recent activity.
+
 ![Dashboard](docs/assets/screenshots/dashboard.png)
 
+### Invoice List
+Full-featured DataGrid with filtering, sorting, status badges, and the Milton AI assistant.
+
+![Invoice List](docs/assets/screenshots/invoice-list.png)
+
 ### Invoice Creation
+Create professional invoices with line items, tax rates, and product/service selection.
+
 ![Invoice Form](docs/assets/screenshots/invoice-form.png)
-```
 
-<details>
-<summary><strong>Recommended Screenshots</strong></summary>
+### Employee Management
+Manage employee records including personal info, employment details, and compensation — with support for salary and hourly pay types.
 
-Capture these key screens for comprehensive documentation:
+![Employee Form](docs/assets/screenshots/employee-form.gif)
 
-- [ ] Dashboard with financial charts
-- [ ] Invoice list view (DataGrid)
-- [ ] Invoice/Estimate creation form
-- [ ] Bill management
-- [ ] Bank reconciliation workflow
-- [ ] Payroll pay run
-- [ ] Pay stub PDF preview
-- [ ] Reports (P&L, Balance Sheet)
-- [ ] Chart of Accounts
-- [ ] Customer/Vendor management
-- [ ] Admin feature request interface
+### Payroll
+Run payroll with automatic tax calculations for federal, state, and SS/Medicare across all employees.
 
-</details>
+![Payroll Run](docs/assets/screenshots/payroll-run.png)
+
+### Bank Connections (Plaid)
+Connect bank accounts via Plaid for automatic transaction import. Link accounts to your chart of accounts and sync balances.
+
+![Bank Connections](docs/assets/screenshots/bank-connections.png)
+
+### Bank Reconciliation
+Step-by-step reconciliation workflow — select account, enter statement details, and clear transactions.
+
+![Bank Reconciliation](docs/assets/screenshots/reconciliation.png)
+
+### Reports
+Access P&L, Balance Sheet, Cash Flow, Trial Balance, AR/AP Aging, Payroll Summary, Tax Forms, and more.
+
+![Reports](docs/assets/screenshots/reports.png)
+
+### Mobile Responsive
+Fully responsive design adapts to mobile devices with a collapsible sidebar and touch-friendly forms.
+
+![Mobile View](docs/assets/screenshots/mobile-responsive.png)
 
 ---
 
