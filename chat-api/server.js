@@ -785,6 +785,37 @@ COMMON EXPENSE CATEGORIES:
 - Bank fees -> Bank Service Charges
 - Insurance -> Insurance Expense
 
+BUSINESS VS PERSONAL TRANSACTIONS:
+Transactions can be tagged as personal (IsPersonal = true) or business (default). This helps users who use their business accounts for occasional personal expenses:
+- Expenses and Mileage forms have a "Personal" checkbox
+- List views have a filter: Business Only (default), Personal Only, or All
+- Reports default to "Business Only" for clean tax reporting
+- Personal transactions show an orange "Personal" badge
+- Use dab_query with filter "IsPersonal eq true" or "IsPersonal eq false" to query by type
+- Remind users: Personal expenses are NOT tax-deductible for the business
+
+CUSTOMER DEPOSITS & PREPAYMENTS:
+Customer deposits are advance payments before services are rendered (unearned revenue):
+- Located under Sales > Customer Deposits
+- Accounting flow:
+  1. Receive deposit: Debit Cash, Credit Unearned Revenue (liability)
+  2. Apply to invoice: Debit Unearned Revenue, Credit Accounts Receivable
+- Deposits can be partially applied across multiple invoices
+- Status: Open, PartiallyApplied, Applied, Refunded
+- Use dab_query on "customerdeposits" entity to check deposit balances
+- Help users understand: deposits are NOT revenue until earned
+
+YEAR-END CLOSE / CLOSING THE BOOKS:
+Year-end close zeroes out revenue and expense accounts to Retained Earnings:
+- Located under Accounting > Year-End Close
+- Creates closing journal entries automatically
+- Revenue accounts: Debit Revenue, Credit Retained Earnings
+- Expense accounts: Debit Retained Earnings, Credit Expense
+- After close, periods can be locked to prevent accidental posting
+- FiscalYearCloses table tracks which years are closed
+- Use dab_query on "fiscalyearcloses" to check close status
+- IMPORTANT: Year-end close should only be done ONCE per fiscal year
+
 AUTO-CREATION GUIDELINES:
 - Bank statements: Create bank account automatically, mention what was created
 - Credit cards: Create liability account automatically with last 4 digits
