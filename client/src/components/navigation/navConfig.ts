@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileUp, CheckSquare, FileMinus, Car, ListFilter, Banknote, Mail, History, Calendar, PiggyBank } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileMinus, Car, ListFilter, Banknote, Mail, History, Calendar, PiggyBank } from 'lucide-react';
 import { FeatureKey } from '../../contexts/FeatureFlagsContext';
 
 export interface NavItem {
@@ -123,10 +123,8 @@ export const navigationConfig: NavEntry[] = [
     icon: Building2,
     items: [
       { id: 'banking', name: 'Bank Connections', href: '/plaid-connections', icon: Building2 },
-      { id: 'bank-import', name: 'Bank Import', href: '/bank-import', icon: FileUp },
-      { id: 'bank-import-matches', name: 'Review Matches', href: '/bank-import/matches', icon: CheckSquare },
+      { id: 'import', name: 'Import', href: '/import', icon: Upload },
       { id: 'bank-rules', name: 'Bank Rules', href: '/bank-rules', icon: ListFilter },
-      { id: 'import', name: 'Import CSV', href: '/import', icon: Upload },
     ],
   },
 
