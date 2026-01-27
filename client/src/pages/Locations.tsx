@@ -285,12 +285,12 @@ export default function Locations() {
   if (error)
     return <div className="p-4 text-red-600">Error loading locations</div>;
 
-  const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2";
+  const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100";
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Locations</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Locations</h1>
         <button
           onClick={() => setShowForm(true)}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -302,9 +302,9 @@ export default function Locations() {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-white shadow sm:rounded-lg mb-6 p-6">
+        <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg mb-6 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               {editingLocation ? 'Edit Location' : 'New Location'}
             </h2>
             <button
@@ -320,7 +320,7 @@ export default function Locations() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Name *
                 </label>
@@ -339,17 +339,17 @@ export default function Locations() {
                   className={`${inputClass} ${
                     validationErrors.name
                       ? 'border-red-300 focus:border-red-500'
-                      : 'border-gray-300 focus:border-indigo-500'
+                      : 'border-gray-300 focus:border-indigo-500 dark:border-gray-600'
                   }`}
                 />
                 {validationErrors.name && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors.name}</p>
                 )}
               </div>
               <div>
                 <label
                   htmlFor="parentLocation"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Parent Location
                 </label>
@@ -376,12 +376,12 @@ export default function Locations() {
 
             {/* Address Fields */}
             <div className="border-t pt-4">
-              <h3 className="text-md font-medium text-gray-800 mb-3">Address</h3>
+              <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">Address</h3>
               <div className="space-y-4">
                 <div>
                   <label
                     htmlFor="addressLine1"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     Street Address
                   </label>
@@ -399,7 +399,7 @@ export default function Locations() {
                 <div>
                   <label
                     htmlFor="addressLine2"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     Address Line 2
                   </label>
@@ -418,7 +418,7 @@ export default function Locations() {
                   <div>
                     <label
                       htmlFor="city"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       City
                     </label>
@@ -435,7 +435,7 @@ export default function Locations() {
                   <div>
                     <label
                       htmlFor="state"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       State
                     </label>
@@ -457,7 +457,7 @@ export default function Locations() {
                   <div>
                     <label
                       htmlFor="postalCode"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       ZIP Code
                     </label>
@@ -482,7 +482,7 @@ export default function Locations() {
               <div>
                 <label
                   htmlFor="status"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Status
                 </label>
@@ -502,7 +502,7 @@ export default function Locations() {
             <div>
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Description
               </label>
@@ -520,7 +520,7 @@ export default function Locations() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -549,14 +549,14 @@ export default function Locations() {
             placeholder="Search locations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
         </div>
         <select
           data-testid="status-filter"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
         >
           <option value="all">All Status</option>
           <option value="Active">Active</option>
@@ -565,7 +565,7 @@ export default function Locations() {
       </div>
 
       {/* Table */}
-      <div className="bg-white shadow overflow-x-auto sm:rounded-lg">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

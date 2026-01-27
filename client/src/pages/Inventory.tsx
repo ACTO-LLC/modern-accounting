@@ -311,7 +311,7 @@ export default function Inventory() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Inventory Management</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Inventory Management</h1>
         <Link
           to="/products-services/new"
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
@@ -323,7 +323,7 @@ export default function Inventory() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center">
             <Box className="w-8 h-8 text-indigo-500 mr-3" />
             <div>
@@ -332,7 +332,7 @@ export default function Inventory() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center">
             <TrendingDown className="w-8 h-8 text-yellow-500 mr-3" />
             <div>
@@ -341,7 +341,7 @@ export default function Inventory() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center">
             <AlertTriangle className="w-8 h-8 text-red-500 mr-3" />
             <div>
@@ -350,7 +350,7 @@ export default function Inventory() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center">
             <Box className="w-8 h-8 text-green-500 mr-3" />
             <div>
@@ -362,7 +362,7 @@ export default function Inventory() {
       </div>
 
       {/* View Mode Tabs */}
-      <div className="bg-white shadow rounded-lg mb-4">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-4">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex" aria-label="Tabs">
             <button
@@ -403,17 +403,17 @@ export default function Inventory() {
       {viewMode === 'inventory' && (
         <>
           {/* Filters */}
-          <div className="bg-white shadow rounded-lg p-4 mb-4">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-4">
             <div className="flex flex-wrap gap-4">
               <div>
-                <label htmlFor="stockFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="stockFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Stock Status
                 </label>
                 <select
                   id="stockFilter"
                   value={stockFilter}
                   onChange={(e) => setStockFilter(e.target.value as StockFilter)}
-                  className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 >
                   <option value="All">All Items</option>
                   <option value="InStock">In Stock</option>
@@ -669,8 +669,8 @@ export default function Inventory() {
       {/* Adjustment Modal */}
       {showAdjustmentModal && selectedProduct && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
               Adjust Inventory: {selectedProduct.Name}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
@@ -688,7 +688,7 @@ export default function Inventory() {
 
             <form onSubmit={handleAdjustmentSubmit}>
               <div className="mb-4">
-                <label htmlFor="adjustmentQty" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="adjustmentQty" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Quantity Adjustment
                 </label>
                 <input
@@ -700,8 +700,8 @@ export default function Inventory() {
                     setAdjustmentQuantity(Number.isFinite(value) ? value : 0);
                     setValidationError(null);
                   }}
-                  className={`w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 ${
-                    validationError ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:text-gray-100 ${
+                    validationError ? 'border-red-300' : 'border-gray-300 dark:border-gray-600'
                   }`}
                   placeholder="Enter positive or negative number"
                   step="0.0001"
@@ -713,7 +713,7 @@ export default function Inventory() {
                 </p>
               </div>
               <div className="mb-4">
-                <label htmlFor="adjustmentNotes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="adjustmentNotes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Notes
                 </label>
                 <textarea
@@ -721,7 +721,7 @@ export default function Inventory() {
                   value={adjustmentNotes}
                   onChange={(e) => setAdjustmentNotes(e.target.value)}
                   rows={3}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                   placeholder="Reason for adjustment (e.g., shrinkage, damage, count correction)"
                   maxLength={500}
                 />

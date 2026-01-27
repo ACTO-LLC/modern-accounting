@@ -55,28 +55,28 @@ export default function ProjectForm({
         <button onClick={() => navigate('/projects')} className="mr-4 text-gray-500 hover:text-gray-700">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div>
-          <label htmlFor="Name" className="block text-sm font-medium text-gray-700">Project Name</label>
+          <label htmlFor="Name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Project Name</label>
           <input
             id="Name"
             type="text"
             {...register('Name')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
-          {errors.Name && <p className="mt-1 text-sm text-red-600">{errors.Name.message}</p>}
+          {errors.Name && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Name.message}</p>}
         </div>
 
         <div>
-          <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">Customer</label>
+          <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Customer</label>
           <select
             id="CustomerId"
             {...register('CustomerId')}
             disabled={customersLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           >
             <option value="">Select a customer...</option>
             {customers.map((customer) => (
@@ -85,83 +85,83 @@ export default function ProjectForm({
               </option>
             ))}
           </select>
-          {errors.CustomerId && <p className="mt-1 text-sm text-red-600">{errors.CustomerId.message}</p>}
+          {errors.CustomerId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.CustomerId.message}</p>}
         </div>
 
         <div>
-          <label htmlFor="Description" className="block text-sm font-medium text-gray-700">Description</label>
+          <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
           <textarea
             id="Description"
             rows={3}
             {...register('Description')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
-          {errors.Description && <p className="mt-1 text-sm text-red-600">{errors.Description.message}</p>}
+          {errors.Description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Description.message}</p>}
         </div>
 
         <div>
-          <label htmlFor="Status" className="block text-sm font-medium text-gray-700">Status</label>
+          <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
           <select
             id="Status"
             {...register('Status')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           >
             <option value="Active">Active</option>
             <option value="OnHold">On Hold</option>
             <option value="Completed">Completed</option>
           </select>
-          {errors.Status && <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>}
+          {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="StartDate" className="block text-sm font-medium text-gray-700">Start Date</label>
+            <label htmlFor="StartDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
             <input
               id="StartDate"
               type="date"
               {...register('StartDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.StartDate && <p className="mt-1 text-sm text-red-600">{errors.StartDate.message}</p>}
+            {errors.StartDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.StartDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="EndDate" className="block text-sm font-medium text-gray-700">End Date</label>
+            <label htmlFor="EndDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
             <input
               id="EndDate"
               type="date"
               {...register('EndDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.EndDate && <p className="mt-1 text-sm text-red-600">{errors.EndDate.message}</p>}
+            {errors.EndDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EndDate.message}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="BudgetedHours" className="block text-sm font-medium text-gray-700">Budgeted Hours</label>
+            <label htmlFor="BudgetedHours" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Budgeted Hours</label>
             <input
               id="BudgetedHours"
               type="number"
               step="0.5"
               min="0"
               {...register('BudgetedHours')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.BudgetedHours && <p className="mt-1 text-sm text-red-600">{errors.BudgetedHours.message}</p>}
+            {errors.BudgetedHours && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BudgetedHours.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="BudgetedAmount" className="block text-sm font-medium text-gray-700">Budgeted Amount ($)</label>
+            <label htmlFor="BudgetedAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Budgeted Amount ($)</label>
             <input
               id="BudgetedAmount"
               type="number"
               step="0.01"
               min="0"
               {...register('BudgetedAmount')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.BudgetedAmount && <p className="mt-1 text-sm text-red-600">{errors.BudgetedAmount.message}</p>}
+            {errors.BudgetedAmount && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BudgetedAmount.message}</p>}
           </div>
         </div>
 
@@ -169,7 +169,7 @@ export default function ProjectForm({
           <button
             type="button"
             onClick={() => navigate('/projects')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

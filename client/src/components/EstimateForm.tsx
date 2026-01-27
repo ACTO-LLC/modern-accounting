@@ -97,27 +97,27 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
         <button onClick={() => navigate('/estimates')} className="mr-4 text-gray-500 hover:text-gray-700">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label htmlFor="EstimateNumber" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="EstimateNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Estimate Number <span className="text-red-500">*</span>
             </label>
             <input
               id="EstimateNumber"
               type="text"
               {...register('EstimateNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="EST-001"
             />
-            {errors.EstimateNumber && <p className="mt-1 text-sm text-red-600">{errors.EstimateNumber.message}</p>}
+            {errors.EstimateNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EstimateNumber.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Customer <span className="text-red-500">*</span>
             </label>
             <Controller
@@ -135,37 +135,37 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
           </div>
 
           <div>
-            <label htmlFor="IssueDate" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="IssueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Issue Date <span className="text-red-500">*</span>
             </label>
             <input
               id="IssueDate"
               type="date"
               {...register('IssueDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.IssueDate && <p className="mt-1 text-sm text-red-600">{errors.IssueDate.message}</p>}
+            {errors.IssueDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.IssueDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="ExpirationDate" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="ExpirationDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Expiration Date
             </label>
             <input
               id="ExpirationDate"
               type="date"
               {...register('ExpirationDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.ExpirationDate && <p className="mt-1 text-sm text-red-600">{errors.ExpirationDate.message}</p>}
+            {errors.ExpirationDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ExpirationDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700">Status</label>
+            <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
             <select
               id="Status"
               {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Draft">Draft</option>
               <option value="Sent">Sent</option>
@@ -174,18 +174,18 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
               <option value="Expired">Expired</option>
               <option value="Converted">Converted</option>
             </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>}
+            {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
           </div>
         </div>
 
         {/* Notes */}
         <div>
-          <label htmlFor="Notes" className="block text-sm font-medium text-gray-700">Notes</label>
+          <label htmlFor="Notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
           <textarea
             id="Notes"
             rows={3}
             {...register('Notes')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             placeholder="Additional notes for this estimate..."
           />
         </div>
@@ -193,7 +193,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
         {/* Line Items */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Line Items <span className="text-red-500">*</span>
             </h3>
             <button
@@ -245,7 +245,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                       </label>
                       <input
                         {...register(`Lines.${index}.Description`)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                         placeholder="Item description"
                       />
                       {errors.Lines?.[index]?.Description && (
@@ -261,7 +261,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                         step="0.0001"
                         min="0.0001"
                         {...register(`Lines.${index}.Quantity`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                       {errors.Lines?.[index]?.Quantity && (
                         <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Quantity?.message}</p>
@@ -276,7 +276,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                         step="0.01"
                         min="0"
                         {...register(`Lines.${index}.UnitPrice`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                       {errors.Lines?.[index]?.UnitPrice && (
                         <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.UnitPrice?.message}</p>
@@ -303,7 +303,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
             })}
           </div>
           {errors.Lines && typeof errors.Lines.message === 'string' && (
-            <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.Lines.message}</p>
           )}
         </div>
 
@@ -314,7 +314,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
           <button
             type="button"
             onClick={() => navigate('/estimates')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>
