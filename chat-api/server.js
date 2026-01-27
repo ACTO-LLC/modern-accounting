@@ -4032,7 +4032,10 @@ async function executeDiagnoseBalanceSheet() {
             // Check for wrong-sign balances
             // Assets and Expenses normally have debit (positive) balances
             // Liabilities, Equity, and Revenue normally have credit (positive in our system means credit for these)
-            if (balance !== 0) {
+            // Skip known contra accounts that legitimately carry opposite-sign balances
+            const contraAccountPatterns = /accumulated depreciation|allowance for|sales returns|sales discounts|owner.s draw|purchase returns/i;
+            const isContraAccount = contraAccountPatterns.test(acct.Name || '');
+            if (balance !== 0 && !isContraAccount) {
                 const isDebitType = (type === 'Asset' || type === 'Expense');
                 const isCreditType = (type === 'Liability' || type === 'Equity' || type === 'Revenue');
 
@@ -4099,13 +4102,32 @@ async function executeDiagnoseBalanceSheet() {
 
 async function executeFindUnbalancedEntries(params) {
     try {
-        const limit = params?.limit || 20;
+        const limit = Math.min(Math.max(parseInt(params?.limit) || 20, 1), 100);
 
         // Fetch all journal entry lines with their entry IDs and amounts
-        const linesResult = await dab.get('journalentrylines', {
-            select: 'Id,JournalEntryId,AccountId,DebitAmount,CreditAmount,Description',
-            first: 5000
-        });
+        // Use fetchAll to handle datasets larger than a single page
+        const allLines = [];
+        let pageSize = 5000;
+        let offset = 0;
+        let hasMore = true;
+        while (hasMore) {
+            const linesPage = await dab.get('journalentrylines', {
+                select: 'Id,JournalEntryId,AccountId,DebitAmount,CreditAmount,Description',
+                first: pageSize,
+                offset: offset
+            });
+            if (!linesPage.success) {
+                return { success: false, error: `Failed to fetch journal entry lines: ${linesPage.error}` };
+            }
+            const pageData = linesPage.value || [];
+            allLines.push(...pageData);
+            if (pageData.length < pageSize) {
+                hasMore = false;
+            } else {
+                offset += pageSize;
+            }
+        }
+        const linesResult = { success: true, value: allLines };
 
         if (!linesResult.success) {
             return { success: false, error: `Failed to fetch journal entry lines: ${linesResult.error}` };
@@ -4157,13 +4179,28 @@ async function executeFindUnbalancedEntries(params) {
         // Sort by absolute difference descending
         unbalanced.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
 
-        // Also fetch journal entry headers for the unbalanced ones to get dates/descriptions
+        // Also fetch journal entry headers and account names for the unbalanced ones
         const limitedUnbalanced = unbalanced.slice(0, limit);
         if (limitedUnbalanced.length > 0) {
-            const entriesResult = await dab.get('journalentries', {
-                select: 'Id,EntryNumber,EntryDate,Description,Status',
-                first: 1000
-            });
+            // Fetch entry headers and accounts in parallel
+            const [entriesResult, accountsResult] = await Promise.all([
+                dab.get('journalentries', {
+                    select: 'Id,EntryNumber,EntryDate,Description,Status',
+                    first: 1000
+                }),
+                dab.get('accounts', {
+                    select: 'Id,Code,Name',
+                    first: 1000
+                })
+            ]);
+
+            // Build account lookup map
+            const accountsMap = {};
+            if (accountsResult.success) {
+                for (const acct of (accountsResult.value || [])) {
+                    accountsMap[acct.Id] = { code: acct.Code, name: acct.Name };
+                }
+            }
 
             if (entriesResult.success) {
                 const entriesMap = {};
@@ -4171,7 +4208,7 @@ async function executeFindUnbalancedEntries(params) {
                     entriesMap[entry.Id] = entry;
                 }
 
-                // Enrich unbalanced entries with header info
+                // Enrich unbalanced entries with header info and account names
                 for (const ub of limitedUnbalanced) {
                     const header = entriesMap[ub.journalEntryId];
                     if (header) {
@@ -4179,6 +4216,14 @@ async function executeFindUnbalancedEntries(params) {
                         ub.entryDate = header.EntryDate;
                         ub.description = header.Description;
                         ub.status = header.Status;
+                    }
+                    // Add account names to lines
+                    for (const line of ub.lines) {
+                        const acct = accountsMap[line.accountId];
+                        if (acct) {
+                            line.accountCode = acct.code;
+                            line.accountName = acct.name;
+                        }
                     }
                 }
             }
