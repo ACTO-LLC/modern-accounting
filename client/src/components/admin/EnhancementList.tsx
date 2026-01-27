@@ -48,8 +48,11 @@ const statusConfig: Record<Enhancement['status'], { label: string; color: string
   }
 };
 
-export function EnhancementList({ enhancements, isLoading, onRefresh, onSelectEnhancement }: EnhancementListProps) {
+export function EnhancementList({ enhancements: rawEnhancements, isLoading, onRefresh, onSelectEnhancement }: EnhancementListProps) {
   const [statusFilter, setStatusFilter] = useState<Enhancement['status'] | 'all'>('all');
+
+  // Defensive: ensure enhancements is always an array
+  const enhancements = Array.isArray(rawEnhancements) ? rawEnhancements : [];
 
   const filteredEnhancements = statusFilter === 'all'
     ? enhancements
