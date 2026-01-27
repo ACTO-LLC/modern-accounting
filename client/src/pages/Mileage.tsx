@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Plus, Car, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Car, BarChart3, User } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
@@ -19,8 +20,11 @@ interface MileageTrip {
   CustomerName: string;
   ProjectName: string;
   IsRoundTrip: boolean;
+  IsPersonal: boolean;
   Status: string;
 }
+
+type PersonalFilter = 'all' | 'business' | 'personal';
 
 const getCategoryColor = (category: string) => {
   switch (category) {
@@ -53,6 +57,19 @@ const getStatusColor = (status: string) => {
 };
 
 export default function Mileage() {
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
+
+  // Build endpoint with filter
+  const getEndpoint = () => {
+    let endpoint = '/mileagetrips?$orderby=TripDate desc';
+    if (personalFilter === 'business') {
+      endpoint += '&$filter=IsPersonal eq false';
+    } else if (personalFilter === 'personal') {
+      endpoint += '&$filter=IsPersonal eq true';
+    }
+    return endpoint;
+  };
+
   const columns: GridColDef[] = [
     {
       field: 'TripDate',
@@ -138,6 +155,20 @@ export default function Mileage() {
       ),
     },
     {
+      field: 'IsPersonal',
+      headerName: 'Type',
+      width: 100,
+      renderCell: (params) =>
+        params.value ? (
+          <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+            <User className="w-3 h-3 mr-1" />
+            Personal
+          </span>
+        ) : (
+          <span className="text-xs text-gray-500">Business</span>
+        ),
+    },
+    {
       field: 'DeductibleAmount',
       headerName: 'Deduction',
       width: 110,
@@ -185,7 +216,16 @@ export default function Mileage() {
             Log business trips and track mileage for tax deductions
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <select
+            value={personalFilter}
+            onChange={(e) => setPersonalFilter(e.target.value as PersonalFilter)}
+            className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border p-2"
+          >
+            <option value="business">Business Only</option>
+            <option value="personal">Personal Only</option>
+            <option value="all">All Trips</option>
+          </select>
           <Link
             to="/mileage/vehicles"
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
@@ -211,7 +251,8 @@ export default function Mileage() {
       </div>
 
       <RestDataGrid<MileageTrip>
-        endpoint="/mileagetrips?$orderby=TripDate desc"
+        key={personalFilter}
+        endpoint={getEndpoint()}
         columns={columns}
         editPath="/mileage/{id}/edit"
         initialPageSize={25}

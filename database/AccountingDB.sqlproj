@@ -122,6 +122,8 @@
     <Build Include="dbo\Views\v_TimeEntries.sql" />
     <Build Include="dbo\Views\v_VendorCreditApplications.sql" />
     <Build Include="dbo\Views\v_VendorCredits.sql" />
+    <Build Include="dbo\Views\v_SalesReceipts.sql" />
+    <Build Include="dbo\Views\v_SalesReceiptLines.sql" />
     <!-- Stored Procedures -->
     <Build Include="dbo\StoredProcedures\CreateInvoice.sql" />
     <Build Include="dbo\StoredProcedures\sp_LogAuditEvent.sql" />

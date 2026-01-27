@@ -21,6 +21,7 @@ SELECT
     mt.[Notes],
     mt.[IsRoundTrip],
     mt.[Status],
+    mt.[IsPersonal],
     mt.[CreatedBy],
     mt.[CreatedAt],
     mt.[UpdatedAt]

@@ -23,6 +23,7 @@ const mileageSchemaBase = z.object({
   ProjectId: z.string().uuid().nullish(),
   Notes: z.string().nullish(),
   IsRoundTrip: z.boolean(),
+  IsPersonal: z.boolean(),
   Status: z.enum(['Recorded', 'Pending', 'Approved', 'Voided']),
 });
 
@@ -121,6 +122,7 @@ export default function MileageForm({
       Status: 'Recorded',
       Category: 'Business',
       IsRoundTrip: false,
+      IsPersonal: false,
       Distance: 0,
       VehicleId: defaultVehicle?.Id || null,
       ...initialValues,
@@ -358,7 +360,7 @@ export default function MileageForm({
             )}
           </div>
 
-          <div className="flex items-end pb-2">
+          <div className="flex items-end pb-2 space-x-6">
             <div className="flex items-center">
               <input
                 id="IsRoundTrip"
@@ -368,6 +370,17 @@ export default function MileageForm({
               />
               <label htmlFor="IsRoundTrip" className="ml-2 block text-sm text-gray-900">
                 Round Trip (distance x 2)
+              </label>
+            </div>
+            <div className="flex items-center">
+              <input
+                id="IsPersonal"
+                type="checkbox"
+                {...register('IsPersonal')}
+                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+              />
+              <label htmlFor="IsPersonal" className="ml-2 block text-sm text-gray-900">
+                Personal Trip
               </label>
             </div>
           </div>

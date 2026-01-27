@@ -25,6 +25,7 @@ SELECT
     sr.[SourceSystem],
     sr.[SourceId],
     sr.[TenantId],
+    sr.[IsPersonal],
     sr.[CreatedAt],
     sr.[UpdatedAt]
 FROM

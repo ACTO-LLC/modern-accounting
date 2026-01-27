@@ -19,6 +19,7 @@ const expenseSchemaBase = z.object({
   Description: z.string().nullish(),
   Reference: z.string().nullish(),
   IsReimbursable: z.boolean(),
+  IsPersonal: z.boolean(),
   CustomerId: z.string().uuid().nullish(),
   ProjectId: z.string().uuid().nullish(),
   ClassId: z.string().uuid().nullish(),
@@ -141,6 +142,7 @@ export default function ExpenseForm({
       ExpenseDate: new Date().toISOString().split('T')[0],
       Status: 'Recorded',
       IsReimbursable: false,
+      IsPersonal: false,
       Amount: 0,
       ...initialValues,
     },
@@ -462,8 +464,19 @@ export default function ExpenseForm({
             />
           </div>
 
-          {/* Reimbursable Checkbox */}
-          <div className="sm:col-span-2">
+          {/* Personal and Reimbursable Checkboxes */}
+          <div className="sm:col-span-2 space-y-3">
+            <div className="flex items-center">
+              <input
+                id="IsPersonal"
+                type="checkbox"
+                {...register('IsPersonal')}
+                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+              />
+              <label htmlFor="IsPersonal" className="ml-2 block text-sm text-gray-900">
+                This is a personal expense (not business-related)
+              </label>
+            </div>
             <div className="flex items-center">
               <input
                 id="IsReimbursable"
