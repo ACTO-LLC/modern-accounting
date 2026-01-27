@@ -120,6 +120,8 @@ import NewSalesReceipt from './pages/NewSalesReceipt';
 import EditSalesReceipt from './pages/EditSalesReceipt';
 import EmailReminders from './pages/EmailReminders';
 import AuditLog from './pages/AuditLog';
+import AccountingPeriods from './pages/AccountingPeriods';
+import YearEndClose from './pages/YearEndClose';
 import ChatInterface from './components/ChatInterface';
 import OnboardingWelcome from './components/onboarding/OnboardingWelcome';
 import FeatureTour from './components/onboarding/FeatureTour';
@@ -256,6 +258,8 @@ function AppContent() {
             <Route path="bank-rules" element={<BankRules />} />
             <Route path="email-reminders" element={<EmailReminders />} />
             <Route path="admin/audit-log" element={<AuditLog />} />
+            <Route path="accounting-periods" element={<AccountingPeriods />} />
+            <Route path="year-end-close/:periodId" element={<YearEndClose />} />
           </Route>
         </Route>
       </Routes>
