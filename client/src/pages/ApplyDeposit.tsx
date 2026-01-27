@@ -142,8 +142,11 @@ export default function ApplyDeposit() {
       const liabilityAccountId = depositDetails?.LiabilityAccountId;
       const accountsReceivableId = arAccount?.Id;
 
-      if (!liabilityAccountId || !accountsReceivableId) {
-        console.warn('Missing account IDs for journal entry - skipping journal entry creation');
+      if (!liabilityAccountId) {
+        throw new Error('Deposit is missing Liability Account (Unearned Revenue). Please edit the deposit to add this account.');
+      }
+      if (!accountsReceivableId) {
+        throw new Error('No Accounts Receivable account found. Please create an A/R account in Chart of Accounts.');
       }
 
       // Create a single journal entry for all applications

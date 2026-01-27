@@ -16,7 +16,8 @@ CREATE TABLE [dbo].[DepositApplications]
 
     CONSTRAINT [FK_DepositApplications_CustomerDeposits] FOREIGN KEY ([CustomerDepositId]) REFERENCES [dbo].[CustomerDeposits]([Id]) ON DELETE CASCADE,
     CONSTRAINT [FK_DepositApplications_Invoices] FOREIGN KEY ([InvoiceId]) REFERENCES [dbo].[Invoices]([Id]),
-    CONSTRAINT [FK_DepositApplications_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id])
+    CONSTRAINT [FK_DepositApplications_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id]),
+    CONSTRAINT [CK_DepositApplications_AmountApplied] CHECK ([AmountApplied] > 0)
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[DepositApplications_History]))
 GO
