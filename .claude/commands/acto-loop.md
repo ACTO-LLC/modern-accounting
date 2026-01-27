@@ -86,14 +86,17 @@ Copilot responds in one of two ways:
 **Option A: Copilot creates a follow-up PR**
 - Copilot comments: "I've opened a new pull request, #NNN, to work on those changes"
 - Check the follow-up PR: `gh pr view <COPILOT_PR> --json title,body,additions,deletions,files`
-- If `[WIP]` in title: Wait and check back later, or proceed without it
-- If ready (no WIP):
+- **CRITICAL: If `[WIP]` in title, Copilot is still working!**
+  - NEVER close, merge, or take action on WIP PRs
+  - Poll every 30-60 seconds: `gh pr view <COPILOT_PR> --json title`
+  - Wait until `[WIP]` is removed from title before proceeding
+- Once ready (no WIP in title):
   - Review the changes Copilot proposes
-  - If changes are valid improvements:
+  - If changes are valid improvements (additions > 0):
     - Merge Copilot's PR first: `gh pr merge <COPILOT_PR> --squash --delete-branch`
     - Rebase your PR on main: `git fetch origin && git rebase origin/main`
     - Push updated branch: `git push --force-with-lease`
-  - If changes are review-only (0 additions/deletions): Note recommendations for follow-up
+  - If changes are empty (0 additions/0 deletions): Copilot found no issues, close with thanks
   - If changes are problematic: Close Copilot's PR with explanation
 
 **Option B: Copilot leaves inline comments**
@@ -159,6 +162,7 @@ ALL must pass before `<acto-complete>`:
 6. **Always do Phase 4** - PR review is not optional; it catches issues
 7. **NEVER create a PR without passing build** - Run `npm run build` in client/ and verify it succeeds with zero errors before committing. TypeScript errors that reach main break CI for everyone.
 8. **Database changes use sqlproj** - See "Database Schema Changes" section below
+9. **NEVER close or merge WIP PRs** - If a Copilot PR has `[WIP]` in the title, it means Copilot is still working. Wait for the WIP to be removed before taking any action. Closing a WIP PR interrupts Copilot's work.
 
 ## Database Schema Changes
 
