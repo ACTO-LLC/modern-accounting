@@ -58,6 +58,12 @@ export interface LearningPathItem {
   tailoredNote: string;
 }
 
+export interface DetailedProgress {
+  feature: Feature | LearningPathItem;
+  status: FeatureStatus;
+  isNext: boolean;
+}
+
 interface OnboardingContextType {
   // State
   isLoading: boolean;
@@ -70,6 +76,12 @@ interface OnboardingContextType {
   isFeatureAccessible: (featureKey: string) => boolean;
   isFeatureCompleted: (featureKey: string) => boolean;
   getFeatureStatus: (featureKey: string) => FeatureStatus;
+
+  // Progress helpers
+  getDetailedProgress: () => DetailedProgress[];
+  getNextRecommended: () => Feature | LearningPathItem | null;
+  getPrerequisitesFor: (featureKey: string) => string[];
+  getProgressSummary: () => { completed: number; total: number; percent: number };
 
   // Actions
   setAssessment: (experienceLevel: ExperienceLevel, primaryGoal: PrimaryGoal) => Promise<void>;
@@ -94,6 +106,7 @@ const MA_MCP_URL = import.meta.env.VITE_MA_MCP_URL || 'http://localhost:5002';
 // MCP client for calling MA MCP server
 class MaMcpClient {
   private sessionId: string | null = null;
+  private sessionPromise: Promise<string> | null = null;
 
   private async createSession(): Promise<string> {
     const response = await fetch(`${MA_MCP_URL}/mcp`, {
@@ -117,7 +130,15 @@ class MaMcpClient {
 
   private async ensureSession(): Promise<string> {
     if (this.sessionId) return this.sessionId;
-    return this.createSession();
+    // Prevent race condition: if session creation is in progress, wait for it
+    if (this.sessionPromise) return this.sessionPromise;
+
+    this.sessionPromise = this.createSession();
+    try {
+      return await this.sessionPromise;
+    } finally {
+      this.sessionPromise = null;
+    }
   }
 
   async callTool(toolName: string, args: Record<string, unknown>, retryOnSessionError = true): Promise<unknown> {
@@ -263,6 +284,36 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     return 'locked';
   }, [status]);
 
+  // Progress helpers
+  const getDetailedProgress = useCallback((): DetailedProgress[] => {
+    const featureList = learningPath.length > 0 ? learningPath : features;
+    return featureList.map(f => ({
+      feature: f,
+      status: getFeatureStatus(f.key),
+      isNext: status?.nextRecommended?.key === f.key
+    }));
+  }, [features, learningPath, getFeatureStatus, status?.nextRecommended?.key]);
+
+  const getNextRecommended = useCallback((): Feature | LearningPathItem | null => {
+    if (status?.nextRecommended) return status.nextRecommended;
+    // Fall back to first unlocked feature
+    const featureList = learningPath.length > 0 ? learningPath : features;
+    return featureList.find(f => getFeatureStatus(f.key) === 'unlocked') || null;
+  }, [status?.nextRecommended, learningPath, features, getFeatureStatus]);
+
+  const getPrerequisitesFor = useCallback((featureKey: string): string[] => {
+    const feature = features.find(f => f.key === featureKey);
+    return feature?.prerequisites || [];
+  }, [features]);
+
+  const getProgressSummary = useCallback(() => {
+    const featureList = learningPath.length > 0 ? learningPath : features;
+    const total = featureList.length;
+    const completed = featureList.filter(f => getFeatureStatus(f.key) === 'completed').length;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { completed, total, percent };
+  }, [features, learningPath, getFeatureStatus]);
+
   // Actions
   const setAssessment = useCallback(async (experienceLevel: ExperienceLevel, primaryGoal: PrimaryGoal) => {
     if (!userId) return;
@@ -368,6 +419,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     isFeatureAccessible,
     isFeatureCompleted,
     getFeatureStatus,
+    getDetailedProgress,
+    getNextRecommended,
+    getPrerequisitesFor,
+    getProgressSummary,
     setAssessment,
     unlockFeature,
     completeFeature,

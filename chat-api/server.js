@@ -29,6 +29,7 @@ import { mcpManager } from './mcp-client.js';
 import githubRoutes from './src/routes/github.js';
 import deploymentsRouter from './src/routes/deployments.js';
 import usersRouter from './src/routes/users.js';
+import taxRouter from './src/routes/tax.js';
 import { validateJWT, optionalJWT, requireRole, requirePermission, requireMFA } from './src/middleware/auth.js';
 import { resolveTenant, optionalTenant } from './src/middleware/tenant.js';
 import {
@@ -195,6 +196,9 @@ app.use('/api/users', validateJWT, resolveTenant, usersRouter);
 
 // GitHub/PR workflow API routes
 app.use('/api/github', githubRoutes);
+
+// Tax calculation API routes
+app.use('/api/tax', taxRouter);
 
 // Configure multer for file uploads
 const uploadDir = path.join(__dirname, 'uploads');
@@ -785,6 +789,53 @@ COMMON EXPENSE CATEGORIES:
 - Bank fees -> Bank Service Charges
 - Insurance -> Insurance Expense
 
+SALES TAX CALCULATION:
+The system supports three methods for determining sales tax on invoices:
+
+1. MANUAL: User selects a tax rate from configured rates (traditional dropdown)
+   - Best for: Simple businesses with one location and one tax rate
+   - Configured in: Settings > Tax Settings (choose "Manual Selection")
+
+2. ZIP-BASED API (Free): Automatic lookup based on customer postal code
+   - Uses Avalara's free TaxRates API
+   - ZIP-level accuracy (good for most small businesses)
+   - Rate limited to 100 requests/hour per company
+   - Results are cached (configurable duration)
+   - Falls back to configured default rate if limit exceeded
+   - Best for: Businesses selling to customers in multiple locations
+
+3. PAID API (Avalara AvaTax or TaxJar): Street-level accuracy
+   - Requires subscription with provider
+   - Handles complex tax scenarios (exemptions, special rules)
+   - Real-time jurisdiction-level rates
+   - Best for: High-volume businesses, multi-state sellers, complex tax needs
+
+HOW AUTOMATIC TAX WORKS ON INVOICES:
+- When a customer is selected, system checks their PostalCode/State/City
+- If auto-tax is enabled, system calls /api/tax/rate with customer address
+- Tax rate is auto-populated in the invoice form
+- User can still override with manual selection
+- Shows "Auto: X.XX%" badge when rate is automatically determined
+
+TAX SETTINGS CONFIGURATION:
+Located at Settings > Tax Settings. Users can:
+- Choose calculation method (manual/zip_api/paid_api)
+- Configure paid API credentials (encrypted storage)
+- Set fallback tax rate for API failures
+- Test API connections before saving
+- Set cache duration for API results
+
+DATABASE ENTITIES:
+- TaxCalculationSettings: Company tax config (method, API credentials, fallback rate)
+- TaxRateCache: Cached API results with expiration
+- TaxRates: Manually configured tax rates (for dropdown selection)
+
+COMMON TAX QUESTIONS:
+- "Do I need to collect sales tax?" -> Depends on nexus (physical/economic presence) in each state
+- "What rate should I use?" -> Check your state's tax website or use automatic lookup
+- "What about tax exemptions?" -> Mark customers as tax-exempt or specific items as non-taxable
+- "Multi-state selling?" -> Recommend ZIP-based or paid API for automatic rate determination
+
 BUSINESS VS PERSONAL TRANSACTIONS:
 Transactions can be tagged as personal (IsPersonal = true) or business (default). This helps users who use their business accounts for occasional personal expenses:
 - Expenses and Mileage forms have a "Personal" checkbox
@@ -906,6 +957,36 @@ Now migrating vendors..."
 [Call migrate_vendors] "Vendors migrated: 25 created.
 
 Your master data is now fully imported! Ready to migrate invoices when you are."
+
+USER TRAINING & LEARNING PATH:
+The system has a progressive learning feature that guides new users through features based on experience level and goals.
+
+When users ask about training or learning:
+- "What should I learn next?" -> Check their learning path progress and suggest the next unlocked feature
+- "How do I use [feature]?" -> Provide contextual help based on their experience level
+- "Show my progress" -> Summarize completed vs. remaining learning modules
+
+Learning modules (in typical order):
+1. Foundation: Customers, Vendors, Products & Services, Tax Settings
+2. Transactions: Invoices, Estimates, Bills, Expenses
+3. Accounting: Chart of Accounts, Journal Entries
+4. Advanced: Reports
+
+Feature status types:
+- Locked: Prerequisites not complete (explain what they need to do first)
+- Unlocked: Available to learn
+- In Progress: Currently learning
+- Completed: Mastered
+
+Example responses:
+- "Great progress! You've completed 4 of 11 modules. Your next step is learning about Invoices."
+- "To unlock Journal Entries, you'll first need to complete the Chart of Accounts module."
+- "Since you selected 'invoicing' as your primary goal, I recommend focusing on Customers → Products → Invoices."
+
+Encouragement guidelines:
+- Celebrate completions: "Excellent! You've mastered Customers. Ready for the next step?"
+- Acknowledge progress: "You're making great progress - already 40% through your learning journey!"
+- Offer help: "Would you like me to explain any concepts as you explore this feature?"
 
 GENERIC DATABASE ACCESS:
 You have direct database access via these MCP tools - use them for any data queries:
