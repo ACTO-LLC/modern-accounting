@@ -727,7 +727,13 @@ When helping users set up a new company, follow this conversational flow:
 
 4. PROACTIVE INSIGHTS: When data shows issues (overdue invoices, upcoming due dates, unusual patterns), proactively mention them to help the user.
 
-5. FILE PROCESSING & CONTACT EXTRACTION: When users upload images, paste text, or ask about extracting contacts:
+5. WEB RESEARCH: You can fetch content from public websites using the fetch_webpage tool. Use this when:
+   - User provides a URL and asks you to get information from it
+   - User says "check our website" or "get company info from [url]"
+   - You need to look up publicly available business information
+   Example: If user says "Get our company info from www.acme.com", use fetch_webpage to retrieve the page content.
+
+6. FILE PROCESSING & CONTACT EXTRACTION: When users upload images, paste text, or ask about extracting contacts:
 
    BUSINESS CARDS:
    - When user uploads a business card image, use extract_from_business_card with the file ID
@@ -1782,6 +1788,24 @@ const tools = [
                 properties: {
                     limit: { type: 'number', description: 'Max number of unbalanced entries to return (default 20)' }
                 }
+            }
+        }
+    },
+    // ========== Web Tools ==========
+    {
+        type: 'function',
+        function: {
+            name: 'fetch_webpage',
+            description: 'Fetch content from a public webpage URL. Use this to get company information, contact details, or other publicly available data from websites. Returns the text content of the page.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    url: {
+                        type: 'string',
+                        description: 'The URL to fetch (must be a valid http:// or https:// URL)'
+                    }
+                },
+                required: ['url']
             }
         }
     }
@@ -4075,6 +4099,151 @@ async function executeCreateVendorFromContact(params) {
 }
 
 // ============================================================================
+// Web Tool Execution Functions
+// ============================================================================
+
+// SSRF protection - block internal/private IPs and cloud metadata endpoints
+function isBlockedUrl(url) {
+    const hostname = new URL(url).hostname.toLowerCase();
+
+    // Block cloud metadata endpoints (AWS, Azure, GCP)
+    if (hostname === '169.254.169.254') return true;
+    if (hostname === 'metadata.google.internal') return true;
+
+    // Block localhost variants
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
+    if (hostname.endsWith('.localhost')) return true;
+
+    // Block private IP ranges
+    const ipMatch = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipMatch) {
+        const [, a, b] = ipMatch.map(Number);
+        if (a === 10) return true;                         // 10.0.0.0/8
+        if (a === 172 && b >= 16 && b <= 31) return true;  // 172.16.0.0/12
+        if (a === 192 && b === 168) return true;           // 192.168.0.0/16
+        if (a === 169 && b === 254) return true;           // 169.254.0.0/16 (link-local)
+        if (a === 0) return true;                          // 0.0.0.0/8
+    }
+
+    return false;
+}
+
+async function executeFetchWebpage(args) {
+    try {
+        const { url } = args;
+
+        // Validate URL
+        if (!url) {
+            return { success: false, error: 'URL is required' };
+        }
+
+        // Ensure it's a valid URL
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(url);
+            if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+                return { success: false, error: 'URL must use http:// or https://' };
+            }
+        } catch (e) {
+            return { success: false, error: `Invalid URL: ${e.message}` };
+        }
+
+        // SSRF protection - block internal/private addresses
+        if (isBlockedUrl(url)) {
+            console.warn(`Blocked SSRF attempt: ${url}`);
+            return { success: false, error: 'Cannot fetch internal or private addresses' };
+        }
+
+        console.log(`Fetching webpage: ${url}`);
+
+        // Fetch the page with a reasonable timeout and user-agent
+        const response = await axios.get(url, {
+            timeout: 15000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; Milton/1.0; +https://a-cto.com)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            },
+            maxRedirects: 5
+        });
+
+        // Extract text content from HTML
+        let content = response.data;
+
+        // If it's HTML, strip tags and clean up
+        if (typeof content === 'string' && content.includes('<')) {
+            // Remove script and style tags completely
+            content = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+            content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+            content = content.replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '');
+
+            // Extract title
+            const titleMatch = content.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            const title = titleMatch ? titleMatch[1].trim() : '';
+
+            // Extract meta description
+            const descMatch = content.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+            const description = descMatch ? descMatch[1].trim() : '';
+
+            // Remove all HTML tags
+            content = content.replace(/<[^>]+>/g, ' ');
+
+            // Clean up whitespace
+            content = content.replace(/\s+/g, ' ').trim();
+
+            // Decode HTML entities
+            content = content
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&copy;/g, '©')
+                .replace(/&reg;/g, '®')
+                .replace(/&trade;/g, '™');
+
+            // Truncate if too long (keep it reasonable for the AI)
+            if (content.length > 15000) {
+                content = content.substring(0, 15000) + '... [truncated]';
+            }
+
+            return {
+                success: true,
+                url: url,
+                title: title,
+                description: description,
+                content: content
+            };
+        }
+
+        // If it's not HTML, return as-is (might be JSON, text, etc.)
+        return {
+            success: true,
+            url: url,
+            content: typeof content === 'string' ? content : JSON.stringify(content)
+        };
+
+    } catch (error) {
+        console.error('Error fetching webpage:', error.message);
+
+        if (error.code === 'ENOTFOUND') {
+            return { success: false, error: `Could not find website: ${args.url}` };
+        }
+        if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+            return { success: false, error: `Website took too long to respond` };
+        }
+        if (error.response?.status === 403) {
+            return { success: false, error: `Website blocked access (403 Forbidden)` };
+        }
+        if (error.response?.status === 404) {
+            return { success: false, error: `Page not found (404)` };
+        }
+
+        return { success: false, error: `Failed to fetch webpage: ${error.message}` };
+    }
+}
+
+// ============================================================================
 // Balance Sheet Diagnostic Tool Execution Functions
 // ============================================================================
 
@@ -4357,7 +4526,8 @@ function getAllTools() {
             t.function.name.startsWith('list_') ||
             t.function.name.startsWith('generate_') ||
             t.function.name.startsWith('diagnose_') ||
-            t.function.name.startsWith('find_unbalanced')
+            t.function.name.startsWith('find_unbalanced') ||
+            t.function.name.startsWith('fetch_')
         );
         // Put essential static tools FIRST so AI prefers them for migration tasks
         return [...essentialStaticTools, ...filteredDynamicTools];
@@ -4477,6 +4647,9 @@ async function executeFunction(name, args) {
             return executeDiagnoseBalanceSheet();
         case 'find_unbalanced_entries':
             return executeFindUnbalancedEntries(args);
+        // Web Tools
+        case 'fetch_webpage':
+            return executeFetchWebpage(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }
