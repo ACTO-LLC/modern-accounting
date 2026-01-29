@@ -138,14 +138,25 @@ export default function LearningChecklist({
   }
 
   // Build feature list with status
+  // Handle union type: LearningPathItem may not have capabilities/spotlight
   const featuresWithStatus: FeatureWithStatus[] = (learningPath.length > 0 ? learningPath : features)
-    .map((f) => ({
-      ...f,
-      capabilities: 'capabilities' in f ? f.capabilities : [],
-      spotlight: 'spotlight' in f ? f.spotlight : undefined,
-      status: getFeatureStatus(f.key),
-      isNext: status?.nextRecommended?.key === f.key
-    }));
+    .map((f) => {
+      // Check if f is a Feature (has capabilities/spotlight) or LearningPathItem
+      const isFullFeature = 'capabilities' in f;
+      return {
+        key: f.key,
+        name: f.name,
+        menuPath: f.menuPath,
+        difficulty: f.difficulty,
+        category: f.category,
+        shortDescription: f.shortDescription,
+        prerequisites: f.prerequisites,
+        capabilities: isFullFeature ? (f as Feature).capabilities : [],
+        spotlight: isFullFeature ? (f as Feature).spotlight : undefined,
+        status: getFeatureStatus(f.key),
+        isNext: status?.nextRecommended?.key === f.key
+      };
+    });
 
   // Calculate progress
   const completedCount = featuresWithStatus.filter(f => f.status === 'completed').length;

@@ -106,6 +106,7 @@ const MA_MCP_URL = import.meta.env.VITE_MA_MCP_URL || 'http://localhost:5002';
 // MCP client for calling MA MCP server
 class MaMcpClient {
   private sessionId: string | null = null;
+  private sessionPromise: Promise<string> | null = null;
 
   private async createSession(): Promise<string> {
     const response = await fetch(`${MA_MCP_URL}/mcp`, {
@@ -129,7 +130,15 @@ class MaMcpClient {
 
   private async ensureSession(): Promise<string> {
     if (this.sessionId) return this.sessionId;
-    return this.createSession();
+    // Prevent race condition: if session creation is in progress, wait for it
+    if (this.sessionPromise) return this.sessionPromise;
+
+    this.sessionPromise = this.createSession();
+    try {
+      return await this.sessionPromise;
+    } finally {
+      this.sessionPromise = null;
+    }
   }
 
   async callTool(toolName: string, args: Record<string, unknown>, retryOnSessionError = true): Promise<unknown> {

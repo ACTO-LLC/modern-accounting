@@ -4,6 +4,9 @@ import { RefreshCw, CheckCircle, BookOpen, Eye } from 'lucide-react';
 import { resetSpotlights } from './SpotlightManager';
 import LearningChecklist from './LearningChecklist';
 
+// Default feature count fallback (should match actual feature count)
+const DEFAULT_FEATURE_COUNT = 11;
+
 export default function OnboardingSettings() {
   const { status, resetOnboarding, showAllFeatures, learningPath, isLoading } = useOnboarding();
   const [isResetting, setIsResetting] = useState(false);
@@ -51,8 +54,9 @@ export default function OnboardingSettings() {
   }
 
   const completedCount = status.completedFeatures.length;
-  const totalFeatures = learningPath.length || 10;
-  const progressPercent = Math.round((completedCount / totalFeatures) * 100);
+  // Use learningPath length if available, otherwise fallback to default
+  const totalFeatures = learningPath.length > 0 ? learningPath.length : DEFAULT_FEATURE_COUNT;
+  const progressPercent = totalFeatures > 0 ? Math.round((completedCount / totalFeatures) * 100) : 0;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-6">

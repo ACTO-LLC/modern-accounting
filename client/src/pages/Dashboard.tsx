@@ -21,6 +21,7 @@ import {
 import { formatDate } from '../lib/dateUtils';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import LearningChecklist from '../components/onboarding/LearningChecklist';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 interface JournalEntry {
   Id: string;
@@ -415,7 +416,19 @@ export default function Dashboard() {
         {/* Sidebar: Learning Progress, Pending Actions & Recent Activity */}
         <div className="space-y-8">
           {/* Learning Checklist - shown for users in training mode */}
-          {showLearningChecklist && <LearningChecklist compact maxItems={4} />}
+          {showLearningChecklist && (
+            <ErrorBoundary
+              fallback={
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Unable to load learning progress. Visit Settings to view your full learning path.
+                  </p>
+                </div>
+              }
+            >
+              <LearningChecklist compact maxItems={4} />
+            </ErrorBoundary>
+          )}
 
           {/* Pending Actions */}
           <div className="bg-white shadow rounded-lg p-6">
