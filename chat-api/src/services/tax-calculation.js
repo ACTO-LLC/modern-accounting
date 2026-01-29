@@ -8,34 +8,78 @@ import crypto from 'crypto';
 // Key: companyId, Value: { count, windowStart }
 const rateLimitStore = new Map();
 
-// Encryption key for API credentials (use env variable in production)
-const ENCRYPTION_KEY = process.env.TAX_ENCRYPTION_KEY || 'default-key-change-in-production-32b';
+// Encryption configuration
 const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
+const SALT_LENGTH = 16;
+const KEY_LENGTH = 32;
+
+/**
+ * Get encryption key from environment
+ * Fails fast if not set in production
+ * @returns {string} Encryption key
+ */
+function getEncryptionKey() {
+    const key = process.env.TAX_ENCRYPTION_KEY;
+    if (!key) {
+        // In development/test, use a warning but allow operation
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('TAX_ENCRYPTION_KEY environment variable is required in production');
+        }
+        console.warn('WARNING: TAX_ENCRYPTION_KEY not set. Using insecure default key. Set this in production!');
+        return 'dev-only-insecure-key-32-bytes!';
+    }
+    if (key.length < 32) {
+        throw new Error('TAX_ENCRYPTION_KEY must be at least 32 characters');
+    }
+    return key;
+}
 
 /**
  * Encrypt a string for secure storage
+ * Uses unique salt per encryption for stronger security
  * @param {string} text - Plain text to encrypt
- * @returns {string} Encrypted text (iv:encrypted format)
+ * @returns {string} Encrypted text (salt:iv:encrypted format)
  */
 export function encrypt(text) {
     if (!text) return null;
-    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const encryptionKey = getEncryptionKey();
+    const salt = crypto.randomBytes(SALT_LENGTH);
+    const key = crypto.scryptSync(encryptionKey, salt, KEY_LENGTH);
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return `${iv.toString('hex')}:${encrypted}`;
+    // Format: salt:iv:encrypted (all in hex)
+    return `${salt.toString('hex')}:${iv.toString('hex')}:${encrypted}`;
 }
 
 /**
  * Decrypt a string
- * @param {string} encryptedText - Encrypted text (iv:encrypted format)
+ * Supports both new format (salt:iv:encrypted) and legacy format (iv:encrypted)
+ * @param {string} encryptedText - Encrypted text
  * @returns {string} Decrypted plain text
  */
 export function decrypt(encryptedText) {
     if (!encryptedText) return null;
-    const [ivHex, encrypted] = encryptedText.split(':');
-    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const encryptionKey = getEncryptionKey();
+    const parts = encryptedText.split(':');
+
+    let salt, ivHex, encrypted;
+
+    if (parts.length === 3) {
+        // New format with unique salt: salt:iv:encrypted
+        [salt, ivHex, encrypted] = parts;
+        salt = Buffer.from(salt, 'hex');
+    } else if (parts.length === 2) {
+        // Legacy format without salt: iv:encrypted (for backwards compatibility)
+        [ivHex, encrypted] = parts;
+        salt = Buffer.from('salt'); // Legacy static salt
+        console.warn('Decrypting legacy format - consider re-encrypting with new format');
+    } else {
+        throw new Error('Invalid encrypted data format');
+    }
+
+    const key = crypto.scryptSync(encryptionKey, salt, KEY_LENGTH);
     const iv = Buffer.from(ivHex, 'hex');
     const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');

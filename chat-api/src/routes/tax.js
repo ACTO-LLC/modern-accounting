@@ -7,6 +7,7 @@
 
 import { Router } from 'express';
 import { query } from '../db/connection.js';
+import { validateJWT, requireRole } from '../middleware/auth.js';
 import {
     encrypt,
     decrypt,
@@ -23,11 +24,34 @@ const router = Router();
 // Default company ID for single-tenant mode (will be replaced with proper multi-tenancy later)
 const DEFAULT_COMPANY_ID = '00000000-0000-0000-0000-000000000001';
 
+// Input validation helpers
+const validateCalculationMethod = (method) => {
+    return ['manual', 'zip_api', 'paid_api'].includes(method);
+};
+
+const validateProvider = (provider) => {
+    return ['avalara', 'taxjar'].includes(provider);
+};
+
+const validateEnvironment = (env) => {
+    return ['sandbox', 'production'].includes(env);
+};
+
+const validateCacheDuration = (duration) => {
+    const num = parseInt(duration, 10);
+    return !isNaN(num) && num >= 1 && num <= 1440; // 1 minute to 24 hours
+};
+
+const validateStringLength = (str, max) => {
+    return typeof str === 'string' && str.length <= max;
+};
+
 /**
  * GET /api/tax/settings
  * Get current tax calculation settings
+ * Requires authentication
  */
-router.get('/settings', async (req, res) => {
+router.get('/settings', validateJWT, async (req, res) => {
     try {
         const companyId = req.query.companyId || DEFAULT_COMPANY_ID;
 
@@ -77,7 +101,8 @@ router.get('/settings', async (req, res) => {
             updatedAt: settings.UpdatedAt
         });
     } catch (error) {
-        console.error('Get tax settings failed:', error);
+        // Sanitize error - don't log full stack which may contain sensitive data
+        console.error('Get tax settings failed:', error.message);
         res.status(500).json({
             error: 'InternalError',
             message: 'Failed to retrieve tax settings'
@@ -88,8 +113,9 @@ router.get('/settings', async (req, res) => {
 /**
  * PUT /api/tax/settings
  * Update tax calculation settings
+ * Requires admin role
  */
-router.put('/settings', async (req, res) => {
+router.put('/settings', validateJWT, requireRole('Admin'), async (req, res) => {
     try {
         const companyId = req.body.companyId || DEFAULT_COMPANY_ID;
         const {
@@ -105,10 +131,49 @@ router.put('/settings', async (req, res) => {
         } = req.body;
 
         // Validate calculation method
-        if (calculationMethod && !['manual', 'zip_api', 'paid_api'].includes(calculationMethod)) {
+        if (calculationMethod && !validateCalculationMethod(calculationMethod)) {
             return res.status(400).json({
                 error: 'InvalidMethod',
                 message: 'calculationMethod must be one of: manual, zip_api, paid_api'
+            });
+        }
+
+        // Validate provider
+        if (paidApiProvider && !validateProvider(paidApiProvider)) {
+            return res.status(400).json({
+                error: 'InvalidProvider',
+                message: 'paidApiProvider must be one of: avalara, taxjar'
+            });
+        }
+
+        // Validate environment
+        if (avalaraEnvironment && !validateEnvironment(avalaraEnvironment)) {
+            return res.status(400).json({
+                error: 'InvalidEnvironment',
+                message: 'avalaraEnvironment must be one of: sandbox, production'
+            });
+        }
+
+        // Validate cache duration
+        if (cacheDurationMinutes !== undefined && !validateCacheDuration(cacheDurationMinutes)) {
+            return res.status(400).json({
+                error: 'InvalidCacheDuration',
+                message: 'cacheDurationMinutes must be between 1 and 1440'
+            });
+        }
+
+        // Validate string lengths
+        if (avalaraAccountId && !validateStringLength(avalaraAccountId, 100)) {
+            return res.status(400).json({
+                error: 'InvalidInput',
+                message: 'avalaraAccountId must be 100 characters or less'
+            });
+        }
+
+        if (avalaraCompanyCode && !validateStringLength(avalaraCompanyCode, 50)) {
+            return res.status(400).json({
+                error: 'InvalidInput',
+                message: 'avalaraCompanyCode must be 50 characters or less'
             });
         }
 
@@ -190,7 +255,7 @@ router.put('/settings', async (req, res) => {
 
         res.json({ success: true, message: 'Tax settings updated' });
     } catch (error) {
-        console.error('Update tax settings failed:', error);
+        console.error('Update tax settings failed:', error.message);
         res.status(500).json({
             error: 'InternalError',
             message: 'Failed to update tax settings'
@@ -202,8 +267,9 @@ router.put('/settings', async (req, res) => {
  * GET /api/tax/rate
  * Get tax rate for a location
  * Query params: postalCode, state, city, line1 (for street-level lookup)
+ * Requires authentication
  */
-router.get('/rate', async (req, res) => {
+router.get('/rate', validateJWT, async (req, res) => {
     try {
         const { postalCode, state, city, line1, companyId: queryCompanyId } = req.query;
         const companyId = queryCompanyId || DEFAULT_COMPANY_ID;
@@ -406,7 +472,7 @@ router.get('/rate', async (req, res) => {
             source: rateData.source
         });
     } catch (error) {
-        console.error('Get tax rate failed:', error);
+        console.error('Get tax rate failed:', error.message);
         res.status(500).json({
             error: 'InternalError',
             message: 'Failed to retrieve tax rate'
@@ -417,8 +483,9 @@ router.get('/rate', async (req, res) => {
 /**
  * POST /api/tax/test-connection
  * Test API connection with provided credentials
+ * Requires admin role
  */
-router.post('/test-connection', async (req, res) => {
+router.post('/test-connection', validateJWT, requireRole('Admin'), async (req, res) => {
     try {
         const { provider, apiKey, apiSecret, accountId, environment } = req.body;
 
@@ -460,7 +527,7 @@ router.post('/test-connection', async (req, res) => {
         const result = await testApiConnection(provider, credentials);
         res.json(result);
     } catch (error) {
-        console.error('Test connection failed:', error);
+        console.error('Test connection failed:', error.message);
         res.status(500).json({
             success: false,
             message: `Connection test failed: ${error.message}`
@@ -470,9 +537,10 @@ router.post('/test-connection', async (req, res) => {
 
 /**
  * DELETE /api/tax/cache
- * Clear tax rate cache (admin only)
+ * Clear tax rate cache
+ * Requires admin role
  */
-router.delete('/cache', async (req, res) => {
+router.delete('/cache', validateJWT, requireRole('Admin'), async (req, res) => {
     try {
         const { postalCode, all } = req.query;
 
@@ -496,7 +564,7 @@ router.delete('/cache', async (req, res) => {
             });
         }
     } catch (error) {
-        console.error('Clear cache failed:', error);
+        console.error('Clear cache failed:', error.message);
         res.status(500).json({
             error: 'InternalError',
             message: 'Failed to clear cache'
