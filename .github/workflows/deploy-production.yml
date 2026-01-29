@@ -194,6 +194,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
+    if: always() && needs.build.result == 'success'
     environment:
       name: production
       url: https://app-modern-accounting-prod.azurewebsites.net
@@ -261,7 +262,7 @@ jobs:
     name: Smoke Tests
     runs-on: ubuntu-latest
     needs: deploy
-    if: success()
+    if: always() && needs.deploy.result == 'success'
 
     steps:
       - name: Checkout code
