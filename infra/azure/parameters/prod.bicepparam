@@ -1,6 +1,6 @@
 // =============================================================================
 // Production Environment Parameters
-// Optimized for small team (~3 users) with reliability (~$20-35/month)
+// Optimized for small team (~3 users) with reliability (~$10-25/month with off-hours stop)
 // =============================================================================
 
 using '../main.bicep'
@@ -10,23 +10,26 @@ param location = 'eastus'
 param baseName = 'modern-accounting'
 
 // App Service - Basic tier (supports custom domains, SSL, Always On)
+// Cost: ~$13/month (24/7) or ~$4/month (with off-hours stop)
 param appServiceSku = 'B1'
 
-// SQL Database - Serverless with longer auto-pause
-// Auto-pauses after 4 hours to balance cost vs user experience
+// SQL Database - Serverless with auto-pause
+// Auto-pauses after 1 hour to minimize costs
 // First query after pause takes ~30 seconds to resume
+// Cost: ~$5-15/month depending on usage
 param sqlDatabaseSku = 'GP_S_Gen5_1'
-param sqlAutoPauseDelayMinutes = 240
+param sqlAutoPauseDelayMinutes = 60
 
-// SendGrid - Bronze tier for production (40k emails/month)
-param sendGridAdminEmail = 'admin@a-cto.com'
+// SendGrid - Free tier for low-volume production
+// Upgrade to 'bronze' for 40k emails/month if needed
+param sendGridAdminEmail = 'support@a-cto.com'
 
 // Tags
 param tags = {
   application: 'modern-accounting'
   environment: 'prod'
   managedBy: 'bicep'
-  costCenter: 'production'
+  company: 'A CTO LLC'
 }
 
 // Secrets - These should be provided at deployment time

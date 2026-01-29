@@ -185,6 +185,29 @@ module sendGrid 'modules/sendgrid.bicep' = {
 }
 
 // -----------------------------------------------------------------------------
+// Azure Automation Module (Start/Stop Scheduling)
+// Reduces costs by stopping App Services during off-hours (6 PM - 7 AM PT)
+// Only deployed for non-dev environments
+// -----------------------------------------------------------------------------
+
+module automation 'modules/automation.bicep' = if (environment != 'dev') {
+  name: 'automation-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    name: 'auto-${baseName}-${environment}'
+    location: location
+    tags: tags
+    appServiceResourceGroup: resourceGroupName
+    appServiceNames: [
+      'app-${baseName}-${environment}'
+      'mcp-ma-${baseName}-${environment}'
+    ]
+    startTime: '07:00'
+    stopTime: '18:00'
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Outputs
 // -----------------------------------------------------------------------------
 
@@ -199,3 +222,4 @@ output appServicePrincipalId string = appService.outputs.principalId
 output maMcpServerUrl string = maMcpServer.outputs.serviceUrl
 output openAIEndpoint string = openAI.outputs.openAIEndpoint
 output openAIDeploymentName string = openAI.outputs.gpt4oDeploymentName
+output automationAccountName string = automation.?outputs.?automationAccountName ?? ''
