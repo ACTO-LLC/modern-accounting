@@ -80,6 +80,21 @@ module keyVault 'modules/key-vault.bicep' = {
 }
 
 // -----------------------------------------------------------------------------
+// Azure OpenAI Module (for Milton AI assistant)
+// -----------------------------------------------------------------------------
+
+module openAI 'modules/openai.bicep' = {
+  name: 'openai-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    name: 'oai-${baseName}-${environment}'
+    location: location
+    tags: tags
+    keyVaultName: keyVault.outputs.keyVaultName
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Storage Account Module
 // -----------------------------------------------------------------------------
 
@@ -182,3 +197,5 @@ output sqlDatabaseName string = sqlServer.outputs.databaseName
 output appServiceUrl string = appService.outputs.appServiceUrl
 output appServicePrincipalId string = appService.outputs.principalId
 output maMcpServerUrl string = maMcpServer.outputs.serviceUrl
+output openAIEndpoint string = openAI.outputs.openAIEndpoint
+output openAIDeploymentName string = openAI.outputs.gpt4oDeploymentName
