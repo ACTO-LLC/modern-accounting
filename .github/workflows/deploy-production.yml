@@ -221,20 +221,13 @@ jobs:
               WEBSITE_NODE_DEFAULT_VERSION="~20" \
               NODE_ENV="production" \
               SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
-              ENABLE_ORYX_BUILD="false" \
-              WEBSITE_RUN_FROM_PACKAGE="1"
+              ENABLE_ORYX_BUILD="false"
 
       - name: Deploy to Azure App Service
-        run: |
-          az webapp deploy \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --src-path app-package.zip \
-            --type zip \
-            --async true
-
-      - name: Wait for deployment
-        run: sleep 60
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: app-package.zip
 
       # Health check after deployment
       - name: Wait for deployment to stabilize
