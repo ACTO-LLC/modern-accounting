@@ -73,26 +73,27 @@ module keyVault 'modules/key-vault.bicep' = {
   name: 'keyVault-${uniqueSuffix}'
   scope: resourceGroup
   params: {
-    name: 'kv-${baseName}-${environment}'
+    name: 'kv${take(uniqueString(subscription().subscriptionId, resourceGroupName), 8)}${environment}'
     location: location
     tags: tags
   }
 }
 
 // -----------------------------------------------------------------------------
-// Azure OpenAI Module (for Milton AI assistant)
+// Azure OpenAI Module (disabled - requires quota request)
+// To enable: request OpenAI quota at https://aka.ms/oai/access
 // -----------------------------------------------------------------------------
 
-module openAI 'modules/openai.bicep' = {
-  name: 'openai-${uniqueSuffix}'
-  scope: resourceGroup
-  params: {
-    name: 'oai-${baseName}-${environment}'
-    location: location
-    tags: tags
-    keyVaultName: keyVault.outputs.keyVaultName
-  }
-}
+// module openAI 'modules/openai.bicep' = {
+//   name: 'openai-${uniqueSuffix}'
+//   scope: resourceGroup
+//   params: {
+//     name: 'oai-${baseName}-${environment}'
+//     location: location
+//     tags: tags
+//     keyVaultName: keyVault.outputs.keyVaultName
+//   }
+// }
 
 // -----------------------------------------------------------------------------
 // Storage Account Module
@@ -168,21 +169,22 @@ module maMcpServer 'modules/mcp-service.bicep' = {
 }
 
 // -----------------------------------------------------------------------------
-// SendGrid Module
+// SendGrid Module (disabled - requires marketplace registration)
+// To enable: register Sendgrid.Email resource provider in Azure Portal
 // -----------------------------------------------------------------------------
 
-module sendGrid 'modules/sendgrid.bicep' = {
-  name: 'sendgrid-${uniqueSuffix}'
-  scope: resourceGroup
-  params: {
-    name: 'sendgrid-${baseName}-${environment}'
-    location: location
-    adminEmail: sendGridAdminEmail
-    plan: environment == 'prod' ? 'bronze' : 'free'
-    tags: tags
-    keyVaultName: keyVault.outputs.keyVaultName
-  }
-}
+// module sendGrid 'modules/sendgrid.bicep' = {
+//   name: 'sendgrid-${uniqueSuffix}'
+//   scope: resourceGroup
+//   params: {
+//     name: 'sendgrid-${baseName}-${environment}'
+//     location: location
+//     adminEmail: sendGridAdminEmail
+//     plan: environment == 'prod' ? 'bronze' : 'free'
+//     tags: tags
+//     keyVaultName: keyVault.outputs.keyVaultName
+//   }
+// }
 
 // -----------------------------------------------------------------------------
 // Azure Automation Module (Start/Stop Scheduling)
@@ -220,6 +222,7 @@ output sqlDatabaseName string = sqlServer.outputs.databaseName
 output appServiceUrl string = appService.outputs.appServiceUrl
 output appServicePrincipalId string = appService.outputs.principalId
 output maMcpServerUrl string = maMcpServer.outputs.serviceUrl
-output openAIEndpoint string = openAI.outputs.openAIEndpoint
-output openAIDeploymentName string = openAI.outputs.gpt4oDeploymentName
+// OpenAI outputs (disabled - enable when quota is available)
+// output openAIEndpoint string = openAI.outputs.openAIEndpoint
+// output openAIDeploymentName string = openAI.outputs.gpt4oDeploymentName
 output automationAccountName string = automation.?outputs.?automationAccountName ?? ''
