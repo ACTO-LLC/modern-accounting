@@ -24,8 +24,8 @@ param startTime string = '07:00'
 @description('Stop time in Pacific Time (HH:mm)')
 param stopTime string = '18:00'
 
-@description('Base timestamp for schedule start (used to calculate tomorrow)')
-param baseTime string = utcNow('yyyy-MM-dd')
+@description('Base timestamp for schedule start (ISO 8601 format)')
+param baseTime string = utcNow()
 
 // -----------------------------------------------------------------------------
 // Automation Account
@@ -102,16 +102,20 @@ resource appServiceNamesVar 'Microsoft.Automation/automationAccounts/variables@2
 // -----------------------------------------------------------------------------
 // Schedules - Pacific Time (America/Los_Angeles)
 // Note: Schedules are created but job links require published runbooks
+// Schedule startTime must be at least 5 minutes in the future
+// The time portion of startTime determines the daily run time
 // -----------------------------------------------------------------------------
 
-// Calculate tomorrow's date for schedule start (must be in the future)
-var tomorrow = dateTimeAdd(baseTime, 'P1D')
+// Get tomorrow's date and construct schedule times
+// Using fixed future date to avoid timezone calculation issues during deployment
+var tomorrowDate = dateTimeAdd(baseTime, 'P1D')
+var datePart = substring(tomorrowDate, 0, 10)  // Extract YYYY-MM-DD
 
 resource stopSchedule 'Microsoft.Automation/automationAccounts/schedules@2023-11-01' = {
   parent: automationAccount
   name: 'StopSchedule-Weekdays'
   properties: {
-    startTime: '${tomorrow}T${stopTime}:00-08:00'
+    startTime: '${datePart}T${stopTime}:00+00:00'
     expiryTime: '9999-12-31T23:59:59+00:00'
     interval: 1
     frequency: 'Week'
@@ -126,7 +130,7 @@ resource startSchedule 'Microsoft.Automation/automationAccounts/schedules@2023-1
   parent: automationAccount
   name: 'StartSchedule-Weekdays'
   properties: {
-    startTime: '${tomorrow}T${startTime}:00-08:00'
+    startTime: '${datePart}T${startTime}:00+00:00'
     expiryTime: '9999-12-31T23:59:59+00:00'
     interval: 1
     frequency: 'Week'

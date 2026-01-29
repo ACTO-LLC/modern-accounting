@@ -51,37 +51,6 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 }
 
 // -----------------------------------------------------------------------------
-// Diagnostic Settings (for monitoring)
-// -----------------------------------------------------------------------------
-
-resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'diagnostics'
-  scope: keyVault
-  properties: {
-    logs: [
-      {
-        category: 'AuditEvent'
-        enabled: true
-        retentionPolicy: {
-          enabled: true
-          days: 90
-        }
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-        retentionPolicy: {
-          enabled: true
-          days: 90
-        }
-      }
-    ]
-  }
-}
-
-// -----------------------------------------------------------------------------
 // Outputs
 // -----------------------------------------------------------------------------
 

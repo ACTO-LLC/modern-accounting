@@ -6,7 +6,7 @@
 using '../main.bicep'
 
 param environment = 'prod'
-param location = 'eastus'
+param location = 'westus2'
 param baseName = 'modern-accounting'
 
 // App Service - Basic tier (supports custom domains, SSL, Always On)
