@@ -31,6 +31,7 @@ test.describe('Dashboard', () => {
   test('should navigate to review page from pending actions', async ({ page }) => {
     await page.goto('/');
     await page.getByText('Review Now').click();
-    await expect(page).toHaveURL('//review');
+    // Note: /review redirects to /transactions?view=review
+    await expect(page).toHaveURL(/\/transactions\?view=review/);
   });
 });

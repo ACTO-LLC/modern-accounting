@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RefreshCw, CheckCircle, BookOpen, Eye } from 'lucide-react';
 import { resetSpotlights } from './SpotlightManager';
+import LearningChecklist from './LearningChecklist';
 
 export default function OnboardingSettings() {
   const { status, resetOnboarding, showAllFeatures, learningPath, isLoading } = useOnboarding();
@@ -139,6 +140,13 @@ export default function OnboardingSettings() {
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Resetting will restart your learning journey and hide advanced features until you unlock them again.
       </p>
+
+      {/* Full Learning Checklist - only show if not showing all features */}
+      {!status.showAllFeatures && (
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <LearningChecklist showCategories />
+        </div>
+      )}
     </div>
   );
 }

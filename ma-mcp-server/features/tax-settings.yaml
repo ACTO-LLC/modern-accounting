@@ -1,0 +1,58 @@
+key: tax_settings
+name: Tax Settings
+menuPath: /settings/tax
+icon: Calculator
+difficulty: 2
+category: foundation
+sortOrder: 35
+
+spotlight:
+  message: "Configure how sales tax is calculated for your invoices."
+  position: right
+
+description:
+  short: "Set up automatic or manual tax calculation for your business"
+  detailed: |
+    Tax Settings lets you choose how sales tax rates are determined for invoices
+    and other transactions. You can:
+    - Use manual selection from your configured tax rates
+    - Enable automatic ZIP code-based tax lookup (free)
+    - Connect to paid tax APIs for street-level accuracy (Avalara, TaxJar)
+
+    Proper tax configuration ensures you collect the right amount of sales tax
+    and stay compliant with state and local tax requirements.
+
+capabilities:
+  - "Choose between manual, ZIP-based, or paid API tax calculation"
+  - "Configure Avalara AvaTax or TaxJar credentials"
+  - "Set a fallback tax rate for when API lookup fails"
+  - "Test API connections before saving"
+  - "Control how long tax rates are cached"
+
+accountingConcepts:
+  - term: "Sales Tax"
+    explanation: "A consumption tax imposed by governments on the sale of goods and services. The seller collects it from customers and remits it to the government."
+  - term: "Nexus"
+    explanation: "A connection between a business and a state that creates tax obligations. You may need to collect sales tax in states where you have nexus."
+  - term: "Combined Tax Rate"
+    explanation: "The total tax rate combining state, county, city, and special district taxes. Rates vary by location."
+  - term: "Tax Exemption"
+    explanation: "Some customers (like nonprofits) or products (like groceries in some states) may be exempt from sales tax."
+
+prerequisites: []
+
+leadsTo:
+  - invoices
+
+experienceLevelNotes:
+  beginner: "Start with manual tax selection - pick a single rate that applies to most of your sales. You can upgrade to automatic calculation later."
+  intermediate: "If you sell to customers in different states or cities, the ZIP-based API can automatically determine the correct rate."
+  advanced: "For businesses with complex multi-state tax obligations, paid APIs like Avalara provide street-level accuracy and handle special tax rules."
+
+sampleTasks:
+  - title: "Choose your tax calculation method"
+    description: "Decide between manual selection, free ZIP-based lookup, or paid API"
+  - title: "Set a fallback tax rate"
+    description: "Configure a default rate to use when automatic lookup isn't available"
+  - title: "Test your API connection"
+    description: "If using a paid API, verify your credentials work before going live"

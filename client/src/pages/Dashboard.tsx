@@ -1,24 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  AlertCircle, 
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
   Activity,
   ArrowRight
 } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
+import { useOnboarding } from '../contexts/OnboardingContext';
+import LearningChecklist from '../components/onboarding/LearningChecklist';
 
 interface JournalEntry {
   Id: string;
@@ -84,6 +86,14 @@ interface Payment {
 }
 
 export default function Dashboard() {
+  const { status: onboardingStatus } = useOnboarding();
+
+  // Show learning checklist for users in training mode
+  const showLearningChecklist = onboardingStatus &&
+    !onboardingStatus.onboardingCompleted &&
+    !onboardingStatus.showAllFeatures &&
+    onboardingStatus.experienceLevel;
+
   // Fetch Journal Entries for Financials
   const { data: journalEntries } = useQuery({
     queryKey: ['journal-entries'],
@@ -402,8 +412,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Sidebar: Pending Actions & Recent Activity */}
+        {/* Sidebar: Learning Progress, Pending Actions & Recent Activity */}
         <div className="space-y-8">
+          {/* Learning Checklist - shown for users in training mode */}
+          {showLearningChecklist && <LearningChecklist compact maxItems={4} />}
+
           {/* Pending Actions */}
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">

@@ -15,6 +15,7 @@ const pathToFeatureKey: Record<string, string> = {
   '/accounts': 'chart_of_accounts',
   '/journal-entries': 'journal_entries',
   '/reports': 'reports',
+  '/settings/tax': 'tax_settings',
 };
 
 // Feature-specific help messages Milton can provide
@@ -100,6 +101,15 @@ const featureHelpMessages: Record<string, {
       'What reports should I run?',
       'What is a P&L report?',
       'How do I read a balance sheet?',
+    ],
+  },
+  tax_settings: {
+    welcomeMessage: "You're in Tax Settings! This is where you configure how sales tax is calculated for your invoices. You can choose manual selection, automatic ZIP-based lookup, or connect to paid tax APIs for precise rates. Want me to explain the options?",
+    quickActions: [
+      'Which tax method should I use?',
+      'How does automatic tax calculation work?',
+      'What is Avalara/TaxJar?',
+      'Do I need to collect sales tax?',
     ],
   },
 };
