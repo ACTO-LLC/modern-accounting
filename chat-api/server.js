@@ -727,11 +727,22 @@ When helping users set up a new company, follow this conversational flow:
 
 4. PROACTIVE INSIGHTS: When data shows issues (overdue invoices, upcoming due dates, unusual patterns), proactively mention them to help the user.
 
-5. WEB RESEARCH: You can fetch content from public websites using the fetch_webpage tool. Use this when:
-   - User provides a URL and asks you to get information from it
-   - User says "check our website" or "get company info from [url]"
-   - You need to look up publicly available business information
-   Example: If user says "Get our company info from www.acme.com", use fetch_webpage to retrieve the page content.
+5. WEB RESEARCH: You can fetch content from public websites. Two tools are available:
+
+   fetch_company_info: Use this when user provides their company website URL. It checks multiple pages (/contact, /about, /locations, etc.) and extracts:
+   - Company name
+   - Email addresses
+   - Phone numbers
+   - Physical addresses
+   Example: "Get our info from www.acme.com" -> use fetch_company_info
+
+   fetch_webpage: Use for fetching a specific single page URL.
+
+   IMPORTANT: After fetching company info, if the user is in onboarding or asks to update their company record:
+   1. Use the extracted info (company name, phone, email, address) to update their company settings
+   2. Use dab_query to find their existing company record
+   3. Use dab_create or appropriate update methods to save the information
+   4. Confirm what was updated: "I found and saved: Company Name, Phone: xxx, Email: xxx, Address: xxx"
 
 6. FILE PROCESSING & CONTACT EXTRACTION: When users upload images, paste text, or ask about extracting contacts:
 
@@ -1803,6 +1814,23 @@ const tools = [
                     url: {
                         type: 'string',
                         description: 'The URL to fetch (must be a valid http:// or https:// URL)'
+                    }
+                },
+                required: ['url']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'fetch_company_info',
+            description: 'Fetch company information from a website by checking multiple common pages (homepage, contact, about, etc.). Use this when a user provides their company website and you need to extract business details like company name, address, phone, email, etc. This is more thorough than fetch_webpage as it tries multiple page variations.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    url: {
+                        type: 'string',
+                        description: 'The base URL of the company website (e.g., https://www.example.com)'
                     }
                 },
                 required: ['url']
@@ -4243,6 +4271,214 @@ async function executeFetchWebpage(args) {
     }
 }
 
+// Common paths to check for contact/company information
+const CONTACT_PAGE_PATHS = [
+    '',              // homepage
+    '/contact',
+    '/contact-us',
+    '/contactus',
+    '/about',
+    '/about-us',
+    '/aboutus',
+    '/locations',
+    '/location',
+    '/our-team',
+    '/team',
+    '/company',
+    '/info',
+    '/support'
+];
+
+async function executeFetchCompanyInfo(args) {
+    try {
+        const { url } = args;
+
+        if (!url) {
+            return { success: false, error: 'URL is required' };
+        }
+
+        // Parse and validate base URL
+        let baseUrl;
+        try {
+            baseUrl = new URL(url);
+            if (!['http:', 'https:'].includes(baseUrl.protocol)) {
+                return { success: false, error: 'URL must use http:// or https://' };
+            }
+        } catch (e) {
+            return { success: false, error: `Invalid URL: ${e.message}` };
+        }
+
+        // SSRF protection
+        if (isBlockedUrl(url)) {
+            console.warn(`Blocked SSRF attempt: ${url}`);
+            return { success: false, error: 'Cannot fetch internal or private addresses' };
+        }
+
+        console.log(`Fetching company info from: ${baseUrl.origin}`);
+
+        const results = {
+            baseUrl: baseUrl.origin,
+            title: null,
+            description: null,
+            pagesChecked: [],
+            contactInfo: {
+                emails: new Set(),
+                phones: new Set(),
+                addresses: [],
+                companyName: null
+            },
+            rawContent: ''
+        };
+
+        // Try each path concurrently (with limit)
+        const fetchPromises = CONTACT_PAGE_PATHS.map(async (path) => {
+            const fullUrl = `${baseUrl.origin}${path}`;
+            try {
+                const response = await axios.get(fullUrl, {
+                    timeout: 10000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (compatible; Milton/1.0; +https://a-cto.com)',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    },
+                    maxRedirects: 3,
+                    validateStatus: (status) => status < 400
+                });
+
+                return { path, fullUrl, html: response.data, success: true };
+            } catch (e) {
+                return { path, fullUrl, success: false, error: e.message };
+            }
+        });
+
+        const pageResults = await Promise.all(fetchPromises);
+
+        // Process successful pages
+        for (const result of pageResults) {
+            if (!result.success) continue;
+
+            results.pagesChecked.push(result.path || '/');
+            const html = result.html;
+
+            if (typeof html !== 'string') continue;
+
+            // Extract title from homepage
+            if (result.path === '' && !results.title) {
+                const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                if (titleMatch) results.title = titleMatch[1].trim();
+            }
+
+            // Extract meta description
+            if (!results.description) {
+                const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+                if (descMatch) results.description = descMatch[1].trim();
+            }
+
+            // Extract emails (common patterns)
+            const emailMatches = html.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+            if (emailMatches) {
+                emailMatches.forEach(email => {
+                    // Filter out common non-contact emails
+                    if (!email.includes('example.com') &&
+                        !email.includes('sentry.io') &&
+                        !email.includes('webpack') &&
+                        !email.endsWith('.png') &&
+                        !email.endsWith('.jpg')) {
+                        results.contactInfo.emails.add(email.toLowerCase());
+                    }
+                });
+            }
+
+            // Extract phone numbers (US format)
+            const phonePatterns = [
+                /\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,  // (123) 456-7890 or 123-456-7890
+                /\+1[-.\s]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/g,  // +1 123 456 7890
+                /1[-.\s]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/g   // 1-123-456-7890
+            ];
+            for (const pattern of phonePatterns) {
+                const phoneMatches = html.match(pattern);
+                if (phoneMatches) {
+                    phoneMatches.forEach(phone => {
+                        // Normalize phone number
+                        const normalized = phone.replace(/[^\d]/g, '');
+                        if (normalized.length >= 10 && normalized.length <= 11) {
+                            results.contactInfo.phones.add(phone.trim());
+                        }
+                    });
+                }
+            }
+
+            // Extract addresses (look for common patterns)
+            // This is a simplified extraction - addresses are hard to parse reliably
+            const addressPatterns = [
+                // Street address with city, state, zip
+                /\d+\s+[\w\s]+(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Drive|Dr|Lane|Ln|Way|Court|Ct)[.,]?\s+(?:Suite|Ste|#|Unit|Apt)?\s*\d*[.,]?\s*[\w\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?/gi
+            ];
+            for (const pattern of addressPatterns) {
+                const addressMatches = html.match(pattern);
+                if (addressMatches) {
+                    addressMatches.forEach(addr => {
+                        if (!results.contactInfo.addresses.includes(addr.trim())) {
+                            results.contactInfo.addresses.push(addr.trim());
+                        }
+                    });
+                }
+            }
+
+            // Try to extract company name from common locations
+            if (!results.contactInfo.companyName) {
+                // From structured data
+                const schemaMatch = html.match(/"name"\s*:\s*"([^"]+)"/);
+                if (schemaMatch) {
+                    results.contactInfo.companyName = schemaMatch[1];
+                }
+                // From og:site_name
+                const ogMatch = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i);
+                if (ogMatch) {
+                    results.contactInfo.companyName = ogMatch[1];
+                }
+            }
+
+            // Clean HTML and add to raw content (limit per page)
+            let cleanedHtml = html
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            if (cleanedHtml.length > 3000) {
+                cleanedHtml = cleanedHtml.substring(0, 3000);
+            }
+            results.rawContent += `\n--- ${result.path || '/'} ---\n${cleanedHtml}`;
+        }
+
+        // Convert Sets to arrays for JSON
+        const response = {
+            success: true,
+            baseUrl: results.baseUrl,
+            title: results.title,
+            description: results.description,
+            pagesChecked: results.pagesChecked,
+            companyName: results.contactInfo.companyName || results.title?.split(/[-|]/)[0]?.trim(),
+            emails: Array.from(results.contactInfo.emails),
+            phones: Array.from(results.contactInfo.phones),
+            addresses: results.contactInfo.addresses,
+            content: results.rawContent.length > 15000
+                ? results.rawContent.substring(0, 15000) + '... [truncated]'
+                : results.rawContent
+        };
+
+        console.log(`Company info extracted: ${response.emails.length} emails, ${response.phones.length} phones from ${response.pagesChecked.length} pages`);
+
+        return response;
+
+    } catch (error) {
+        console.error('Error fetching company info:', error.message);
+        return { success: false, error: `Failed to fetch company info: ${error.message}` };
+    }
+}
+
 // ============================================================================
 // Balance Sheet Diagnostic Tool Execution Functions
 // ============================================================================
@@ -4650,6 +4886,8 @@ async function executeFunction(name, args) {
         // Web Tools
         case 'fetch_webpage':
             return executeFetchWebpage(args);
+        case 'fetch_company_info':
+            return executeFetchCompanyInfo(args);
         default:
             return { success: false, error: `Unknown function: ${name}` };
     }
