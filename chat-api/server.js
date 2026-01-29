@@ -6403,6 +6403,28 @@ async function startServer() {
         }
     }
 
+    // ========================================================================
+    // Static File Serving (Production)
+    // ========================================================================
+    // Serve client build from /public folder in production
+    const publicPath = path.join(__dirname, 'public');
+    app.use(express.static(publicPath));
+
+    // SPA fallback - serve index.html for client-side routing
+    // This must be after all API routes
+    app.get('*', (req, res, next) => {
+        // Don't serve index.html for API routes
+        if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ error: 'API endpoint not found' });
+        }
+        res.sendFile(path.join(publicPath, 'index.html'), (err) => {
+            if (err) {
+                // If index.html doesn't exist, continue to 404
+                next();
+            }
+        });
+    });
+
     app.listen(PORT, async () => {
         console.log(`Chat API running on http://localhost:${PORT}`);
         console.log(`Deployment: ${deploymentName}`);
