@@ -55,8 +55,7 @@ export function encrypt(text) {
 
 /**
  * Decrypt a string
- * Supports both new format (salt:iv:encrypted) and legacy format (iv:encrypted)
- * @param {string} encryptedText - Encrypted text
+ * @param {string} encryptedText - Encrypted text (salt:iv:encrypted format)
  * @returns {string} Decrypted plain text
  */
 export function decrypt(encryptedText) {
@@ -64,21 +63,12 @@ export function decrypt(encryptedText) {
     const encryptionKey = getEncryptionKey();
     const parts = encryptedText.split(':');
 
-    let salt, ivHex, encrypted;
-
-    if (parts.length === 3) {
-        // New format with unique salt: salt:iv:encrypted
-        [salt, ivHex, encrypted] = parts;
-        salt = Buffer.from(salt, 'hex');
-    } else if (parts.length === 2) {
-        // Legacy format without salt: iv:encrypted (for backwards compatibility)
-        [ivHex, encrypted] = parts;
-        salt = Buffer.from('salt'); // Legacy static salt
-        console.warn('Decrypting legacy format - consider re-encrypting with new format');
-    } else {
-        throw new Error('Invalid encrypted data format');
+    if (parts.length !== 3) {
+        throw new Error('Invalid encrypted data format - expected salt:iv:encrypted');
     }
 
+    const [saltHex, ivHex, encrypted] = parts;
+    const salt = Buffer.from(saltHex, 'hex');
     const key = crypto.scryptSync(encryptionKey, salt, KEY_LENGTH);
     const iv = Buffer.from(ivHex, 'hex');
     const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
