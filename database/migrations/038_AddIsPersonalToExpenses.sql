@@ -105,3 +105,17 @@ BEGIN
     PRINT 'Index IX_Expenses_IsPersonal already exists';
 END
 GO
+
+-- Mark some expenses as personal for testing/demo purposes
+-- Personal expenses typically include phone bills, personal meals, personal travel, etc.
+UPDATE [dbo].[Expenses]
+SET [IsPersonal] = 1
+WHERE [Description] LIKE '%Phone bill%'
+   OR [Description] LIKE '%Personal%'
+   OR [Description] LIKE '%Team lunch%'
+   OR [Description] LIKE '%Parking fees%'
+   OR [ExpenseNumber] IN ('EXP-1225', 'EXP-1237', 'EXP-1249');
+
+DECLARE @PersonalCount INT = @@ROWCOUNT;
+PRINT 'Marked ' + CAST(@PersonalCount AS VARCHAR(10)) + ' expenses as personal';
+GO
