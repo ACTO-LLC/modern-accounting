@@ -5048,25 +5048,50 @@ async function executeCreateVendorFromContact(params) {
 
 // SSRF protection - block internal/private IPs and cloud metadata endpoints
 function isBlockedUrl(url) {
-    const hostname = new URL(url).hostname.toLowerCase();
+    let hostname = new URL(url).hostname.toLowerCase();
+
+    // Handle IPv6 addresses (hostname includes brackets like "[::1]")
+    if (hostname.startsWith('[') && hostname.endsWith(']')) {
+        hostname = hostname.slice(1, -1); // Remove brackets
+    }
 
     // Block cloud metadata endpoints (AWS, Azure, GCP)
     if (hostname === '169.254.169.254') return true;
     if (hostname === 'metadata.google.internal') return true;
 
-    // Block localhost variants
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
+    // Block localhost variants (IPv4 and IPv6)
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    if (hostname === '::1' || hostname === '0:0:0:0:0:0:0:1') return true;
     if (hostname.endsWith('.localhost')) return true;
 
-    // Block private IP ranges
-    const ipMatch = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-    if (ipMatch) {
-        const [, a, b] = ipMatch.map(Number);
+    // Block IPv6 loopback and link-local
+    if (hostname.startsWith('::ffff:127.')) return true;  // IPv4-mapped IPv6 loopback
+    if (hostname.startsWith('::ffff:169.254.')) return true;  // IPv4-mapped IPv6 link-local
+    if (hostname.startsWith('fe80:')) return true;  // IPv6 link-local
+    if (hostname.startsWith('fc') || hostname.startsWith('fd')) return true;  // IPv6 unique local (private)
+
+    // Block private IPv4 ranges
+    const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipv4Match) {
+        const [, a, b] = ipv4Match.map(Number);
         if (a === 10) return true;                         // 10.0.0.0/8
         if (a === 172 && b >= 16 && b <= 31) return true;  // 172.16.0.0/12
         if (a === 192 && b === 168) return true;           // 192.168.0.0/16
         if (a === 169 && b === 254) return true;           // 169.254.0.0/16 (link-local)
         if (a === 0) return true;                          // 0.0.0.0/8
+        if (a === 127) return true;                        // 127.0.0.0/8 (loopback)
+    }
+
+    // Block IPv4-mapped IPv6 addresses with private IPv4
+    const mappedMatch = hostname.match(/^::ffff:(\d+)\.(\d+)\.(\d+)\.(\d+)$/i);
+    if (mappedMatch) {
+        const [, a, b] = mappedMatch.map(Number);
+        if (a === 10) return true;
+        if (a === 172 && b >= 16 && b <= 31) return true;
+        if (a === 192 && b === 168) return true;
+        if (a === 169 && b === 254) return true;
+        if (a === 0) return true;
+        if (a === 127) return true;
     }
 
     return false;
