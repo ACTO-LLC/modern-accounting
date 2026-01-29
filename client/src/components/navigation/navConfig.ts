@@ -138,6 +138,7 @@ export const navigationConfig: NavEntry[] = [
       { id: 'accounts', name: 'Chart of Accounts', href: '/accounts', icon: Layers, featureKey: 'chart_of_accounts' },
       { id: 'journal-entries', name: 'Journal Entries', href: '/journal-entries', icon: BookOpen, featureKey: 'journal_entries' },
       { id: 'tax-rates', name: 'Tax Rates', href: '/tax-rates', icon: Percent },
+      { id: 'tax-settings', name: 'Tax Settings', href: '/tax-settings', icon: Settings },
       { id: 'classes', name: 'Classes', href: '/classes', icon: Tag },
       { id: 'locations', name: 'Locations', href: '/locations', icon: MapPin },
       { id: 'recurring', name: 'Recurring', href: '/recurring', icon: RefreshCw },

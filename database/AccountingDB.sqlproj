@@ -95,6 +95,8 @@
     <Build Include="dbo\Tables\SubmissionAttachments.sql" />
     <Build Include="dbo\Tables\Submissions.sql" />
     <Build Include="dbo\Tables\TaxRates.sql" />
+    <Build Include="dbo\Tables\TaxCalculationSettings.sql" />
+    <Build Include="dbo\Tables\TaxRateCache.sql" />
     <Build Include="dbo\Tables\Tenants.sql" />
     <Build Include="dbo\Tables\TimeEntries.sql" />
     <Build Include="dbo\Tables\UserRoles.sql" />

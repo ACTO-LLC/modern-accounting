@@ -82,6 +82,7 @@ import PayStubView from './pages/PayStubView';
 import PayrollSummary from './pages/reports/PayrollSummary';
 import SalesTaxLiability from './pages/reports/SalesTaxLiability';
 import TaxRates from './pages/TaxRates';
+import TaxSettings from './pages/TaxSettings';
 import PlaidConnections from './pages/PlaidConnections';
 import UnifiedTransactions from './pages/UnifiedTransactions';
 import Expenses from './pages/Expenses';
@@ -244,6 +245,7 @@ function AppContent() {
             <Route path="reports/sales-by-customer" element={<SalesByCustomer />} />
             <Route path="reports/sales-by-product" element={<SalesByProduct />} />
             <Route path="tax-rates" element={<TaxRates />} />
+            <Route path="tax-settings" element={<TaxSettings />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
             <Route path="payments" element={<Payments />} />
