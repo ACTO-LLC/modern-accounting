@@ -29,6 +29,7 @@
         "node-cron": "^3.0.3",
         "openai": "^4.28.0",
         "plaid": "^23.0.0",
+        "puppeteer": "^24.37.5",
         "scribe.js-ocr": "^0.9.3"
     },
     "devDependencies": {
