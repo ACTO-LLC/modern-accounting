@@ -67,3 +67,6 @@ GO
 
 CREATE INDEX [IX_Expenses_ProjectId] ON [dbo].[Expenses] ([ProjectId]) WHERE ProjectId IS NOT NULL
 GO
+
+CREATE INDEX [IX_Expenses_IsPersonal] ON [dbo].[Expenses] ([IsPersonal])
+GO
