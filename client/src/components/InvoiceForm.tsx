@@ -2,13 +2,31 @@ import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Zap, Info } from 'lucide-react';
-import { useEffect, ReactNode, useMemo, useState } from 'react';
+import { ArrowLeft, Plus, Trash2, Zap, Info, MapPin } from 'lucide-react';
+import { useEffect, ReactNode, useMemo, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import CustomerSelector from './CustomerSelector';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
 import api from '../lib/api';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+
+// Tax calculation settings interface
+interface TaxCalculationSettings {
+  CalculationMethod: 'manual' | 'zip_api' | 'paid_api';
+  FallbackTaxRateId: string | null;
+}
+
+// Auto-calculated tax rate result
+interface AutoTaxRate {
+  rate: number;
+  source: string;
+  breakdown?: {
+    state?: number;
+    county?: number;
+    city?: number;
+    special?: number;
+  };
+}
 
 // Tax rate interface
 interface TaxRate {
@@ -59,6 +77,10 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
   // Track taxable status for each line item (keyed by ProductServiceId)
   const [lineTaxableStatus, setLineTaxableStatus] = useState<Record<number, boolean>>({});
 
+  // Track auto-calculated tax rate
+  const [autoTaxRate, setAutoTaxRate] = useState<AutoTaxRate | null>(null);
+  const [isLoadingAutoTax, setIsLoadingAutoTax] = useState(false);
+
   // Fetch active tax rates
   const { data: taxRates } = useQuery({
     queryKey: ['taxrates-active'],
@@ -68,10 +90,69 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     },
   });
 
+  // Fetch tax calculation settings
+  const { data: taxSettings } = useQuery({
+    queryKey: ['tax-calculation-settings'],
+    queryFn: async (): Promise<TaxCalculationSettings | null> => {
+      try {
+        const response = await api.get('/api/tax/settings');
+        return response.data;
+      } catch {
+        // If settings don't exist, default to manual
+        return { CalculationMethod: 'manual', FallbackTaxRateId: null };
+      }
+    },
+  });
+
   // Get default tax rate
   const defaultTaxRate = useMemo(() => {
     return taxRates?.find(tr => tr.IsDefault);
   }, [taxRates]);
+
+  // Fetch auto tax rate when customer changes (for non-manual modes)
+  const fetchAutoTaxRate = useCallback(async (customerId: string) => {
+    if (!taxSettings || taxSettings.CalculationMethod === 'manual') {
+      setAutoTaxRate(null);
+      return;
+    }
+
+    try {
+      setIsLoadingAutoTax(true);
+
+      // Fetch customer with address fields
+      const customerResponse = await api.get(`/customers/Id/${customerId}`);
+      const customer = customerResponse.data.value?.[0] || customerResponse.data;
+
+      if (!customer?.PostalCode) {
+        console.log('Customer has no postal code, cannot auto-calculate tax');
+        setAutoTaxRate(null);
+        return;
+      }
+
+      // Call tax rate API
+      const params = new URLSearchParams({
+        postalCode: customer.PostalCode,
+        ...(customer.State && { state: customer.State }),
+        ...(customer.City && { city: customer.City }),
+      });
+
+      const taxResponse = await api.get(`/api/tax/rate?${params}`);
+      const taxData = taxResponse.data;
+
+      if (taxData.rate !== undefined) {
+        setAutoTaxRate({
+          rate: taxData.rate,
+          source: taxData.source || 'API',
+          breakdown: taxData.breakdown,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch auto tax rate:', error);
+      setAutoTaxRate(null);
+    } finally {
+      setIsLoadingAutoTax(false);
+    }
+  }, [taxSettings]);
 
   const { register, control, handleSubmit, setValue, watch, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
@@ -133,7 +214,8 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       }
     });
 
-    const taxRate = selectedTaxRate?.Rate || 0;
+    // Use auto tax rate if available, otherwise use selected tax rate
+    const taxRate = autoTaxRate?.rate ?? selectedTaxRate?.Rate ?? 0;
     const taxAmount = taxableAmount * taxRate;
     const total = subtotal + taxAmount;
 
@@ -142,9 +224,10 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       taxableAmount: Math.round(taxableAmount * 100) / 100,
       taxAmount: Math.round(taxAmount * 100) / 100,
       total: Math.round(total * 100) / 100,
-      taxRate: taxRate
+      taxRate: taxRate,
+      isAutoTax: !!autoTaxRate
     };
-  }, [lines, lineTaxableStatus, selectedTaxRate]);
+  }, [lines, lineTaxableStatus, selectedTaxRate, autoTaxRate]);
 
   // Update form values when calculations change
   useEffect(() => {
@@ -194,12 +277,29 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
               render={({ field }) => (
                 <CustomerSelector
                   value={field.value || ''}
-                  onChange={field.onChange}
+                  onChange={(customerId) => {
+                    field.onChange(customerId);
+                    if (customerId) {
+                      fetchAutoTaxRate(customerId);
+                    } else {
+                      setAutoTaxRate(null);
+                    }
+                  }}
                   error={errors.CustomerId?.message}
                   disabled={isSubmitting}
                 />
               )}
             />
+            {isLoadingAutoTax && (
+              <p className="mt-1 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> Calculating tax rate...
+              </p>
+            )}
+            {autoTaxRate && !isLoadingAutoTax && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> Auto: {(autoTaxRate.rate * 100).toFixed(2)}% ({autoTaxRate.source})
+              </p>
+            )}
           </div>
 
           <div>

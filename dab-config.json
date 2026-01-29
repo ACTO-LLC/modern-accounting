@@ -165,6 +165,11 @@
                 "Email": "Email",
                 "Phone": "Phone",
                 "Address": "Address",
+                "AddressLine1": "AddressLine1",
+                "City": "City",
+                "State": "State",
+                "PostalCode": "PostalCode",
+                "Country": "Country",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
@@ -555,6 +560,65 @@
                 "IsActive": "IsActive",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "taxcalculationsettings": {
+            "source": "dbo.TaxCalculationSettings",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "CalculationMethod": "CalculationMethod",
+                "PaidApiProvider": "PaidApiProvider",
+                "ApiKeyEncrypted": "ApiKeyEncrypted",
+                "ApiSecretEncrypted": "ApiSecretEncrypted",
+                "AvalaraAccountId": "AvalaraAccountId",
+                "AvalaraCompanyCode": "AvalaraCompanyCode",
+                "AvalaraEnvironment": "AvalaraEnvironment",
+                "FallbackTaxRateId": "FallbackTaxRateId",
+                "CacheDurationMinutes": "CacheDurationMinutes",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "taxratecache": {
+            "source": "dbo.TaxRateCache",
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "LocationKey": "LocationKey",
+                "PostalCode": "PostalCode",
+                "StateCode": "StateCode",
+                "City": "City",
+                "CombinedRate": "CombinedRate",
+                "StateRate": "StateRate",
+                "CountyRate": "CountyRate",
+                "CityRate": "CityRate",
+                "SpecialRate": "SpecialRate",
+                "Source": "Source",
+                "CachedAt": "CachedAt",
+                "ExpiresAt": "ExpiresAt",
+                "RawResponse": "RawResponse"
             },
             "key-fields": [
                 "Id"

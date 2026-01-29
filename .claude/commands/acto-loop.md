@@ -19,7 +19,12 @@ Execute an iterative development loop to resolve the issue or complete the task.
 2. If `--issue` provided:
    - Fetch issue details: `gh issue view <number> --json title,body,labels`
    - Determine if it's a bug (`fix/`) or feature (`feat/`)
-   - Check if worktree exists, if not suggest creating one
+   - **CRITICAL: Check for uncommitted changes with `git status --porcelain`**
+     - If uncommitted changes exist, you MUST either:
+       a) Create a git worktree for the issue work: `git worktree add ../modern-accounting-issue-<number> -b feat/<number>-<short-name>`
+       b) Or ask the user to commit/stash their changes first
+     - This prevents losing work when switching branches
+   - If clean, create the branch normally in the current worktree
 3. Initialize tracking state mentally:
    - Current iteration: 1
    - Start time: now
@@ -163,6 +168,7 @@ ALL must pass before `<acto-complete>`:
 7. **NEVER create a PR without passing build** - Run `npm run build` in client/ and verify it succeeds with zero errors before committing. TypeScript errors that reach main break CI for everyone.
 8. **Database changes use sqlproj** - See "Database Schema Changes" section below
 9. **NEVER close or merge WIP PRs** - If a Copilot PR has `[WIP]` in the title, it means Copilot is still working. Wait for the WIP to be removed before taking any action. Closing a WIP PR interrupts Copilot's work.
+10. **Protect uncommitted changes** - Always check `git status --porcelain` before starting. If there are uncommitted changes, use a git worktree to isolate the issue work. Never do `git reset --hard` or `git checkout` that would discard user's work.
 
 ## Database Schema Changes
 
