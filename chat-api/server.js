@@ -38,6 +38,11 @@ import {
     checkForDuplicates,
     formatContactForCreation
 } from './src/services/contact-extractor.js';
+import {
+    isRenderingAvailable,
+    getRendererType,
+    renderPage
+} from './src/services/web-renderer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -4314,7 +4319,8 @@ async function executeFetchCompanyInfo(args) {
             return { success: false, error: 'Cannot fetch internal or private addresses' };
         }
 
-        console.log(`Fetching company info from: ${baseUrl.origin}`);
+        const useRenderer = isRenderingAvailable();
+        console.log(`Fetching company info from: ${baseUrl.origin} (renderer: ${useRenderer ? getRendererType() : 'static'})`);
 
         const results = {
             baseUrl: baseUrl.origin,
@@ -4327,30 +4333,46 @@ async function executeFetchCompanyInfo(args) {
                 addresses: [],
                 companyName: null
             },
-            rawContent: ''
+            rawContent: '',
+            rendererUsed: useRenderer ? getRendererType() : 'static'
         };
 
-        // Try each path concurrently (with limit)
-        const fetchPromises = CONTACT_PAGE_PATHS.map(async (path) => {
+        // Helper function to fetch a single page
+        async function fetchPage(fullUrl) {
+            if (useRenderer) {
+                // Use Puppeteer to render JavaScript
+                const renderResult = await renderPage(fullUrl, { timeout: 15000, waitAfterLoad: 2000 });
+                if (renderResult.success) {
+                    return { success: true, html: renderResult.html };
+                }
+                // Fall back to static fetch on render failure
+                console.log(`Renderer failed for ${fullUrl}, falling back to static fetch`);
+            }
+
+            // Static fetch with axios
+            const response = await axios.get(fullUrl, {
+                timeout: 10000,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (compatible; Milton/1.0; +https://a-cto.com)',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                },
+                maxRedirects: 3,
+                validateStatus: (status) => status < 400
+            });
+            return { success: true, html: response.data };
+        }
+
+        // Try each path (sequential for renderer to avoid too many browser tabs)
+        const pageResults = [];
+        for (const path of CONTACT_PAGE_PATHS) {
             const fullUrl = `${baseUrl.origin}${path}`;
             try {
-                const response = await axios.get(fullUrl, {
-                    timeout: 10000,
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (compatible; Milton/1.0; +https://a-cto.com)',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                    },
-                    maxRedirects: 3,
-                    validateStatus: (status) => status < 400
-                });
-
-                return { path, fullUrl, html: response.data, success: true };
+                const result = await fetchPage(fullUrl);
+                pageResults.push({ path, fullUrl, ...result });
             } catch (e) {
-                return { path, fullUrl, success: false, error: e.message };
+                pageResults.push({ path, fullUrl, success: false, error: e.message });
             }
-        });
-
-        const pageResults = await Promise.all(fetchPromises);
+        }
 
         // Process successful pages
         for (const result of pageResults) {
@@ -4464,12 +4486,13 @@ async function executeFetchCompanyInfo(args) {
             emails: Array.from(results.contactInfo.emails),
             phones: Array.from(results.contactInfo.phones),
             addresses: results.contactInfo.addresses,
+            rendererUsed: results.rendererUsed,
             content: results.rawContent.length > 15000
                 ? results.rawContent.substring(0, 15000) + '... [truncated]'
                 : results.rawContent
         };
 
-        console.log(`Company info extracted: ${response.emails.length} emails, ${response.phones.length} phones from ${response.pagesChecked.length} pages`);
+        console.log(`Company info extracted: ${response.emails.length} emails, ${response.phones.length} phones from ${response.pagesChecked.length} pages (renderer: ${results.rendererUsed})`);
 
         return response;
 
