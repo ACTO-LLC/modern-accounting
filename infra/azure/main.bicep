@@ -27,9 +27,6 @@ param sqlAdminLogin string
 @secure()
 param sqlAdminPassword string
 
-@description('SendGrid administrator email')
-param sendGridAdminEmail string = 'admin@a-cto.com'
-
 @description('App Service SKU (F1 for free, B1 for basic)')
 @allowed(['F1', 'B1', 'S1'])
 param appServiceSku string = 'F1'
@@ -40,6 +37,12 @@ param sqlDatabaseSku string = 'GP_S_Gen5_1'
 
 @description('Enable auto-pause for serverless SQL (only applies to GP_S tier)')
 param sqlAutoPauseDelayMinutes int = 60
+
+@description('Deploy Azure OpenAI (requires quota approval)')
+param deployOpenAI bool = true
+
+@description('Azure OpenAI location (may differ from main location due to quota availability)')
+param openAILocation string = 'eastus'
 
 @description('Tags to apply to all resources')
 param tags object = {
@@ -80,20 +83,21 @@ module keyVault 'modules/key-vault.bicep' = {
 }
 
 // -----------------------------------------------------------------------------
-// Azure OpenAI Module (disabled - requires quota request)
-// To enable: request OpenAI quota at https://aka.ms/oai/access
+// Azure OpenAI Module
+// Provides GPT-4o for Milton AI assistant
+// Note: Deployed to East US due to quota availability
 // -----------------------------------------------------------------------------
 
-// module openAI 'modules/openai.bicep' = {
-//   name: 'openai-${uniqueSuffix}'
-//   scope: resourceGroup
-//   params: {
-//     name: 'oai-${baseName}-${environment}'
-//     location: location
-//     tags: tags
-//     keyVaultName: keyVault.outputs.keyVaultName
-//   }
-// }
+module openAI 'modules/openai.bicep' = if (deployOpenAI) {
+  name: 'openai-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    name: 'oai-${baseName}-${environment}'
+    location: openAILocation
+    tags: tags
+    keyVaultName: keyVault.outputs.keyVaultName
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Storage Account Module
@@ -169,24 +173,6 @@ module maMcpServer 'modules/mcp-service.bicep' = {
 }
 
 // -----------------------------------------------------------------------------
-// SendGrid Module (disabled - requires marketplace registration)
-// To enable: register Sendgrid.Email resource provider in Azure Portal
-// -----------------------------------------------------------------------------
-
-// module sendGrid 'modules/sendgrid.bicep' = {
-//   name: 'sendgrid-${uniqueSuffix}'
-//   scope: resourceGroup
-//   params: {
-//     name: 'sendgrid-${baseName}-${environment}'
-//     location: location
-//     adminEmail: sendGridAdminEmail
-//     plan: environment == 'prod' ? 'bronze' : 'free'
-//     tags: tags
-//     keyVaultName: keyVault.outputs.keyVaultName
-//   }
-// }
-
-// -----------------------------------------------------------------------------
 // Azure Automation Module (Start/Stop Scheduling)
 // Reduces costs by stopping App Services during off-hours (6 PM - 7 AM PT)
 // Only deployed for non-dev environments
@@ -222,7 +208,6 @@ output sqlDatabaseName string = sqlServer.outputs.databaseName
 output appServiceUrl string = appService.outputs.appServiceUrl
 output appServicePrincipalId string = appService.outputs.principalId
 output maMcpServerUrl string = maMcpServer.outputs.serviceUrl
-// OpenAI outputs (disabled - enable when quota is available)
-// output openAIEndpoint string = openAI.outputs.openAIEndpoint
-// output openAIDeploymentName string = openAI.outputs.gpt4oDeploymentName
+output openAIEndpoint string = deployOpenAI ? openAI.outputs.openAIEndpoint : ''
+output openAIDeploymentName string = deployOpenAI ? openAI.outputs.gpt4oDeploymentName : ''
 output automationAccountName string = automation.?outputs.?automationAccountName ?? ''
