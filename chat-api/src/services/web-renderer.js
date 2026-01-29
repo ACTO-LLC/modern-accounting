@@ -8,6 +8,7 @@
 
 let puppeteer = null;
 let browser = null;
+let browserInitPromise = null; // Mutex for browser initialization
 
 /**
  * Get the configured renderer type
@@ -28,38 +29,66 @@ export function isRenderingAvailable() {
 }
 
 /**
- * Initialize Puppeteer browser instance (lazy loaded)
+ * Initialize Puppeteer browser instance (lazy loaded with mutex)
  */
 async function getBrowser() {
-    if (browser) return browser;
-
-    if (!puppeteer) {
-        try {
-            puppeteer = await import('puppeteer');
-        } catch (e) {
-            console.error('Puppeteer not available:', e.message);
-            return null;
-        }
-    }
-
-    try {
-        browser = await puppeteer.default.launch({
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu',
-                '--window-size=1920x1080'
-            ]
-        });
-        console.log('Puppeteer browser launched');
+    // Return existing browser if available and connected
+    if (browser && browser.isConnected()) {
         return browser;
-    } catch (e) {
-        console.error('Failed to launch Puppeteer:', e.message);
-        return null;
     }
+
+    // Clear stale browser reference
+    if (browser && !browser.isConnected()) {
+        console.log('Clearing stale browser reference');
+        browser = null;
+    }
+
+    // Use mutex to prevent concurrent browser launches
+    if (browserInitPromise) {
+        return browserInitPromise;
+    }
+
+    browserInitPromise = (async () => {
+        try {
+            if (!puppeteer) {
+                try {
+                    puppeteer = await import('puppeteer');
+                } catch (e) {
+                    console.error('Puppeteer not available:', e.message);
+                    return null;
+                }
+            }
+
+            browser = await puppeteer.default.launch({
+                headless: true,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--window-size=1920x1080'
+                ]
+            });
+
+            // Handle browser disconnect (crash recovery)
+            browser.on('disconnected', () => {
+                console.log('Puppeteer browser disconnected');
+                browser = null;
+                browserInitPromise = null;
+            });
+
+            console.log('Puppeteer browser launched');
+            return browser;
+        } catch (e) {
+            console.error('Failed to launch Puppeteer:', e.message);
+            return null;
+        } finally {
+            browserInitPromise = null;
+        }
+    })();
+
+    return browserInitPromise;
 }
 
 /**
@@ -140,14 +169,37 @@ export async function cleanup() {
             await browser.close();
             console.log('Puppeteer browser closed');
         } catch (e) {
-            // Ignore
+            // If async close fails, try to kill the process
+            try {
+                const proc = browser.process();
+                if (proc) proc.kill('SIGKILL');
+            } catch (killError) {
+                // Ignore
+            }
         }
         browser = null;
+        browserInitPromise = null;
     }
 }
 
-// Handle process exit
-process.on('exit', cleanup);
+/**
+ * Synchronous cleanup for 'exit' event
+ */
+function cleanupSync() {
+    if (browser) {
+        try {
+            const proc = browser.process();
+            if (proc) proc.kill('SIGKILL');
+        } catch (e) {
+            // Ignore
+        }
+        browser = null;
+        browserInitPromise = null;
+    }
+}
+
+// Handle process exit - use sync cleanup for 'exit' event
+process.on('exit', cleanupSync);
 process.on('SIGINT', async () => {
     await cleanup();
     process.exit();
