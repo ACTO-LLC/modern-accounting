@@ -1,5 +1,18 @@
 # Azure App Service Deployment Issue
 
+## Status: RESOLVED
+
+**Solution**: Set custom startup command `node server.js` to bypass Oryx's default startup script.
+
+```bash
+az webapp config set \
+  --resource-group rg-modern-accounting-prod \
+  --name app-modern-accounting-prod \
+  --startup-file "node server.js"
+```
+
+---
+
 ## Problem Summary
 
 Node.js application fails to start on Azure App Service (Linux) due to Oryx build system interference, despite configuring settings to disable the build process.

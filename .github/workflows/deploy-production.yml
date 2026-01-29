@@ -212,8 +212,9 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Configure App Settings (disable build before deploy)
+      - name: Configure App Settings and Startup Command
         run: |
+          # Disable Oryx build (belt-and-suspenders)
           az webapp config appsettings set \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
@@ -222,6 +223,14 @@ jobs:
               NODE_ENV="production" \
               SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
               ENABLE_ORYX_BUILD="false"
+
+          # CRITICAL: Set custom startup command to bypass Oryx's npm install
+          # Without this, Oryx runs "npm install && npm start" at container runtime
+          # which corrupts the pre-deployed node_modules
+          az webapp config set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --startup-file "node server.js"
 
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
