@@ -90,3 +90,18 @@ GO
 
 PRINT 'v_Expenses view recreated successfully';
 GO
+
+-- Add index for IsPersonal since the frontend defaults to filtering by IsPersonal eq false
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'IX_Expenses_IsPersonal' AND object_id = OBJECT_ID('dbo.Expenses')
+)
+BEGIN
+    CREATE INDEX [IX_Expenses_IsPersonal] ON [dbo].[Expenses] ([IsPersonal]);
+    PRINT 'Created index IX_Expenses_IsPersonal';
+END
+ELSE
+BEGIN
+    PRINT 'Index IX_Expenses_IsPersonal already exists';
+END
+GO
