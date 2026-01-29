@@ -332,7 +332,7 @@ function CopyAllButton({ messages }: { messages: Array<{ role: string; content: 
     const formattedMessages = messages.map(msg => {
       const date = msg.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
       const time = msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const speaker = msg.role === 'user' ? 'You' : 'Assistant';
+      const speaker = msg.role === 'user' ? 'You' : 'Milton';
       return `[${date} ${time}] ${speaker}:\n${msg.content}`;
     }).join('\n\n---\n\n');
 
