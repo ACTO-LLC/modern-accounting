@@ -1,8 +1,8 @@
 # Production DAB Deployment Status
 
-## Current Status: MOSTLY WORKING - Proxy Path Issue
+## Current Status: WORKING
 
-Last Updated: 2026-01-30 21:55 UTC
+Last Updated: 2026-01-30 22:17 UTC
 
 ## What's Working
 
@@ -37,22 +37,19 @@ Last Updated: 2026-01-30 21:55 UTC
 **Solution**: Deployed database schema using Node.js deployment script
 - All 137 tables now exist in production database
 
-## Current Issue
+## Resolved: Proxy Path Issue (FIXED)
 
-### DAB Proxy Path Mismatch
-**Symptom**: Accessing `/api/accounts` through main app returns "Invalid Path for route: accounts"
+### DAB Proxy Path Mismatch - RESOLVED
+**Symptom**: Was returning "Invalid Path for route: accounts"
 
-**Analysis**:
-- Direct DAB access: `https://dab.../api/accounts` → Returns 403 (correct)
-- Via main app: `https://app.../api/accounts` → Returns "Invalid Path" (wrong)
+**Solution**:
+- Moved `createProxyMiddleware` outside request handler (create once, not per-request)
+- Added proper `pathRewrite` to prepend `/api` to the stripped path
+- Added debug logging to trace path rewriting
 
-**Root Cause**: Express `app.use('/api', ...)` strips the `/api` prefix before passing to proxy middleware.
-- Request comes in as `/api/accounts`
-- Express strips to `/accounts`
-- Proxy forwards to `https://dab.../accounts` (missing `/api`)
-- DAB doesn't recognize the path
-
-**Attempted Fix**: Added `pathRewrite: (path) => '/api' + path` - not working as expected
+**Current Behavior**:
+- Via main app: `https://app.../api/accounts` → Returns 403 (correct - auth required)
+- This confirms the proxy is routing correctly to DAB's `/api/accounts` endpoint
 
 ## Architecture
 
@@ -124,4 +121,14 @@ az webapp restart --name app-modern-accounting-prod -g rg-modern-accounting-prod
 | Jan 30 | TLS handshake failure on App Service | Moved to Container Apps |
 | Jan 30 | Database schema not deployed | Ran Node.js deploy script |
 | Jan 30 | Missing views in DAB config | Updated config to use tables |
-| Jan 30 | Proxy path stripping | In progress |
+| Jan 30 | Proxy path stripping | Fixed by creating proxy middleware once with pathRewrite |
+
+## Summary
+
+DAB is now fully operational on Azure Container Apps:
+- **Container App**: https://dab-ca-modern-accounting.bravesky-c584bf83.westus2.azurecontainerapps.io/
+- **Health Check**: Returns `{"status":"Healthy","version":"1.7.83"}`
+- **API Routing**: Working via proxy middleware in chat-api
+- **Authentication**: Azure AD JWT required for all API endpoints
+
+Frontend should now be able to make authenticated requests to `/api/*` endpoints.
