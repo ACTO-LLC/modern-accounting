@@ -201,7 +201,30 @@ const DAB_EXCLUDED_PATHS = [
     '/api/upload-receipt'
 ];
 
-// Proxy middleware for DAB - forwards unhandled /api/* requests to DAB
+// Create proxy middleware instance once (not per-request)
+const dabProxyMiddleware = createProxyMiddleware({
+    target: DAB_PROXY_URL,
+    changeOrigin: true,
+    logLevel: 'debug',
+    pathRewrite: (path, req) => {
+        // Reconstruct full path: /api + stripped path
+        const fullPath = '/api' + path;
+        console.log(`[DAB Proxy] Rewriting path: ${path} -> ${fullPath}`);
+        return fullPath;
+    },
+    onProxyReq: (proxyReq, req, res) => {
+        console.log(`[DAB Proxy] Forwarding: ${req.method} ${proxyReq.path} -> ${DAB_PROXY_URL}${proxyReq.path}`);
+    },
+    onError: (err, req, res) => {
+        console.error('[DAB Proxy] Error:', err.message);
+        res.status(502).json({
+            error: 'Database API unavailable',
+            message: err.message
+        });
+    }
+});
+
+// Apply proxy for /api/* routes, but skip locally-handled paths
 app.use('/api', (req, res, next) => {
     // Check if this path should be handled locally
     const fullPath = '/api' + req.path;
@@ -213,20 +236,8 @@ app.use('/api', (req, res, next) => {
         return next();
     }
 
-    // Proxy to DAB - pathRewrite adds /api prefix since app.use('/api', ...) strips it
-    return createProxyMiddleware({
-        target: DAB_PROXY_URL,
-        changeOrigin: true,
-        logLevel: 'warn',
-        pathRewrite: (path) => '/api' + path,
-        onError: (err, req, res) => {
-            console.error('DAB proxy error:', err.message);
-            res.status(502).json({
-                error: 'Database API unavailable',
-                message: err.message
-            });
-        }
-    })(req, res, next);
+    // Forward to DAB proxy
+    return dabProxyMiddleware(req, res, next);
 });
 
 // ============================================================================
