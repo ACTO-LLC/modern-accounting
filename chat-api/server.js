@@ -213,11 +213,12 @@ app.use('/api', (req, res, next) => {
         return next();
     }
 
-    // Proxy to DAB
+    // Proxy to DAB - pathRewrite adds /api prefix since app.use('/api', ...) strips it
     return createProxyMiddleware({
         target: DAB_PROXY_URL,
         changeOrigin: true,
         logLevel: 'warn',
+        pathRewrite: (path) => '/api' + path,
         onError: (err, req, res) => {
             console.error('DAB proxy error:', err.message);
             res.status(502).json({
