@@ -216,7 +216,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       try {
         const result = await mcpClient.callTool('ma_list_features', {}) as {
           features: Feature[];
-        };
+        } | null;
+        // MCP disabled or not configured - skip feature loading
+        if (!result) return;
         setFeatures(result.features);
       } catch (err) {
         console.error('Failed to load features:', err);
@@ -238,7 +240,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
       const result = await mcpClient.callTool('ma_get_user_onboarding_status', {
         userId
-      }) as OnboardingStatus;
+      }) as OnboardingStatus | null;
+
+      // MCP disabled - skip onboarding features
+      if (!result) {
+        setIsLoading(false);
+        return;
+      }
 
       setStatus(result);
 
@@ -252,8 +260,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         const pathResult = await mcpClient.callTool('ma_get_learning_path', {
           experienceLevel: result.experienceLevel,
           primaryGoal: result.primaryGoal
-        }) as { path: LearningPathItem[] };
-        setLearningPath(pathResult.path);
+        }) as { path: LearningPathItem[] } | null;
+        if (pathResult) {
+          setLearningPath(pathResult.path);
+        }
       }
     } catch (err) {
       console.error('Failed to load onboarding status:', err);
@@ -331,7 +341,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         userId,
         experienceLevel,
         primaryGoal
-      }) as { learningPath: LearningPathItem[] };
+      }) as { learningPath: LearningPathItem[] } | null;
+
+      // MCP disabled - skip
+      if (!result) return;
 
       setLearningPath(result.learningPath.map(item => ({
         ...item,

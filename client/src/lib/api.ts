@@ -31,6 +31,9 @@ export function getCurrentTenantId(): string | null {
   return currentTenantId;
 }
 
+// Track if we're already redirecting to avoid multiple redirects
+let isRedirecting = false;
+
 // Request interceptor to add auth token and tenant header
 api.interceptors.request.use(
   async (config) => {
@@ -52,8 +55,21 @@ api.interceptors.request.use(
           config.headers.Authorization = `Bearer ${response.accessToken}`;
         } catch (error) {
           if (error instanceof InteractionRequiredAuthError) {
-            // Token refresh failed, user needs to re-authenticate
-            console.warn('Token refresh required, user may need to re-authenticate');
+            // Token refresh failed or user needs to consent to API scopes
+            // Trigger redirect to get consent (only once)
+            if (!isRedirecting) {
+              isRedirecting = true;
+              console.warn('Token requires user interaction, redirecting for consent...');
+              try {
+                await msalInstance.acquireTokenRedirect(apiRequest);
+                // This will redirect, so we won't reach here
+              } catch (redirectError) {
+                console.error('Token acquisition redirect failed:', redirectError);
+                isRedirecting = false;
+              }
+            }
+          } else {
+            console.error('Failed to acquire access token:', error);
           }
         }
       }
@@ -101,7 +117,19 @@ graphqlClient.interceptors.request.use(
           config.headers.Authorization = `Bearer ${response.accessToken}`;
         } catch (error) {
           if (error instanceof InteractionRequiredAuthError) {
-            console.warn('Token refresh required for GraphQL');
+            // Token refresh failed or user needs to consent - trigger redirect
+            if (!isRedirecting) {
+              isRedirecting = true;
+              console.warn('Token requires user interaction for GraphQL, redirecting...');
+              try {
+                await msalInstance.acquireTokenRedirect(apiRequest);
+              } catch (redirectError) {
+                console.error('Token acquisition redirect failed:', redirectError);
+                isRedirecting = false;
+              }
+            }
+          } else {
+            console.error('Failed to acquire access token for GraphQL:', error);
           }
         }
       }
