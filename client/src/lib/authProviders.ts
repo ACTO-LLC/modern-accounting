@@ -49,7 +49,8 @@ const ENTRA_CONFIG = {
   clientId: import.meta.env.VITE_AZURE_CLIENT_ID || '',
   tenantId: import.meta.env.VITE_AZURE_TENANT_ID || '',
   authority: import.meta.env.VITE_AZURE_AUTHORITY || '',
-  scopes: (import.meta.env.VITE_API_SCOPES || 'openid,profile,email').split(' ').filter(Boolean),
+  // Scopes should be space-separated per OAuth 2.0 spec, fallback to array
+  scopes: import.meta.env.VITE_API_SCOPES?.split(' ').filter(Boolean) || ['openid', 'profile', 'email'],
 };
 
 /**
@@ -119,6 +120,35 @@ export function detectAuthProvider(emailHint?: string): DetectedAuthConfig {
  * @returns MSAL Configuration object
  */
 export function buildMsalConfig(config: DetectedAuthConfig): Configuration {
+  // Extract tenant ID from authority URL for metadata
+  const tenantMatch = config.authority.match(/login\.microsoftonline\.com\/([^/]+)/);
+  const tenantId = tenantMatch ? tenantMatch[1] : '';
+
+  // Provide static authority metadata to avoid network fetch issues
+  // This is especially useful when firewalls/proxies block discovery
+  const authorityMetadata = tenantId && !config.authority.includes('b2clogin.com')
+    ? JSON.stringify({
+        authorization_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`,
+        token_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+        issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
+        jwks_uri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
+        end_session_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout`,
+      })
+    : undefined;
+
+  // Cloud discovery metadata for Azure AD global cloud
+  const cloudDiscoveryMetadata = tenantId && !config.authority.includes('b2clogin.com')
+    ? JSON.stringify({
+        tenant_discovery_endpoint: `https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration`,
+        'api-version': '1.1',
+        metadata: [{
+          preferred_network: 'login.microsoftonline.com',
+          preferred_cache: 'login.windows.net',
+          aliases: ['login.microsoftonline.com', 'login.windows.net', 'login.microsoft.com', 'sts.windows.net']
+        }]
+      })
+    : undefined;
+
   return {
     auth: {
       clientId: config.clientId,
@@ -127,6 +157,8 @@ export function buildMsalConfig(config: DetectedAuthConfig): Configuration {
       postLogoutRedirectUri: window.location.origin,
       knownAuthorities: config.knownAuthorities,
       navigateToLoginRequestUrl: true,
+      authorityMetadata,
+      cloudDiscoveryMetadata,
     },
     cache: {
       cacheLocation: 'sessionStorage',

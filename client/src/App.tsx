@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import { ToastProvider } from './hooks/useToast';
 import { msalConfig } from './lib/authConfig';
@@ -138,7 +138,14 @@ const queryClient = new QueryClient();
 
 // Only initialize MSAL if not bypassing auth (for Puppeteer PDF generation compatibility)
 const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
-const msalInstance = bypassAuth ? null : new PublicClientApplication(msalConfig);
+let msalInstance: PublicClientApplication | null = null;
+let msalInitPromise: Promise<void> | null = null;
+
+if (!bypassAuth) {
+  msalInstance = new PublicClientApplication(msalConfig);
+  // MSAL v3.x requires initialize() before use
+  msalInitPromise = msalInstance.initialize();
+}
 
 function AppContent() {
   useEffect(() => {
@@ -286,6 +293,52 @@ function AppContent() {
 }
 
 function App() {
+  const [msalReady, setMsalReady] = useState(bypassAuth || !msalInitPromise);
+  const [msalError, setMsalError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (msalInitPromise) {
+      msalInitPromise
+        .then(() => setMsalReady(true))
+        .catch((error) => {
+          console.error('MSAL initialization failed:', error);
+          setMsalError(error);
+        });
+    }
+  }, []);
+
+  // Show loading while MSAL initializes
+  if (!msalReady && !msalError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if MSAL failed to initialize
+  if (msalError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-lg">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">Authentication Error</h1>
+          <p className="text-gray-600 mb-4">Failed to initialize authentication. Please try refreshing the page.</p>
+          <p className="text-sm text-gray-500">{msalError.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const content = (
     <AuthProvider>
       <TenantProvider>
