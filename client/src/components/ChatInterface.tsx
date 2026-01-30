@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, AlertTriangle, Sparkles, Trash2, Paperclip, Edi
 import DOMPurify from 'dompurify';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useChat, Insight, FileAttachment, ProactiveSuggestion, SuggestionFrequency } from '../contexts/ChatContext';
+import { useAuth } from '../contexts/AuthContext';
 import QBOConnectButton, { getQboSessionId } from './QBOConnectButton';
 
 // API configuration
@@ -362,6 +363,7 @@ function CopyAllButton({ messages }: { messages: Array<{ role: string; content: 
 }
 
 export default function ChatInterface() {
+  const { isAuthenticated } = useAuth();
   const {
     messages,
     isOpen,
@@ -781,6 +783,11 @@ What would you like to do?`
   const handleQuickAction = (action: string) => {
     sendMessage(action, []);
   };
+
+  // Don't render Milton until user is authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (!isOpen) {
     return (

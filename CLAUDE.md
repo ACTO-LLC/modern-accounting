@@ -2,6 +2,72 @@
 
 ## Lessons Learned & Best Practices
 
+### MSAL v3 Azure AD Authentication Issues (Jan 2026)
+
+**Problem:** Login fails with `endpoints_resolution_error: Endpoints cannot be resolved` or `AADSTS650053: scope 'openid,profile,email' doesn't exist`.
+
+**Root Causes:**
+1. MSAL v3.x requires calling `initialize()` before use
+2. MSAL tries to fetch cloud discovery metadata from Azure AD at runtime, which can fail due to firewalls/proxies
+3. Default scopes were comma-separated string instead of array
+
+**Solution:**
+
+1. **Initialize MSAL before use:**
+```tsx
+// App.tsx
+const msalInstance = new PublicClientApplication(msalConfig);
+const msalInitPromise = msalInstance.initialize(); // Required for MSAL v3.x
+
+// Wait for initialization in App component
+useEffect(() => {
+  msalInitPromise.then(() => setMsalReady(true));
+}, []);
+```
+
+2. **Provide static metadata to avoid network fetch:**
+```tsx
+// authProviders.ts - buildMsalConfig()
+const authorityMetadata = JSON.stringify({
+  authorization_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`,
+  token_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+  issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
+  jwks_uri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
+  end_session_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout`,
+});
+
+const cloudDiscoveryMetadata = JSON.stringify({
+  tenant_discovery_endpoint: `https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration`,
+  'api-version': '1.1',
+  metadata: [{
+    preferred_network: 'login.microsoftonline.com',
+    preferred_cache: 'login.windows.net',
+    aliases: ['login.microsoftonline.com', 'login.windows.net', 'login.microsoft.com', 'sts.windows.net']
+  }]
+});
+
+return {
+  auth: {
+    clientId,
+    authority,
+    authorityMetadata,
+    cloudDiscoveryMetadata,
+    // ...
+  }
+};
+```
+
+3. **Fix scopes to be array, not comma-separated string:**
+```tsx
+// WRONG
+scopes: 'openid,profile,email'.split(' ') // Results in ['openid,profile,email']
+
+// CORRECT
+scopes: ['openid', 'profile', 'email']
+```
+
+---
+
 ### MUI DataGrid Text Color Issue (Jan 2026)
 
 **Problem:** MUI DataGrid text appears faint/unreadable (light gray on light background).
