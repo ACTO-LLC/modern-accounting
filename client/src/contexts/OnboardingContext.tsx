@@ -101,7 +101,8 @@ interface OnboardingContextType {
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-const MA_MCP_URL = import.meta.env.VITE_MA_MCP_URL || 'http://localhost:5002';
+const MA_MCP_URL = import.meta.env.VITE_MA_MCP_URL || '';
+const MCP_ENABLED = MA_MCP_URL && !MA_MCP_URL.includes('localhost');
 
 // MCP client for calling MA MCP server
 class MaMcpClient {
@@ -109,6 +110,9 @@ class MaMcpClient {
   private sessionPromise: Promise<string> | null = null;
 
   private async createSession(): Promise<string> {
+    if (!MCP_ENABLED) {
+      throw new Error('MCP not configured for this environment');
+    }
     const response = await fetch(`${MA_MCP_URL}/mcp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -142,6 +146,10 @@ class MaMcpClient {
   }
 
   async callTool(toolName: string, args: Record<string, unknown>, retryOnSessionError = true): Promise<unknown> {
+    if (!MCP_ENABLED) {
+      // MCP not configured - return null to indicate feature not available
+      return null;
+    }
     const sessionId = await this.ensureSession();
 
     const response = await fetch(`${MA_MCP_URL}/mcp`, {
