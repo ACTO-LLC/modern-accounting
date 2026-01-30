@@ -48,10 +48,14 @@ api.interceptors.request.use(
     }
 
     const accounts = msalInstance.getAllAccounts();
-    console.log('[API Auth] Accounts:', accounts.length, 'URL:', config.url);
+    console.log('[API Auth] Accounts:', accounts.length, 'Scopes:', apiRequest.scopes, 'URL:', config.url);
 
     if (accounts.length === 0) {
-      console.warn('[API Auth] No accounts found, request will be unauthenticated');
+      console.warn('[API Auth] No accounts found, triggering login redirect');
+      if (!isRedirecting) {
+        isRedirecting = true;
+        await msalInstance.loginRedirect(apiRequest);
+      }
       return config;
     }
 
@@ -60,31 +64,26 @@ api.interceptors.request.use(
       account: accounts[0],
     };
 
-    console.log('[API Auth] Requesting token with scopes:', apiRequest.scopes);
-
     try {
       const response = await msalInstance.acquireTokenSilent(silentRequest);
-      console.log('[API Auth] Token acquired successfully, expires:', response.expiresOn);
+      console.log('[API Auth] Token acquired, expires:', response.expiresOn);
       config.headers.Authorization = `Bearer ${response.accessToken}`;
     } catch (error: any) {
-      console.error('[API Auth] acquireTokenSilent failed:', error?.name, error?.message);
+      console.error('[API Auth] acquireTokenSilent failed:', error?.name, error?.message, error);
 
-      if (error instanceof InteractionRequiredAuthError) {
-        // Token refresh failed or user needs to consent to API scopes
-        // Trigger redirect to get consent (only once)
-        if (!isRedirecting) {
-          isRedirecting = true;
-          console.warn('[API Auth] Triggering redirect for consent...');
-          try {
-            await msalInstance.acquireTokenRedirect(apiRequest);
-            // This will redirect, so we won't reach here
-          } catch (redirectError: any) {
-            console.error('[API Auth] Redirect failed:', redirectError?.name, redirectError?.message);
-            isRedirecting = false;
-          }
-        } else {
-          console.log('[API Auth] Redirect already in progress, skipping');
+      // Any token acquisition failure: clear cache and force re-login
+      if (!isRedirecting) {
+        isRedirecting = true;
+        console.warn('[API Auth] Clearing cache and forcing re-login...');
+
+        // Clear all cached accounts to force fresh login
+        const accounts = msalInstance.getAllAccounts();
+        for (const account of accounts) {
+          await msalInstance.clearCache({ account });
         }
+
+        // Redirect to login with API scopes
+        await msalInstance.loginRedirect(apiRequest);
       }
     }
 
@@ -126,6 +125,10 @@ graphqlClient.interceptors.request.use(
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length === 0) {
       console.warn('[GraphQL Auth] No accounts found');
+      if (!isRedirecting) {
+        isRedirecting = true;
+        await msalInstance.loginRedirect(apiRequest);
+      }
       return config;
     }
 
@@ -140,17 +143,10 @@ graphqlClient.interceptors.request.use(
     } catch (error: any) {
       console.error('[GraphQL Auth] acquireTokenSilent failed:', error?.name, error?.message);
 
-      if (error instanceof InteractionRequiredAuthError) {
-        if (!isRedirecting) {
-          isRedirecting = true;
-          console.warn('[GraphQL Auth] Triggering redirect for consent...');
-          try {
-            await msalInstance.acquireTokenRedirect(apiRequest);
-          } catch (redirectError: any) {
-            console.error('[GraphQL Auth] Redirect failed:', redirectError?.name, redirectError?.message);
-            isRedirecting = false;
-          }
-        }
+      if (!isRedirecting) {
+        isRedirecting = true;
+        console.warn('[GraphQL Auth] Forcing re-login...');
+        await msalInstance.loginRedirect(apiRequest);
       }
     }
 
