@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PublicClientApplication, SilentRequest, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { PublicClientApplication, SilentRequest } from '@azure/msal-browser';
 import { apiRequest } from './authConfig';
 import { formatDateForOData } from './dateUtils';
 
