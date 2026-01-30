@@ -42,38 +42,52 @@ api.interceptors.request.use(
       config.headers['X-Tenant-Id'] = currentTenantId;
     }
 
-    if (msalInstance) {
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) {
-        const silentRequest: SilentRequest = {
-          ...apiRequest,
-          account: accounts[0],
-        };
+    if (!msalInstance) {
+      console.warn('[API Auth] MSAL not initialized, request will be unauthenticated:', config.url);
+      return config;
+    }
 
-        try {
-          const response = await msalInstance.acquireTokenSilent(silentRequest);
-          config.headers.Authorization = `Bearer ${response.accessToken}`;
-        } catch (error) {
-          if (error instanceof InteractionRequiredAuthError) {
-            // Token refresh failed or user needs to consent to API scopes
-            // Trigger redirect to get consent (only once)
-            if (!isRedirecting) {
-              isRedirecting = true;
-              console.warn('Token requires user interaction, redirecting for consent...');
-              try {
-                await msalInstance.acquireTokenRedirect(apiRequest);
-                // This will redirect, so we won't reach here
-              } catch (redirectError) {
-                console.error('Token acquisition redirect failed:', redirectError);
-                isRedirecting = false;
-              }
-            }
-          } else {
-            console.error('Failed to acquire access token:', error);
+    const accounts = msalInstance.getAllAccounts();
+    console.log('[API Auth] Accounts:', accounts.length, 'URL:', config.url);
+
+    if (accounts.length === 0) {
+      console.warn('[API Auth] No accounts found, request will be unauthenticated');
+      return config;
+    }
+
+    const silentRequest: SilentRequest = {
+      ...apiRequest,
+      account: accounts[0],
+    };
+
+    console.log('[API Auth] Requesting token with scopes:', apiRequest.scopes);
+
+    try {
+      const response = await msalInstance.acquireTokenSilent(silentRequest);
+      console.log('[API Auth] Token acquired successfully, expires:', response.expiresOn);
+      config.headers.Authorization = `Bearer ${response.accessToken}`;
+    } catch (error: any) {
+      console.error('[API Auth] acquireTokenSilent failed:', error?.name, error?.message);
+
+      if (error instanceof InteractionRequiredAuthError) {
+        // Token refresh failed or user needs to consent to API scopes
+        // Trigger redirect to get consent (only once)
+        if (!isRedirecting) {
+          isRedirecting = true;
+          console.warn('[API Auth] Triggering redirect for consent...');
+          try {
+            await msalInstance.acquireTokenRedirect(apiRequest);
+            // This will redirect, so we won't reach here
+          } catch (redirectError: any) {
+            console.error('[API Auth] Redirect failed:', redirectError?.name, redirectError?.message);
+            isRedirecting = false;
           }
+        } else {
+          console.log('[API Auth] Redirect already in progress, skipping');
         }
       }
     }
+
     return config;
   },
   (error) => {
@@ -104,36 +118,42 @@ const graphqlClient = axios.create({
 // Add the same auth interceptor to graphQL client
 graphqlClient.interceptors.request.use(
   async (config) => {
-    if (msalInstance) {
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) {
-        const silentRequest: SilentRequest = {
-          ...apiRequest,
-          account: accounts[0],
-        };
+    if (!msalInstance) {
+      console.warn('[GraphQL Auth] MSAL not initialized');
+      return config;
+    }
 
-        try {
-          const response = await msalInstance.acquireTokenSilent(silentRequest);
-          config.headers.Authorization = `Bearer ${response.accessToken}`;
-        } catch (error) {
-          if (error instanceof InteractionRequiredAuthError) {
-            // Token refresh failed or user needs to consent - trigger redirect
-            if (!isRedirecting) {
-              isRedirecting = true;
-              console.warn('Token requires user interaction for GraphQL, redirecting...');
-              try {
-                await msalInstance.acquireTokenRedirect(apiRequest);
-              } catch (redirectError) {
-                console.error('Token acquisition redirect failed:', redirectError);
-                isRedirecting = false;
-              }
-            }
-          } else {
-            console.error('Failed to acquire access token for GraphQL:', error);
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length === 0) {
+      console.warn('[GraphQL Auth] No accounts found');
+      return config;
+    }
+
+    const silentRequest: SilentRequest = {
+      ...apiRequest,
+      account: accounts[0],
+    };
+
+    try {
+      const response = await msalInstance.acquireTokenSilent(silentRequest);
+      config.headers.Authorization = `Bearer ${response.accessToken}`;
+    } catch (error: any) {
+      console.error('[GraphQL Auth] acquireTokenSilent failed:', error?.name, error?.message);
+
+      if (error instanceof InteractionRequiredAuthError) {
+        if (!isRedirecting) {
+          isRedirecting = true;
+          console.warn('[GraphQL Auth] Triggering redirect for consent...');
+          try {
+            await msalInstance.acquireTokenRedirect(apiRequest);
+          } catch (redirectError: any) {
+            console.error('[GraphQL Auth] Redirect failed:', redirectError?.name, redirectError?.message);
+            isRedirecting = false;
           }
         }
       }
     }
+
     return config;
   },
   (error) => Promise.reject(error)
