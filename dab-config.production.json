@@ -500,6 +500,74 @@
                     "actions": ["read"]
                 }
             ]
+        },
+        "expenses": {
+            "source": {
+                "object": "dbo.v_Expenses",
+                "type": "view",
+                "key-fields": ["Id"]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["read"]
+                }
+            ]
+        },
+        "expenses_write": {
+            "source": "dbo.Expenses",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": ["create", "read", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "companyfeatureflags": {
+            "source": "dbo.CompanyFeatureFlags",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "onboardingprogress": {
+            "source": "dbo.OnboardingProgress",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": ["read", "create", "update"]
+                },
+                {
+                    "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
         }
     }
 }
