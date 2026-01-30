@@ -50,6 +50,55 @@ const dataGridTheme = createTheme({
 
 ---
 
+### Azure App Service Node.js Deployment - Oryx Bypass (Jan 2026)
+
+**Problem:** Node.js app fails to start on Azure App Service (Linux) with `ERR_MODULE_NOT_FOUND` errors, even when `node_modules` is included in the deployment package.
+
+**Root Cause:** Azure's **Oryx build system runs at container runtime**, not just deployment time. Even with these settings:
+```
+SCM_DO_BUILD_DURING_DEPLOYMENT=false
+ENABLE_ORYX_BUILD=false
+```
+
+Oryx still executes `npm install --omit=dev && npm start` during container startup, which:
+1. Partially extracts/corrupts pre-deployed `node_modules`
+2. Fails with `EACCES` permission errors
+3. Leaves Node.js unable to find dependencies
+
+**Solution:** Set a custom startup command to bypass Oryx entirely:
+
+```bash
+az webapp config set \
+  --resource-group rg-modern-accounting-prod \
+  --name app-modern-accounting-prod \
+  --startup-file "node server.js"
+```
+
+In GitHub Actions workflow:
+```yaml
+- name: Configure Startup Command
+  run: |
+    az webapp config set \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --name ${{ env.AZURE_WEBAPP_NAME }} \
+      --startup-file "node server.js"
+```
+
+**What Doesn't Work:**
+- `SCM_DO_BUILD_DURING_DEPLOYMENT=false` (only affects Kudu, not container startup)
+- `ENABLE_ORYX_BUILD=false` (ignored at runtime)
+- `WEBSITE_RUN_FROM_PACKAGE=1` without blob storage URL
+- Pre-zipped `node_modules` without startup command override
+
+**Key Insight:** The startup command must be set to skip Oryx's default startup script. Your `server.js` must:
+- Use `__dirname` relative paths (not `process.cwd()`)
+- Not rely on `npm start` (use `node server.js` directly)
+- Have all dependencies pre-installed in `node_modules`
+
+**Alternative:** Use Azure Container Apps with a Dockerfile for full control.
+
+---
+
 ### Terminology Aliases
 
 When users say:
