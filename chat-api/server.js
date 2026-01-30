@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 import axios from 'axios';
 import { randomUUID } from 'crypto';
@@ -178,6 +179,54 @@ function validateExtractedIntent(intent) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ============================================================================
+// DAB (Data API Builder) Proxy
+// ============================================================================
+// Proxy /api/* requests to DAB for database operations
+// Excludes routes handled directly by this server
+const DAB_PROXY_URL = process.env.DAB_URL || process.env.DAB_REST_URL?.replace('/api', '') || 'http://localhost:5000';
+const DAB_EXCLUDED_PATHS = [
+    '/api/health',
+    '/api/users',
+    '/api/github',
+    '/api/tax',
+    '/api/chat',
+    '/api/qbo',
+    '/api/plaid',
+    '/api/enhancements',
+    '/api/deployments',
+    '/api/extract-contact',
+    '/api/upload-document',
+    '/api/upload-receipt'
+];
+
+// Proxy middleware for DAB - forwards unhandled /api/* requests to DAB
+app.use('/api', (req, res, next) => {
+    // Check if this path should be handled locally
+    const fullPath = '/api' + req.path;
+    const shouldSkip = DAB_EXCLUDED_PATHS.some(excluded =>
+        fullPath === excluded || fullPath.startsWith(excluded + '/')
+    );
+
+    if (shouldSkip) {
+        return next();
+    }
+
+    // Proxy to DAB
+    return createProxyMiddleware({
+        target: DAB_PROXY_URL,
+        changeOrigin: true,
+        logLevel: 'warn',
+        onError: (err, req, res) => {
+            console.error('DAB proxy error:', err.message);
+            res.status(502).json({
+                error: 'Database API unavailable',
+                message: err.message
+            });
+        }
+    })(req, res, next);
+});
 
 // ============================================================================
 // Authentication & Authorization Middleware

@@ -1,5 +1,12 @@
 {
     "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.0.0/dab.draft.schema.json",
+    "data-source": {
+        "database-type": "mssql",
+        "connection-string": "@env('DATABASE_CONNECTION_STRING')",
+        "options": {
+            "set-session-context": true
+        }
+    },
     "runtime": {
         "host": {
             "mode": "production",
@@ -397,7 +404,7 @@
             ]
         },
         "salesreceipts": {
-            "source": "dbo.v_SalesReceipts",
+            "source": "dbo.SalesReceipts",
             "rest": true,
             "graphql": true,
             "permissions": [
@@ -476,25 +483,6 @@
                 {
                     "role": "Admin",
                     "actions": ["*"]
-                }
-            ]
-        },
-        "overdueinvoicesforreminder": {
-            "source": {
-                "object": "dbo.v_OverdueInvoicesForReminder",
-                "type": "view",
-                "key-fields": ["InvoiceId"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
                 }
             ]
         },
