@@ -106,6 +106,9 @@ jobs:
         env:
           VITE_API_URL: /api
           VITE_DAB_URL: ${{ vars.PROD_DAB_URL || 'https://dab-modern-accounting-prod.azurewebsites.net' }}
+          VITE_AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+          VITE_AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          VITE_AZURE_AUTHORITY: https://login.microsoftonline.com/${{ secrets.AZURE_AD_TENANT_ID }}
 
       # Build chat-api with production dependencies
       - name: Install chat-api dependencies
