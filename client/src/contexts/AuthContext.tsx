@@ -151,7 +151,8 @@ function MsalAuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async () => {
     try {
-      await instance.loginPopup(loginRequest);
+      // Use redirect instead of popup to avoid COOP issues with Microsoft login
+      await instance.loginRedirect(loginRequest);
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -160,7 +161,7 @@ function MsalAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await instance.logoutPopup({
+      await instance.logoutRedirect({
         postLogoutRedirectUri: window.location.origin,
       });
     } catch (error) {
@@ -184,12 +185,14 @@ function MsalAuthProvider({ children }: { children: ReactNode }) {
       return response.accessToken;
     } catch (error) {
       if (error instanceof InteractionRequiredAuthError) {
-        // Token expired or requires interaction, trigger popup
+        // Token expired or requires interaction, trigger redirect
+        // Use redirect instead of popup to avoid COOP issues
         try {
-          const response = await instance.acquireTokenPopup(apiRequest);
-          return response.accessToken;
-        } catch (popupError) {
-          console.error('Token acquisition failed:', popupError);
+          await instance.acquireTokenRedirect(apiRequest);
+          // This will redirect, so we won't reach here
+          return null;
+        } catch (redirectError) {
+          console.error('Token acquisition failed:', redirectError);
           return null;
         }
       }
