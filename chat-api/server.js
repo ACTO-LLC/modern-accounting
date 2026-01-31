@@ -213,7 +213,13 @@ const dabProxyMiddleware = createProxyMiddleware({
         return fullPath;
     },
     onProxyReq: (proxyReq, req, res) => {
+        const authHeader = req.headers.authorization;
+        const hasAuth = authHeader ? `Bearer token present (${authHeader.length} chars)` : 'No auth header';
         console.log(`[DAB Proxy] Forwarding: ${req.method} ${proxyReq.path} -> ${DAB_PROXY_URL}${proxyReq.path}`);
+        console.log(`[DAB Proxy] Authorization: ${hasAuth}`);
+    },
+    onProxyRes: (proxyRes, req, res) => {
+        console.log(`[DAB Proxy] Response: ${proxyRes.statusCode} for ${req.method} ${req.path}`);
     },
     onError: (err, req, res) => {
         console.error('[DAB Proxy] Error:', err.message);
