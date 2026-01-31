@@ -188,12 +188,14 @@ export async function validateJWT(req, res, next) {
     }
 
     try {
+        console.log('[Auth] Validating token, length:', token.length, 'audience expected:', config.audience);
         const { payload, protectedHeader } = await validateToken(token);
+        console.log('[Auth] Token valid, user:', payload.preferred_username || payload.email, 'aud:', payload.aud);
         req.user = extractUserInfo(payload);
         req.tokenHeader = protectedHeader;
         next();
     } catch (error) {
-        console.error('JWT validation failed:', error.message);
+        console.error('[Auth] JWT validation failed:', error.message, 'expected aud:', config.audience);
 
         // Determine specific error type
         if (error.code === 'ERR_JWT_EXPIRED') {

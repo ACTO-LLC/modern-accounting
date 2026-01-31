@@ -66,8 +66,9 @@ api.interceptors.request.use(
 
     try {
       const response = await msalInstance.acquireTokenSilent(silentRequest);
-      console.log('[API Auth] Token acquired, expires:', response.expiresOn);
+      console.log('[API Auth] Token acquired, expires:', response.expiresOn, 'aud:', response.account?.idTokenClaims?.aud);
       config.headers.Authorization = `Bearer ${response.accessToken}`;
+      console.log('[API Auth] Token attached to request, length:', response.accessToken.length);
     } catch (error: any) {
       console.error('[API Auth] acquireTokenSilent failed:', error?.name, error?.message, error);
 
