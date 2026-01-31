@@ -692,3 +692,170 @@ const odataEnd = formatDateForOData(endDate, true);      // "2025-12-31T23:59:59
 - `CustomerStatement.tsx` - Invoice and payment date filters
 - `api.ts` - Time entries date range filter (getByDateRange)
 - `dateUtils.ts` - Added `formatDateForOData()` helper function
+
+---
+
+### Production Database Connection String Parsing (Jan 2026)
+
+**Problem:** Chat-api fails to connect to database in production with 500 errors on `/api/users/me`. App Service has `SQL_CONNECTION_STRING` as Key Vault reference, but code expects individual env vars.
+
+**Root Cause:** The `chat-api/src/db/connection.js` only supported individual environment variables (`SQL_SERVER`, `SQL_PORT`, `SQL_DATABASE`, `SQL_USER`, `SQL_SA_PASSWORD`), not connection strings.
+
+**Solution:** Add connection string parsing to support both formats:
+
+```javascript
+// chat-api/src/db/connection.js
+function parseConnectionString(connectionString) {
+    const parts = {};
+    for (const part of connectionString.split(';')) {
+        const [key, ...valueParts] = part.split('=');
+        if (key && valueParts.length > 0) {
+            parts[key.trim().toLowerCase()] = valueParts.join('=').trim();
+        }
+    }
+
+    let server = parts['server'] || parts['data source'] || 'localhost';
+    let port = 1433;
+
+    // Remove tcp: prefix if present
+    if (server.startsWith('tcp:')) server = server.substring(4);
+
+    // Split host and port if comma-separated
+    if (server.includes(',')) {
+        const [host, portStr] = server.split(',');
+        server = host;
+        port = parseInt(portStr, 10);
+    }
+
+    return {
+        server,
+        port,
+        database: parts['database'] || parts['initial catalog'] || 'AccountingDB',
+        user: parts['user id'] || parts['uid'] || 'sa',
+        password: parts['password'] || parts['pwd'] || '',
+        options: {
+            encrypt: parts['encrypt'] !== 'False' && parts['encrypt'] !== 'false',
+            trustServerCertificate: parts['trustservercertificate'] === 'True',
+            enableArithAbort: true,
+        },
+    };
+}
+
+// Use SQL_CONNECTION_STRING if available, otherwise individual vars
+let config;
+if (process.env.SQL_CONNECTION_STRING) {
+    const parsed = parseConnectionString(process.env.SQL_CONNECTION_STRING);
+    config = { ...parsed, pool: { max: 10, min: 0, idleTimeoutMillis: 30000 } };
+} else {
+    config = { /* individual env var config */ };
+}
+```
+
+**Key Insight:** Azure App Service Key Vault references resolve to the full connection string at runtime. The code must be able to parse this format.
+
+---
+
+### DAB Azure AD Authentication Issues (Jan 2026)
+
+**Problem:** DAB Container App returns 403 Forbidden for all authenticated requests, even when tokens appear valid.
+
+**Symptoms:**
+- Token acquired with correct audience (bare GUID)
+- Token attached to requests
+- DAB logs show "Authorization Failure: Access Not Allowed"
+- No detailed error about WHY validation failed
+
+**Investigation Findings:**
+1. DAB config uses `@env('AZURE_AD_AUDIENCE')` and `@env('AZURE_AD_ISSUER')`
+2. Container has correct env vars set
+3. Token issuer format (v1 vs v2) may not match
+
+**Temporary Workaround:** Add "anonymous" role with read access to all DAB entities:
+
+```javascript
+// Update dab-config.production.json via script
+const data = JSON.parse(fs.readFileSync('dab-config.production.json', 'utf8'));
+for (const [entityName, entity] of Object.entries(data.entities)) {
+    if (entity.permissions) {
+        const hasAnonymous = entity.permissions.some(p => p.role === 'anonymous');
+        if (!hasAnonymous) {
+            entity.permissions.unshift({ role: 'anonymous', actions: ['read'] });
+        }
+    }
+}
+fs.writeFileSync('dab-config.production.json', JSON.stringify(data, null, 4));
+```
+
+Then upload to Azure Files and restart DAB:
+```bash
+az storage file upload --source dab-config.production.json --share-name dab-config \
+  --path dab-config.json --account-name stmodernaccountingprod
+
+az containerapp update --name dab-ca-modern-accounting --resource-group rg-modern-accounting-prod \
+  --set-env-vars "RESTART_TRIGGER=$(date +%s)"
+```
+
+**TODO:** Fix proper Azure AD authentication by:
+1. Verifying token issuer format matches DAB expectation (v1 vs v2)
+2. Checking if JWKS endpoint is reachable from container
+3. Enabling detailed DAB logging to see token validation errors
+
+---
+
+### Azure Key Vault Access for App Service (Jan 2026)
+
+**Problem:** App Service can't resolve Key Vault references (e.g., `@Microsoft.KeyVault(SecretUri=...)`) - settings show the reference syntax instead of actual values.
+
+**Root Cause:** App Service's managed identity doesn't have RBAC access to Key Vault secrets.
+
+**Solution:** Grant "Key Vault Secrets User" role to App Service identity:
+
+```bash
+# Get App Service managed identity principal ID
+az webapp identity show --name app-modern-accounting-prod \
+  --resource-group rg-modern-accounting-prod --query principalId -o tsv
+
+# Grant access (if Key Vault uses RBAC, not access policies)
+az role assignment create \
+  --assignee-object-id "<principal-id>" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Key Vault Secrets User" \
+  --scope "/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.KeyVault/vaults/<kv-name>"
+```
+
+**Check if Key Vault uses RBAC:**
+```bash
+az keyvault show --name <vault-name> --query "properties.enableRbacAuthorization"
+# true = uses RBAC, false = uses access policies
+```
+
+**Key Insight:** When Key Vault references don't resolve, the app receives the literal string `@Microsoft.KeyVault(...)` instead of the secret value, causing configuration failures.
+
+---
+
+### DAB Container App Config Updates (Jan 2026)
+
+**Problem:** Need to update DAB configuration file stored in Azure Files.
+
+**Solution:**
+
+1. **Download current config:**
+```bash
+az storage file download --share-name dab-config --path dab-config.json \
+  --account-name stmodernaccountingprod --dest ./downloaded-config.json
+```
+
+2. **Upload updated config:**
+```bash
+az storage file upload --source ./updated-config.json --share-name dab-config \
+  --path dab-config.json --account-name stmodernaccountingprod
+```
+
+3. **Restart DAB container (trigger new revision):**
+```bash
+az containerapp update --name dab-ca-modern-accounting \
+  --resource-group rg-modern-accounting-prod \
+  --set-env-vars "RESTART_TRIGGER=$(date +%s)"
+```
+
+**Note:** Container Apps don't have a simple "restart" command. Setting an env var triggers a new revision deployment.
