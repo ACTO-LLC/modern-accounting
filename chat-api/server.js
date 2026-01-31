@@ -364,7 +364,15 @@ class DabRestClient {
         this.baseUrl = baseUrl;
     }
 
-    async get(entity, options = {}) {
+    _buildHeaders(authToken = null) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        return headers;
+    }
+
+    async get(entity, options = {}, authToken = null) {
         try {
             const params = new URLSearchParams();
             if (options.filter) params.append('$filter', options.filter);
@@ -373,7 +381,7 @@ class DabRestClient {
             if (options.first) params.append('$first', options.first.toString());
 
             const url = `${this.baseUrl}/${entity}${params.toString() ? '?' + params.toString() : ''}`;
-            const response = await axios.get(url);
+            const response = await axios.get(url, { headers: this._buildHeaders(authToken) });
             return { success: true, value: response.data.value || [] };
         } catch (error) {
             console.error(`REST GET ${entity} failed:`, error.message);
@@ -381,10 +389,10 @@ class DabRestClient {
         }
     }
 
-    async getById(entity, id) {
+    async getById(entity, id, authToken = null) {
         try {
             const url = `${this.baseUrl}/${entity}/Id/${id}`;
-            const response = await axios.get(url);
+            const response = await axios.get(url, { headers: this._buildHeaders(authToken) });
             return { success: true, value: response.data };
         } catch (error) {
             console.error(`REST GET ${entity}/${id} failed:`, error.message);
@@ -392,10 +400,10 @@ class DabRestClient {
         }
     }
 
-    async create(entity, data) {
+    async create(entity, data, authToken = null) {
         try {
             const response = await axios.post(`${this.baseUrl}/${entity}`, data, {
-                headers: { 'Content-Type': 'application/json' }
+                headers: this._buildHeaders(authToken)
             });
             // DAB returns {"value":[{...}]}, extract the first item
             const created = response.data.value?.[0] || response.data;
@@ -406,10 +414,10 @@ class DabRestClient {
         }
     }
 
-    async update(entity, id, data) {
+    async update(entity, id, data, authToken = null) {
         try {
             const response = await axios.patch(`${this.baseUrl}/${entity}/Id/${id}`, data, {
-                headers: { 'Content-Type': 'application/json' }
+                headers: this._buildHeaders(authToken)
             });
             return { success: true, value: response.data };
         } catch (error) {
@@ -418,9 +426,9 @@ class DabRestClient {
         }
     }
 
-    async delete(entity, id) {
+    async delete(entity, id, authToken = null) {
         try {
-            await axios.delete(`${this.baseUrl}/${entity}/Id/${id}`);
+            await axios.delete(`${this.baseUrl}/${entity}/Id/${id}`, { headers: this._buildHeaders(authToken) });
             return { success: true };
         } catch (error) {
             console.error(`REST DELETE ${entity}/${id} failed:`, error.message);
@@ -587,7 +595,7 @@ class DabMcpClient {
         }
     }
 
-    async callTool(toolName, args = {}, retryOnSessionError = true) {
+    async callTool(toolName, args = {}, authToken = null, retryOnSessionError = true) {
         await this.initialize();
 
         // Update activity time to prevent unnecessary keep-alive pings
@@ -609,6 +617,10 @@ class DabMcpClient {
             if (this.sessionId) {
                 headers['Mcp-Session-Id'] = this.sessionId;
             }
+            // Forward auth token to DAB for authenticated requests
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
 
             const response = await axios.post(this.mcpUrl, payload, {
                 headers,
@@ -628,7 +640,7 @@ class DabMcpClient {
                     this.stopKeepAlive();
                     this.initialized = false;
                     this.sessionId = null;
-                    return this.callTool(toolName, args, false);
+                    return this.callTool(toolName, args, authToken, false);
                 }
                 console.error(`MCP error for ${toolName}:`, parsed.error);
                 return { error: parsed.error.message };
@@ -647,7 +659,7 @@ class DabMcpClient {
                 this.stopKeepAlive();
                 this.initialized = false;
                 this.sessionId = null;
-                return this.callTool(toolName, args, false);
+                return this.callTool(toolName, args, authToken, false);
             }
             console.error(`MCP call failed for ${toolName}:`, error.message);
             return { error: error.message };
@@ -655,12 +667,12 @@ class DabMcpClient {
     }
 
     // Entity operations
-    async describeEntities(options = {}) {
-        return this.callTool('describe_entities', options);
+    async describeEntities(options = {}, authToken = null) {
+        return this.callTool('describe_entities', options, authToken);
     }
 
-    async readRecords(entity, options = {}) {
-        return this.callTool('read_records', { entity, ...options });
+    async readRecords(entity, options = {}, authToken = null) {
+        return this.callTool('read_records', { entity, ...options }, authToken);
     }
 
     /**
@@ -747,16 +759,16 @@ class DabMcpClient {
         return results;
     }
 
-    async createRecord(entity, data) {
-        return this.callTool('create_record', { entity, data });
+    async createRecord(entity, data, authToken = null) {
+        return this.callTool('create_record', { entity, data }, authToken);
     }
 
-    async updateRecord(entity, keys, fields) {
-        return this.callTool('update_record', { entity, keys, fields });
+    async updateRecord(entity, keys, fields, authToken = null) {
+        return this.callTool('update_record', { entity, keys, fields }, authToken);
     }
 
-    async deleteRecord(entity, keys) {
-        return this.callTool('delete_record', { entity, keys });
+    async deleteRecord(entity, keys, authToken = null) {
+        return this.callTool('delete_record', { entity, keys }, authToken);
     }
 }
 
@@ -1960,9 +1972,9 @@ function getDateRange(period) {
 // Generic MCP Tool Execution Functions
 // ============================================================================
 
-async function executeDabDescribeEntities(params) {
+async function executeDabDescribeEntities(params, authToken = null) {
     try {
-        const result = await mcp.describeEntities(params.entities ? { entities: params.entities } : {});
+        const result = await mcp.describeEntities(params.entities ? { entities: params.entities } : {}, authToken);
         if (result.error) {
             return { success: false, error: result.error };
         }
@@ -1979,7 +1991,7 @@ async function executeDabDescribeEntities(params) {
     }
 }
 
-async function executeDabQuery(params) {
+async function executeDabQuery(params, authToken = null) {
     try {
         const options = {};
         if (params.filter) options.filter = params.filter;
@@ -1987,7 +1999,7 @@ async function executeDabQuery(params) {
         if (params.orderby) options.orderby = [params.orderby];
         options.first = params.first || 100;
 
-        const result = await mcp.readRecords(params.entity, options);
+        const result = await mcp.readRecords(params.entity, options, authToken);
         if (result.error) {
             return { success: false, error: result.error, entity: params.entity };
         }
@@ -2003,9 +2015,9 @@ async function executeDabQuery(params) {
     }
 }
 
-async function executeDabCreate(params) {
+async function executeDabCreate(params, authToken = null) {
     try {
-        const result = await mcp.createRecord(params.entity, params.data);
+        const result = await mcp.createRecord(params.entity, params.data, authToken);
         if (result.error) {
             return { success: false, error: result.error, entity: params.entity };
         }
@@ -3566,7 +3578,7 @@ async function executeDeleteProducts(params) {
 // Company Onboarding Functions
 // ============================================================================
 
-async function executeListIndustryTemplates(params) {
+async function executeListIndustryTemplates(params, authToken = null) {
     try {
         const options = {
             orderby: 'SortOrder asc',
@@ -3576,7 +3588,7 @@ async function executeListIndustryTemplates(params) {
             options.filter = `Category eq '${params.category}'`;
         }
 
-        const result = await dab.get('industrytemplates', options);
+        const result = await dab.get('industrytemplates', options, authToken);
         if (!result.success) {
             return { success: false, error: result.error };
         }
@@ -3599,7 +3611,7 @@ async function executeListIndustryTemplates(params) {
     }
 }
 
-async function executeCreateCompany(params) {
+async function executeCreateCompany(params, authToken = null) {
     try {
         const companyData = {
             Name: params.name,
@@ -3615,7 +3627,7 @@ async function executeCreateCompany(params) {
             OnboardingStatus: 'InProgress'
         };
 
-        const createResult = await dab.create('companies', companyData);
+        const createResult = await dab.create('companies', companyData, authToken);
         if (!createResult.success) {
             return { success: false, error: createResult.error };
         }
@@ -3640,7 +3652,7 @@ async function executeCreateCompany(params) {
                 Status: step.status,
                 StartedAt: step.status === 'Completed' ? new Date().toISOString() : null,
                 CompletedAt: step.status === 'Completed' ? new Date().toISOString() : null
-            });
+            }, authToken);
         }
 
         return {
@@ -3658,12 +3670,12 @@ async function executeCreateCompany(params) {
     }
 }
 
-async function executeGetIndustryTemplate(params) {
+async function executeGetIndustryTemplate(params, authToken = null) {
     try {
         const result = await dab.get('industrytemplates', {
             filter: `Code eq '${params.template_code}'`,
             first: 1
-        });
+        }, authToken);
 
         if (!result.success) {
             return { success: false, error: result.error };
@@ -3698,13 +3710,13 @@ async function executeGetIndustryTemplate(params) {
     }
 }
 
-async function executeGenerateCOAFromTemplate(params) {
+async function executeGenerateCOAFromTemplate(params, authToken = null) {
     try {
         // Get the template
         const templateResult = await dab.get('industrytemplates', {
             filter: `Code eq '${params.template_code}'`,
             first: 1
-        });
+        }, authToken);
 
         if (!templateResult.success) {
             return { success: false, error: templateResult.error };
@@ -3736,7 +3748,7 @@ async function executeGenerateCOAFromTemplate(params) {
         const existingResult = await dab.get('accounts', {
             select: 'Code',
             first: 1000
-        });
+        }, authToken);
         const existingCodes = new Set((existingResult.value || []).map(a => a.Code));
 
         // Create all accounts
@@ -3758,7 +3770,7 @@ async function executeGenerateCOAFromTemplate(params) {
                 Subtype: acct.subtype || null,
                 Description: acct.description || null,
                 IsActive: true
-            });
+            }, authToken);
 
             if (!result.success) {
                 errors.push({ code: acct.code, error: result.error });
@@ -3773,33 +3785,33 @@ async function executeGenerateCOAFromTemplate(params) {
             const industryProgress = await dab.get('onboardingprogress', {
                 filter: `CompanyId eq ${params.company_id} and StepCode eq 'industry_selection'`,
                 first: 1
-            });
+            }, authToken);
             if (industryProgress.value?.[0]) {
                 await dab.update('onboardingprogress', industryProgress.value[0].Id, {
                     Status: 'Completed',
                     CompletedAt: new Date().toISOString(),
                     StepData: JSON.stringify({ templateCode: params.template_code })
-                });
+                }, authToken);
             }
 
             // Mark coa_setup as completed
             const coaProgress = await dab.get('onboardingprogress', {
                 filter: `CompanyId eq ${params.company_id} and StepCode eq 'coa_setup'`,
                 first: 1
-            });
+            }, authToken);
             if (coaProgress.value?.[0]) {
                 await dab.update('onboardingprogress', coaProgress.value[0].Id, {
                     Status: 'Completed',
                     CompletedAt: new Date().toISOString(),
                     StepData: JSON.stringify({ accountsCreated: created, accountsSkipped: skipped })
-                });
+                }, authToken);
             }
 
             // Update company industry
             await dab.update('companies', params.company_id, {
                 Industry: template.Name,
                 UpdatedAt: new Date().toISOString()
-            });
+            }, authToken);
         }
 
         return {
@@ -3816,7 +3828,7 @@ async function executeGenerateCOAFromTemplate(params) {
     }
 }
 
-async function executeGetOnboardingStatus(params) {
+async function executeGetOnboardingStatus(params, authToken = null) {
     try {
         let companyId = params.company_id;
 
@@ -3825,7 +3837,7 @@ async function executeGetOnboardingStatus(params) {
             const companiesResult = await dab.get('companies', {
                 orderby: 'CreatedAt desc',
                 first: 1
-            });
+            }, authToken);
             if (!companiesResult.success) {
                 return { success: false, error: companiesResult.error };
             }
@@ -3840,7 +3852,7 @@ async function executeGetOnboardingStatus(params) {
         const companyResult = await dab.get('companies', {
             filter: `Id eq ${companyId}`,
             first: 1
-        });
+        }, authToken);
         if (!companyResult.success) {
             return { success: false, error: companyResult.error };
         }
@@ -3853,7 +3865,7 @@ async function executeGetOnboardingStatus(params) {
         const progressResult = await dab.get('onboardingprogress', {
             filter: `CompanyId eq ${companyId}`,
             orderby: 'StepOrder asc'
-        });
+        }, authToken);
         const steps = progressResult.value || [];
 
         const completedSteps = steps.filter(s => s.Status === 'Completed').length;
@@ -3885,12 +3897,12 @@ async function executeGetOnboardingStatus(params) {
     }
 }
 
-async function executeUpdateOnboardingStep(params) {
+async function executeUpdateOnboardingStep(params, authToken = null) {
     try {
         const progressResult = await dab.get('onboardingprogress', {
             filter: `CompanyId eq ${params.company_id} and StepCode eq '${params.step_code}'`,
             first: 1
-        });
+        }, authToken);
 
         if (!progressResult.success) {
             return { success: false, error: progressResult.error };
@@ -3917,13 +3929,13 @@ async function executeUpdateOnboardingStep(params) {
             }
         }
 
-        await dab.update('onboardingprogress', progress.Id, updateData);
+        await dab.update('onboardingprogress', progress.Id, updateData, authToken);
 
         // Check if all steps are done
         const allProgressResult = await dab.get('onboardingprogress', {
             filter: `CompanyId eq ${params.company_id}`,
             orderby: 'StepOrder asc'
-        });
+        }, authToken);
         const allSteps = allProgressResult.value || [];
         const allDone = allSteps.every(s => s.Status === 'Completed' || s.Status === 'Skipped');
 
@@ -3931,7 +3943,7 @@ async function executeUpdateOnboardingStep(params) {
             await dab.update('companies', params.company_id, {
                 OnboardingStatus: 'Completed',
                 OnboardingCompletedAt: new Date().toISOString()
-            });
+            }, authToken);
         }
 
         return {
@@ -4839,12 +4851,12 @@ function getAllTools() {
     return tools;
 }
 
-async function executeFunction(name, args) {
+async function executeFunction(name, args, authToken = null) {
     // Check if this is a dynamically discovered MCP tool
     const isDynamicTool = dynamicTools.some(t => t.function.name === name);
     if (isDynamicTool) {
         console.log(`Executing MCP tool: ${name}`);
-        const result = await mcpManager.callTool(name, args);
+        const result = await mcpManager.callTool(name, args, authToken);
         return result;
     }
 
@@ -4852,11 +4864,11 @@ async function executeFunction(name, args) {
     switch (name) {
         // Legacy static tools - these don't go through MCP
         case 'dab_describe_entities':
-            return executeDabDescribeEntities(args);
+            return executeDabDescribeEntities(args, authToken);
         case 'dab_query':
-            return executeDabQuery(args);
+            return executeDabQuery(args, authToken);
         case 'dab_create':
-            return executeDabCreate(args);
+            return executeDabCreate(args, authToken);
         case 'qbo_query':
             return executeQboQuery(args);
         case 'qbo_get_invoice':
@@ -4925,17 +4937,17 @@ async function executeFunction(name, args) {
             return executeDeleteProducts(args);
         // Company Onboarding Tools
         case 'list_industry_templates':
-            return executeListIndustryTemplates(args);
+            return executeListIndustryTemplates(args, authToken);
         case 'create_company':
-            return executeCreateCompany(args);
+            return executeCreateCompany(args, authToken);
         case 'get_industry_template':
-            return executeGetIndustryTemplate(args);
+            return executeGetIndustryTemplate(args, authToken);
         case 'generate_coa_from_template':
-            return executeGenerateCOAFromTemplate(args);
+            return executeGenerateCOAFromTemplate(args, authToken);
         case 'get_onboarding_status':
-            return executeGetOnboardingStatus(args);
+            return executeGetOnboardingStatus(args, authToken);
         case 'update_onboarding_step':
-            return executeUpdateOnboardingStep(args);
+            return executeUpdateOnboardingStep(args, authToken);
         // Contact Extraction Tools
         case 'extract_from_business_card':
             return executeExtractFromBusinessCard(args);
@@ -6103,16 +6115,17 @@ app.post('/api/chat/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', optionalJWT, async (req, res) => {
     try {
         const { message, history = [], attachments = [] } = req.body;
+        const authToken = req.authToken; // Get auth token for forwarding to DAB
 
         // Build user message content
         let userContent = message;
-        
+
         // If there are image attachments, use vision model with multi-modal content
         const userMessage = { role: 'user', content: userContent };
-        
+
         // Add attachment context to message if present
         if (attachments && attachments.length > 0) {
             const attachmentContext = attachments.map(att => {
@@ -6125,7 +6138,7 @@ app.post('/api/chat', async (req, res) => {
             userContent += attachmentContext;
             userMessage.content = userContent;
         }
-        
+
         const messages = [
             { role: 'system', content: systemPrompt },
             ...history.map(msg => ({ role: msg.role, content: msg.content })),
@@ -6152,7 +6165,7 @@ app.post('/api/chat', async (req, res) => {
                 }
 
                 toolUsed = toolCall.function.name;
-                const functionResult = await executeFunction(toolCall.function.name, functionArgs);
+                const functionResult = await executeFunction(toolCall.function.name, functionArgs, authToken);
                 messages.push({ role: 'tool', toolCallId: toolCall.id, content: JSON.stringify(functionResult) });
             }
 
@@ -6168,10 +6181,10 @@ app.post('/api/chat', async (req, res) => {
         });
     } catch (error) {
         console.error('Chat error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'I had trouble processing your request. This might be a temporary issue.',
             details: error.message,
-            retryable: true 
+            retryable: true
         });
     }
 });

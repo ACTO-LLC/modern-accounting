@@ -99,7 +99,7 @@ class McpServer {
         }
     }
 
-    async callTool(toolName, args = {}) {
+    async callTool(toolName, args = {}, authToken = null) {
         if (!await this.initialize()) {
             return { error: `${this.name} MCP not initialized` };
         }
@@ -115,6 +115,10 @@ class McpServer {
         try {
             const headers = { 'Content-Type': 'application/json', ...this.headers };
             if (this.sessionId) headers['Mcp-Session-Id'] = this.sessionId;
+            // Forward auth token for authenticated requests
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
 
             const response = await axios.post(this.url, payload, {
                 headers,
@@ -130,7 +134,7 @@ class McpServer {
                     console.log(`[${this.name}] Session expired, reinitializing...`);
                     this.initialized = false;
                     this.sessionId = null;
-                    return this.callTool(toolName, args);
+                    return this.callTool(toolName, args, authToken);
                 }
                 return { error: parsed.error.message };
             }
@@ -150,7 +154,7 @@ class McpServer {
                 console.log(`[${this.name}] Session not found, reinitializing...`);
                 this.initialized = false;
                 this.sessionId = null;
-                return this.callTool(toolName, args);
+                return this.callTool(toolName, args, authToken);
             }
             console.error(`[${this.name}] Tool call failed:`, error.message);
             return { error: error.message };
@@ -210,7 +214,7 @@ class McpClientManager {
         return this.allTools;
     }
 
-    async callTool(toolName, args = {}) {
+    async callTool(toolName, args = {}, authToken = null) {
         const mapping = this.toolToServer.get(toolName);
         if (!mapping) {
             return { error: `Unknown tool: ${toolName}` };
@@ -218,7 +222,7 @@ class McpClientManager {
 
         const { server, originalName } = mapping;
         console.log(`Routing ${toolName} -> ${server.name}::${originalName}`);
-        return server.callTool(originalName, args);
+        return server.callTool(originalName, args, authToken);
     }
 
     // Direct access to specific server

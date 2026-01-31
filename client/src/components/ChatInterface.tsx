@@ -363,7 +363,7 @@ function CopyAllButton({ messages }: { messages: Array<{ role: string; content: 
 }
 
 export default function ChatInterface() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, getAccessToken } = useAuth();
   const {
     messages,
     isOpen,
@@ -658,12 +658,19 @@ What would you like to do?`
     }
 
     try {
+      // Get auth token for authenticated DAB requests
+      const authToken = await getAccessToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-QBO-Session-Id': getQboSessionId()
+      };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
       const response = await fetch(`${CHAT_API_BASE_URL}/api/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-QBO-Session-Id': getQboSessionId()
-        },
+        headers,
         body: JSON.stringify({
           message: text,
           history: messages.slice(-10),

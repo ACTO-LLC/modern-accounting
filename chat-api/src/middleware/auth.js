@@ -232,6 +232,7 @@ export async function optionalJWT(req, res, next) {
 
     if (!token) {
         req.user = null;
+        req.authToken = null;
         return next();
     }
 
@@ -239,10 +240,12 @@ export async function optionalJWT(req, res, next) {
         const { payload, protectedHeader } = await validateToken(token);
         req.user = extractUserInfo(payload);
         req.tokenHeader = protectedHeader;
+        req.authToken = token; // Store raw token for forwarding to downstream services
     } catch (error) {
         // Log but don't fail - request continues without user
         console.warn('Optional JWT validation failed:', error.message);
         req.user = null;
+        req.authToken = null;
     }
 
     next();

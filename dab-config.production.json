@@ -108,7 +108,7 @@
                 {
                     "role": "anonymous",
                     "actions": [
-                        "read"
+                        "*"
                     ]
                 },
                 {
@@ -1499,6 +1499,50 @@
                 },
                 {
                     "role": "Admin",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "companies": {
+            "source": "dbo.Companies",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "onboardingprogress": {
+            "source": "dbo.OnboardingProgress",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": ["*"]
+                }
+            ]
+        },
+        "industrytemplates": {
+            "source": "dbo.IndustryTemplates",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "anonymous",
+                    "actions": ["read"]
+                }
+            ]
+        },
+        "onboardingconversations": {
+            "source": "dbo.OnboardingConversations",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "anonymous",
                     "actions": ["*"]
                 }
             ]
