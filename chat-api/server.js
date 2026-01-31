@@ -6469,7 +6469,27 @@ async function startServer() {
     // ========================================================================
     // Serve client build from /public folder in production
     const publicPath = path.join(__dirname, 'public');
-    app.use(express.static(publicPath));
+
+    // Serve hashed assets with long cache (1 year, immutable)
+    // Vite adds content hashes to JS/CSS filenames, so they're safe to cache forever
+    app.use('/assets', express.static(path.join(publicPath, 'assets'), {
+        maxAge: '1y',
+        immutable: true,
+        setHeaders: (res) => {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }));
+
+    // Serve other static files with short cache
+    app.use(express.static(publicPath, {
+        maxAge: '1h',
+        setHeaders: (res, filePath) => {
+            // HTML files should always revalidate
+            if (filePath.endsWith('.html')) {
+                res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+            }
+        }
+    }));
 
     // SPA fallback - serve index.html for client-side routing
     // This must be after all API routes
@@ -6478,6 +6498,8 @@ async function startServer() {
         if (req.path.startsWith('/api/')) {
             return res.status(404).json({ error: 'API endpoint not found' });
         }
+        // Always revalidate index.html to get latest asset references
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
         res.sendFile(path.join(publicPath, 'index.html'), (err) => {
             if (err) {
                 // If index.html doesn't exist, continue to 404
