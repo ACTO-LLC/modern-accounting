@@ -11,7 +11,9 @@
         "host": {
             "mode": "production",
             "cors": {
-                "origins": ["@env('CORS_ORIGINS')"],
+                "origins": [
+                    "@env('CORS_ORIGINS')"
+                ],
                 "allow-credentials": true
             },
             "authentication": {
@@ -38,16 +40,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -57,16 +73,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -76,16 +106,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -95,16 +139,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -114,16 +172,31 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -133,16 +206,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -152,16 +239,31 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -171,16 +273,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -190,16 +306,31 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -209,16 +340,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -228,16 +373,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -247,16 +406,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -266,24 +439,44 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Employee",
-                    "actions": ["create", "read", "update"],
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ],
                     "fields": {
-                        "include": ["*"],
+                        "include": [
+                            "*"
+                        ],
                         "exclude": []
                     }
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -293,16 +486,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -312,16 +519,30 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -331,8 +552,16 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "Admin",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 }
             ]
         },
@@ -342,8 +571,16 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -353,12 +590,22 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -368,8 +615,16 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -379,12 +634,22 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -394,12 +659,22 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -409,16 +684,28 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 }
             ]
         },
@@ -428,12 +715,24 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -443,16 +742,31 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -462,12 +776,22 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -477,12 +801,22 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -492,12 +826,22 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 }
             ]
         },
@@ -505,22 +849,36 @@
             "source": {
                 "object": "dbo.v_Expenses",
                 "type": "view",
-                "key-fields": ["Id"]
+                "key-fields": [
+                    "Id"
+                ]
             },
             "rest": true,
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Accountant",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 }
             ]
         },
@@ -530,12 +888,24 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "Accountant",
-                    "actions": ["create", "read", "update"]
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -545,12 +915,22 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -560,12 +940,24 @@
             "graphql": true,
             "permissions": [
                 {
+                    "role": "anonymous",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
                     "role": "authenticated",
-                    "actions": ["read", "create", "update"]
+                    "actions": [
+                        "read",
+                        "create",
+                        "update"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         }
