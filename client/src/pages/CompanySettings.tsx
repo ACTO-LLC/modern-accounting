@@ -64,7 +64,7 @@ export default function CompanySettings() {
     setSaveMessage(null);
 
     try {
-      updateSettings(formData);
+      await updateSettings(formData);
       setSaveMessage({ type: 'success', text: 'Settings saved successfully!' });
     } catch {
       setSaveMessage({ type: 'error', text: 'Failed to save settings' });
