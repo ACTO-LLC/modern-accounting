@@ -3,7 +3,7 @@
  * Handles communication with the backend API for enhancement requests and deployments
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export interface Enhancement {
   id: number;

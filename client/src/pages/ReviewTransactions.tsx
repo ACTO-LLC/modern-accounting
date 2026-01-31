@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Edit2, FileText, AlertTriangle } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
 
-const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
 interface BankTransaction {
   Id: string;

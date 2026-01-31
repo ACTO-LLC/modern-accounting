@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import QBOConnectButton, { getQboSessionId } from './QBOConnectButton';
 
 // API configuration
-const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
 // Configure DOMPurify to allow safe link attributes
 const sanitizeConfig = {

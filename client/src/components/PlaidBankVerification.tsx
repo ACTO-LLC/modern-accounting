@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { usePlaidLink, PlaidLinkOptions, PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { CheckCircle, AlertTriangle, Loader2, ShieldCheck, Link2Off, Building2 } from 'lucide-react';
 
-const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
 interface VerificationStatus {
   status: 'Unverified' | 'Pending' | 'Verified' | 'Failed' | 'Expired';

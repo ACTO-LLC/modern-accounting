@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 
-const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
 // Check if the Plaid service is available
 async function checkPlaidServiceAvailable(): Promise<boolean> {

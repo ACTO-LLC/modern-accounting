@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link2, Link2Off, Loader2, Building2 } from 'lucide-react';
 
 // API configuration
-const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || 'http://localhost:7071';
+const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
 interface QBOStatus {
   connected: boolean;
