@@ -118,6 +118,8 @@ class McpServer {
             // Forward auth token for authenticated requests
             if (authToken) {
                 headers['Authorization'] = `Bearer ${authToken}`;
+                // DAB requires X-MS-API-ROLE header to use non-default roles
+                headers['X-MS-API-ROLE'] = 'Admin';
             }
 
             const response = await axios.post(this.url, payload, {

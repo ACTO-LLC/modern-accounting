@@ -409,10 +409,13 @@ class DabRestClient {
         this.baseUrl = baseUrl;
     }
 
-    _buildHeaders(authToken = null) {
+    _buildHeaders(authToken = null, role = null) {
         const headers = { 'Content-Type': 'application/json' };
         if (authToken) {
             headers['Authorization'] = `Bearer ${authToken}`;
+            // DAB requires X-MS-API-ROLE header to use non-default roles
+            // Default to 'Admin' for authenticated users performing writes
+            headers['X-MS-API-ROLE'] = role || 'Admin';
         }
         return headers;
     }

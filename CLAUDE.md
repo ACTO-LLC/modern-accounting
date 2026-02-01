@@ -825,50 +825,55 @@ if (process.env.SQL_CONNECTION_STRING) {
 
 ---
 
-### DAB Azure AD Authentication Issues (Jan 2026)
+### DAB Role-Based Authorization with X-MS-API-ROLE Header (Feb 2026)
 
-**Problem:** DAB Container App returns 403 Forbidden for all authenticated requests, even when tokens appear valid.
+**Problem:** DAB returns 403 Forbidden for write operations even when the user's JWT token contains the correct roles (Admin, Accountant).
 
-**Symptoms:**
-- Token acquired with correct audience (bare GUID)
-- Token attached to requests
-- DAB logs show "Authorization Failure: Access Not Allowed"
-- No detailed error about WHY validation failed
+**Root Cause:** DAB requires the `X-MS-API-ROLE` header to specify which role to use for authorization. Without this header, DAB defaults to the "authenticated" role, which typically only has read access.
 
-**Investigation Findings:**
-1. DAB config uses `@env('AZURE_AD_AUDIENCE')` and `@env('AZURE_AD_ISSUER')`
-2. Container has correct env vars set
-3. Token issuer format (v1 vs v2) may not match
+**How DAB Role Authorization Works:**
+1. User authenticates and receives a JWT with a `roles` claim (e.g., `["Admin"]`)
+2. DAB validates the JWT audience and issuer
+3. DAB checks the `X-MS-API-ROLE` header to determine which role permissions to apply
+4. If no role header is provided, DAB uses "authenticated" role (default, typically read-only)
+5. If the role header specifies a role NOT in the user's JWT, DAB returns 403
 
-**Temporary Workaround:** Add "anonymous" role with read access to all DAB entities:
+**Solution:** Include `X-MS-API-ROLE` header in API requests:
 
 ```javascript
-// Update dab-config.production.json via script
-const data = JSON.parse(fs.readFileSync('dab-config.production.json', 'utf8'));
-for (const [entityName, entity] of Object.entries(data.entities)) {
-    if (entity.permissions) {
-        const hasAnonymous = entity.permissions.some(p => p.role === 'anonymous');
-        if (!hasAnonymous) {
-            entity.permissions.unshift({ role: 'anonymous', actions: ['read'] });
-        }
+// chat-api/server.js - DabRestClient._buildHeaders()
+_buildHeaders(authToken = null, role = null) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+        // DAB requires X-MS-API-ROLE header to use non-default roles
+        headers['X-MS-API-ROLE'] = role || 'Admin';
     }
+    return headers;
 }
-fs.writeFileSync('dab-config.production.json', JSON.stringify(data, null, 4));
 ```
 
-Then upload to Azure Files and restart DAB:
-```bash
-az storage file upload --source dab-config.production.json --share-name dab-config \
-  --path dab-config.json --account-name stmodernaccountingprod
-
-az containerapp update --name dab-ca-modern-accounting --resource-group rg-modern-accounting-prod \
-  --set-env-vars "RESTART_TRIGGER=$(date +%s)"
+**DAB Config Permissions Structure:**
+```json
+"accounts": {
+    "permissions": [
+        { "role": "authenticated", "actions": ["read"] },           // Default role - read only
+        { "role": "Accountant", "actions": ["create", "read", "update"] },
+        { "role": "Admin", "actions": ["*"] }                       // Full access
+    ]
+}
 ```
 
-**TODO:** Fix proper Azure AD authentication by:
-1. Verifying token issuer format matches DAB expectation (v1 vs v2)
-2. Checking if JWKS endpoint is reachable from container
-3. Enabling detailed DAB logging to see token validation errors
+**Azure AD App Role Setup:**
+1. Define app roles in Azure AD App Registration (Admin, Accountant, Viewer, Service)
+2. Assign roles to users in Enterprise Applications → Users and groups
+3. For managed identity (backend-to-backend), create app role with `allowedMemberTypes: ["Application"]`
+
+**Debugging 403 Errors:**
+1. Verify user has correct role in Azure AD (check Enterprise Applications → Users and groups)
+2. Verify JWT contains the role in `roles` claim (decode at jwt.ms)
+3. Verify `X-MS-API-ROLE` header is being sent
+4. Verify DAB config has permissions for that role on the entity
 
 ---
 
