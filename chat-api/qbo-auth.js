@@ -1,6 +1,15 @@
 /**
  * QBO Authentication Module
  * Handles OAuth flow and token persistence to database
+ *
+ * Authentication Strategy:
+ * - QBO connections are stored in DAB (Data API Builder)
+ * - DAB requires Azure AD authentication for all operations
+ * - Since OAuth callback has no user context, we use:
+ *   - Production: App Service Managed Identity
+ *   - Local dev: DefaultAzureCredential (Azure CLI, env vars, etc.)
+ *
+ * This is documented in CLAUDE.md under "QBO Auth DAB Integration"
  */
 
 import dotenv from 'dotenv';
@@ -8,8 +17,71 @@ dotenv.config();
 
 import OAuthClient from 'intuit-oauth';
 import axios from 'axios';
+import { DefaultAzureCredential } from '@azure/identity';
 
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
+const DAB_AUDIENCE = process.env.AZURE_AD_AUDIENCE || process.env.AZURE_AD_CLIENT_ID;
+
+// Azure credential for DAB authentication (uses Managed Identity in production, Azure CLI locally)
+let azureCredential = null;
+let cachedToken = null;
+let tokenExpiry = null;
+
+/**
+ * Get an Azure AD token for DAB API calls
+ * Uses Managed Identity in production, DefaultAzureCredential locally
+ */
+async function getDabAuthToken() {
+    // Skip auth if DAB_API_URL is localhost (local dev without auth)
+    if (DAB_API_URL.includes('localhost')) {
+        return null;
+    }
+
+    // Check if we have a valid cached token (with 5 min buffer)
+    if (cachedToken && tokenExpiry && new Date() < new Date(tokenExpiry.getTime() - 5 * 60 * 1000)) {
+        return cachedToken;
+    }
+
+    try {
+        if (!azureCredential) {
+            azureCredential = new DefaultAzureCredential();
+        }
+
+        // Get token for DAB API
+        const scope = DAB_AUDIENCE ? `api://${DAB_AUDIENCE}/.default` : null;
+        if (!scope) {
+            console.warn('DAB_AUDIENCE not configured, skipping auth token acquisition');
+            return null;
+        }
+
+        const tokenResponse = await azureCredential.getToken(scope);
+        cachedToken = tokenResponse.token;
+        tokenExpiry = tokenResponse.expiresOnTimestamp ? new Date(tokenResponse.expiresOnTimestamp) : new Date(Date.now() + 3600 * 1000);
+
+        console.log('Acquired DAB auth token via Managed Identity, expires:', tokenExpiry);
+        return cachedToken;
+    } catch (error) {
+        console.error('Failed to acquire DAB auth token:', error.message);
+        // Return null to allow fallback to unauthenticated (for backwards compatibility)
+        return null;
+    }
+}
+
+/**
+ * Create axios config with auth headers for DAB calls
+ */
+async function getDabAxiosConfig() {
+    const token = await getDabAuthToken();
+    const config = {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+}
 
 // In-memory cache of active connections (keyed by realmId)
 const activeConnections = new Map();
@@ -129,9 +201,12 @@ class QBOAuth {
 
     /**
      * Save connection to database via DAB API
+     * Uses Managed Identity for authentication in production
      */
     async saveConnection(connection) {
         try {
+            const axiosConfig = await getDabAxiosConfig();
+
             // Check if connection already exists
             const existing = await this.getConnectionByRealmId(connection.realmId);
 
@@ -150,7 +225,7 @@ class QBOAuth {
                         UpdatedAt: new Date().toISOString(),
                         IsActive: true
                     },
-                    { headers: { 'Content-Type': 'application/json' } }
+                    axiosConfig
                 );
             } else {
                 // Create new
@@ -168,7 +243,7 @@ class QBOAuth {
                         IsActive: true,
                         LastUsedAt: new Date().toISOString()
                     },
-                    { headers: { 'Content-Type': 'application/json' } }
+                    axiosConfig
                 );
             }
 
@@ -185,8 +260,9 @@ class QBOAuth {
      */
     async getConnectionByRealmId(realmId, activeOnly = false) {
         try {
+            const axiosConfig = await getDabAxiosConfig();
             // Get all connections and filter in code (avoids OData issues)
-            const response = await axios.get(`${DAB_API_URL}/qboconnections`);
+            const response = await axios.get(`${DAB_API_URL}/qboconnections`, axiosConfig);
             const items = response.data?.value || [];
             // For save/update operations, find ANY record with this realmId (active or not)
             // For status checks, only return active connections
@@ -202,8 +278,9 @@ class QBOAuth {
      */
     async getActiveConnection() {
         try {
+            const axiosConfig = await getDabAxiosConfig();
             // Get all connections and filter in code (avoids OData issues)
-            const response = await axios.get(`${DAB_API_URL}/qboconnections`);
+            const response = await axios.get(`${DAB_API_URL}/qboconnections`, axiosConfig);
             const items = response.data?.value || [];
             // Filter active and sort by LastUsedAt desc
             const active = items
@@ -273,6 +350,7 @@ class QBOAuth {
                 // Update database
                 const dbConnection = await this.getConnectionByRealmId(realmId);
                 if (dbConnection) {
+                    const axiosConfig = await getDabAxiosConfig();
                     await axios.patch(
                         `${DAB_API_URL}/qboconnections/Id/${dbConnection.Id}`,
                         {
@@ -282,7 +360,7 @@ class QBOAuth {
                             LastUsedAt: new Date().toISOString(),
                             UpdatedAt: new Date().toISOString()
                         },
-                        { headers: { 'Content-Type': 'application/json' } }
+                        axiosConfig
                     );
                 }
 
@@ -344,13 +422,14 @@ class QBOAuth {
         try {
             const connection = await this.getConnectionByRealmId(realmId, true);  // Only active
             if (connection) {
+                const axiosConfig = await getDabAxiosConfig();
                 await axios.patch(
                     `${DAB_API_URL}/qboconnections/Id/${connection.Id}`,
                     {
                         IsActive: false,
                         UpdatedAt: new Date().toISOString()
                     },
-                    { headers: { 'Content-Type': 'application/json' } }
+                    axiosConfig
                 );
 
                 activeConnections.delete(realmId);
@@ -368,11 +447,14 @@ class QBOAuth {
      */
     async loadConnectionsFromDB() {
         try {
+            const axiosConfig = await getDabAxiosConfig();
             const response = await axios.get(
-                `${DAB_API_URL}/qboconnections?$filter=IsActive eq true`
+                `${DAB_API_URL}/qboconnections`,
+                axiosConfig
             );
-            const connections = response.data?.value || [];
-
+            // Filter active connections in code to avoid OData issues
+            const allConnections = response.data?.value || [];
+            const connections = allConnections.filter(c => c.IsActive);
             console.log(`Loading ${connections.length} QBO connection(s) from database`);
 
             for (const conn of connections) {

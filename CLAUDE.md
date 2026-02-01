@@ -27,6 +27,51 @@
 
 ## Lessons Learned & Best Practices
 
+### QBO Auth DAB Integration (Feb 2026)
+
+**Problem:** QBO OAuth callback needs to store tokens in DAB, but the callback has no user context (it's a redirect from Intuit, not an authenticated API call).
+
+**Solution:** Use Azure Managed Identity for backend-to-backend authentication:
+
+1. **Production (Azure App Service):** Uses Managed Identity to authenticate to DAB
+2. **Local Development:** Uses `DefaultAzureCredential` which falls back to Azure CLI credentials
+
+**Implementation (`chat-api/qbo-auth.js`):**
+```javascript
+import { DefaultAzureCredential } from '@azure/identity';
+
+const DAB_AUDIENCE = process.env.AZURE_AD_AUDIENCE;
+let azureCredential = null;
+
+async function getDabAuthToken() {
+    // Skip auth for localhost
+    if (DAB_API_URL.includes('localhost')) return null;
+
+    if (!azureCredential) {
+        azureCredential = new DefaultAzureCredential();
+    }
+
+    const scope = `api://${DAB_AUDIENCE}/.default`;
+    const tokenResponse = await azureCredential.getToken(scope);
+    return tokenResponse.token;
+}
+```
+
+**Why Managed Identity for QBO, but User Tokens for Migrations:**
+- **QBO token storage:** System operation with no user context - uses Managed Identity
+- **Data migrations:** User-initiated operations - uses forwarded user tokens for SQL audit trails
+
+**Required Environment Variables:**
+- `AZURE_AD_AUDIENCE`: The App Registration's Client ID (e.g., `2685fbc4-b4fd-4ea7-8773-77ec0826e7af`)
+- `DAB_API_URL`: The DAB API endpoint
+
+**Local Development:**
+1. Login to Azure CLI: `az login`
+2. Set `DAB_API_URL=http://localhost:5000/api` to skip auth (local DAB doesn't require it)
+3. Or set up a local service principal for full auth testing
+
+---
+
 ### MSAL v3 Azure AD Authentication Issues (Jan 2026)
 
 **Problem:** Login fails with `endpoints_resolution_error: Endpoints cannot be resolved` or `AADSTS650053: scope 'openid,profile,email' doesn't exist`.
