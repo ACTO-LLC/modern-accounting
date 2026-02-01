@@ -217,6 +217,15 @@ const dabProxyMiddleware = createProxyMiddleware({
         const hasAuth = authHeader ? `Bearer token present (${authHeader.length} chars)` : 'No auth header';
         console.log(`[DAB Proxy] Forwarding: ${req.method} ${proxyReq.path} -> ${DAB_PROXY_URL}${proxyReq.path}`);
         console.log(`[DAB Proxy] Authorization: ${hasAuth}`);
+
+        // Re-serialize body for POST/PATCH/PUT since express.json() already consumed the stream
+        if (req.body && ['POST', 'PATCH', 'PUT'].includes(req.method)) {
+            const bodyData = JSON.stringify(req.body);
+            proxyReq.setHeader('Content-Type', 'application/json');
+            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+            proxyReq.write(bodyData);
+            console.log(`[DAB Proxy] Body re-serialized: ${bodyData.length} bytes`);
+        }
     },
     onProxyRes: (proxyRes, req, res) => {
         console.log(`[DAB Proxy] Response: ${proxyRes.statusCode} for ${req.method} ${req.path}`);
