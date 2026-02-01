@@ -17,7 +17,8 @@ import {
     isSessionConnected,
     getSessionInfo,
     disconnectSession,
-    sessionStore
+    sessionStore,
+    createClientFromTokens
 } from './quickbooks-client.js';
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.QBO_MCP_PORT || 8001;
+const DEFAULT_QBO_SESSION = process.env.QBO_DEFAULT_SESSION || 'default';
 
 // Track MCP sessions
 const mcpSessions = new Map<string, { created: Date; qboSessionId?: string }>();
@@ -171,25 +173,54 @@ app.post('/mcp', async (req: Request, res: Response) => {
                     });
                 }
 
-                // Get QBO session ID from MCP session or header
-                const mcpSession = mcpSessions.get(mcpSessionId);
-                let qboSessionId = mcpSession?.qboSessionId || req.headers['x-qbo-session-id'] as string;
+                // Check for stateless token auth (preferred)
+                const accessToken = req.headers['x-qbo-access-token'] as string;
+                const realmId = req.headers['x-qbo-realm-id'] as string;
 
-                // For connection check, use any session ID
-                if (name === 'qbo_get_connection_status' && !qboSessionId) {
-                    qboSessionId = mcpSessionId; // Use MCP session as fallback
+                // Get QBO session ID from MCP session or header (fallback to default session)
+                const mcpSession = mcpSessions.get(mcpSessionId);
+                let qboSessionId = mcpSession?.qboSessionId || req.headers['x-qbo-session-id'] as string || DEFAULT_QBO_SESSION;
+
+                // For connection check with stateless tokens, return connected status
+                if (name === 'qbo_get_connection_status') {
+                    if (accessToken && realmId) {
+                        return sendSSEResponse(res, {
+                            jsonrpc: '2.0',
+                            id,
+                            result: {
+                                content: [{
+                                    type: 'text' as const,
+                                    text: JSON.stringify({
+                                        connected: true,
+                                        realmId: realmId,
+                                        mode: 'stateless'
+                                    })
+                                }]
+                            }
+                        });
+                    }
                 }
 
-                if (!qboSessionId && name !== 'qbo_get_connection_status') {
+                // Require either stateless tokens or session ID
+                if (!accessToken && !qboSessionId && name !== 'qbo_get_connection_status') {
                     return sendSSEResponse(res, {
                         jsonrpc: '2.0',
                         id,
-                        error: { code: -32002, message: 'QBO session not set. Use X-QBO-Session-Id header.' }
+                        error: {
+                            code: -32002,
+                            message: 'QBO auth required. Use X-QBO-Access-Token + X-QBO-Realm-Id headers, or X-QBO-Session-Id.'
+                        }
                     });
                 }
 
-                // Execute tool
-                const result = await tool.handler(qboSessionId || '', { params: args });
+                // Build context for tool - includes stateless tokens if provided
+                const context = {
+                    params: args,
+                    statelessAuth: accessToken && realmId ? { accessToken, realmId } : null
+                };
+
+                // Execute tool with context
+                const result = await tool.handler(qboSessionId || '', context);
 
                 return sendSSEResponse(res, {
                     jsonrpc: '2.0',
@@ -225,16 +256,15 @@ app.post('/mcp', async (req: Request, res: Response) => {
 app.post('/oauth/connect', (req: Request, res: Response) => {
     const { sessionId, redirectUrl } = req.body;
 
-    if (!sessionId) {
-        return res.status(400).json({ error: 'sessionId is required' });
-    }
+    // Use default session if not specified
+    const effectiveSessionId = sessionId || DEFAULT_QBO_SESSION;
 
     // Create session if needed
-    sessionStore.getOrCreate(sessionId);
+    sessionStore.getOrCreate(effectiveSessionId);
 
     // Generate state that includes session ID
     const state = Buffer.from(JSON.stringify({
-        sessionId,
+        sessionId: effectiveSessionId,
         redirectUrl: redirectUrl || 'http://localhost:5173'
     })).toString('base64');
 

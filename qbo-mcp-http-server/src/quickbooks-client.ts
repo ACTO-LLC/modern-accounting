@@ -189,4 +189,108 @@ export function disconnectSession(sessionId: string): void {
     console.log('Session disconnected:', sessionId);
 }
 
+/**
+ * Create a QuickBooks client from passed-in tokens (stateless mode)
+ * This allows callers to pass tokens directly without using session storage.
+ */
+export function createClientFromTokens(accessToken: string, realmId: string): QuickBooks {
+    const config = getConfig();
+
+    return new QuickBooks(
+        config.clientId,
+        config.clientSecret,
+        accessToken,
+        false, // no token secret for OAuth 2.0
+        realmId,
+        config.environment === 'sandbox',
+        false, // debug
+        undefined, // minor version
+        '2.0', // oauth version
+        undefined // no refresh token in stateless mode
+    );
+}
+
+/**
+ * Execute a paginated query to fetch ALL records for an entity type.
+ * QBO API limits results to 1000 per request, so we use STARTPOSITION to paginate.
+ *
+ * @param qb - QuickBooks client
+ * @param entityType - The QBO entity type (Customer, Vendor, Account, etc.)
+ * @param findMethod - The method name on qb (e.g., 'findCustomers')
+ * @param whereClause - Optional WHERE conditions array
+ * @param pageSize - Records per page (max 1000 for QBO)
+ */
+export async function queryAllPaginated(
+    qb: QuickBooks,
+    entityType: string,
+    findMethod: string,
+    criteria: any[] = [],
+    pageSize: number = 1000
+): Promise<{ records: any[]; totalCount: number }> {
+    const allRecords: any[] = [];
+    let startPosition = 1;
+    let hasMore = true;
+
+    console.log(`[QBO MCP] Fetching all ${entityType} records with pagination...`);
+
+    while (hasMore) {
+        // Build criteria object for node-quickbooks
+        // It expects { limit, offset, ... } not array format
+        const paginatedCriteria: any = {
+            limit: pageSize,
+            offset: startPosition - 1  // node-quickbooks uses 0-based offset
+        };
+
+        // Add any filter criteria (convert array format to object if needed)
+        if (Array.isArray(criteria)) {
+            criteria.forEach((c: any) => {
+                if (c.field && c.value !== undefined) {
+                    paginatedCriteria[c.field] = c.value;
+                }
+            });
+        }
+
+        const result = await new Promise<any>((resolve, reject) => {
+            (qb as any)[findMethod](paginatedCriteria, (err: any, data: any) => {
+                if (err) reject(err);
+                else resolve(data);
+            });
+        });
+
+        const records = result?.QueryResponse?.[entityType] || [];
+        allRecords.push(...records);
+
+        console.log(`[QBO MCP] Fetched ${entityType} ${startPosition}-${startPosition + records.length - 1}, total: ${allRecords.length}`);
+
+        if (records.length < pageSize) {
+            hasMore = false;
+        } else {
+            startPosition += pageSize;
+        }
+    }
+
+    console.log(`[QBO MCP] Completed fetching ${entityType}: ${allRecords.length} total records`);
+
+    return {
+        records: allRecords,
+        totalCount: allRecords.length
+    };
+}
+
+/**
+ * Get count for an entity type
+ */
+export async function getEntityCount(
+    qb: QuickBooks,
+    findMethod: string
+): Promise<number> {
+    const result = await new Promise<any>((resolve, reject) => {
+        (qb as any)[findMethod]({ count: true }, (err: any, data: any) => {
+            if (err) reject(err);
+            else resolve(data);
+        });
+    });
+    return result?.QueryResponse?.totalCount || 0;
+}
+
 export { sessionStore };
