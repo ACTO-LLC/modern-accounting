@@ -137,7 +137,9 @@
                 "PostalCode": "PostalCode",
                 "Country": "Country",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
             },
             "key-fields": [
                 "Id"
@@ -407,7 +409,9 @@
                 "DefaultExpenseAccountId": "DefaultExpenseAccountId",
                 "Status": "Status",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
             },
             "key-fields": [
                 "Id"
