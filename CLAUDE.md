@@ -1012,3 +1012,102 @@ app.use('/api', createProxyMiddleware({ target: BACKEND_URL, changeOrigin: true 
 ```
 
 **Key Insight:** Route order matters in Express. Define specific route handlers BEFORE the catch-all proxy middleware. The first matching route wins.
+
+---
+
+### QBO Migration: Field Mapping and Entity Tracking (Feb 2026)
+
+**Problem 1:** Migration fails with "Missing field in body: Name" even when the source data has DisplayName.
+
+**Root Cause:** The MigrationMapper loads field mappings from the `MigrationFieldMaps` table in DAB, but the DAB request fails with 403 (no auth token) or 404 (table doesn't exist in DAB config). Without mappings, no fields get mapped.
+
+**Solution:** Add hardcoded fallback field mappings in `db-mapper.js` that are used when database mappings can't be loaded:
+
+```javascript
+// db-mapper.js - getFieldMaps()
+async getFieldMaps(entityType) {
+    // ... try to load from DB ...
+
+    // If no DB mappings, use hardcoded fallbacks
+    if (this.fieldMapsCache[entityType].length === 0) {
+        console.log(`Using hardcoded fallback mappings for ${entityType}`);
+        this.fieldMapsCache[entityType] = this.getDefaultFieldMaps(entityType);
+    }
+}
+
+getDefaultFieldMaps(entityType) {
+    const defaults = {
+        'Customer': [
+            { SourceField: 'DisplayName', TargetField: 'Name', Transform: 'string', DefaultValue: 'Unnamed Customer', IsRequired: true },
+            { SourceField: 'PrimaryEmailAddr.Address', TargetField: 'Email', Transform: 'string' },
+            // ... etc
+        ],
+        'Vendor': [ /* ... */ ],
+        'Account': [ /* ... */ ],
+    };
+    return defaults[entityType] || [];
+}
+```
+
+---
+
+**Problem 2:** Migration fails with "Contained unexpected fields in body: SourceSystem, SourceId"
+
+**Root Cause:** The MigrationMapper adds `SourceSystem` and `SourceId` to every mapped entity for tracking purposes, but these columns don't exist in the main entity tables (Customers, Vendors, Accounts, etc.). DAB rejects unknown fields.
+
+**Current State:** The entity tables do NOT have SourceSystem/SourceId columns. Migration tracking is done via the `MigrationEntityMaps` table instead.
+
+**Solution:** Strip migration-tracking fields before sending to DAB:
+
+```javascript
+// db-executor.js - migrateEntities()
+const mappedEntity = await mapper.mapEntity(entityType, sourceEntity);
+
+// Strip migration-tracking fields before sending to DAB
+const { SourceSystem, SourceId, ...entityForDab } = mappedEntity;
+
+const createResult = await mcp.createRecord(tableName, entityForDab, authToken);
+```
+
+**Key Insight:** The mapper produces `SourceSystem` and `SourceId` for use in `recordMigration()` (which writes to `MigrationEntityMaps`), but these must be stripped before creating the main entity record.
+
+---
+
+**Problem 3:** Migration field map DB query returns 403
+
+**Root Cause:** The MigrationMapper calls `mcp.readRecords('migrationfieldmaps', ...)` without passing an auth token. In production, DAB requires authentication for all endpoints.
+
+**Solution Options:**
+1. **Current approach:** Use hardcoded fallback mappings (see Problem 1)
+2. **Future improvement:** Pass the user's auth token to `getFieldMaps()` or use managed identity for internal DAB calls
+
+**Debug Tip:** When migration fails with unclear errors, add verbose logging to trace the data flow:
+
+```javascript
+console.log(`[MigrationMapper] getFieldMaps called for ${entityType}`);
+console.log(`[MigrationMapper] DB result: ${JSON.stringify(result).substring(0, 200)}`);
+console.log(`[MigrationMapper] mapEntity result: ${JSON.stringify(result).substring(0, 300)}`);
+```
+
+---
+
+### QBO Migration: Architecture Overview
+
+**Data Flow:**
+1. User triggers migration via Milton chat
+2. `server.js` calls QBO MCP to fetch source data
+3. `db-executor.js` orchestrates migration with `migrateEntities()`
+4. `db-mapper.js` transforms QBO fields → ACTO fields using field maps
+5. `DabRestClient.createRecord()` sends transformed entity to DAB
+6. `mapper.recordMigration()` tracks the mapping in `MigrationEntityMaps`
+
+**Key Tables:**
+- `MigrationFieldMaps` - Field name mappings (QBO.DisplayName → ACTO.Name)
+- `MigrationTypeMaps` - Value mappings (QBO.Bank → ACTO.Asset)
+- `MigrationEntityMaps` - ID mappings (QBO ID → ACTO UUID) for cross-references
+- `MigrationConfigs` - Configuration settings
+
+**Entity Table Requirements:**
+- Main tables (Customers, Vendors, etc.) do NOT need SourceSystem/SourceId columns
+- Migration tracking is handled by `MigrationEntityMaps` join table
+- If you want source tracking on main tables, add the columns and update DAB config
