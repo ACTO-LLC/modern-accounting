@@ -23,6 +23,7 @@
     <!-- Disable auto-include of SQL files -->
     <EnableDefaultItems>false</EnableDefaultItems>
     <EnableDefaultSqlItems>false</EnableDefaultSqlItems>
+    <ProjectGuid>{00000000-0000-0000-0000-000000000000}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <!-- Tables -->
