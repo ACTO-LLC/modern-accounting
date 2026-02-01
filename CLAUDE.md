@@ -1,5 +1,26 @@
 # Claude Code Guidelines for Modern Accounting
 
+## CRITICAL SECURITY RULES
+
+**NEVER lower security posture without explicit user approval.** This includes:
+
+1. **NEVER grant anonymous/public write access** to database entities, APIs, or resources
+2. **NEVER weaken authentication requirements** (e.g., removing auth, adding anonymous access)
+3. **NEVER disable security features** (CORS, HTTPS, encryption, etc.)
+4. **NEVER expose secrets or credentials** in logs, code, or error messages
+5. **NEVER bypass permission checks** as a "quick fix" for auth issues
+
+**If facing authentication/authorization issues:**
+- FIX the root cause (token validation, role mapping, issuer format, etc.)
+- ASK the user before considering any security-related workarounds
+- Document the security implications of any proposed changes
+- Prefer read-only anonymous access over write access if temporary workaround is needed
+
+**Example of what NOT to do (Jan 2026 incident):**
+When migration failed due to DAB returning 403, the wrong approach was granting `"actions": ["*"]` to anonymous role. The correct approach is to fix Azure AD token validation or ask the user for guidance.
+
+---
+
 ## Lessons Learned & Best Practices
 
 ### MSAL v3 Azure AD Authentication Issues (Jan 2026)
