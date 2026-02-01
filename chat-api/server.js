@@ -2920,7 +2920,7 @@ async function executeQboGetStatus() {
     }
 }
 
-async function executeQboAnalyzeMigration() {
+async function executeQboAnalyzeMigration(authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -2935,7 +2935,7 @@ async function executeQboAnalyzeMigration() {
         const qboAnalysis = await qboAuth.analyzeForMigration();
 
         // Get ACTO import status
-        const actoStatus = await executeGetMigrationStatus({ source_system: 'QBO' });
+        const actoStatus = await executeGetMigrationStatus({ source_system: 'QBO' }, authToken);
 
         // Calculate what's remaining to import
         const remaining = {
@@ -5011,7 +5011,7 @@ async function executeFunction(name, args, authToken = null) {
         case 'qbo_get_status':
             return executeQboGetStatus();
         case 'qbo_analyze_migration':
-            return executeQboAnalyzeMigration();
+            return executeQboAnalyzeMigration(authToken);
         case 'get_migration_status':
             return executeGetMigrationStatus(args, authToken);
         case 'qbo_search_customers':
