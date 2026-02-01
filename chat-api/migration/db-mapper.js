@@ -25,7 +25,7 @@ export class MigrationMapper {
     }
 
     /**
-     * Load field mappings from database
+     * Load field mappings from database, with hardcoded fallbacks
      */
     async getFieldMaps(entityType) {
         if (!this.fieldMapsCache) {
@@ -33,18 +33,87 @@ export class MigrationMapper {
         }
 
         if (!this.fieldMapsCache[entityType]) {
-            const result = await this.mcp.readRecords('migrationfieldmaps', {
-                filter: `SourceSystem eq '${this.sourceSystem}' and EntityType eq '${entityType}' and IsActive eq true`,
-                orderby: ['SortOrder asc']
-            });
-            this.fieldMapsCache[entityType] = result.result?.value || [];
+            try {
+                const result = await this.mcp.readRecords('migrationfieldmaps', {
+                    filter: `SourceSystem eq '${this.sourceSystem}' and EntityType eq '${entityType}' and IsActive eq true`,
+                    orderby: ['SortOrder asc']
+                });
+                this.fieldMapsCache[entityType] = result.result?.value || [];
+            } catch (e) {
+                console.warn(`Failed to load field maps from DB for ${entityType}:`, e.message);
+                this.fieldMapsCache[entityType] = [];
+            }
+
+            // If no DB mappings, use hardcoded fallbacks
+            if (this.fieldMapsCache[entityType].length === 0) {
+                console.log(`Using hardcoded fallback mappings for ${entityType}`);
+                this.fieldMapsCache[entityType] = this.getDefaultFieldMaps(entityType);
+            }
         }
 
         return this.fieldMapsCache[entityType];
     }
 
     /**
-     * Load type mappings from database
+     * Hardcoded default field mappings when DB is empty
+     */
+    getDefaultFieldMaps(entityType) {
+        const defaults = {
+            'Customer': [
+                { SourceField: 'DisplayName', TargetField: 'Name', Transform: 'string', DefaultValue: 'Unnamed Customer', IsRequired: true, SortOrder: 1 },
+                { SourceField: 'CompanyName', TargetField: 'Name', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 2 },
+                { SourceField: 'PrimaryEmailAddr.Address', TargetField: 'Email', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 3 },
+                { SourceField: 'PrimaryPhone.FreeFormNumber', TargetField: 'Phone', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 4 },
+                { SourceField: 'BillAddr', TargetField: 'Address', Transform: 'address', DefaultValue: null, IsRequired: false, SortOrder: 5 },
+            ],
+            'Vendor': [
+                { SourceField: 'DisplayName', TargetField: 'Name', Transform: 'string', DefaultValue: 'Unnamed Vendor', IsRequired: true, SortOrder: 1 },
+                { SourceField: 'CompanyName', TargetField: 'Name', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 2 },
+                { SourceField: 'PrimaryEmailAddr.Address', TargetField: 'Email', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 3 },
+                { SourceField: 'PrimaryPhone.FreeFormNumber', TargetField: 'Phone', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 4 },
+                { SourceField: 'BillAddr', TargetField: 'Address', Transform: 'address', DefaultValue: null, IsRequired: false, SortOrder: 5 },
+                { SourceField: 'Vendor1099', TargetField: 'Is1099Vendor', Transform: 'bool', DefaultValue: 'false', IsRequired: false, SortOrder: 6 },
+                { SourceField: 'TaxIdentifier', TargetField: 'TaxId', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 7 },
+                { SourceField: 'Active', TargetField: 'Status', Transform: 'status', DefaultValue: 'Active', IsRequired: false, SortOrder: 8 },
+            ],
+            'Account': [
+                { SourceField: 'AcctNum', TargetField: 'Code', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 1 },
+                { SourceField: 'Name', TargetField: 'Name', Transform: 'string', DefaultValue: 'Unnamed Account', IsRequired: true, SortOrder: 2 },
+                { SourceField: 'AccountType', TargetField: 'Type', Transform: 'lookup:AccountType', DefaultValue: 'Expense', IsRequired: true, SortOrder: 3 },
+                { SourceField: 'AccountSubType', TargetField: 'Subtype', Transform: 'lookup:AccountSubtype', DefaultValue: null, IsRequired: false, SortOrder: 4 },
+                { SourceField: 'Description', TargetField: 'Description', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 5 },
+                { SourceField: 'Active', TargetField: 'IsActive', Transform: 'bool', DefaultValue: 'true', IsRequired: false, SortOrder: 6 },
+            ],
+            'Invoice': [
+                { SourceField: 'DocNumber', TargetField: 'InvoiceNumber', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 1 },
+                { SourceField: 'CustomerRef.value', TargetField: 'CustomerId', Transform: 'entity:Customer', DefaultValue: null, IsRequired: true, SortOrder: 2 },
+                { SourceField: 'TxnDate', TargetField: 'IssueDate', Transform: 'date', DefaultValue: null, IsRequired: true, SortOrder: 3 },
+                { SourceField: 'DueDate', TargetField: 'DueDate', Transform: 'date', DefaultValue: null, IsRequired: false, SortOrder: 4 },
+                { SourceField: 'TotalAmt', TargetField: 'TotalAmount', Transform: 'float', DefaultValue: '0', IsRequired: false, SortOrder: 5 },
+                { SourceField: 'Balance', TargetField: 'Status', Transform: 'invoicestatus', DefaultValue: 'Sent', IsRequired: false, SortOrder: 6 },
+            ],
+            'Bill': [
+                { SourceField: 'DocNumber', TargetField: 'BillNumber', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 1 },
+                { SourceField: 'VendorRef.value', TargetField: 'VendorId', Transform: 'entity:Vendor', DefaultValue: null, IsRequired: true, SortOrder: 2 },
+                { SourceField: 'TxnDate', TargetField: 'BillDate', Transform: 'date', DefaultValue: null, IsRequired: true, SortOrder: 3 },
+                { SourceField: 'DueDate', TargetField: 'DueDate', Transform: 'date', DefaultValue: null, IsRequired: false, SortOrder: 4 },
+                { SourceField: 'TotalAmt', TargetField: 'TotalAmount', Transform: 'float', DefaultValue: '0', IsRequired: false, SortOrder: 5 },
+                { SourceField: 'Balance', TargetField: 'Status', Transform: 'billstatus', DefaultValue: 'Open', IsRequired: false, SortOrder: 6 },
+                { SourceField: 'PrivateNote', TargetField: 'Memo', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 7 },
+            ],
+            'Item': [
+                { SourceField: 'Name', TargetField: 'Name', Transform: 'string', DefaultValue: 'Unnamed Item', IsRequired: true, SortOrder: 1 },
+                { SourceField: 'Description', TargetField: 'Description', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 2 },
+                { SourceField: 'UnitPrice', TargetField: 'Price', Transform: 'float', DefaultValue: '0', IsRequired: false, SortOrder: 3 },
+                { SourceField: 'Type', TargetField: 'Type', Transform: 'string', DefaultValue: 'Service', IsRequired: false, SortOrder: 4 },
+                { SourceField: 'Active', TargetField: 'IsActive', Transform: 'bool', DefaultValue: 'true', IsRequired: false, SortOrder: 5 },
+            ],
+        };
+        return defaults[entityType] || [];
+    }
+
+    /**
+     * Load type mappings from database, with hardcoded fallbacks
      */
     async getTypeMaps(category) {
         if (!this.typeMapsCache) {
@@ -52,13 +121,88 @@ export class MigrationMapper {
         }
 
         if (!this.typeMapsCache[category]) {
-            const result = await this.mcp.readRecords('migrationtypemaps', {
-                filter: `SourceSystem eq '${this.sourceSystem}' and Category eq '${category}' and IsActive eq true`
-            });
-            this.typeMapsCache[category] = result.result?.value || [];
+            try {
+                const result = await this.mcp.readRecords('migrationtypemaps', {
+                    filter: `SourceSystem eq '${this.sourceSystem}' and Category eq '${category}' and IsActive eq true`
+                });
+                this.typeMapsCache[category] = result.result?.value || [];
+            } catch (e) {
+                console.warn(`Failed to load type maps from DB for ${category}:`, e.message);
+                this.typeMapsCache[category] = [];
+            }
+
+            // If no DB mappings, use hardcoded fallbacks
+            if (this.typeMapsCache[category].length === 0) {
+                console.log(`Using hardcoded fallback type mappings for ${category}`);
+                this.typeMapsCache[category] = this.getDefaultTypeMaps(category);
+            }
         }
 
         return this.typeMapsCache[category];
+    }
+
+    /**
+     * Hardcoded default type mappings when DB is empty
+     */
+    getDefaultTypeMaps(category) {
+        const defaults = {
+            'AccountType': [
+                // Asset types
+                { SourceValue: 'Bank', TargetValue: 'Asset', IsDefault: false },
+                { SourceValue: 'Other Current Asset', TargetValue: 'Asset', IsDefault: false },
+                { SourceValue: 'Fixed Asset', TargetValue: 'Asset', IsDefault: false },
+                { SourceValue: 'Other Asset', TargetValue: 'Asset', IsDefault: false },
+                { SourceValue: 'Accounts Receivable', TargetValue: 'Asset', IsDefault: false },
+                // Liability types
+                { SourceValue: 'Accounts Payable', TargetValue: 'Liability', IsDefault: false },
+                { SourceValue: 'Credit Card', TargetValue: 'Liability', IsDefault: false },
+                { SourceValue: 'Other Current Liability', TargetValue: 'Liability', IsDefault: false },
+                { SourceValue: 'Long Term Liability', TargetValue: 'Liability', IsDefault: false },
+                // Equity
+                { SourceValue: 'Equity', TargetValue: 'Equity', IsDefault: false },
+                // Revenue
+                { SourceValue: 'Income', TargetValue: 'Revenue', IsDefault: false },
+                { SourceValue: 'Other Income', TargetValue: 'Revenue', IsDefault: false },
+                // Expense (default fallback)
+                { SourceValue: 'Expense', TargetValue: 'Expense', IsDefault: true },
+                { SourceValue: 'Other Expense', TargetValue: 'Expense', IsDefault: false },
+                { SourceValue: 'Cost of Goods Sold', TargetValue: 'Expense', IsDefault: false },
+            ],
+            'AccountSubtype': [
+                // Bank subtypes
+                { SourceValue: 'Checking', TargetValue: 'Cash', IsDefault: false },
+                { SourceValue: 'Savings', TargetValue: 'Cash', IsDefault: false },
+                { SourceValue: 'MoneyMarket', TargetValue: 'Cash', IsDefault: false },
+                { SourceValue: 'CashOnHand', TargetValue: 'Cash', IsDefault: false },
+                // AR/AP
+                { SourceValue: 'AccountsReceivable', TargetValue: 'Accounts Receivable', IsDefault: false },
+                { SourceValue: 'AccountsPayable', TargetValue: 'Accounts Payable', IsDefault: false },
+                // Credit Card
+                { SourceValue: 'CreditCard', TargetValue: 'Credit Card', IsDefault: false },
+                // Expense subtypes
+                { SourceValue: 'AdvertisingPromotional', TargetValue: 'Advertising', IsDefault: false },
+                { SourceValue: 'Auto', TargetValue: 'Auto', IsDefault: false },
+                { SourceValue: 'Insurance', TargetValue: 'Insurance', IsDefault: false },
+                { SourceValue: 'LegalProfessionalFees', TargetValue: 'Professional Fees', IsDefault: false },
+                { SourceValue: 'OfficeGeneralAdministrativeExpenses', TargetValue: 'Office Expense', IsDefault: false },
+                { SourceValue: 'RentOrLeaseOfBuildings', TargetValue: 'Rent', IsDefault: false },
+                { SourceValue: 'Utilities', TargetValue: 'Utilities', IsDefault: false },
+                { SourceValue: 'Travel', TargetValue: 'Travel', IsDefault: false },
+                { SourceValue: 'TravelMeals', TargetValue: 'Meals & Entertainment', IsDefault: false },
+            ],
+            'InvoiceStatus': [
+                { SourceValue: 'Paid', TargetValue: 'Paid', IsDefault: false },
+                { SourceValue: 'Partial', TargetValue: 'Partial', IsDefault: false },
+                { SourceValue: 'Overdue', TargetValue: 'Overdue', IsDefault: false },
+                { SourceValue: 'Open', TargetValue: 'Sent', IsDefault: true },
+            ],
+            'BillStatus': [
+                { SourceValue: 'Paid', TargetValue: 'Paid', IsDefault: false },
+                { SourceValue: 'Partial', TargetValue: 'Partial', IsDefault: false },
+                { SourceValue: 'Open', TargetValue: 'Open', IsDefault: true },
+            ],
+        };
+        return defaults[category] || [];
     }
 
     /**

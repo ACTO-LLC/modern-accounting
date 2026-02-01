@@ -1387,6 +1387,101 @@
             "rest": true,
             "graphql": true,
             "permissions": []
+        },
+        "migrationfieldmaps": {
+            "source": "dbo.MigrationFieldMaps",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "migrationtypemaps": {
+            "source": "dbo.MigrationTypeMaps",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "migrationentitymaps": {
+            "source": "dbo.MigrationEntityMaps",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "migrationconfigs": {
+            "source": "dbo.MigrationConfigs",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "qboconnections": {
+            "source": "dbo.QBOConnections",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
         }
     }
 }
