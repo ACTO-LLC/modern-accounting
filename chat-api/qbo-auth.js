@@ -69,6 +69,7 @@ async function getDabAuthToken() {
 
 /**
  * Create axios config with auth headers for DAB calls
+ * Uses managed identity token with Service role for backend operations
  */
 async function getDabAxiosConfig() {
     const token = await getDabAuthToken();
@@ -79,6 +80,12 @@ async function getDabAxiosConfig() {
     };
     if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
+        // DAB requires X-MS-API-ROLE header to use non-default roles
+        // Service role is assigned to the App Service managed identity
+        config.headers['X-MS-API-ROLE'] = 'Service';
+        console.log('[QBO Auth] Using managed identity token with Service role');
+    } else {
+        console.log('[QBO Auth] No managed identity token available');
     }
     return config;
 }
