@@ -28,36 +28,27 @@ export class MigrationMapper {
      * Load field mappings from database, with hardcoded fallbacks
      */
     async getFieldMaps(entityType) {
-        console.log(`[MigrationMapper] getFieldMaps called for ${entityType}`);
-
         if (!this.fieldMapsCache) {
             this.fieldMapsCache = {};
         }
 
         if (!this.fieldMapsCache[entityType]) {
-            console.log(`[MigrationMapper] Cache miss for ${entityType}, loading from DB...`);
             try {
                 const result = await this.mcp.readRecords('migrationfieldmaps', {
                     filter: `SourceSystem eq '${this.sourceSystem}' and EntityType eq '${entityType}' and IsActive eq true`,
                     orderby: ['SortOrder asc']
                 });
-                console.log(`[MigrationMapper] DB result for ${entityType}:`, JSON.stringify(result).substring(0, 200));
                 this.fieldMapsCache[entityType] = result.result?.value || [];
             } catch (e) {
-                console.warn(`[MigrationMapper] Exception loading field maps for ${entityType}:`, e.message);
+                console.warn(`[Migration] Failed to load field maps for ${entityType}:`, e.message);
                 this.fieldMapsCache[entityType] = [];
             }
 
-            console.log(`[MigrationMapper] Cache after DB load for ${entityType}: ${this.fieldMapsCache[entityType].length} items`);
-
             // If no DB mappings, use hardcoded fallbacks
             if (this.fieldMapsCache[entityType].length === 0) {
-                console.log(`[MigrationMapper] Using hardcoded fallback mappings for ${entityType}`);
+                console.log(`[Migration] Using fallback field mappings for ${entityType}`);
                 this.fieldMapsCache[entityType] = this.getDefaultFieldMaps(entityType);
-                console.log(`[MigrationMapper] Fallback loaded: ${this.fieldMapsCache[entityType].length} items`);
             }
-        } else {
-            console.log(`[MigrationMapper] Cache hit for ${entityType}: ${this.fieldMapsCache[entityType].length} items`);
         }
 
         return this.fieldMapsCache[entityType];
@@ -476,10 +467,6 @@ export class MigrationMapper {
      */
     async mapEntity(entityType, sourceObj) {
         const fieldMaps = await this.getFieldMaps(entityType);
-        console.log(`[MigrationMapper] mapEntity for ${entityType}, fieldMaps count: ${fieldMaps.length}`);
-        if (fieldMaps.length > 0) {
-            console.log(`[MigrationMapper] First fieldMap: ${JSON.stringify(fieldMaps[0])}`);
-        }
 
         const result = {
             SourceSystem: this.sourceSystem,
@@ -521,7 +508,6 @@ export class MigrationMapper {
             }
         }
 
-        console.log(`[MigrationMapper] mapEntity result for ${entityType}:`, JSON.stringify(result).substring(0, 300));
         return result;
     }
 
