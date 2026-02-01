@@ -2968,7 +2968,7 @@ async function executeQboAnalyzeMigration() {
     }
 }
 
-async function executeGetMigrationStatus(params) {
+async function executeGetMigrationStatus(params, authToken = null) {
     try {
         const sourceSystem = params?.source_system || 'QBO';
 
@@ -2976,15 +2976,15 @@ async function executeGetMigrationStatus(params) {
         const filter = `SourceSystem eq '${sourceSystem}'`;
 
         const [customers, vendors, accounts, invoices, bills, products, payments, billPayments, journalEntries] = await Promise.all([
-            dab.readRecords('customers', { filter, first: 10000 }),
-            dab.readRecords('vendors', { filter, first: 10000 }),
-            dab.readRecords('accounts', { filter, first: 10000 }),
-            dab.readRecords('invoices', { filter, first: 10000 }),
-            dab.readRecords('bills', { filter, first: 10000 }),
-            dab.readRecords('productsservices', { filter, first: 10000 }),
-            dab.readRecords('payments', { filter, first: 10000 }),
-            dab.readRecords('billpayments', { filter, first: 10000 }),
-            dab.readRecords('journalentries', { filter, first: 10000 })
+            dab.readRecords('customers', { filter, first: 10000 }, authToken),
+            dab.readRecords('vendors', { filter, first: 10000 }, authToken),
+            dab.readRecords('accounts', { filter, first: 10000 }, authToken),
+            dab.readRecords('invoices', { filter, first: 10000 }, authToken),
+            dab.readRecords('bills', { filter, first: 10000 }, authToken),
+            dab.readRecords('productsservices', { filter, first: 10000 }, authToken),
+            dab.readRecords('payments', { filter, first: 10000 }, authToken),
+            dab.readRecords('billpayments', { filter, first: 10000 }, authToken),
+            dab.readRecords('journalentries', { filter, first: 10000 }, authToken)
         ]);
 
         const imported = {
@@ -5013,7 +5013,7 @@ async function executeFunction(name, args, authToken = null) {
         case 'qbo_analyze_migration':
             return executeQboAnalyzeMigration();
         case 'get_migration_status':
-            return executeGetMigrationStatus(args);
+            return executeGetMigrationStatus(args, authToken);
         case 'qbo_search_customers':
             return executeQboSearchCustomers(args);
         case 'qbo_search_invoices':
