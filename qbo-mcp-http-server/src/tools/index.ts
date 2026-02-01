@@ -93,7 +93,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 // If fetchAll is true, use pagination to get ALL records
                 if (fetchAll) {
@@ -187,7 +187,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 // If fetchAll is true, use pagination to get ALL records
                 if (fetchAll) {
@@ -278,7 +278,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 // If fetchAll is true, use pagination to get ALL records
                 if (fetchAll) {
@@ -370,7 +370,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 // If fetchAll is true, use pagination to get ALL records
                 if (fetchAll) {
@@ -461,7 +461,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 // If fetchAll is true, use pagination to get ALL records
                 if (fetchAll) {
@@ -550,7 +550,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
@@ -611,7 +611,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
@@ -673,7 +673,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
@@ -735,7 +735,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
@@ -797,7 +797,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
@@ -859,7 +859,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
@@ -920,7 +920,7 @@ export const tools = [
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit, ...options } = args.params || {};
+                const { criteria = [], fetchAll, limit } = args.params || {};
 
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
