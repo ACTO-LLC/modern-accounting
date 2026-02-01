@@ -185,8 +185,12 @@ async function migrateEntities(
                 await preSave(mappedEntity, sourceEntity);
             }
 
+            // Strip migration-tracking fields before sending to DAB
+            // (SourceSystem and SourceId are used for tracking but not stored in main tables)
+            const { SourceSystem, SourceId, ...entityForDab } = mappedEntity;
+
             // Create the record (pass authToken for production auth)
-            const createResult = await mcp.createRecord(tableName, mappedEntity, authToken);
+            const createResult = await mcp.createRecord(tableName, entityForDab, authToken);
             if (createResult.error) {
                 const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
                 throw new Error(errMsg);
