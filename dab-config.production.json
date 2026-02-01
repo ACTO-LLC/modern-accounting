@@ -40,12 +40,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -72,12 +66,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -106,12 +94,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "*"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -139,12 +121,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -171,12 +147,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -206,12 +176,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -238,12 +202,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -273,12 +231,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -305,12 +257,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -340,12 +286,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -372,12 +312,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -406,12 +340,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -438,12 +366,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -486,12 +408,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -518,12 +434,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -552,12 +462,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "Admin",
                     "actions": [
                         "read"
@@ -571,12 +475,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "Admin",
                     "actions": [
                         "*"
@@ -589,12 +487,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -615,12 +507,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "Admin",
                     "actions": [
                         "*"
@@ -633,12 +519,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -659,12 +539,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -683,12 +557,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -715,12 +583,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "Accountant",
                     "actions": [
                         "create",
@@ -741,12 +603,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -776,12 +632,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -801,12 +651,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -825,12 +669,6 @@
             "rest": true,
             "graphql": true,
             "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
                 {
                     "role": "authenticated",
                     "actions": [
@@ -857,12 +695,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -888,12 +720,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "Accountant",
                     "actions": [
                         "create",
@@ -915,12 +741,6 @@
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "authenticated",
                     "actions": [
                         "read"
@@ -938,18 +758,588 @@
             "source": "dbo.OnboardingProgress",
             "rest": true,
             "graphql": true,
+            "permissions": []
+        },
+        "estimates": {
+            "source": {
+                "object": "dbo.v_Estimates",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
+                    "role": "authenticated",
                     "actions": [
                         "read"
                     ]
                 },
                 {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "estimates_write": {
+            "source": "dbo.Estimates",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "estimatelines": {
+            "source": "dbo.EstimateLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "customerdeposits": {
+            "source": {
+                "object": "dbo.v_CustomerDeposits",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
                     "role": "authenticated",
                     "actions": [
-                        "read",
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "customerdeposits_write": {
+            "source": "dbo.CustomerDeposits",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
                         "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "creditmemos": {
+            "source": {
+                "object": "dbo.v_CreditMemos",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "creditmemos_write": {
+            "source": "dbo.CreditMemos",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "creditmemolines": {
+            "source": {
+                "object": "dbo.v_CreditMemoLines",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "creditmemolines_write": {
+            "source": "dbo.CreditMemoLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "purchaseorders": {
+            "source": {
+                "object": "dbo.v_PurchaseOrders",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "purchaseorders_write": {
+            "source": "dbo.PurchaseOrders",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "purchaseorderlines": {
+            "source": "dbo.PurchaseOrderLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "vendorcredits": {
+            "source": {
+                "object": "dbo.v_VendorCredits",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "vendorcredits_write": {
+            "source": "dbo.VendorCredits",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "vendorcreditlines": {
+            "source": "dbo.VendorCreditLines",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "mileagetrips": {
+            "source": {
+                "object": "dbo.v_MileageTrips",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "mileagetrips_write": {
+            "source": "dbo.MileageTrips",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "employees": {
+            "source": {
+                "object": "dbo.v_Employees",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "employees_write": {
+            "source": "dbo.Employees",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "payruns": {
+            "source": {
+                "object": "dbo.v_PayRuns",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "payruns_write": {
+            "source": "dbo.PayRuns",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "paystubs": {
+            "source": {
+                "object": "dbo.v_PayStubs",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        "paystubs_write": {
+            "source": "dbo.PayStubs",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "bankrules": {
+            "source": "dbo.BankRules",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update",
+                        "delete"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ]
+        },
+        "classes": {
+            "source": "dbo.Classes",
+            "rest": true,
+            "graphql": true,
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
                         "update"
                     ]
                 },
@@ -961,545 +1351,22 @@
                 }
             ]
         },
-        "estimates": {
-            "source": {
-                "object": "dbo.v_Estimates",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "estimates_write": {
-            "source": "dbo.Estimates",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "estimatelines": {
-            "source": "dbo.EstimateLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "customerdeposits": {
-            "source": {
-                "object": "dbo.v_CustomerDeposits",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "customerdeposits_write": {
-            "source": "dbo.CustomerDeposits",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "creditmemos": {
-            "source": {
-                "object": "dbo.v_CreditMemos",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "creditmemos_write": {
-            "source": "dbo.CreditMemos",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "creditmemolines": {
-            "source": {
-                "object": "dbo.v_CreditMemoLines",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "creditmemolines_write": {
-            "source": "dbo.CreditMemoLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "purchaseorders": {
-            "source": {
-                "object": "dbo.v_PurchaseOrders",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "purchaseorders_write": {
-            "source": "dbo.PurchaseOrders",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "purchaseorderlines": {
-            "source": "dbo.PurchaseOrderLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "vendorcredits": {
-            "source": {
-                "object": "dbo.v_VendorCredits",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "vendorcredits_write": {
-            "source": "dbo.VendorCredits",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "vendorcreditlines": {
-            "source": "dbo.VendorCreditLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "mileagetrips": {
-            "source": {
-                "object": "dbo.v_MileageTrips",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "mileagetrips_write": {
-            "source": "dbo.MileageTrips",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "employees": {
-            "source": {
-                "object": "dbo.v_Employees",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "employees_write": {
-            "source": "dbo.Employees",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "payruns": {
-            "source": {
-                "object": "dbo.v_PayRuns",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "payruns_write": {
-            "source": "dbo.PayRuns",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "paystubs": {
-            "source": {
-                "object": "dbo.v_PayStubs",
-                "type": "view",
-                "key-fields": ["Id"]
-            },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["read"]
-                }
-            ]
-        },
-        "paystubs_write": {
-            "source": "dbo.PayStubs",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "bankrules": {
-            "source": "dbo.BankRules",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update", "delete"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "classes": {
-            "source": "dbo.Classes",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "authenticated",
-                    "actions": ["read"]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": ["create", "read", "update"]
-                },
-                {
-                    "role": "Admin",
-                    "actions": ["*"]
-                }
-            ]
-        },
         "taxrates": {
             "source": "dbo.TaxRates",
             "rest": true,
             "graphql": true,
             "permissions": [
                 {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                },
-                {
                     "role": "authenticated",
-                    "actions": ["read"]
+                    "actions": [
+                        "read"
+                    ]
                 },
                 {
                     "role": "Admin",
-                    "actions": ["*"]
+                    "actions": [
+                        "*"
+                    ]
                 }
             ]
         },
@@ -1507,45 +1374,19 @@
             "source": "dbo.Companies",
             "rest": true,
             "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["*"]
-                }
-            ]
-        },
-        "onboardingprogress": {
-            "source": "dbo.OnboardingProgress",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["*"]
-                }
-            ]
+            "permissions": []
         },
         "industrytemplates": {
             "source": "dbo.IndustryTemplates",
             "rest": true,
             "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["read"]
-                }
-            ]
+            "permissions": []
         },
         "onboardingconversations": {
             "source": "dbo.OnboardingConversations",
             "rest": true,
             "graphql": true,
-            "permissions": [
-                {
-                    "role": "anonymous",
-                    "actions": ["*"]
-                }
-            ]
+            "permissions": []
         }
     }
 }
