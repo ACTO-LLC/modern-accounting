@@ -409,6 +409,17 @@ class DabRestClient {
         this.baseUrl = baseUrl;
     }
 
+    _decodeJwtPayload(token) {
+        try {
+            const parts = token.split('.');
+            if (parts.length !== 3) return null;
+            const payload = Buffer.from(parts[1], 'base64').toString('utf8');
+            return JSON.parse(payload);
+        } catch (e) {
+            return null;
+        }
+    }
+
     _buildHeaders(authToken = null, role = null) {
         const headers = { 'Content-Type': 'application/json' };
         if (authToken) {
@@ -416,6 +427,15 @@ class DabRestClient {
             // DAB requires X-MS-API-ROLE header to use non-default roles
             // Default to 'Admin' for authenticated users performing writes
             headers['X-MS-API-ROLE'] = role || 'Admin';
+
+            // Log token details for debugging
+            const payload = this._decodeJwtPayload(authToken);
+            if (payload) {
+                console.log(`[DAB REST] Token: aud=${payload.aud}, roles=${JSON.stringify(payload.roles)}, sub=${payload.sub?.substring(0, 8)}...`);
+            }
+            console.log(`[DAB REST] Headers: X-MS-API-ROLE=${headers['X-MS-API-ROLE']}`);
+        } else {
+            console.log('[DAB REST] No auth token provided for request');
         }
         return headers;
     }
@@ -450,14 +470,18 @@ class DabRestClient {
 
     async create(entity, data, authToken = null) {
         try {
-            const response = await axios.post(`${this.baseUrl}/${entity}`, data, {
-                headers: this._buildHeaders(authToken)
-            });
+            const headers = this._buildHeaders(authToken);
+            console.log(`[DAB REST] POST ${this.baseUrl}/${entity}`);
+            const response = await axios.post(`${this.baseUrl}/${entity}`, data, { headers });
             // DAB returns {"value":[{...}]}, extract the first item
             const created = response.data.value?.[0] || response.data;
             return { success: true, value: created };
         } catch (error) {
             console.error(`REST POST ${entity} failed:`, error.message);
+            if (error.response) {
+                console.error(`[DAB REST] Response status: ${error.response.status}`);
+                console.error(`[DAB REST] Response data:`, JSON.stringify(error.response.data).substring(0, 500));
+            }
             return { success: false, error: error.message };
         }
     }
