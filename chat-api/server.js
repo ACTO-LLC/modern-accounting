@@ -239,6 +239,42 @@ const dabProxyMiddleware = createProxyMiddleware({
     }
 });
 
+// Direct route handlers for entities that need body forwarding (bypass proxy issues)
+// These handle POST/PATCH/PUT by manually forwarding to DAB with the parsed body
+app.patch('/api/companies/Id/:id', async (req, res) => {
+    try {
+        const dabUrl = `${DAB_PROXY_URL}/api/companies/Id/${req.params.id}`;
+        console.log(`[DAB Direct] PATCH ${dabUrl}`);
+        const response = await axios.patch(dabUrl, req.body, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
+            }
+        });
+        res.status(response.status).json(response.data);
+    } catch (error) {
+        console.error('[DAB Direct] PATCH companies failed:', error.response?.data || error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
+    }
+});
+
+app.post('/api/companies', async (req, res) => {
+    try {
+        const dabUrl = `${DAB_PROXY_URL}/api/companies`;
+        console.log(`[DAB Direct] POST ${dabUrl}`);
+        const response = await axios.post(dabUrl, req.body, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
+            }
+        });
+        res.status(response.status).json(response.data);
+    } catch (error) {
+        console.error('[DAB Direct] POST companies failed:', error.response?.data || error.message);
+        res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
+    }
+});
+
 // Apply proxy for /api/* routes, but skip locally-handled paths
 app.use('/api', (req, res, next) => {
     // Check if this path should be handled locally
