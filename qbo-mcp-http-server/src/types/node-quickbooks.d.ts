@@ -70,6 +70,13 @@ declare module 'node-quickbooks' {
     updateJournalEntry(journalEntryData: object, callback: (err: any, journalEntry: any) => void): void;
     deleteJournalEntry(idOrEntity: any, callback: (err: any, response: any) => void): void;
 
+    // Payment (Customer Payments) CRUD
+    findPayments(options: object, callback: (err: any, payments: any) => void): void;
+    createPayment(paymentData: object, callback: (err: any, payment: any) => void): void;
+    getPayment(id: string, callback: (err: any, payment: any) => void): void;
+    updatePayment(paymentData: object, callback: (err: any, payment: any) => void): void;
+    deletePayment(idOrEntity: any, callback: (err: any, response: any) => void): void;
+
     // Bill Payment CRUD
     findBillPayments(options: object, callback: (err: any, billPayments: any) => void): void;
     createBillPayment(billPaymentData: object, callback: (err: any, billPayment: any) => void): void;

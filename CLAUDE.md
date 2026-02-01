@@ -368,6 +368,60 @@ Only use `database/migrations/` for:
 
 ---
 
+### Running SQL Against Production Azure SQL (Feb 2026)
+
+**Quick Reference:**
+
+```bash
+# 1. Ensure you're on the right subscription
+az account set --subscription "MCPP Subscription"
+
+# 2. Add temporary firewall rule for your IP (if needed)
+az sql server firewall-rule create \
+  --resource-group rg-modern-accounting-prod \
+  --server sql-modern-accounting-prod \
+  --name "TempAccess-$(date +%Y%m%d)" \
+  --start-ip-address <YOUR_IP> \
+  --end-ip-address <YOUR_IP>
+
+# 3. Run migration script
+SQL_CONNECTION_STRING="$(az keyvault secret show --vault-name kv2suhqabgprod --name SqlConnectionString --query value -o tsv)" \
+  node scripts/run-prod-migration.js database/migrations/035_Example.sql
+
+# 4. Clean up firewall rule when done
+az sql server firewall-rule delete \
+  --resource-group rg-modern-accounting-prod \
+  --server sql-modern-accounting-prod \
+  --name "TempAccess-$(date +%Y%m%d)"
+```
+
+**Ad-hoc Queries:**
+
+```bash
+# Quick one-liner for ad-hoc SQL queries
+SQL_CONNECTION_STRING="$(az keyvault secret show --vault-name kv2suhqabgprod --name SqlConnectionString --query value -o tsv)" \
+  node -e "
+const sql = require('mssql');
+(async () => {
+    const pool = await sql.connect(process.env.SQL_CONNECTION_STRING);
+    const result = await pool.request().query('SELECT COUNT(*) AS Count FROM Vendors');
+    console.table(result.recordset);
+    await pool.close();
+})();
+"
+```
+
+**Key Details:**
+- **Server:** `sql-modern-accounting-prod.database.windows.net`
+- **Database:** `AccountingDB`
+- **Key Vault:** `kv2suhqabgprod` (in MCPP Subscription)
+- **Secret:** `SqlConnectionString`
+- **Migration runner:** `scripts/run-prod-migration.js` (handles GO batches, shows results)
+
+**Why Node.js instead of sqlcmd:** go-sqlcmd fails with special characters in passwords (see above). The `mssql` npm package works reliably.
+
+---
+
 ### DB-Driven Migration Framework (Jan 2026)
 
 Migration mappings are now stored in the database for self-healing without code changes:
