@@ -480,6 +480,23 @@ class DabRestClient {
             return { success: false, error: error.message };
         }
     }
+
+    // MCP-compatible adapter methods for migration executor
+    async readRecords(entity, options = {}, authToken = null) {
+        const result = await this.get(entity, options, authToken);
+        if (result.success) {
+            return { result: { value: result.value } };
+        }
+        return { error: result.error };
+    }
+
+    async createRecord(entity, data, authToken = null) {
+        const result = await this.create(entity, data, authToken);
+        if (result.success) {
+            return { result: result.value };
+        }
+        return { error: result.error };
+    }
 }
 
 // Create REST client instance for onboarding tools
@@ -3077,8 +3094,8 @@ async function executeMigrateCustomers(params) {
             return { success: true, message: 'No customers found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven)
-        const result = await migrateCustomers(qboCustomers, mcp, 'QBO');
+        // Run migration (DB-driven) - use REST client for production compatibility
+        const result = await migrateCustomers(qboCustomers, dab, 'QBO');
 
         return {
             success: true,
@@ -3114,8 +3131,8 @@ async function executeMigrateVendors(params) {
             return { success: true, message: 'No vendors found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven - no in-memory ID maps needed)
-        const result = await migrateVendors(qboVendors, mcp, 'QBO');
+        // Run migration (DB-driven) - use REST client for production compatibility
+        const result = await migrateVendors(qboVendors, dab, 'QBO');
 
         return {
             success: true,
@@ -3282,8 +3299,8 @@ async function executeMigrateAccounts(params) {
             return { success: true, message: 'No accounts found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven)
-        const result = await migrateAccounts(qboAccounts, mcp, 'QBO');
+        // Run migration (DB-driven) - use REST client for production compatibility
+        const result = await migrateAccounts(qboAccounts, dab, 'QBO');
 
         return {
             success: true,
@@ -3331,8 +3348,8 @@ async function executeMigrateInvoices(params) {
             return { success: true, message: 'No invoices found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven - customer lookups done via database)
-        const result = await migrateInvoices(qboInvoices, mcp, 'QBO');
+        // Run migration (DB-driven) - use REST client for production compatibility
+        const result = await migrateInvoices(qboInvoices, dab, 'QBO');
 
         // Calculate total value migrated
         const totalValue = result.details
@@ -3386,8 +3403,8 @@ async function executeMigrateBills(params) {
             return { success: true, message: 'No bills found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration
-        const result = await migrateBills(qboBills, mcp, 'QBO');
+        // Run migration - use REST client for production compatibility
+        const result = await migrateBills(qboBills, dab, 'QBO');
 
         // Calculate total value migrated
         const totalValue = result.details
