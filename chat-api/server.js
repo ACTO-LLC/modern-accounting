@@ -497,6 +497,27 @@ class DabRestClient {
         }
         return { error: result.error };
     }
+
+    async deleteRecord(entity, params, authToken = null) {
+        const id = params.Id || params.id;
+        const result = await this.delete(entity, id, authToken);
+        if (result.success) {
+            return { result: { deleted: true } };
+        }
+        return { error: result.error };
+    }
+
+    // describeEntities is not available via REST API - return empty schema
+    async describeEntities(params = {}, authToken = null) {
+        // DAB REST API doesn't have a schema endpoint
+        // Return a minimal response to avoid breaking callers
+        return {
+            result: {
+                entities: []
+            },
+            error: 'Schema discovery not available via REST API'
+        };
+    }
 }
 
 // Create REST client instance for onboarding tools
@@ -2036,7 +2057,7 @@ function getDateRange(period) {
 
 async function executeDabDescribeEntities(params, authToken = null) {
     try {
-        const result = await mcp.describeEntities(params.entities ? { entities: params.entities } : {}, authToken);
+        const result = await dab.describeEntities(params.entities ? { entities: params.entities } : {}, authToken);
         if (result.error) {
             return { success: false, error: result.error };
         }
@@ -2061,7 +2082,8 @@ async function executeDabQuery(params, authToken = null) {
         if (params.orderby) options.orderby = [params.orderby];
         options.first = params.first || 100;
 
-        const result = await mcp.readRecords(params.entity, options, authToken);
+        // Use REST client for production compatibility
+        const result = await dab.readRecords(params.entity, options, authToken);
         if (result.error) {
             return { success: false, error: result.error, entity: params.entity };
         }
@@ -2079,7 +2101,8 @@ async function executeDabQuery(params, authToken = null) {
 
 async function executeDabCreate(params, authToken = null) {
     try {
-        const result = await mcp.createRecord(params.entity, params.data, authToken);
+        // Use REST client for production compatibility
+        const result = await dab.createRecord(params.entity, params.data, authToken);
         if (result.error) {
             return { success: false, error: result.error, entity: params.entity };
         }
@@ -2231,7 +2254,7 @@ async function executeQueryInvoices(params) {
             mcpOptions.filter = filters.join(' and ');
         }
 
-        const result = await mcp.readRecords('invoices', mcpOptions);
+        const result = await dab.readRecords('invoices', mcpOptions);
         if (result.error) {
             return { success: false, error: result.error };
         }
@@ -2270,7 +2293,7 @@ async function executeQueryCustomers(params) {
             mcpOptions.filter = `contains(Name, '${params.name}')`;
         }
 
-        const custResult = await mcp.readRecords('customers', mcpOptions);
+        const custResult = await dab.readRecords('customers', mcpOptions);
         if (custResult.error) {
             return { success: false, error: custResult.error };
         }
@@ -2278,7 +2301,7 @@ async function executeQueryCustomers(params) {
         let customers = custResult.result?.value || [];
 
         // Get all invoices to calculate revenue
-        const invResult = await mcp.readRecords('invoices', { first: 1000 });
+        const invResult = await dab.readRecords('invoices', { first: 1000 });
         const invoices = invResult.result?.value || [];
 
         // Calculate totals per customer
@@ -2357,7 +2380,7 @@ async function executeQueryBills(params) {
             mcpOptions.filter = filters.join(' and ');
         }
 
-        const result = await mcp.readRecords('bills', mcpOptions);
+        const result = await dab.readRecords('bills', mcpOptions);
         if (result.error) {
             return { success: false, error: result.error };
         }
@@ -2395,14 +2418,14 @@ async function executeGetFinancialSummary(params) {
         const { start, end } = getDateRange(params.period);
 
         // Get invoices for the period
-        const invResult = await mcp.readRecords('invoices', {
+        const invResult = await dab.readRecords('invoices', {
             filter: `IssueDate ge ${start} and IssueDate le ${end}`,
             first: 1000
         });
         const invoices = invResult.result?.value || [];
 
         // Get bills for the period
-        const billResult = await mcp.readRecords('bills', {
+        const billResult = await dab.readRecords('bills', {
             filter: `BillDate ge ${start} and BillDate le ${end}`,
             first: 1000
         });
@@ -2449,7 +2472,7 @@ async function executeGetOverdueItems(params) {
         const results = { overdueInvoices: [], overdueBills: [], upcomingInvoices: [], upcomingBills: [] };
 
         // Get overdue invoices
-        const overdueInvResult = await mcp.readRecords('invoices', {
+        const overdueInvResult = await dab.readRecords('invoices', {
             filter: `Status ne 'Paid' and DueDate lt ${today}`,
             orderby: ['DueDate asc'],
             first: 100
@@ -2457,7 +2480,7 @@ async function executeGetOverdueItems(params) {
         const overdueInvoices = overdueInvResult.result?.value || [];
 
         // Get overdue bills
-        const overdueBillsResult = await mcp.readRecords('bills', {
+        const overdueBillsResult = await dab.readRecords('bills', {
             filter: `Status ne 'Paid' and DueDate lt ${today}`,
             orderby: ['DueDate asc'],
             first: 100
@@ -2501,7 +2524,7 @@ async function executeGetOverdueItems(params) {
         if (params.include_upcoming) {
             const nextWeek = getDateInDays(7);
 
-            const upcomingInvResult = await mcp.readRecords('invoices', {
+            const upcomingInvResult = await dab.readRecords('invoices', {
                 filter: `Status eq 'Sent' and DueDate ge ${today} and DueDate le ${nextWeek}`,
                 orderby: ['DueDate asc'],
                 first: 100
@@ -2514,7 +2537,7 @@ async function executeGetOverdueItems(params) {
                 link: `${APP_URL}/invoices/${inv.Id}/edit`
             }));
 
-            const upcomingBillsResult = await mcp.readRecords('bills', {
+            const upcomingBillsResult = await dab.readRecords('bills', {
                 filter: `Status ne 'Paid' and DueDate ge ${today} and DueDate le ${nextWeek}`,
                 orderby: ['DueDate asc'],
                 first: 100
@@ -2565,7 +2588,7 @@ async function executeGetAccountChart(params) {
             mcpOptions.filter = filters.join(' and ');
         }
 
-        const result = await mcp.readRecords('accounts', mcpOptions);
+        const result = await dab.readRecords('accounts', mcpOptions);
         if (result.error) {
             return { success: false, error: result.error };
         }
@@ -2596,7 +2619,7 @@ async function executeSearchAll(params) {
         const results = { customers: [], invoices: [], journalEntries: [] };
 
         // Search customers
-        const custResult = await mcp.readRecords('customers', {
+        const custResult = await dab.readRecords('customers', {
             filter: `contains(Name, '${query}')`,
             first: 10
         });
@@ -2608,7 +2631,7 @@ async function executeSearchAll(params) {
         }));
 
         // Search invoices
-        const invResult = await mcp.readRecords('invoices', {
+        const invResult = await dab.readRecords('invoices', {
             filter: `contains(InvoiceNumber, '${query}')`,
             first: 10
         });
@@ -2621,7 +2644,7 @@ async function executeSearchAll(params) {
         }));
 
         // Search journal entries
-        const jeResult = await mcp.readRecords('journalentries', {
+        const jeResult = await dab.readRecords('journalentries', {
             filter: `contains(Reference, '${query}')`,
             first: 10
         });
@@ -2649,7 +2672,7 @@ async function executeSearchAll(params) {
 async function executeCopyInvoice(params) {
     try {
         // Find the source invoice
-        const findResult = await mcp.readRecords('invoices', {
+        const findResult = await dab.readRecords('invoices', {
             filter: `InvoiceNumber eq '${params.invoice_number}'`,
             first: 1
         });
@@ -2669,7 +2692,7 @@ async function executeCopyInvoice(params) {
             Status: 'Draft'
         };
 
-        const createResult = await mcp.createRecord('invoices', newInvoiceData);
+        const createResult = await dab.createRecord('invoices', newInvoiceData);
         if (createResult.error) {
             return { success: false, error: createResult.error };
         }
@@ -2713,7 +2736,7 @@ async function executeCreateCustomer(params) {
             SourceId: `AI-${Date.now()}`
         };
 
-        const createResult = await mcp.createRecord('customers', customerData);
+        const createResult = await dab.createRecord('customers', customerData);
         if (createResult.error) {
             return { success: false, error: createResult.error };
         }
@@ -2761,7 +2784,7 @@ async function executeCreateVendor(params) {
             SourceId: `AI-${Date.now()}`
         };
 
-        const createResult = await mcp.createRecord('vendors', vendorData);
+        const createResult = await dab.createRecord('vendors', vendorData);
         if (createResult.error) {
             return { success: false, error: createResult.error };
         }
@@ -2818,7 +2841,7 @@ async function executeCreateAccount(params) {
             SourceId: `AI-${Date.now()}`
         };
 
-        const createResult = await mcp.createRecord('accounts', accountData);
+        const createResult = await dab.createRecord('accounts', accountData);
         if (createResult.error) {
             // Check for duplicate code error
             if (createResult.error.includes('UQ_Accounts_Code') || createResult.error.includes('duplicate')) {
@@ -2926,15 +2949,15 @@ async function executeGetMigrationStatus(params) {
         const filter = `SourceSystem eq '${sourceSystem}'`;
 
         const [customers, vendors, accounts, invoices, bills, products, payments, billPayments, journalEntries] = await Promise.all([
-            mcp.readRecords('customers', { filter, first: 10000 }),
-            mcp.readRecords('vendors', { filter, first: 10000 }),
-            mcp.readRecords('accounts', { filter, first: 10000 }),
-            mcp.readRecords('invoices', { filter, first: 10000 }),
-            mcp.readRecords('bills', { filter, first: 10000 }),
-            mcp.readRecords('productsservices', { filter, first: 10000 }),
-            mcp.readRecords('payments', { filter, first: 10000 }),
-            mcp.readRecords('billpayments', { filter, first: 10000 }),
-            mcp.readRecords('journalentries', { filter, first: 10000 })
+            dab.readRecords('customers', { filter, first: 10000 }),
+            dab.readRecords('vendors', { filter, first: 10000 }),
+            dab.readRecords('accounts', { filter, first: 10000 }),
+            dab.readRecords('invoices', { filter, first: 10000 }),
+            dab.readRecords('bills', { filter, first: 10000 }),
+            dab.readRecords('productsservices', { filter, first: 10000 }),
+            dab.readRecords('payments', { filter, first: 10000 }),
+            dab.readRecords('billpayments', { filter, first: 10000 }),
+            dab.readRecords('journalentries', { filter, first: 10000 })
         ]);
 
         const imported = {
@@ -3199,7 +3222,7 @@ async function executeMigrateInvoiceLines(params) {
         }
 
         // 1. Find the invoice in ACTO by invoice number
-        const maInvoicesResult = await mcp.readRecords('invoices', {
+        const maInvoicesResult = await dab.readRecords('invoices', {
             filter: `InvoiceNumber eq '${invoice_number}'`,
             first: 1
         });
@@ -3214,7 +3237,7 @@ async function executeMigrateInvoiceLines(params) {
         }
 
         // 2. Check if invoice already has line items
-        const existingLinesResult = await mcp.readRecords('invoicelines', {
+        const existingLinesResult = await dab.readRecords('invoicelines', {
             filter: `InvoiceId eq '${maInvoice.Id}'`,
             first: 100
         });
@@ -3248,7 +3271,7 @@ async function executeMigrateInvoiceLines(params) {
                 const qty = parseFloat(detail.Qty) || 1;
                 const unitPrice = parseFloat(detail.UnitPrice) || parseFloat(line.Amount) || 0;
 
-                await mcp.createRecord('invoicelines', {
+                await dab.createRecord('invoicelines', {
                     InvoiceId: maInvoice.Id,
                     Description: line.Description || detail.ItemRef?.name || 'Line Item',
                     Quantity: qty,
@@ -3559,7 +3582,7 @@ async function executeDeleteProducts(params) {
         const confirmCount = params.confirm_count;
 
         // Get all products
-        const productsResult = await mcp.readRecords('productsservices', {
+        const productsResult = await dab.readRecords('productsservices', {
             select: 'Id,Name',
             first: 1000
         });
@@ -3611,7 +3634,7 @@ async function executeDeleteProducts(params) {
 
         for (const item of items) {
             try {
-                const deleteResult = await mcp.deleteRecord('productsservices', { Id: item.Id });
+                const deleteResult = await dab.deleteRecord('productsservices', { Id: item.Id });
                 if (deleteResult.error) {
                     errors.push({ name: item.Name, error: deleteResult.error });
                 } else {
@@ -4164,7 +4187,7 @@ async function executeCreateCustomerFromContact(params) {
             CreatedFrom: 'contact_extraction'
         };
 
-        const createResult = await mcp.createRecord('customers', customerData);
+        const createResult = await dab.createRecord('customers', customerData);
         if (createResult.error) {
             return { success: false, error: createResult.error };
         }
@@ -4239,7 +4262,7 @@ async function executeCreateVendorFromContact(params) {
             CreatedFrom: 'contact_extraction'
         };
 
-        const createResult = await mcp.createRecord('vendors', vendorData);
+        const createResult = await dab.createRecord('vendors', vendorData);
         if (createResult.error) {
             return { success: false, error: createResult.error };
         }
@@ -6258,7 +6281,7 @@ app.get('/api/insights', async (req, res) => {
         const nextThreeDays = getDateInDays(3);
 
         // Check overdue invoices
-        const overdueResult = await mcp.readRecords('invoices', {
+        const overdueResult = await dab.readRecords('invoices', {
             filter: `Status ne 'Paid' and DueDate lt ${today}`,
             first: 100
         });
@@ -6275,7 +6298,7 @@ app.get('/api/insights', async (req, res) => {
         }
 
         // Check upcoming due dates
-        const upcomingResult = await mcp.readRecords('invoices', {
+        const upcomingResult = await dab.readRecords('invoices', {
             filter: `Status eq 'Sent' and DueDate ge ${today} and DueDate le ${nextThreeDays}`,
             first: 100
         });
@@ -6291,7 +6314,7 @@ app.get('/api/insights', async (req, res) => {
         }
 
         // Check pending bank transactions
-        const pendingResult = await mcp.readRecords('banktransactions', {
+        const pendingResult = await dab.readRecords('banktransactions', {
             filter: `Status eq 'Pending'`,
             first: 100
         });
