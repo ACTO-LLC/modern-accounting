@@ -4,20 +4,24 @@
 
 **NEVER lower security posture without explicit user approval.** This includes:
 
-1. **NEVER grant anonymous/public write access** to database entities, APIs, or resources
+1. **NEVER grant anonymous/public access (read OR write)** to database entities, APIs, or resources containing business data
 2. **NEVER weaken authentication requirements** (e.g., removing auth, adding anonymous access)
 3. **NEVER disable security features** (CORS, HTTPS, encryption, etc.)
 4. **NEVER expose secrets or credentials** in logs, code, or error messages
 5. **NEVER bypass permission checks** as a "quick fix" for auth issues
+6. **NEVER expose business data to the public internet** - all API endpoints with business data must require authentication
 
 **If facing authentication/authorization issues:**
 - FIX the root cause (token validation, role mapping, issuer format, etc.)
 - ASK the user before considering any security-related workarounds
 - Document the security implications of any proposed changes
-- Prefer read-only anonymous access over write access if temporary workaround is needed
+- NEVER use anonymous access as a workaround, even temporarily
 
-**Example of what NOT to do (Jan 2026 incident):**
-When migration failed due to DAB returning 403, the wrong approach was granting `"actions": ["*"]` to anonymous role. The correct approach is to fix Azure AD token validation or ask the user for guidance.
+**Examples of what NOT to do:**
+- **Jan 2026 incident #1:** Granting `"actions": ["*"]` to anonymous role when migration failed with 403
+- **Feb 2026 incident #2:** Granting `"actions": ["read"]` to anonymous role as a "temporary" workaround, exposing all customer/vendor/financial data to the public internet
+
+**The correct approach:** Fix Azure AD token validation, check audience/issuer config, or ask the user for guidance.
 
 ---
 
