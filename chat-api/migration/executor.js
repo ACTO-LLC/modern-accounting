@@ -31,11 +31,12 @@ function createMigrationResult() {
  * Migrate customers from QBO to ACTO
  *
  * @param {Array} qboCustomers - Array of QBO customer objects
- * @param {DabMcpClient} mcp - DAB MCP client instance
- * @param {Function} onProgress - Progress callback (current, total)
+ * @param {DabRestClient} dab - DAB REST client instance
+ * @param {string} sourceSystem - Source system identifier (e.g., 'QBO')
+ * @param {string} authToken - Auth token for DAB API calls
  * @returns {Object} Migration result with idMap of QBO ID -> ACTO ID
  */
-export async function migrateCustomers(qboCustomers, mcp, onProgress = null) {
+export async function migrateCustomers(qboCustomers, dab, sourceSystem = 'QBO', authToken = null) {
     const result = createMigrationResult();
     const total = qboCustomers.length;
 
@@ -44,10 +45,10 @@ export async function migrateCustomers(qboCustomers, mcp, onProgress = null) {
 
         try {
             // Check for existing customer with same name
-            const existingCheck = await mcp.readRecords('customers', {
+            const existingCheck = await dab.readRecords('customers', {
                 filter: `Name eq '${escapeOData(qboCustomer.DisplayName || qboCustomer.CompanyName || '')}'`,
                 first: 1
-            });
+            }, authToken);
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
@@ -69,7 +70,7 @@ export async function migrateCustomers(qboCustomers, mcp, onProgress = null) {
             delete actoCustomer._qboId;
             delete actoCustomer._qboSyncToken;
 
-            const createResult = await mcp.createRecord('customers', actoCustomer);
+            const createResult = await dab.createRecord('customers', actoCustomer, authToken);
             if (createResult.error) {
                 throw new Error(createResult.error);
             }
@@ -104,7 +105,7 @@ export async function migrateCustomers(qboCustomers, mcp, onProgress = null) {
 /**
  * Migrate vendors from QBO to ACTO
  */
-export async function migrateVendors(qboVendors, mcp, onProgress = null) {
+export async function migrateVendors(qboVendors, dab, sourceSystem = 'QBO', authToken = null) {
     const result = createMigrationResult();
     const total = qboVendors.length;
 
@@ -113,10 +114,10 @@ export async function migrateVendors(qboVendors, mcp, onProgress = null) {
 
         try {
             // Check for existing vendor with same name
-            const existingCheck = await mcp.readRecords('vendors', {
+            const existingCheck = await dab.readRecords('vendors', {
                 filter: `Name eq '${escapeOData(qboVendor.DisplayName || qboVendor.CompanyName || '')}'`,
                 first: 1
-            });
+            }, authToken);
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
@@ -137,7 +138,7 @@ export async function migrateVendors(qboVendors, mcp, onProgress = null) {
             delete actoVendor._qboId;
             delete actoVendor._qboSyncToken;
 
-            const createResult = await mcp.createRecord('vendors', actoVendor);
+            const createResult = await dab.createRecord('vendors', actoVendor, authToken);
             if (createResult.error) {
                 throw new Error(createResult.error);
             }
@@ -172,12 +173,12 @@ export async function migrateVendors(qboVendors, mcp, onProgress = null) {
 /**
  * Migrate chart of accounts from QBO to ACTO
  */
-export async function migrateAccounts(qboAccounts, mcp, onProgress = null) {
+export async function migrateAccounts(qboAccounts, dab, sourceSystem = 'QBO', authToken = null) {
     const result = createMigrationResult();
     const total = qboAccounts.length;
 
     // Get existing account codes
-    const existingAccountsResult = await mcp.readRecords('accounts', { first: 1000 });
+    const existingAccountsResult = await dab.readRecords('accounts', { first: 1000 }, authToken);
     const existingAccounts = existingAccountsResult.result?.value || [];
     const existingCodes = existingAccounts.map(a => a.Code);
     const existingNames = new Set(existingAccounts.map(a => a.Name.toLowerCase()));
@@ -234,7 +235,7 @@ export async function migrateAccounts(qboAccounts, mcp, onProgress = null) {
             // Add new code to existing codes to prevent duplicates
             existingCodes.push(actoAccount.Code);
 
-            const createResult = await mcp.createRecord('accounts', actoAccount);
+            const createResult = await dab.createRecord('accounts', actoAccount, authToken);
             if (createResult.error) {
                 throw new Error(createResult.error);
             }
@@ -273,7 +274,7 @@ export async function migrateAccounts(qboAccounts, mcp, onProgress = null) {
  * Migrate invoices from QBO to ACTO
  * Requires customer ID map from prior customer migration
  */
-export async function migrateInvoices(qboInvoices, mcp, customerIdMap, onProgress = null) {
+export async function migrateInvoices(qboInvoices, dab, sourceSystem = 'QBO', authToken = null) {
     const result = createMigrationResult();
     const total = qboInvoices.length;
 
@@ -298,10 +299,10 @@ export async function migrateInvoices(qboInvoices, mcp, customerIdMap, onProgres
             }
 
             // Check for existing invoice with same number
-            const existingCheck = await mcp.readRecords('invoices', {
+            const existingCheck = await dab.readRecords('invoices', {
                 filter: `InvoiceNumber eq '${escapeOData(actoInvoice.InvoiceNumber)}'`,
                 first: 1
-            });
+            }, authToken);
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
@@ -327,7 +328,7 @@ export async function migrateInvoices(qboInvoices, mcp, customerIdMap, onProgres
                 Status: actoInvoice.Status
             };
 
-            const createResult = await mcp.createRecord('invoices', invoiceData);
+            const createResult = await dab.createRecord('invoices', invoiceData, authToken);
             if (createResult.error) {
                 throw new Error(createResult.error);
             }
@@ -339,13 +340,13 @@ export async function migrateInvoices(qboInvoices, mcp, customerIdMap, onProgres
             let linesCreated = 0;
             for (const line of actoInvoice.Lines || []) {
                 try {
-                    await mcp.createRecord('invoicelines', {
+                    await dab.createRecord('invoicelines', {
                         InvoiceId: newId,
                         Description: line.Description,
                         Quantity: line.Quantity,
                         UnitPrice: line.UnitPrice,
                         Amount: line.Amount
-                    });
+                    }, authToken);
                     linesCreated++;
                 } catch (lineError) {
                     console.error('Failed to create invoice line:', lineError.message);
@@ -383,7 +384,7 @@ export async function migrateInvoices(qboInvoices, mcp, customerIdMap, onProgres
  * Migrate bills from QBO to ACTO
  * Requires vendor and account ID maps from prior migrations
  */
-export async function migrateBills(qboBills, mcp, vendorIdMap, accountIdMap, onProgress = null) {
+export async function migrateBills(qboBills, dab, sourceSystem = 'QBO', authToken = null) {
     const result = createMigrationResult();
     const total = qboBills.length;
 
@@ -408,10 +409,10 @@ export async function migrateBills(qboBills, mcp, vendorIdMap, accountIdMap, onP
             }
 
             // Check for existing bill with same number
-            const existingCheck = await mcp.readRecords('bills', {
+            const existingCheck = await dab.readRecords('bills', {
                 filter: `BillNumber eq '${escapeOData(actoBill.BillNumber)}'`,
                 first: 1
-            });
+            }, authToken);
 
             const existing = existingCheck.result?.value || [];
             if (existing.length > 0) {
@@ -440,7 +441,7 @@ export async function migrateBills(qboBills, mcp, vendorIdMap, accountIdMap, onP
                 Memo: actoBill.Memo
             };
 
-            const createResult = await mcp.createRecord('bills', billData);
+            const createResult = await dab.createRecord('bills', billData, authToken);
             if (createResult.error) {
                 throw new Error(createResult.error);
             }
@@ -454,12 +455,12 @@ export async function migrateBills(qboBills, mcp, vendorIdMap, accountIdMap, onP
                 if (!line.AccountId) continue; // Skip lines without mapped account
 
                 try {
-                    await mcp.createRecord('billlines', {
+                    await dab.createRecord('billlines', {
                         BillId: newId,
                         AccountId: line.AccountId,
                         Description: line.Description,
                         Amount: line.Amount
-                    });
+                    }, authToken);
                     linesCreated++;
                 } catch (lineError) {
                     console.error('Failed to create bill line:', lineError.message);

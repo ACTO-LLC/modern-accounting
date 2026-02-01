@@ -73,7 +73,8 @@ async function migrateEntities(
     tableName,
     mapper,
     mcp,
-    options = {}
+    options = {},
+    authToken = null
 ) {
     const result = createMigrationResult();
     const {
@@ -184,8 +185,8 @@ async function migrateEntities(
                 await preSave(mappedEntity, sourceEntity);
             }
 
-            // Create the record
-            const createResult = await mcp.createRecord(tableName, mappedEntity);
+            // Create the record (pass authToken for production auth)
+            const createResult = await mcp.createRecord(tableName, mappedEntity, authToken);
             if (createResult.error) {
                 const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
                 throw new Error(errMsg);
@@ -193,8 +194,8 @@ async function migrateEntities(
 
             const newId = createResult.result?.Id || createResult.result?.value?.[0]?.Id;
 
-            // Record the migration
-            await mapper.recordMigration(entityType, sourceId, newId, sourceEntity);
+            // Record the migration (pass authToken for production auth)
+            await mapper.recordMigration(entityType, sourceId, newId, sourceEntity, authToken);
 
             // Add to duplicates map to prevent same-batch duplicates
             if (duplicateField && mappedEntity[duplicateField]) {
@@ -230,7 +231,7 @@ async function migrateEntities(
 /**
  * Migrate customers from source system to ACTO
  */
-export async function migrateCustomers(sourceCustomers, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateCustomers(sourceCustomers, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
 
     return migrateEntities(
@@ -241,16 +242,16 @@ export async function migrateCustomers(sourceCustomers, mcp, sourceSystem = 'QBO
         mcp,
         {
             duplicateField: 'Name',
-            getFieldValue: (entity) => entity.DisplayName || entity.CompanyName || entity.Name,
-            onProgress
-        }
+            getFieldValue: (entity) => entity.DisplayName || entity.CompanyName || entity.Name
+        },
+        authToken
     );
 }
 
 /**
  * Migrate vendors from source system to ACTO
  */
-export async function migrateVendors(sourceVendors, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateVendors(sourceVendors, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
 
     return migrateEntities(
@@ -261,16 +262,16 @@ export async function migrateVendors(sourceVendors, mcp, sourceSystem = 'QBO', o
         mcp,
         {
             duplicateField: 'Name',
-            getFieldValue: (entity) => entity.DisplayName || entity.CompanyName || entity.Name,
-            onProgress
-        }
+            getFieldValue: (entity) => entity.DisplayName || entity.CompanyName || entity.Name
+        },
+        authToken
     );
 }
 
 /**
  * Migrate products/services from source system to ACTO
  */
-export async function migrateProducts(sourceItems, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateProducts(sourceItems, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
 
     return migrateEntities(
@@ -281,23 +282,23 @@ export async function migrateProducts(sourceItems, mcp, sourceSystem = 'QBO', on
         mcp,
         {
             duplicateField: 'Name',
-            getFieldValue: (entity) => entity.Name,
-            onProgress
-        }
+            getFieldValue: (entity) => entity.Name
+        },
+        authToken
     );
 }
 
 /**
  * Migrate accounts from source system to ACTO
  */
-export async function migrateAccounts(sourceAccounts, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateAccounts(sourceAccounts, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
 
     // Get existing account codes for auto-generation
     const existingAccountsResult = await mcp.readRecords('accounts', {
         select: 'Code',
         first: 1000
-    });
+    }, authToken);
     const existingCodes = (existingAccountsResult.result?.value || []).map(a => a.Code);
 
     // Check config for skipping system accounts
@@ -330,9 +331,9 @@ export async function migrateAccounts(sourceAccounts, mcp, sourceSystem = 'QBO',
                     );
                     existingCodes.push(mappedAccount.Code);
                 }
-            },
-            onProgress
-        }
+            }
+        },
+        authToken
     );
 }
 
@@ -340,7 +341,7 @@ export async function migrateAccounts(sourceAccounts, mcp, sourceSystem = 'QBO',
  * Migrate invoices from source system to ACTO
  * Performance optimized with batch duplicate checking and parallel line creation.
  */
-export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceInvoices.length;
@@ -411,7 +412,7 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
             if (mappedInvoice.InvoiceNumber) {
                 const existingInvoiceId = existingInvoices.get(String(mappedInvoice.InvoiceNumber));
                 if (existingInvoiceId) {
-                    await mapper.recordMigration('Invoice', sourceId, existingInvoiceId);
+                    await mapper.recordMigration('Invoice', sourceId, existingInvoiceId, null, authToken);
                     result.skipped++;
                     result.details.push({
                         type: 'invoice',
@@ -444,7 +445,7 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
                 SourceId: sourceId
             };
 
-            const createResult = await mcp.createRecord('invoices_write', invoiceData);
+            const createResult = await mcp.createRecord('invoices_write', invoiceData, authToken);
             if (createResult.error) {
                 const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
                 throw new Error(errMsg);
@@ -467,7 +468,7 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
                         Quantity: parseFloat(detail.Qty) || 1,
                         UnitPrice: parseFloat(detail.UnitPrice) || parseFloat(line.Amount) || 0
                         // Amount is a computed column (Quantity * UnitPrice)
-                    });
+                    }, authToken);
                     return true;
                 } catch (lineError) {
                     console.error('Failed to create invoice line:', lineError.message);
@@ -479,7 +480,7 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
             const linesCreated = lineResults.filter(Boolean).length;
 
             // Record migration
-            await mapper.recordMigration('Invoice', sourceId, newId, sourceInvoice);
+            await mapper.recordMigration('Invoice', sourceId, newId, sourceInvoice, authToken);
 
             result.migrated++;
             result.details.push({
@@ -518,7 +519,7 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
  * Migrate bills from source system to ACTO
  * Performance optimized with batch duplicate checking and parallel line creation.
  */
-export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceBills.length;
@@ -601,7 +602,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
             if (mappedBill.BillNumber) {
                 const existingBillId = existingBills.get(String(mappedBill.BillNumber));
                 if (existingBillId) {
-                    await mapper.recordMigration('Bill', sourceId, existingBillId);
+                    await mapper.recordMigration('Bill', sourceId, existingBillId, null, authToken);
                     result.skipped++;
                     result.details.push({
                         type: 'bill',
@@ -641,7 +642,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
                 SourceId: sourceId
             };
 
-            const createResult = await mcp.createRecord('bills_write', billData);
+            const createResult = await mcp.createRecord('bills_write', billData, authToken);
             if (createResult.error) {
                 const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
                 throw new Error(errMsg);
@@ -669,7 +670,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
                             AccountId: accountId,
                             Description: line.Description || detail.AccountRef?.name || 'Expense',
                             Amount: parseFloat(line.Amount) || 0
-                        });
+                        }, authToken);
                         return true;
                     }
                     return false;
@@ -683,7 +684,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
             const linesCreated = lineResults.filter(Boolean).length;
 
             // Record migration
-            await mapper.recordMigration('Bill', sourceId, newId, sourceBill);
+            await mapper.recordMigration('Bill', sourceId, newId, sourceBill, authToken);
 
             result.migrated++;
             result.details.push({
@@ -721,7 +722,7 @@ export async function migrateBills(sourceBills, mcp, sourceSystem = 'QBO', onPro
 /**
  * Migrate customer payments from source system to ACTO
  */
-export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourcePayments.length;
@@ -810,7 +811,7 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
                 SourceId: sourceId
             };
 
-            const createResult = await mcp.createRecord('payments', paymentData);
+            const createResult = await mcp.createRecord('payments', paymentData, authToken);
             if (createResult.error) {
                 const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
                 throw new Error(errMsg);
@@ -830,7 +831,7 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
                                 PaymentId: newPaymentId,
                                 InvoiceId: invoiceId,
                                 AmountApplied: parseFloat(line.Amount) || 0
-                            });
+                            }, authToken);
                             return true;
                         }
                     }
@@ -845,7 +846,7 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
             const applicationsCreated = appResults.filter(Boolean).length;
 
             // Record migration
-            await mapper.recordMigration('Payment', sourceId, newPaymentId, sourcePayment);
+            await mapper.recordMigration('Payment', sourceId, newPaymentId, sourcePayment, authToken);
 
             result.migrated++;
             result.details.push({
@@ -878,7 +879,7 @@ export async function migratePayments(sourcePayments, mcp, sourceSystem = 'QBO',
 /**
  * Migrate vendor bill payments from source system to ACTO
  */
-export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceBillPayments.length;
@@ -993,7 +994,7 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
                 SourceId: sourceId
             };
 
-            const createResult = await mcp.createRecord('billpayments', billPaymentData);
+            const createResult = await mcp.createRecord('billpayments', billPaymentData, authToken);
             if (createResult.error) {
                 const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
                 throw new Error(errMsg);
@@ -1013,7 +1014,7 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
                                 BillPaymentId: newBillPaymentId,
                                 BillId: billId,
                                 AmountApplied: parseFloat(line.Amount) || 0
-                            });
+                            }, authToken);
                             return true;
                         }
                     }
@@ -1028,7 +1029,7 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
             const applicationsCreated = appResults.filter(Boolean).length;
 
             // Record migration
-            await mapper.recordMigration('BillPayment', sourceId, newBillPaymentId, sourceBillPayment);
+            await mapper.recordMigration('BillPayment', sourceId, newBillPaymentId, sourceBillPayment, authToken);
 
             result.migrated++;
             result.details.push({
@@ -1061,7 +1062,7 @@ export async function migrateBillPayments(sourceBillPayments, mcp, sourceSystem 
 /**
  * Migrate journal entries from source system to ACTO
  */
-export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSystem = 'QBO', onProgress = null) {
+export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSystem = 'QBO', authToken = null) {
     const mapper = getSharedMapper(mcp, sourceSystem);
     const result = createMigrationResult();
     const total = sourceJournalEntries.length;
@@ -1147,7 +1148,7 @@ export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSys
                 SourceId: sourceId
             };
 
-            const createResult = await mcp.createRecord('journalentries', jeData);
+            const createResult = await mcp.createRecord('journalentries', jeData, authToken);
             if (createResult.error) {
                 const errMsg = typeof createResult.error === 'object' ? JSON.stringify(createResult.error) : createResult.error;
                 throw new Error(errMsg);
@@ -1179,7 +1180,7 @@ export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSys
                         Credit: postingType === 'Credit' ? amount : 0
                     };
 
-                    await mcp.createRecord('journalentrylines', lineData);
+                    await mcp.createRecord('journalentrylines', lineData, authToken);
                     return { success: true, postingType, amount };
 
                 } catch (lineError) {
@@ -1199,7 +1200,7 @@ export async function migrateJournalEntries(sourceJournalEntries, mcp, sourceSys
                 .reduce((sum, r) => sum + r.amount, 0);
 
             // Record migration
-            await mapper.recordMigration('JournalEntry', sourceId, newJEId, sourceJE);
+            await mapper.recordMigration('JournalEntry', sourceId, newJEId, sourceJE, authToken);
 
             result.migrated++;
             result.details.push({

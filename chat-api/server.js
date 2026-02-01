@@ -3097,7 +3097,7 @@ async function executeQboSearchBills(params) {
 
 // Migration now uses database-driven mappings and qboAuth for API calls
 
-async function executeMigrateCustomers(params) {
+async function executeMigrateCustomers(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3117,8 +3117,8 @@ async function executeMigrateCustomers(params) {
             return { success: true, message: 'No customers found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven) - use REST client for production compatibility
-        const result = await migrateCustomers(qboCustomers, dab, 'QBO');
+        // Run migration (DB-driven) - use REST client with auth token for production
+        const result = await migrateCustomers(qboCustomers, dab, 'QBO', authToken);
 
         return {
             success: true,
@@ -3135,7 +3135,7 @@ async function executeMigrateCustomers(params) {
     }
 }
 
-async function executeMigrateVendors(params) {
+async function executeMigrateVendors(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3154,8 +3154,8 @@ async function executeMigrateVendors(params) {
             return { success: true, message: 'No vendors found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven) - use REST client for production compatibility
-        const result = await migrateVendors(qboVendors, dab, 'QBO');
+        // Run migration (DB-driven) - use REST client with auth token for production
+        const result = await migrateVendors(qboVendors, dab, 'QBO', authToken);
 
         return {
             success: true,
@@ -3172,7 +3172,7 @@ async function executeMigrateVendors(params) {
     }
 }
 
-async function executeMigrateProducts(params) {
+async function executeMigrateProducts(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3191,8 +3191,8 @@ async function executeMigrateProducts(params) {
             return { success: true, message: 'No products/services found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven)
-        const result = await migrateProducts(qboItems, mcp, 'QBO');
+        // Run migration (DB-driven) - use REST client with auth token for production
+        const result = await migrateProducts(qboItems, dab, 'QBO', authToken);
 
         return {
             success: true,
@@ -3209,7 +3209,7 @@ async function executeMigrateProducts(params) {
     }
 }
 
-async function executeMigrateInvoiceLines(params) {
+async function executeMigrateInvoiceLines(params, authToken = null) {
     try {
         const { invoice_number } = params;
         if (!invoice_number) {
@@ -3225,7 +3225,7 @@ async function executeMigrateInvoiceLines(params) {
         const maInvoicesResult = await dab.readRecords('invoices', {
             filter: `InvoiceNumber eq '${invoice_number}'`,
             first: 1
-        });
+        }, authToken);
 
         const maInvoice = maInvoicesResult.result?.value?.[0];
         if (!maInvoice) {
@@ -3240,7 +3240,7 @@ async function executeMigrateInvoiceLines(params) {
         const existingLinesResult = await dab.readRecords('invoicelines', {
             filter: `InvoiceId eq '${maInvoice.Id}'`,
             first: 100
-        });
+        }, authToken);
 
         const existingLines = existingLinesResult.result?.value || [];
         if (existingLines.length > 0) {
@@ -3277,7 +3277,7 @@ async function executeMigrateInvoiceLines(params) {
                     Quantity: qty,
                     UnitPrice: unitPrice
                     // Amount is a computed column (Quantity * UnitPrice)
-                });
+                }, authToken);
 
                 linesCreated++;
                 createdLines.push({
@@ -3303,7 +3303,7 @@ async function executeMigrateInvoiceLines(params) {
     }
 }
 
-async function executeMigrateAccounts(params) {
+async function executeMigrateAccounts(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3322,8 +3322,8 @@ async function executeMigrateAccounts(params) {
             return { success: true, message: 'No accounts found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven) - use REST client for production compatibility
-        const result = await migrateAccounts(qboAccounts, dab, 'QBO');
+        // Run migration (DB-driven) - use REST client with auth token for production
+        const result = await migrateAccounts(qboAccounts, dab, 'QBO', authToken);
 
         return {
             success: true,
@@ -3340,7 +3340,7 @@ async function executeMigrateAccounts(params) {
     }
 }
 
-async function executeMigrateInvoices(params) {
+async function executeMigrateInvoices(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3371,8 +3371,8 @@ async function executeMigrateInvoices(params) {
             return { success: true, message: 'No invoices found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration (DB-driven) - use REST client for production compatibility
-        const result = await migrateInvoices(qboInvoices, dab, 'QBO');
+        // Run migration (DB-driven) - use REST client with auth token for production
+        const result = await migrateInvoices(qboInvoices, dab, 'QBO', authToken);
 
         // Calculate total value migrated
         const totalValue = result.details
@@ -3395,7 +3395,7 @@ async function executeMigrateInvoices(params) {
     }
 }
 
-async function executeMigrateBills(params) {
+async function executeMigrateBills(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3426,8 +3426,8 @@ async function executeMigrateBills(params) {
             return { success: true, message: 'No bills found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration - use REST client for production compatibility
-        const result = await migrateBills(qboBills, dab, 'QBO');
+        // Run migration - use REST client with auth token for production
+        const result = await migrateBills(qboBills, dab, 'QBO', authToken);
 
         // Calculate total value migrated
         const totalValue = result.details
@@ -3450,7 +3450,7 @@ async function executeMigrateBills(params) {
     }
 }
 
-async function executeMigratePayments(params) {
+async function executeMigratePayments(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3469,8 +3469,8 @@ async function executeMigratePayments(params) {
             return { success: true, message: 'No payments found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration
-        const result = await migratePayments(qboPayments, mcp, 'QBO');
+        // Run migration - use REST client with auth token for production
+        const result = await migratePayments(qboPayments, dab, 'QBO', authToken);
 
         // Calculate total value migrated
         const totalValue = result.details
@@ -3492,7 +3492,7 @@ async function executeMigratePayments(params) {
     }
 }
 
-async function executeMigrateBillPayments(params) {
+async function executeMigrateBillPayments(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3511,8 +3511,8 @@ async function executeMigrateBillPayments(params) {
             return { success: true, message: 'No bill payments found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration
-        const result = await migrateBillPayments(qboBillPayments, mcp, 'QBO');
+        // Run migration - use REST client with auth token for production
+        const result = await migrateBillPayments(qboBillPayments, dab, 'QBO', authToken);
 
         // Calculate total value migrated
         const totalValue = result.details
@@ -3534,7 +3534,7 @@ async function executeMigrateBillPayments(params) {
     }
 }
 
-async function executeMigrateJournalEntries(params) {
+async function executeMigrateJournalEntries(params, authToken = null) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -3553,8 +3553,8 @@ async function executeMigrateJournalEntries(params) {
             return { success: true, message: 'No journal entries found to migrate', migrated: 0, skipped: 0 };
         }
 
-        // Run migration
-        const result = await migrateJournalEntries(qboJournalEntries, mcp, 'QBO');
+        // Run migration - use REST client with auth token for production
+        const result = await migrateJournalEntries(qboJournalEntries, dab, 'QBO', authToken);
 
         // Calculate total debit/credit migrated
         const totalDebit = result.details
@@ -4997,27 +4997,27 @@ async function executeFunction(name, args, authToken = null) {
             return executeQboSearchAccounts(args);
         case 'qbo_search_bills':
             return executeQboSearchBills(args);
-        // Migration Tools
+        // Migration Tools - pass authToken for DAB authentication
         case 'migrate_customers':
-            return executeMigrateCustomers(args);
+            return executeMigrateCustomers(args, authToken);
         case 'migrate_vendors':
-            return executeMigrateVendors(args);
+            return executeMigrateVendors(args, authToken);
         case 'migrate_accounts':
-            return executeMigrateAccounts(args);
+            return executeMigrateAccounts(args, authToken);
         case 'migrate_invoices':
-            return executeMigrateInvoices(args);
+            return executeMigrateInvoices(args, authToken);
         case 'migrate_bills':
-            return executeMigrateBills(args);
+            return executeMigrateBills(args, authToken);
         case 'migrate_payments':
-            return executeMigratePayments(args);
+            return executeMigratePayments(args, authToken);
         case 'migrate_bill_payments':
-            return executeMigrateBillPayments(args);
+            return executeMigrateBillPayments(args, authToken);
         case 'migrate_journal_entries':
-            return executeMigrateJournalEntries(args);
+            return executeMigrateJournalEntries(args, authToken);
         case 'migrate_products':
-            return executeMigrateProducts(args);
+            return executeMigrateProducts(args, authToken);
         case 'migrate_invoice_lines':
-            return executeMigrateInvoiceLines(args);
+            return executeMigrateInvoiceLines(args, authToken);
         case 'delete_products':
             return executeDeleteProducts(args);
         // Company Onboarding Tools

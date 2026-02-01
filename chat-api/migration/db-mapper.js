@@ -369,7 +369,7 @@ export class MigrationMapper {
     /**
      * Record a successful migration in MigrationEntityMaps
      */
-    async recordMigration(entityType, sourceId, targetId, sourceData = null) {
+    async recordMigration(entityType, sourceId, targetId, sourceData = null, authToken = null) {
         const cacheKey = `${entityType}:${String(sourceId)}`;
 
         // Update caches immediately
@@ -383,7 +383,7 @@ export class MigrationMapper {
                 SourceId: String(sourceId),
                 TargetId: targetId,
                 SourceData: sourceData ? JSON.stringify(sourceData) : null
-            });
+            }, authToken);
         } catch (e) {
             // Might already exist, that's OK
             console.log(`Migration record already exists for ${entityType}:${sourceId}`);
