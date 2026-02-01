@@ -859,3 +859,81 @@ az containerapp update --name dab-ca-modern-accounting \
 ```
 
 **Note:** Container Apps don't have a simple "restart" command. Setting an env var triggers a new revision deployment.
+
+---
+
+### Express.json() Body Parsing Conflicts with http-proxy-middleware (Jan 2026)
+
+**Problem:** API requests through a proxy return 500 errors, even though direct requests to the backend work fine. POST/PATCH requests with JSON bodies fail silently.
+
+**Symptoms:**
+- GET requests work fine
+- POST/PATCH with JSON bodies return 500 Internal Server Error
+- Direct requests to backend (bypassing proxy) work correctly
+- Browser console shows request was sent with proper body
+
+**Root Cause:** `express.json()` middleware consumes the request body stream before `http-proxy-middleware` can forward it. The proxy receives an empty body.
+
+```javascript
+// PROBLEMATIC setup
+app.use(express.json()); // Consumes body stream for ALL routes
+
+app.use('/api', createProxyMiddleware({
+    target: 'http://backend:5000',
+    changeOrigin: true
+}));
+// Body is empty by the time it reaches proxy!
+```
+
+**What Doesn't Work:**
+- Re-serializing body in `onProxyReq` - unreliable with different content types
+- `bodyParser.raw()` - still consumes the stream
+- Order of middleware - `express.json()` runs first regardless
+
+**Solution:** Use direct route handlers instead of proxy for routes that need body parsing:
+
+```javascript
+// Instead of proxying POST/PATCH requests, handle them directly
+app.post('/api/companies', async (req, res) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/api/companies`, req.body, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
+            }
+        });
+        res.status(response.status).json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
+    }
+});
+
+app.patch('/api/companies/Id/:id', async (req, res) => {
+    try {
+        const response = await axios.patch(`${BACKEND_URL}/api/companies/Id/${req.params.id}`, req.body, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
+            }
+        });
+        res.status(response.status).json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(error.response?.data || { error: error.message });
+    }
+});
+
+// Proxy still works for GET requests (no body)
+app.use('/api', createProxyMiddleware({ target: BACKEND_URL, changeOrigin: true }));
+```
+
+**Alternative - Selective Body Parsing:**
+```javascript
+// Only parse JSON for specific routes that need it
+app.use('/api/chat', express.json());
+app.use('/api/users', express.json());
+
+// Don't use express.json() globally - let proxy handle other routes
+app.use('/api', createProxyMiddleware({ target: BACKEND_URL, changeOrigin: true }));
+```
+
+**Key Insight:** Route order matters in Express. Define specific route handlers BEFORE the catch-all proxy middleware. The first matching route wins.
