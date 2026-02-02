@@ -8,10 +8,49 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid';
+import { DefaultAzureCredential } from '@azure/identity';
 import axios from 'axios';
 import crypto from 'crypto';
 
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
+const DAB_AUDIENCE = process.env.AZURE_AD_AUDIENCE;
+
+// Azure credential for DAB authentication (Managed Identity in production)
+let azureCredential = null;
+
+/**
+ * Get auth token for DAB API calls using Managed Identity
+ */
+async function getDabAuthToken() {
+    // Skip auth for localhost DAB
+    if (DAB_API_URL.includes('localhost')) return null;
+
+    if (!azureCredential) {
+        azureCredential = new DefaultAzureCredential();
+    }
+
+    try {
+        const scope = `api://${DAB_AUDIENCE}/.default`;
+        const tokenResponse = await azureCredential.getToken(scope);
+        return tokenResponse.token;
+    } catch (error) {
+        console.error('Failed to get DAB auth token:', error.message);
+        throw error;
+    }
+}
+
+/**
+ * Build headers for DAB API calls
+ */
+async function getDabHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = await getDabAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-MS-API-ROLE'] = 'Admin';
+    }
+    return headers;
+}
 
 // Encryption key for access tokens (should be 32 bytes for AES-256)
 const ENCRYPTION_KEY = process.env.PLAID_ENCRYPTION_KEY || crypto.scryptSync(
@@ -170,6 +209,7 @@ class PlaidService {
             const existing = await this.getConnectionByItemId(connection.itemId);
 
             const encryptedToken = this.encryptToken(connection.accessToken);
+            const headers = await getDabHeaders();
 
             if (existing) {
                 // Update existing
@@ -183,7 +223,7 @@ class PlaidService {
                         UpdatedAt: new Date().toISOString(),
                         IsActive: true
                     },
-                    { headers: { 'Content-Type': 'application/json' } }
+                    { headers }
                 );
                 return existing;
             } else {
@@ -201,7 +241,7 @@ class PlaidService {
                         SyncStatus: 'Pending',
                         IsActive: true,
                     },
-                    { headers: { 'Content-Type': 'application/json' } }
+                    { headers }
                 );
 
                 console.log('Plaid connection saved to database');
@@ -218,11 +258,12 @@ class PlaidService {
      */
     async saveAccounts(connectionId, plaidAccounts) {
         const savedAccounts = [];
+        const headers = await getDabHeaders();
 
         for (const account of plaidAccounts) {
             try {
                 // Check if account already exists
-                const existingResponse = await axios.get(`${DAB_API_URL}/plaidaccounts`);
+                const existingResponse = await axios.get(`${DAB_API_URL}/plaidaccounts`, { headers });
                 const existing = (existingResponse.data?.value || [])
                     .find(a => a.PlaidAccountId === account.account_id);
 
@@ -245,7 +286,7 @@ class PlaidService {
                     await axios.patch(
                         `${DAB_API_URL}/plaidaccounts/Id/${existing.Id}`,
                         accountData,
-                        { headers: { 'Content-Type': 'application/json' } }
+                        { headers }
                     );
                     savedAccounts.push({ ...existing, ...accountData });
                 } else {
@@ -253,7 +294,7 @@ class PlaidService {
                     await axios.post(
                         `${DAB_API_URL}/plaidaccounts`,
                         { Id: newId, ...accountData },
-                        { headers: { 'Content-Type': 'application/json' } }
+                        { headers }
                     );
                     savedAccounts.push({ Id: newId, ...accountData });
                 }
@@ -271,7 +312,8 @@ class PlaidService {
      */
     async getConnectionByItemId(itemId) {
         try {
-            const response = await axios.get(`${DAB_API_URL}/plaidconnections`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/plaidconnections`, { headers });
             const items = response.data?.value || [];
             return items.find(c => c.ItemId === itemId) || null;
         } catch (error) {
@@ -285,7 +327,8 @@ class PlaidService {
      */
     async getActiveConnections() {
         try {
-            const response = await axios.get(`${DAB_API_URL}/plaidconnections`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/plaidconnections`, { headers });
             const items = response.data?.value || [];
             return items.filter(c => c.IsActive);
         } catch (error) {
@@ -299,7 +342,8 @@ class PlaidService {
      */
     async getAccountsByConnectionId(connectionId) {
         try {
-            const response = await axios.get(`${DAB_API_URL}/plaidaccounts`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/plaidaccounts`, { headers });
             const items = response.data?.value || [];
             return items.filter(a => a.PlaidConnectionId === connectionId && a.IsActive);
         } catch (error) {
@@ -313,7 +357,8 @@ class PlaidService {
      */
     async getAllAccounts() {
         try {
-            const response = await axios.get(`${DAB_API_URL}/plaidaccounts`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/plaidaccounts`, { headers });
             return (response.data?.value || []).filter(a => a.IsActive);
         } catch (error) {
             console.error('Failed to get Plaid accounts:', error.message);
@@ -326,7 +371,8 @@ class PlaidService {
      */
     async linkAccountToLedger(plaidAccountId, ledgerAccountId) {
         try {
-            const response = await axios.get(`${DAB_API_URL}/plaidaccounts`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/plaidaccounts`, { headers });
             const account = (response.data?.value || []).find(a => a.Id === plaidAccountId);
 
             if (!account) {
@@ -339,7 +385,7 @@ class PlaidService {
                     LinkedAccountId: ledgerAccountId,
                     UpdatedAt: new Date().toISOString(),
                 },
-                { headers: { 'Content-Type': 'application/json' } }
+                { headers }
             );
 
             console.log(`Linked Plaid account ${plaidAccountId} to ledger account ${ledgerAccountId}`);
@@ -374,6 +420,8 @@ class PlaidService {
                 }
             }
 
+            const headers = await getDabHeaders();
+
             // Mark connection as inactive
             await axios.patch(
                 `${DAB_API_URL}/plaidconnections/Id/${connection.Id}`,
@@ -381,7 +429,7 @@ class PlaidService {
                     IsActive: false,
                     UpdatedAt: new Date().toISOString()
                 },
-                { headers: { 'Content-Type': 'application/json' } }
+                { headers }
             );
 
             // Mark all accounts as inactive
@@ -390,7 +438,7 @@ class PlaidService {
                 await axios.patch(
                     `${DAB_API_URL}/plaidaccounts/Id/${account.Id}`,
                     { IsActive: false, UpdatedAt: new Date().toISOString() },
-                    { headers: { 'Content-Type': 'application/json' } }
+                    { headers }
                 );
             }
 
@@ -432,6 +480,7 @@ class PlaidService {
             // Update status to error
             const connection = await this.getConnectionByItemId(itemId);
             if (connection) {
+                const headers = await getDabHeaders();
                 await axios.patch(
                     `${DAB_API_URL}/plaidconnections/Id/${connection.Id}`,
                     {
@@ -439,7 +488,7 @@ class PlaidService {
                         SyncErrorMessage: error.response?.data?.error_message || error.message,
                         UpdatedAt: new Date().toISOString()
                     },
-                    { headers: { 'Content-Type': 'application/json' } }
+                    { headers }
                 );
             }
 
@@ -661,6 +710,7 @@ class PlaidService {
             const institutionName = metadata?.institution?.name || 'Unknown Institution';
 
             // Update employee with verified bank info
+            const headers = await getDabHeaders();
             await axios.patch(`${DAB_API_URL}/employees_write/Id/${employeeId}`, {
                 BankRoutingNumber: achNumbers.routing,
                 BankAccountNumber: achNumbers.account,
@@ -671,7 +721,7 @@ class PlaidService {
                 BankVerifiedAt: new Date().toISOString(),
                 BankInstitutionName: institutionName,
                 UpdatedAt: new Date().toISOString(),
-            }, { headers: { 'Content-Type': 'application/json' } });
+            }, { headers });
 
             console.log('Employee bank account verified successfully');
 
@@ -688,10 +738,11 @@ class PlaidService {
 
             // Update employee with failed status
             try {
+                const headers = await getDabHeaders();
                 await axios.patch(`${DAB_API_URL}/employees_write/Id/${employeeId}`, {
                     BankVerificationStatus: 'Failed',
                     UpdatedAt: new Date().toISOString(),
-                }, { headers: { 'Content-Type': 'application/json' } });
+                }, { headers });
             } catch (updateError) {
                 console.error('Failed to update employee verification status:', updateError.message);
             }
@@ -706,7 +757,8 @@ class PlaidService {
      */
     async getEmployeeVerificationStatus(employeeId) {
         try {
-            const response = await axios.get(`${DAB_API_URL}/employees?$filter=Id eq ${employeeId}`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/employees?$filter=Id eq ${employeeId}`, { headers });
             const employee = response.data?.value?.[0];
 
             if (!employee) {
@@ -733,8 +785,9 @@ class PlaidService {
      */
     async removeEmployeeBankVerification(employeeId) {
         try {
+            const headers = await getDabHeaders();
             // Get employee to find Plaid item
-            const response = await axios.get(`${DAB_API_URL}/employees?$filter=Id eq ${employeeId}`);
+            const response = await axios.get(`${DAB_API_URL}/employees?$filter=Id eq ${employeeId}`, { headers });
             const employee = response.data?.value?.[0];
 
             if (!employee) {
@@ -767,7 +820,7 @@ class PlaidService {
                 BankInstitutionName: null,
                 // Note: We keep the bank routing/account numbers as they may have been manually entered
                 UpdatedAt: new Date().toISOString(),
-            }, { headers: { 'Content-Type': 'application/json' } });
+            }, { headers });
 
             return { success: true, message: 'Bank verification removed' };
         } catch (error) {
@@ -781,9 +834,11 @@ class PlaidService {
      */
     async getUnverifiedEmployees() {
         try {
+            const headers = await getDabHeaders();
             // Get active employees with direct deposit but not verified
             const response = await axios.get(
-                `${DAB_API_URL}/employees?$filter=Status eq 'Active'`
+                `${DAB_API_URL}/employees?$filter=Status eq 'Active'`,
+                { headers }
             );
             const employees = response.data?.value || [];
 
