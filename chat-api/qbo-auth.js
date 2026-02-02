@@ -547,10 +547,10 @@ class QBOAuth {
     }
 
     /**
-     * Search customers
+     * Search customers with pagination support
      */
     async searchCustomers(criteria = {}) {
-        let query = 'SELECT * FROM Customer';
+        let baseQuery = 'SELECT * FROM Customer';
         const conditions = [];
 
         if (criteria.name) {
@@ -561,9 +561,38 @@ class QBOAuth {
         }
 
         if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
+            baseQuery += ' WHERE ' + conditions.join(' AND ');
         }
 
+        // If fetchAll, paginate through all results
+        if (criteria.fetchAll) {
+            const allCustomers = [];
+            const pageSize = 1000; // QBO max per request
+            let startPosition = 1;
+            let hasMore = true;
+
+            while (hasMore) {
+                const query = `${baseQuery} STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`;
+                const response = await this.query(query);
+                const customers = response?.Customer || [];
+
+                allCustomers.push(...customers);
+
+                if (customers.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    startPosition += pageSize;
+                }
+            }
+
+            return {
+                count: allCustomers.length,
+                data: allCustomers
+            };
+        }
+
+        // Non-paginated query
+        let query = baseQuery;
         if (criteria.limit) {
             query += ` MAXRESULTS ${criteria.limit}`;
         }
@@ -573,21 +602,20 @@ class QBOAuth {
 
         return {
             count: customers.length,
-            data: criteria.fetchAll ? customers : undefined,
-            customers: !criteria.fetchAll ? customers.map(c => ({
+            customers: customers.map(c => ({
                 id: c.Id,
                 name: c.DisplayName,
                 email: c.PrimaryEmailAddr?.Address,
                 balance: c.Balance
-            })) : undefined
+            }))
         };
     }
 
     /**
-     * Search vendors
+     * Search vendors with pagination support
      */
     async searchVendors(criteria = {}) {
-        let query = 'SELECT * FROM Vendor';
+        let baseQuery = 'SELECT * FROM Vendor';
         const conditions = [];
 
         if (criteria.name) {
@@ -598,9 +626,38 @@ class QBOAuth {
         }
 
         if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
+            baseQuery += ' WHERE ' + conditions.join(' AND ');
         }
 
+        // If fetchAll, paginate through all results
+        if (criteria.fetchAll) {
+            const allVendors = [];
+            const pageSize = 1000; // QBO max per request
+            let startPosition = 1;
+            let hasMore = true;
+
+            while (hasMore) {
+                const query = `${baseQuery} STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`;
+                const response = await this.query(query);
+                const vendors = response?.Vendor || [];
+
+                allVendors.push(...vendors);
+
+                if (vendors.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    startPosition += pageSize;
+                }
+            }
+
+            return {
+                count: allVendors.length,
+                data: allVendors
+            };
+        }
+
+        // Non-paginated query
+        let query = baseQuery;
         if (criteria.limit) {
             query += ` MAXRESULTS ${criteria.limit}`;
         }
@@ -610,13 +667,12 @@ class QBOAuth {
 
         return {
             count: vendors.length,
-            data: criteria.fetchAll ? vendors : undefined,
-            vendors: !criteria.fetchAll ? vendors.map(v => ({
+            vendors: vendors.map(v => ({
                 id: v.Id,
                 name: v.DisplayName,
                 email: v.PrimaryEmailAddr?.Address,
                 balance: v.Balance
-            })) : undefined
+            }))
         };
     }
 
