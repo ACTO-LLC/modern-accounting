@@ -1059,23 +1059,6 @@
                 "Id"
             ]
         },
-        "categorizationrules": {
-            "source": "dbo.CategorizationRules",
-            "permissions": [],
-            "mappings": {
-                "Id": "Id",
-                "MatchType": "MatchType",
-                "MatchField": "MatchField",
-                "MatchValue": "MatchValue",
-                "AccountId": "AccountId",
-                "Category": "Category",
-                "Priority": "Priority",
-                "HitCount": "HitCount",
-                "IsActive": "IsActive",
-                "CreatedAt": "CreatedAt",
-                "CreatedBy": "CreatedBy"
-            }
-        },
         "payments": {
             "source": {
                 "object": "dbo.v_Payments",
@@ -2243,31 +2226,6 @@
             "key-fields": [
                 "Id"
             ]
-        },
-        "overdueinvoicesforreminder": {
-            "source": {
-                "object": "dbo.v_OverdueInvoicesForReminder",
-                "type": "view",
-                "key-fields": [
-                    "InvoiceId"
-                ]
-            },
-            "permissions": [],
-            "mappings": {
-                "InvoiceId": "InvoiceId",
-                "InvoiceNumber": "InvoiceNumber",
-                "CustomerId": "CustomerId",
-                "CustomerName": "CustomerName",
-                "CustomerEmail": "CustomerEmail",
-                "IssueDate": "IssueDate",
-                "DueDate": "DueDate",
-                "TotalAmount": "TotalAmount",
-                "AmountDue": "AmountDue",
-                "DaysOverdue": "DaysOverdue",
-                "Status": "Status",
-                "RemindersSent": "RemindersSent",
-                "LastReminderDate": "LastReminderDate"
-            }
         },
         "auditlog": {
             "source": "dbo.AuditLog",
