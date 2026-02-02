@@ -120,6 +120,7 @@ async function migrateEntities(
         try {
             // Check if should skip (e.g., system accounts)
             if (skipCheck && skipCheck(sourceEntity)) {
+                console.log(`[MIGRATION] SKIP ${entityType} #${sourceId}: Excluded by filter`);
                 result.skipped++;
                 result.details.push({
                     type: entityType.toLowerCase(),
@@ -133,6 +134,7 @@ async function migrateEntities(
             // Check if already migrated (uses preloaded cache)
             const existingId = await mapper.wasAlreadyMigrated(entityType, sourceId);
             if (existingId) {
+                console.log(`[MIGRATION] SKIP ${entityType} #${sourceId}: Already migrated -> ${existingId}`);
                 result.skipped++;
                 result.details.push({
                     type: entityType.toLowerCase(),
@@ -149,6 +151,7 @@ async function migrateEntities(
 
             // Check if mapping failed (e.g., required field missing)
             if (mappedEntity._skipped) {
+                console.log(`[MIGRATION] SKIP ${entityType} #${sourceId}: Mapping failed - ${mappedEntity._reason}`);
                 result.skipped++;
                 result.details.push({
                     type: entityType.toLowerCase(),
@@ -165,6 +168,7 @@ async function migrateEntities(
                 const existingRecordId = existingDuplicates.get(duplicateValue);
 
                 if (existingRecordId) {
+                    console.log(`[MIGRATION] SKIP ${entityType} #${sourceId}: Duplicate "${duplicateValue}" -> ${existingRecordId}`);
                     // Record the mapping even for duplicates
                     await mapper.recordMigration(entityType, sourceId, existingRecordId);
                     result.skipped++;

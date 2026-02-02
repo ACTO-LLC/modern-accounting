@@ -635,9 +635,9 @@ export class MigrationMapper {
                 }
             }
 
-            console.log(`Preloaded ${records.length}/${uncachedIds.length} ${entityType} lookups`);
+            console.log(`[MIGRATION] Preload ${entityType}: found ${records.length} already migrated out of ${uncachedIds.length} checked`);
         } catch (e) {
-            console.warn(`Preload failed for ${entityType}:`, e.message);
+            console.warn(`[MIGRATION] Preload FAILED for ${entityType}: ${e.message}`);
         }
     }
 }
