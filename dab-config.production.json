@@ -26,11 +26,16 @@
         },
         "rest": {
             "enabled": true,
-            "path": "/api"
+            "path": "/api",
+            "request-body-strict": true
         },
         "graphql": {
             "enabled": true,
             "path": "/graphql"
+        },
+        "pagination": {
+            "default-page-size": 1000,
+            "max-page-size": 10000
         }
     },
     "entities": {

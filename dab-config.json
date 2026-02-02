@@ -34,6 +34,10 @@
             "authentication": {
                 "provider": "Simulator"
             }
+        },
+        "pagination": {
+            "default-page-size": 1000,
+            "max-page-size": 10000
         }
     },
     "entities": {
