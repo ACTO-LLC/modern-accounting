@@ -996,6 +996,12 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
                 }
             ],
             "mappings": {
@@ -1021,6 +1027,12 @@
             "permissions": [
                 {
                     "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
                     "actions": [
                         "*"
                     ]

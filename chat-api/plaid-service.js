@@ -17,37 +17,61 @@ const DAB_AUDIENCE = process.env.AZURE_AD_AUDIENCE;
 
 // Azure credential for DAB authentication (Managed Identity in production)
 let azureCredential = null;
+let cachedToken = null;
+let tokenExpiry = null;
 
 /**
  * Get auth token for DAB API calls using Managed Identity
+ * Returns null on failure to allow graceful degradation
  */
 async function getDabAuthToken() {
     // Skip auth for localhost DAB
     if (DAB_API_URL.includes('localhost')) return null;
 
-    if (!azureCredential) {
-        azureCredential = new DefaultAzureCredential();
+    // Check if we have a valid cached token (with 5 min buffer)
+    if (cachedToken && tokenExpiry && new Date() < new Date(tokenExpiry.getTime() - 5 * 60 * 1000)) {
+        return cachedToken;
     }
 
     try {
-        const scope = `api://${DAB_AUDIENCE}/.default`;
+        if (!azureCredential) {
+            azureCredential = new DefaultAzureCredential();
+        }
+
+        // Get token for DAB API
+        const scope = DAB_AUDIENCE ? `api://${DAB_AUDIENCE}/.default` : null;
+        if (!scope) {
+            console.warn('[Plaid] DAB_AUDIENCE not configured, skipping auth token acquisition');
+            return null;
+        }
+
         const tokenResponse = await azureCredential.getToken(scope);
-        return tokenResponse.token;
+        cachedToken = tokenResponse.token;
+        tokenExpiry = tokenResponse.expiresOnTimestamp ? new Date(tokenResponse.expiresOnTimestamp) : new Date(Date.now() + 3600 * 1000);
+
+        console.log('[Plaid] Acquired DAB auth token via Managed Identity, expires:', tokenExpiry);
+        return cachedToken;
     } catch (error) {
-        console.error('Failed to get DAB auth token:', error.message);
-        throw error;
+        console.error('[Plaid] Failed to get DAB auth token:', error.message);
+        // Return null to allow fallback (will fail at DAB with 403)
+        return null;
     }
 }
 
 /**
  * Build headers for DAB API calls
+ * Uses Service role (assigned to App Service managed identity)
  */
 async function getDabHeaders() {
     const headers = { 'Content-Type': 'application/json' };
     const token = await getDabAuthToken();
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        headers['X-MS-API-ROLE'] = 'Admin';
+        // Service role is assigned to the App Service managed identity
+        headers['X-MS-API-ROLE'] = 'Service';
+        console.log('[Plaid] Using managed identity token with Service role');
+    } else {
+        console.log('[Plaid] No managed identity token available');
     }
     return headers;
 }
