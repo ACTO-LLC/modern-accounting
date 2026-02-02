@@ -72,6 +72,97 @@ async function getDabAuthToken() {
 
 ---
 
+### Plaid Bank Integration Auth Flow (Feb 2026)
+
+**Problem:** Plaid Link completes successfully (user authenticates with bank), but `/api/plaid/exchange-token` fails with 500 when saving the connection to DAB.
+
+**Root Cause:** The Plaid service was using `X-MS-API-ROLE: Admin` but the App Service's managed identity is assigned the `Service` role, not `Admin`. DAB rejects the request because the identity doesn't have that role.
+
+**Solution:** Use `Service` role for backend-to-backend DAB calls via Managed Identity.
+
+**Implementation (`chat-api/plaid-service.js`):**
+```javascript
+import { DefaultAzureCredential } from '@azure/identity';
+
+const DAB_AUDIENCE = process.env.AZURE_AD_AUDIENCE;
+let azureCredential = null;
+let cachedToken = null;
+let tokenExpiry = null;
+
+async function getDabAuthToken() {
+    if (DAB_API_URL.includes('localhost')) return null;
+
+    // Token caching with 5-minute buffer
+    if (cachedToken && tokenExpiry && new Date() < new Date(tokenExpiry.getTime() - 5 * 60 * 1000)) {
+        return cachedToken;
+    }
+
+    try {
+        if (!azureCredential) {
+            azureCredential = new DefaultAzureCredential();
+        }
+        const scope = `api://${DAB_AUDIENCE}/.default`;
+        const tokenResponse = await azureCredential.getToken(scope);
+        cachedToken = tokenResponse.token;
+        tokenExpiry = new Date(tokenResponse.expiresOnTimestamp || Date.now() + 3600000);
+        return cachedToken;
+    } catch (error) {
+        console.error('[Plaid] Failed to get DAB auth token:', error.message);
+        return null; // Graceful degradation - will fail at DAB with 403
+    }
+}
+
+async function getDabHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = await getDabAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-MS-API-ROLE'] = 'Service';  // MUST match managed identity's role
+    }
+    return headers;
+}
+```
+
+**DAB Config Requirements:**
+Entities accessed by Plaid service must include the `Service` role:
+```json
+"plaidconnections": {
+    "permissions": [
+        { "role": "authenticated", "actions": ["*"] },
+        { "role": "Service", "actions": ["*"] }
+    ]
+},
+"plaidaccounts": {
+    "permissions": [
+        { "role": "authenticated", "actions": ["*"] },
+        { "role": "Service", "actions": ["*"] }
+    ]
+}
+```
+
+**Required Environment Variables (Production):**
+- `PLAID_CLIENT_ID`: Plaid API client ID
+- `PLAID_SECRET`: Plaid API secret (production or sandbox)
+- `PLAID_ENV`: `sandbox`, `development`, or `production`
+- `AZURE_AD_AUDIENCE`: App Registration Client ID (for DAB auth)
+- `DAB_API_URL`: DAB API endpoint
+
+**Common Mistakes:**
+1. **Wrong role:** Using `Admin` instead of `Service` - the managed identity must have the role you specify
+2. **Wrong credentials:** Using production secret with `PLAID_ENV=sandbox` or vice versa
+3. **Missing DAB permissions:** Forgetting to add `Service` role to entities in dab-config.json
+4. **Throwing errors:** Auth failures should return null, not throw - let DAB return the actual error
+
+**Plaid Link Flow:**
+1. Frontend calls `/api/plaid/link-token` to get a link token
+2. User completes Plaid Link (authenticates with bank)
+3. Plaid returns a `public_token` to the frontend
+4. Frontend calls `/api/plaid/exchange-token` with the public token
+5. Backend exchanges public token for access token via Plaid API
+6. Backend saves connection to DAB using Managed Identity auth
+
+---
+
 ### MSAL v3 Azure AD Authentication Issues (Jan 2026)
 
 **Problem:** Login fails with `endpoints_resolution_error: Endpoints cannot be resolved` or `AADSTS650053: scope 'openid,profile,email' doesn't exist`.
@@ -1192,6 +1283,43 @@ console.log(`[MigrationMapper] getFieldMaps called for ${entityType}`);
 console.log(`[MigrationMapper] DB result: ${JSON.stringify(result).substring(0, 200)}`);
 console.log(`[MigrationMapper] mapEntity result: ${JSON.stringify(result).substring(0, 300)}`);
 ```
+
+---
+
+### QBO Cutoff Date Migration (Feb 2026)
+
+**Recommended Approach:** Use cutoff date migration for clean starts without importing years of historical transactions.
+
+**How It Works:**
+1. **Opening Balance JE:** Captures all account balances as of cutoff date (e.g., Jan 31, 2026)
+2. **Open Invoices/Bills:** Only migrates unpaid/partially paid items - not historical closed transactions
+3. **Bank Transactions:** Start fresh via Plaid from go-live date - no duplicate GL entries
+
+**Migration Sequence:**
+```
+1. migrate_accounts     - Chart of accounts (required first)
+2. migrate_customers    - Customer master data
+3. migrate_vendors      - Vendor master data
+create_opening_balance_je cutoff_date=2026-01-31  - All balances in one JE
+4. migrate_open_invoices cutoff_date=2026-01-31   - Only open AR
+5. migrate_open_bills    cutoff_date=2026-01-31   - Only open AP
+6. verify_migration_complete cutoff_date=2026-01-31 - Confirm success
+7. Connect Plaid for bank feeds going forward
+```
+
+**Benefits:**
+- No duplicate GL entries from importing both transactions and their postings
+- Opening JE captures accurate balances without transaction-by-transaction import
+- Only actionable items (open invoices/bills) need individual tracking
+- Fresh start for bank transactions via Plaid
+
+**Account Type Normal Balances:**
+| Account Type | Normal Balance | Positive Balance = |
+|--------------|----------------|-------------------|
+| Bank, Assets, AR, Expenses | Debit | Debit |
+| Liabilities, AP, Equity, Revenue | Credit | Credit |
+
+**Opening Balance JE Reference Format:** `QBO-OPENING-YYYY-MM-DD`
 
 ---
 
