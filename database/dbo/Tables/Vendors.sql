@@ -20,6 +20,8 @@ CREATE TABLE [dbo].[Vendors]
     [State] NVARCHAR(50) NULL,
     [PostalCode] NVARCHAR(20) NULL,
     [Country] NVARCHAR(50) NULL DEFAULT ('US'),
+    [SourceSystem] NVARCHAR(50) NULL,
+    [SourceId] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
@@ -40,4 +42,8 @@ CREATE INDEX [IX_Vendors_Status] ON [dbo].[Vendors] ([Status])
 GO
 
 CREATE INDEX [IX_Vendors_Is1099Vendor] ON [dbo].[Vendors] ([Is1099Vendor]) WHERE [Is1099Vendor] = 1
+GO
+
+CREATE INDEX [IX_Vendors_Source] ON [dbo].[Vendors]([SourceSystem], [SourceId])
+WHERE [SourceSystem] IS NOT NULL
 GO

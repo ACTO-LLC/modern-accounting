@@ -17,6 +17,8 @@ CREATE TABLE [dbo].[Customers]
     [State] NVARCHAR(50) NULL,
     [PostalCode] NVARCHAR(20) NULL,
     [Country] NVARCHAR(50) NULL DEFAULT ('US'),
+    [SourceSystem] NVARCHAR(50) NULL,
+    [SourceId] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo])
@@ -27,4 +29,8 @@ GO
 ALTER TABLE [dbo].[Customers]
 ENABLE CHANGE_TRACKING
 WITH (TRACK_COLUMNS_UPDATED = ON)
+GO
+
+CREATE INDEX [IX_Customers_Source] ON [dbo].[Customers]([SourceSystem], [SourceId])
+WHERE [SourceSystem] IS NOT NULL
 GO

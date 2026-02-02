@@ -17,6 +17,8 @@ CREATE TABLE [dbo].[Bills]
     [JournalEntryId] UNIQUEIDENTIFIER NULL,
     [PostedAt] DATETIME2 NULL,
     [PostedBy] NVARCHAR(100) NULL,
+    [SourceSystem] NVARCHAR(50) NULL,
+    [SourceId] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
@@ -41,4 +43,8 @@ CREATE INDEX [IX_Bills_DueDate] ON [dbo].[Bills] ([DueDate])
 GO
 
 CREATE INDEX [IX_Bills_BillNumber] ON [dbo].[Bills] ([BillNumber])
+GO
+
+CREATE INDEX [IX_Bills_Source] ON [dbo].[Bills]([SourceSystem], [SourceId])
+WHERE [SourceSystem] IS NOT NULL
 GO

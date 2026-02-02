@@ -15,6 +15,8 @@ CREATE TABLE [dbo].[Accounts]
     -- Temporal table columns (system-versioned)
     -- Additional columns from database
 [TenantId] UNIQUEIDENTIFIER NULL,
+    [SourceSystem] NVARCHAR(50) NULL,
+    [SourceId] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
@@ -22,3 +24,8 @@ CREATE TABLE [dbo].[Accounts]
     CONSTRAINT [UQ_Accounts_Code] UNIQUE ([Code])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[Accounts_History]))
+GO
+
+CREATE INDEX [IX_Accounts_Source] ON [dbo].[Accounts]([SourceSystem], [SourceId])
+WHERE [SourceSystem] IS NOT NULL
+GO

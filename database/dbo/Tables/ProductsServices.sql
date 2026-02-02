@@ -24,6 +24,8 @@ CREATE TABLE [dbo].[ProductsServices]
     -- Temporal table columns (system-versioned)
     -- Additional columns from database
 [TenantId] UNIQUEIDENTIFIER NULL,
+    [SourceSystem] NVARCHAR(50) NULL,
+    [SourceId] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
@@ -61,4 +63,8 @@ GO
 -- Create index on QuantityOnHand for low stock queries
 CREATE INDEX [IX_ProductsServices_QuantityOnHand] ON [dbo].[ProductsServices]([QuantityOnHand])
 WHERE [Type] = 'Inventory'
+GO
+
+CREATE INDEX [IX_ProductsServices_Source] ON [dbo].[ProductsServices]([SourceSystem], [SourceId])
+WHERE [SourceSystem] IS NOT NULL
 GO
