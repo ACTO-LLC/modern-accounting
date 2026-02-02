@@ -563,7 +563,7 @@ export const tools = [
                     };
                 }
 
-                const searchCriteria = buildSearchCriteria(criteria, { ...options, limit: limit || 1000 });
+                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
                 const result = await new Promise<any>((resolve, reject) => {
                     qb.findItems(searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
@@ -624,7 +624,7 @@ export const tools = [
                     };
                 }
 
-                const searchCriteria = buildSearchCriteria(criteria, { ...options, limit: limit || 1000 });
+                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
                 const result = await new Promise<any>((resolve, reject) => {
                     qb.findEmployees(searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
@@ -686,7 +686,7 @@ export const tools = [
                     };
                 }
 
-                const searchCriteria = buildSearchCriteria(criteria, { ...options, limit: limit || 1000 });
+                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
                 const result = await new Promise<any>((resolve, reject) => {
                     qb.findEstimates(searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
@@ -748,7 +748,7 @@ export const tools = [
                     };
                 }
 
-                const searchCriteria = buildSearchCriteria(criteria, { ...options, limit: limit || 1000 });
+                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
                 const result = await new Promise<any>((resolve, reject) => {
                     qb.findJournalEntries(searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
@@ -810,7 +810,7 @@ export const tools = [
                     };
                 }
 
-                const searchCriteria = buildSearchCriteria(criteria, { ...options, limit: limit || 1000 });
+                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
                 const result = await new Promise<any>((resolve, reject) => {
                     qb.findPayments(searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
@@ -872,7 +872,7 @@ export const tools = [
                     };
                 }
 
-                const searchCriteria = buildSearchCriteria(criteria, { ...options, limit: limit || 1000 });
+                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
                 const result = await new Promise<any>((resolve, reject) => {
                     qb.findBillPayments(searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
@@ -933,7 +933,7 @@ export const tools = [
                     };
                 }
 
-                const searchCriteria = buildSearchCriteria(criteria, { ...options, limit: limit || 1000 });
+                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
                 const result = await new Promise<any>((resolve, reject) => {
                     qb.findPurchases(searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
@@ -964,6 +964,129 @@ export const tools = [
                 };
             } catch (error: any) {
                 return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
+            }
+        }
+    },
+    {
+        name: 'qbo_get_trial_balance',
+        description: 'Get trial balance from QuickBooks Online - returns all accounts with their current balances for opening balance journal entry creation.',
+        schema: z.object({}),
+        handler: async (sessionId: string, args: any) => {
+            try {
+                const qb = await getClient(sessionId, args);
+
+                // Fetch all accounts with pagination
+                const { records: accounts } = await queryAllPaginated(
+                    qb, 'Account', 'findAccounts', []
+                );
+
+                // Account types that have normal DEBIT balances
+                const debitNormalTypes = [
+                    'Bank', 'Accounts Receivable', 'Other Current Asset', 'Fixed Asset', 'Other Asset',
+                    'Expense', 'Other Expense', 'Cost of Goods Sold'
+                ];
+
+                // Account types that have normal CREDIT balances
+                const creditNormalTypes = [
+                    'Accounts Payable', 'Credit Card', 'Other Current Liability', 'Long Term Liability',
+                    'Equity', 'Income', 'Other Income'
+                ];
+
+                let totalDebits = 0;
+                let totalCredits = 0;
+                const trialBalanceLines: any[] = [];
+
+                for (const account of accounts) {
+                    const balance = parseFloat(account.CurrentBalance) || 0;
+                    if (Math.abs(balance) < 0.01) continue; // Skip zero-balance accounts
+
+                    const accountType = account.AccountType || '';
+                    const isDebitNormal = debitNormalTypes.some(t => accountType.includes(t));
+                    const isCreditNormal = creditNormalTypes.some(t => accountType.includes(t));
+
+                    // Determine debit/credit amounts based on normal balance and actual balance sign
+                    let debit = 0;
+                    let credit = 0;
+
+                    if (isDebitNormal) {
+                        // For debit-normal accounts: positive balance = debit, negative = credit
+                        if (balance > 0) {
+                            debit = balance;
+                            totalDebits += balance;
+                        } else {
+                            credit = Math.abs(balance);
+                            totalCredits += Math.abs(balance);
+                        }
+                    } else if (isCreditNormal) {
+                        // For credit-normal accounts: positive balance = credit, negative = debit
+                        if (balance > 0) {
+                            credit = balance;
+                            totalCredits += balance;
+                        } else {
+                            debit = Math.abs(balance);
+                            totalDebits += Math.abs(balance);
+                        }
+                    } else {
+                        // Unknown type - treat positive as debit
+                        if (balance > 0) {
+                            debit = balance;
+                            totalDebits += balance;
+                        } else {
+                            credit = Math.abs(balance);
+                            totalCredits += Math.abs(balance);
+                        }
+                    }
+
+                    trialBalanceLines.push({
+                        qboId: account.Id,
+                        name: account.Name,
+                        accountNumber: account.AcctNum || null,
+                        accountType: account.AccountType,
+                        accountSubType: account.AccountSubType,
+                        currentBalance: balance,
+                        debit: debit,
+                        credit: credit,
+                        normalBalance: isDebitNormal ? 'Debit' : (isCreditNormal ? 'Credit' : 'Unknown')
+                    });
+                }
+
+                // Sort by account type then name
+                trialBalanceLines.sort((a, b) => {
+                    const typeOrder = ['Bank', 'Accounts Receivable', 'Other Current Asset', 'Fixed Asset', 'Other Asset',
+                        'Accounts Payable', 'Credit Card', 'Other Current Liability', 'Long Term Liability',
+                        'Equity', 'Income', 'Other Income', 'Expense', 'Other Expense', 'Cost of Goods Sold'];
+                    const aIdx = typeOrder.findIndex(t => a.accountType?.includes(t));
+                    const bIdx = typeOrder.findIndex(t => b.accountType?.includes(t));
+                    if (aIdx !== bIdx) return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+                    return (a.name || '').localeCompare(b.name || '');
+                });
+
+                const outOfBalance = Math.abs(totalDebits - totalCredits);
+                const isBalanced = outOfBalance < 0.01;
+
+                const result = {
+                    accountCount: trialBalanceLines.length,
+                    totalDebits: Math.round(totalDebits * 100) / 100,
+                    totalCredits: Math.round(totalCredits * 100) / 100,
+                    isBalanced,
+                    outOfBalanceAmount: Math.round(outOfBalance * 100) / 100,
+                    lines: trialBalanceLines
+                };
+
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: `Trial Balance: ${trialBalanceLines.length} accounts with non-zero balances. ` +
+                            `Total Debits: $${totalDebits.toFixed(2)}, Total Credits: $${totalCredits.toFixed(2)}. ` +
+                            (isBalanced ? 'BALANCED' : `OUT OF BALANCE by $${outOfBalance.toFixed(2)}`)
+                    }],
+                    data: result
+                };
+            } catch (error: any) {
+                return {
+                    content: [{ type: 'text' as const, text: `Error getting trial balance: ${error.message}` }],
+                    isError: true
+                };
             }
         }
     },
