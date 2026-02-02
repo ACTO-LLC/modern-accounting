@@ -20,12 +20,53 @@
 **Examples of what NOT to do:**
 - **Jan 2026 incident #1:** Granting `"actions": ["*"]` to anonymous role when migration failed with 403
 - **Feb 2026 incident #2:** Granting `"actions": ["read"]` to anonymous role as a "temporary" workaround, exposing all customer/vendor/financial data to the public internet
+- **Feb 2026 incident #3:** When removing anonymous access, setting `"permissions": []` (empty) instead of adding `"authenticated"` role - this breaks ALL access
 
 **The correct approach:** Fix Azure AD token validation, check audience/issuer config, or ask the user for guidance.
+
+**When removing anonymous access from DAB:**
+```json
+// WRONG - empty permissions means NO ONE can access
+"permissions": []
+
+// CORRECT - replace anonymous with authenticated
+"permissions": [
+    { "role": "authenticated", "actions": ["read"] },
+    { "role": "Admin", "actions": ["*"] },
+    { "role": "Accountant", "actions": ["create", "read", "update"] }
+]
+```
 
 ---
 
 ## Lessons Learned & Best Practices
+
+### DAB Config Validation (Feb 2026)
+
+**Problem:** Security fix removed anonymous access but left `permissions: []` empty, causing complete API lockout (all 403s) when the config was deployed to production.
+
+**Root Cause:** The dab-config.json in Azure Files wasn't updated at the time of the security commit. When it was later uploaded (for an unrelated fix), the empty permissions broke everything.
+
+**Prevention:**
+1. **CI Validation:** PR checks now run `node scripts/validate-dab-config.js` to catch empty permissions
+2. **Always test dab-config changes** before uploading to Azure Files
+3. **When modifying permissions:** Never leave `permissions: []` - always ensure at least `authenticated` role is defined
+
+**Validation Script:**
+```bash
+node scripts/validate-dab-config.js        # Run validation
+node scripts/validate-dab-config.js --strict  # Fail on warnings too
+```
+
+**Azure Files Deployment:**
+```bash
+# After modifying dab-config.json locally:
+1. Validate: node scripts/validate-dab-config.js
+2. Upload: az storage file upload --source dab-config.json --share-name dab-config --path dab-config.json --account-name stmodernaccountingprod
+3. Restart: az containerapp update --name dab-ca-modern-accounting --resource-group rg-modern-accounting-prod --set-env-vars "RESTART_TRIGGER=$(date +%s)"
+```
+
+---
 
 ### QBO Auth DAB Integration (Feb 2026)
 
