@@ -24,7 +24,7 @@
  *   SQL_SERVER         - Server address (default: localhost)
  *   SQL_PORT           - Server port (default: 14330)
  *   SQL_USER           - Username (default: sa)
- *   SQL_SA_PASSWORD    - Password (default: StrongPassword123!)
+ *   SQL_SA_PASSWORD    - Password (default: StrongPassword123)
  *   SQL_DATABASE       - Database name (default: AccountingDB)
  */
 
@@ -38,7 +38,7 @@ const config = {
   server: process.env.SQL_SERVER || 'localhost',
   port: parseInt(process.env.SQL_PORT || '14330'),
   user: process.env.SQL_USER || 'sa',
-  password: process.env.SQL_SA_PASSWORD || 'StrongPassword123!',
+  password: process.env.SQL_SA_PASSWORD || 'StrongPassword123',
   database: process.env.SQL_DATABASE || 'AccountingDB',
   options: {
     encrypt: true,
@@ -176,7 +176,7 @@ async function deployWithSqlPackage() {
   } else {
     log(`Deploying to ${config.server}:${config.port}/${config.database}...`, 'step');
     execSync(
-      `"${sqlPackage}" /Action:Publish /SourceFile:"${dacpacPath}" /TargetConnectionString:"${connectionString}" /p:BlockOnPossibleDataLoss=false`,
+      `"${sqlPackage}" /Action:Publish /SourceFile:"${dacpacPath}" /TargetConnectionString:"${connectionString}" /p:BlockOnPossibleDataLoss=false /p:GenerateSmartDefaults=true`,
       { stdio: 'inherit' }
     );
     log('Deployment completed successfully!', 'success');

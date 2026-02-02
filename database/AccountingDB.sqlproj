@@ -32,6 +32,9 @@
     <Build Include="dbo\Triggers\*.sql" />
   </ItemGroup>
   <ItemGroup>
+    <PreDeploy Include="Script.PreDeployment.sql" />
+  </ItemGroup>
+  <ItemGroup>
     <PostDeploy Include="Script.PostDeployment.sql" />
   </ItemGroup>
 </Project>

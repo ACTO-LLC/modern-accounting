@@ -5,11 +5,12 @@ version: '3.8'
 
 services:
   database:
-    image: mcr.microsoft.com/azure-sql-edge:latest
+    image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: accounting-db
+    user: root
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123!}
+      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123}
     ports:
       - "14330:1433"
     volumes:
@@ -25,7 +26,7 @@ services:
     volumes:
       - ./dab-config.json:/App/dab-config.json
     environment:
-      - DAB_CONNECTION_STRING=Server=database,1433;Database=AccountingDB;User Id=sa;Password=${SQL_SA_PASSWORD:-StrongPassword123!};TrustServerCertificate=true
+      - DAB_CONNECTION_STRING=Server=database,1433;Database=AccountingDB;User Id=sa;Password=${SQL_SA_PASSWORD:-StrongPassword123};TrustServerCertificate=true
 
   qbo-mcp:
     build:
@@ -55,7 +56,7 @@ services:
       - DB_SERVER=database,1433
       - DB_NAME=AccountingDB
       - DB_USER=sa
-      - DB_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123!}
+      - DB_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123}
       - DB_TRUST_CERT=true
 
   email-api:
@@ -68,7 +69,7 @@ services:
     ports:
       - "7073:7073"
     environment:
-      - DATABASE_URL=Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=true
+      - DATABASE_URL=Server=database,1433;Database=AccountingDB;User Id=sa;Password=StrongPassword123;TrustServerCertificate=true
       - EMAIL_API_PORT=7073
       - EMAIL_ENCRYPTION_KEY=${EMAIL_ENCRYPTION_KEY:-default-encryption-key-change-me}
       - APP_BASE_URL=http://host.docker.internal:5173
@@ -93,7 +94,7 @@ services:
       - DB_PORT=1433
       - DB_NAME=AccountingDB
       - DB_USER=sa
-      - DB_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123!}
+      - DB_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123}
       - DB_TRUST_CERT=true
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
@@ -113,5 +114,3 @@ services:
 
 volumes:
   sql-data:
-    external: true
-    name: modern-accounting-bank-feeds_sql-data
