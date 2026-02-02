@@ -366,6 +366,56 @@ Only use `database/migrations/` for:
    MSSQL_SA_PASSWORD: StrongPassword123
    ```
 
+6. **API Pagination - NEVER just increase limits (Feb 2026):** When API queries return incomplete data due to pagination limits, the fix is NEVER to just increase `default-page-size` or `max-page-size` in server config. This just pushes the problem out - if you set limit to 1000 and have 1001 records, you'll hit the same issue.
+
+   **WRONG approach:**
+   ```json
+   // Just increasing limits - problem will recur with more data
+   "pagination": { "default-page-size": 1000, "max-page-size": 10000 }
+   ```
+
+   **CORRECT approach - implement client-side pagination:**
+   ```javascript
+   // Option 1: Follow OData nextLink
+   async function fetchAllRecords(endpoint, authToken) {
+       const allRecords = [];
+       let url = endpoint;
+
+       while (url) {
+           const response = await fetch(url, {
+               headers: { Authorization: `Bearer ${authToken}` }
+           });
+           const data = await response.json();
+           allRecords.push(...(data.value || []));
+           url = data['@odata.nextLink'] || null;
+       }
+       return allRecords;
+   }
+
+   // Option 2: Explicit $top/$skip
+   async function fetchAllRecords(endpoint, authToken) {
+       const allRecords = [];
+       const pageSize = 1000;
+       let skip = 0;
+       let hasMore = true;
+
+       while (hasMore) {
+           const url = `${endpoint}?$top=${pageSize}&$skip=${skip}`;
+           const response = await fetch(url, {
+               headers: { Authorization: `Bearer ${authToken}` }
+           });
+           const data = await response.json();
+           const records = data.value || [];
+           allRecords.push(...records);
+           hasMore = records.length === pageSize;
+           skip += pageSize;
+       }
+       return allRecords;
+   }
+   ```
+
+   **Key insight:** Server-side limits are a safety net, not a solution. Any code that queries potentially large datasets MUST implement client-side pagination. See GitHub issue #354.
+
 ---
 
 ### Running SQL Against Production Azure SQL (Feb 2026)
