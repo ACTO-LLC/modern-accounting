@@ -1121,6 +1121,28 @@ You have access to migration tools to actually migrate data:
 - migrate_customers: Migrate customer records
 - migrate_vendors: Migrate vendor records
 - migrate_invoices: Migrate invoices (requires customers first)
+- migrate_bills: Migrate bills (requires vendors first)
+
+CUTOFF DATE MIGRATION (RECOMMENDED):
+For clean migrations, use the cutoff date approach:
+- create_opening_balance_je: Create opening balance JE from QBO trial balance as of cutoff date
+- migrate_open_invoices: Migrate only open (unpaid) invoices as of cutoff date
+- migrate_open_bills: Migrate only open (unpaid) bills as of cutoff date
+- verify_migration_complete: Verify migration is complete, shows next steps
+
+Cutoff date migration workflow:
+1. Migrate master data: Accounts, Customers, Vendors
+2. create_opening_balance_je with cutoff date (e.g., 2026-01-31) - captures all balances
+3. migrate_open_invoices with same cutoff date - only brings open AR
+4. migrate_open_bills with same cutoff date - only brings open AP
+5. verify_migration_complete - confirms all steps done
+6. User connects bank via Plaid for transactions going forward
+
+Benefits of cutoff date approach:
+- Clean start without importing years of historical transactions
+- Opening JE captures all account balances in one entry
+- Only open invoices/bills need to be tracked individually
+- Bank transactions flow fresh through Plaid from go-live date
 
 MIGRATION BEST PRACTICES:
 1. CRITICAL: Always use qbo_analyze_migration FIRST - it now shows both QBO data AND what's already imported to ACTO
@@ -1782,6 +1804,66 @@ const tools = [
                     invoice_number: { type: 'string', description: 'The invoice number (e.g., "5117")' }
                 },
                 required: ['invoice_number']
+            }
+        }
+    },
+    // ========== QBO Cutoff Date Migration Tools ==========
+    {
+        type: 'function',
+        function: {
+            name: 'create_opening_balance_je',
+            description: 'Create an opening balance journal entry from QuickBooks trial balance. Creates a single balanced JE capturing all account balances as of the cutoff date. This is step 1 of cutoff date migration.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cutoff_date: { type: 'string', description: 'Cutoff date in YYYY-MM-DD format (e.g., "2026-01-31"). Balances are as of this date.' },
+                    preview_only: { type: 'boolean', description: 'If true, show what would be created without creating. Default false.' }
+                },
+                required: ['cutoff_date']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_open_invoices',
+            description: 'Migrate only OPEN (unpaid/partially paid) invoices from QuickBooks as of cutoff date. Excludes fully paid invoices. This is step 2 of cutoff date migration.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cutoff_date: { type: 'string', description: 'Only include invoices issued on or before this date (YYYY-MM-DD)' },
+                    include_partially_paid: { type: 'boolean', description: 'Include partially paid invoices. Default true.' }
+                },
+                required: ['cutoff_date']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'migrate_open_bills',
+            description: 'Migrate only OPEN (unpaid/partially paid) bills from QuickBooks as of cutoff date. Excludes fully paid bills. This is step 3 of cutoff date migration.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cutoff_date: { type: 'string', description: 'Only include bills issued on or before this date (YYYY-MM-DD)' },
+                    include_partially_paid: { type: 'boolean', description: 'Include partially paid bills. Default true.' }
+                },
+                required: ['cutoff_date']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'verify_migration_complete',
+            description: 'Verify QBO cutoff date migration is complete. Checks opening balance JE exists, counts migrated entities, and compares AR/AP totals.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cutoff_date: { type: 'string', description: 'The cutoff date used for migration (YYYY-MM-DD)' }
+                },
+                required: ['cutoff_date']
             }
         }
     },
@@ -3603,6 +3685,598 @@ async function executeMigrateJournalEntries(params, authToken = null) {
     }
 }
 
+// ============================================================================
+// QBO Cutoff Date Migration Tools
+// ============================================================================
+
+/**
+ * Create opening balance journal entry from QBO trial balance
+ */
+async function executeCreateOpeningBalanceJE(params, authToken = null) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        const cutoffDate = params.cutoff_date;
+        const previewOnly = params.preview_only || false;
+
+        if (!cutoffDate || !/^\d{4}-\d{2}-\d{2}$/.test(cutoffDate)) {
+            return { success: false, error: 'Invalid cutoff_date. Use YYYY-MM-DD format.' };
+        }
+
+        // Get trial balance from QBO (uses qbo_get_trial_balance tool via direct API call)
+        const qboAccounts = await qboAuth.searchAccounts({ fetchAll: true });
+        const accounts = qboAccounts.data || [];
+
+        // Account types that have normal DEBIT balances
+        const debitNormalTypes = [
+            'Bank', 'Accounts Receivable', 'Other Current Asset', 'Fixed Asset', 'Other Asset',
+            'Expense', 'Other Expense', 'Cost of Goods Sold'
+        ];
+        // Account types that have normal CREDIT balances
+        const creditNormalTypes = [
+            'Accounts Payable', 'Credit Card', 'Other Current Liability', 'Long Term Liability',
+            'Equity', 'Income', 'Other Income'
+        ];
+
+        // Load QBO-to-ACTO account mappings
+        const migrationMapsResult = await dab.get('migrationentitymaps', {
+            filter: `SourceSystem eq 'QBO' and EntityType eq 'Account'`
+        }, authToken);
+        const accountMaps = migrationMapsResult.value || [];
+        const qboToActoMap = new Map();
+        for (const map of accountMaps) {
+            qboToActoMap.set(String(map.SourceId), map.TargetId);
+        }
+
+        // Build journal entry lines
+        let totalDebits = 0;
+        let totalCredits = 0;
+        const journalLines = [];
+        const unmappedAccounts = [];
+
+        for (const account of accounts) {
+            const balance = parseFloat(account.CurrentBalance) || 0;
+            if (Math.abs(balance) < 0.01) continue; // Skip zero-balance accounts
+
+            const qboId = String(account.Id);
+            const actoAccountId = qboToActoMap.get(qboId);
+
+            if (!actoAccountId) {
+                unmappedAccounts.push({
+                    qboId,
+                    name: account.Name,
+                    balance
+                });
+                continue;
+            }
+
+            const accountType = account.AccountType || '';
+            const isDebitNormal = debitNormalTypes.some(t => accountType.includes(t));
+
+            let debit = 0;
+            let credit = 0;
+
+            if (isDebitNormal) {
+                if (balance > 0) {
+                    debit = balance;
+                    totalDebits += balance;
+                } else {
+                    credit = Math.abs(balance);
+                    totalCredits += Math.abs(balance);
+                }
+            } else {
+                // Credit-normal accounts
+                if (balance > 0) {
+                    credit = balance;
+                    totalCredits += balance;
+                } else {
+                    debit = Math.abs(balance);
+                    totalDebits += Math.abs(balance);
+                }
+            }
+
+            journalLines.push({
+                accountId: actoAccountId,
+                qboAccountName: account.Name,
+                accountType: accountType,
+                description: `Opening balance from QBO - ${account.Name}`,
+                debit: Math.round(debit * 100) / 100,
+                credit: Math.round(credit * 100) / 100
+            });
+        }
+
+        // Round totals
+        totalDebits = Math.round(totalDebits * 100) / 100;
+        totalCredits = Math.round(totalCredits * 100) / 100;
+        const outOfBalance = Math.round((totalDebits - totalCredits) * 100) / 100;
+
+        // If out of balance, add balancing entry to Opening Balance Equity
+        if (Math.abs(outOfBalance) >= 0.01) {
+            // Find or create Opening Balance Equity account
+            const equityResult = await dab.get('accounts', {
+                filter: `Name eq 'Opening Balance Equity' or Name eq 'Opening Bal Equity'`,
+                first: 1
+            }, authToken);
+
+            let equityAccountId = equityResult.value?.[0]?.Id;
+
+            if (!equityAccountId) {
+                // Create Opening Balance Equity account if it doesn't exist
+                if (!previewOnly) {
+                    const newEquityAccount = await dab.create('accounts', {
+                        Name: 'Opening Balance Equity',
+                        Type: 'Equity',
+                        Code: 'OBE-001',
+                        Description: 'Balancing account for opening balance journal entries'
+                    }, authToken);
+                    equityAccountId = newEquityAccount.value?.Id;
+                }
+            }
+
+            if (equityAccountId || previewOnly) {
+                // Add balancing line
+                if (outOfBalance > 0) {
+                    // Debits exceed credits - need a credit to balance
+                    journalLines.push({
+                        accountId: equityAccountId || 'OPENING_BALANCE_EQUITY',
+                        qboAccountName: 'Opening Balance Equity (Balancing)',
+                        accountType: 'Equity',
+                        description: 'Balancing entry for opening balance JE',
+                        debit: 0,
+                        credit: Math.abs(outOfBalance)
+                    });
+                    totalCredits += Math.abs(outOfBalance);
+                } else {
+                    // Credits exceed debits - need a debit to balance
+                    journalLines.push({
+                        accountId: equityAccountId || 'OPENING_BALANCE_EQUITY',
+                        qboAccountName: 'Opening Balance Equity (Balancing)',
+                        accountType: 'Equity',
+                        description: 'Balancing entry for opening balance JE',
+                        debit: Math.abs(outOfBalance),
+                        credit: 0
+                    });
+                    totalDebits += Math.abs(outOfBalance);
+                }
+            }
+        }
+
+        const reference = `QBO-OPENING-${cutoffDate}`;
+
+        // Preview mode - show what would be created
+        if (previewOnly) {
+            return {
+                success: true,
+                preview: true,
+                reference,
+                cutoffDate,
+                accountsWithBalance: journalLines.length,
+                totalDebits: formatCurrency(totalDebits),
+                totalCredits: formatCurrency(totalCredits),
+                isBalanced: Math.abs(totalDebits - totalCredits) < 0.01,
+                balancingEntry: Math.abs(outOfBalance) >= 0.01 ? formatCurrency(outOfBalance) : null,
+                unmappedAccounts: unmappedAccounts.length,
+                unmappedDetails: unmappedAccounts.slice(0, 5),
+                sampleLines: journalLines.slice(0, 10).map(l => ({
+                    account: l.qboAccountName,
+                    debit: l.debit > 0 ? formatCurrency(l.debit) : '',
+                    credit: l.credit > 0 ? formatCurrency(l.credit) : ''
+                })),
+                message: `Preview: Would create opening balance JE "${reference}" with ${journalLines.length} lines. ` +
+                    `Total Debits: ${formatCurrency(totalDebits)}, Total Credits: ${formatCurrency(totalCredits)}. ` +
+                    (unmappedAccounts.length > 0 ? `Warning: ${unmappedAccounts.length} QBO accounts not yet migrated.` : 'All accounts mapped.')
+            };
+        }
+
+        // Check if opening balance JE already exists
+        const existingJE = await dab.get('journalentries', {
+            filter: `Reference eq '${reference}'`,
+            first: 1
+        }, authToken);
+
+        if (existingJE.value?.length > 0) {
+            return {
+                success: false,
+                error: `Opening balance JE "${reference}" already exists (ID: ${existingJE.value[0].Id}). Delete it first if you want to recreate.`,
+                existingId: existingJE.value[0].Id
+            };
+        }
+
+        // Create the journal entry
+        const newJEId = randomUUID().toUpperCase();
+        const jeResult = await dab.create('journalentries', {
+            Id: newJEId,
+            TransactionDate: cutoffDate,
+            Description: `Opening balances from QuickBooks Online as of ${cutoffDate}`,
+            Reference: reference,
+            Status: 'Posted',
+            CreatedBy: 'QBO Migration',
+            SourceSystem: 'QBO',
+            SourceId: `OPENING-${cutoffDate}`
+        }, authToken);
+
+        if (!jeResult.success) {
+            return { success: false, error: `Failed to create journal entry: ${jeResult.error}` };
+        }
+
+        // Create journal entry lines
+        let linesCreated = 0;
+        const lineErrors = [];
+
+        for (const line of journalLines) {
+            try {
+                await dab.create('journalentrylines', {
+                    JournalEntryId: newJEId,
+                    AccountId: line.accountId,
+                    Description: line.description,
+                    Debit: line.debit,
+                    Credit: line.credit
+                }, authToken);
+                linesCreated++;
+            } catch (err) {
+                lineErrors.push({
+                    account: line.qboAccountName,
+                    error: err.message
+                });
+            }
+        }
+
+        return {
+            success: true,
+            message: `Created opening balance JE "${reference}" with ${linesCreated} lines. [View Journal Entries](/journal-entries)`,
+            journalEntryId: newJEId,
+            reference,
+            cutoffDate,
+            linesCreated,
+            totalDebits: formatCurrency(totalDebits),
+            totalCredits: formatCurrency(totalCredits),
+            lineErrors: lineErrors.length,
+            errorDetails: lineErrors.slice(0, 5),
+            unmappedAccounts: unmappedAccounts.length,
+            viewUrl: '/journal-entries'
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Migrate only open (unpaid/partially paid) invoices as of cutoff date
+ */
+async function executeMigrateOpenInvoices(params, authToken = null) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        const cutoffDate = params.cutoff_date;
+        const includePartiallyPaid = params.include_partially_paid !== false; // default true
+
+        if (!cutoffDate || !/^\d{4}-\d{2}-\d{2}$/.test(cutoffDate)) {
+            return { success: false, error: 'Invalid cutoff_date. Use YYYY-MM-DD format.' };
+        }
+
+        // Fetch all invoices from QBO with Balance > 0 (unpaid/partially paid)
+        const qboResult = await qboAuth.searchInvoices({ fetchAll: true });
+        let qboInvoices = qboResult.data || [];
+
+        // Filter to only open invoices (Balance > 0)
+        qboInvoices = qboInvoices.filter(inv => {
+            const balance = parseFloat(inv.Balance) || 0;
+            return balance > 0;
+        });
+
+        // Filter by cutoff date (issued on or before)
+        qboInvoices = qboInvoices.filter(inv => {
+            const txnDate = inv.TxnDate;
+            return txnDate && txnDate <= cutoffDate;
+        });
+
+        // Optionally exclude partially paid (only keep fully unpaid)
+        if (!includePartiallyPaid) {
+            qboInvoices = qboInvoices.filter(inv => {
+                const total = parseFloat(inv.TotalAmt) || 0;
+                const balance = parseFloat(inv.Balance) || 0;
+                return Math.abs(total - balance) < 0.01; // Fully unpaid
+            });
+        }
+
+        if (qboInvoices.length === 0) {
+            return {
+                success: true,
+                message: `No open invoices found on or before ${cutoffDate}`,
+                migrated: 0,
+                skipped: 0
+            };
+        }
+
+        // Calculate stats before migration
+        const totalOpenAR = qboInvoices.reduce((sum, inv) => sum + (parseFloat(inv.Balance) || 0), 0);
+        const partiallyPaidCount = qboInvoices.filter(inv => {
+            const total = parseFloat(inv.TotalAmt) || 0;
+            const balance = parseFloat(inv.Balance) || 0;
+            return total > balance && balance > 0;
+        }).length;
+
+        // Run migration (DB-driven) - use REST client with auth token
+        const result = await migrateInvoices(qboInvoices, dab, 'QBO', authToken);
+
+        // Calculate total value migrated
+        const totalValue = result.details
+            .filter(d => d.status === 'created')
+            .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+        return {
+            success: true,
+            message: `Migrated ${result.migrated} open invoices from QBO (${partiallyPaidCount} partially paid). [View Invoices](/invoices)`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            cutoffDate,
+            totalOpenAR: formatCurrency(totalOpenAR),
+            partiallyPaidCount,
+            totalValue: formatCurrency(totalValue),
+            viewUrl: '/invoices',
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Migrate only open (unpaid/partially paid) bills as of cutoff date
+ */
+async function executeMigrateOpenBills(params, authToken = null) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        const cutoffDate = params.cutoff_date;
+        const includePartiallyPaid = params.include_partially_paid !== false; // default true
+
+        if (!cutoffDate || !/^\d{4}-\d{2}-\d{2}$/.test(cutoffDate)) {
+            return { success: false, error: 'Invalid cutoff_date. Use YYYY-MM-DD format.' };
+        }
+
+        // Fetch all bills from QBO with Balance > 0 (unpaid/partially paid)
+        const qboResult = await qboAuth.searchBills({ fetchAll: true });
+        let qboBills = qboResult.data || [];
+
+        // Filter to only open bills (Balance > 0)
+        qboBills = qboBills.filter(bill => {
+            const balance = parseFloat(bill.Balance) || 0;
+            return balance > 0;
+        });
+
+        // Filter by cutoff date (issued on or before)
+        qboBills = qboBills.filter(bill => {
+            const txnDate = bill.TxnDate;
+            return txnDate && txnDate <= cutoffDate;
+        });
+
+        // Optionally exclude partially paid (only keep fully unpaid)
+        if (!includePartiallyPaid) {
+            qboBills = qboBills.filter(bill => {
+                const total = parseFloat(bill.TotalAmt) || 0;
+                const balance = parseFloat(bill.Balance) || 0;
+                return Math.abs(total - balance) < 0.01; // Fully unpaid
+            });
+        }
+
+        if (qboBills.length === 0) {
+            return {
+                success: true,
+                message: `No open bills found on or before ${cutoffDate}`,
+                migrated: 0,
+                skipped: 0
+            };
+        }
+
+        // Calculate stats before migration
+        const totalOpenAP = qboBills.reduce((sum, bill) => sum + (parseFloat(bill.Balance) || 0), 0);
+        const partiallyPaidCount = qboBills.filter(bill => {
+            const total = parseFloat(bill.TotalAmt) || 0;
+            const balance = parseFloat(bill.Balance) || 0;
+            return total > balance && balance > 0;
+        }).length;
+
+        // Run migration (DB-driven) - use REST client with auth token
+        const result = await migrateBills(qboBills, dab, 'QBO', authToken);
+
+        // Calculate total value migrated
+        const totalValue = result.details
+            .filter(d => d.status === 'created')
+            .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+        return {
+            success: true,
+            message: `Migrated ${result.migrated} open bills from QBO (${partiallyPaidCount} partially paid). [View Bills](/bills)`,
+            migrated: result.migrated,
+            skipped: result.skipped,
+            cutoffDate,
+            totalOpenAP: formatCurrency(totalOpenAP),
+            partiallyPaidCount,
+            totalValue: formatCurrency(totalValue),
+            viewUrl: '/bills',
+            errors: result.errors.length,
+            errorDetails: result.errors.slice(0, 5),
+            details: result.details.slice(0, 10)
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Verify QBO cutoff date migration is complete
+ */
+async function executeVerifyMigrationComplete(params, authToken = null) {
+    try {
+        const cutoffDate = params.cutoff_date;
+
+        if (!cutoffDate || !/^\d{4}-\d{2}-\d{2}$/.test(cutoffDate)) {
+            return { success: false, error: 'Invalid cutoff_date. Use YYYY-MM-DD format.' };
+        }
+
+        const reference = `QBO-OPENING-${cutoffDate}`;
+        const checks = {
+            openingBalanceJE: { passed: false, details: null },
+            customersCount: { passed: false, count: 0 },
+            vendorsCount: { passed: false, count: 0 },
+            accountsCount: { passed: false, count: 0 },
+            openInvoices: { passed: false, count: 0, total: 0 },
+            openBills: { passed: false, count: 0, total: 0 }
+        };
+
+        // Check opening balance JE
+        const jeResult = await dab.get('journalentries', {
+            filter: `Reference eq '${reference}'`,
+            first: 1
+        }, authToken);
+
+        if (jeResult.value?.length > 0) {
+            const je = jeResult.value[0];
+            // Get line counts
+            const linesResult = await dab.get('journalentrylines', {
+                filter: `JournalEntryId eq '${je.Id}'`
+            }, authToken);
+            const lines = linesResult.value || [];
+            const totalDebit = lines.reduce((sum, l) => sum + (parseFloat(l.Debit) || 0), 0);
+            const totalCredit = lines.reduce((sum, l) => sum + (parseFloat(l.Credit) || 0), 0);
+
+            checks.openingBalanceJE = {
+                passed: true,
+                details: {
+                    id: je.Id,
+                    reference: je.Reference,
+                    date: je.TransactionDate,
+                    status: je.Status,
+                    lineCount: lines.length,
+                    totalDebit: formatCurrency(totalDebit),
+                    totalCredit: formatCurrency(totalCredit),
+                    isBalanced: Math.abs(totalDebit - totalCredit) < 0.01
+                }
+            };
+        }
+
+        // Count migrated entities from MigrationEntityMaps
+        const customerMaps = await dab.get('migrationentitymaps', {
+            filter: `SourceSystem eq 'QBO' and EntityType eq 'Customer'`
+        }, authToken);
+        checks.customersCount = {
+            passed: (customerMaps.value?.length || 0) > 0,
+            count: customerMaps.value?.length || 0
+        };
+
+        const vendorMaps = await dab.get('migrationentitymaps', {
+            filter: `SourceSystem eq 'QBO' and EntityType eq 'Vendor'`
+        }, authToken);
+        checks.vendorsCount = {
+            passed: (vendorMaps.value?.length || 0) > 0,
+            count: vendorMaps.value?.length || 0
+        };
+
+        const accountMaps = await dab.get('migrationentitymaps', {
+            filter: `SourceSystem eq 'QBO' and EntityType eq 'Account'`
+        }, authToken);
+        checks.accountsCount = {
+            passed: (accountMaps.value?.length || 0) > 0,
+            count: accountMaps.value?.length || 0
+        };
+
+        // Count open invoices in ACTO
+        const invoicesResult = await dab.get('invoices', {
+            filter: `SourceSystem eq 'QBO' and Status ne 'Paid'`
+        }, authToken);
+        const openInvoices = invoicesResult.value || [];
+        const arTotal = openInvoices.reduce((sum, inv) => {
+            const total = parseFloat(inv.TotalAmount) || 0;
+            const paid = parseFloat(inv.AmountPaid) || 0;
+            return sum + (total - paid);
+        }, 0);
+        checks.openInvoices = {
+            passed: true,
+            count: openInvoices.length,
+            total: formatCurrency(arTotal)
+        };
+
+        // Count open bills in ACTO
+        const billsResult = await dab.get('bills', {
+            filter: `SourceSystem eq 'QBO' and Status ne 'Paid'`
+        }, authToken);
+        const openBills = billsResult.value || [];
+        const apTotal = openBills.reduce((sum, bill) => {
+            const total = parseFloat(bill.TotalAmount) || 0;
+            const paid = parseFloat(bill.AmountPaid) || 0;
+            return sum + (total - paid);
+        }, 0);
+        checks.openBills = {
+            passed: true,
+            count: openBills.length,
+            total: formatCurrency(apTotal)
+        };
+
+        // Determine overall status
+        const allPassed = checks.openingBalanceJE.passed &&
+            checks.customersCount.passed &&
+            checks.vendorsCount.passed &&
+            checks.accountsCount.passed;
+
+        // Build next steps based on what's missing
+        const nextSteps = [];
+        if (!checks.openingBalanceJE.passed) {
+            nextSteps.push('Create opening balance journal entry using create_opening_balance_je tool');
+        }
+        if (!checks.customersCount.passed) {
+            nextSteps.push('Migrate customers from QBO using migrate_customers tool');
+        }
+        if (!checks.vendorsCount.passed) {
+            nextSteps.push('Migrate vendors from QBO using migrate_vendors tool');
+        }
+        if (!checks.accountsCount.passed) {
+            nextSteps.push('Migrate chart of accounts from QBO using migrate_accounts tool');
+        }
+        if (checks.openInvoices.count === 0 && checks.openingBalanceJE.passed) {
+            nextSteps.push('Migrate open invoices using migrate_open_invoices tool');
+        }
+        if (checks.openBills.count === 0 && checks.openingBalanceJE.passed) {
+            nextSteps.push('Migrate open bills using migrate_open_bills tool');
+        }
+        if (nextSteps.length === 0) {
+            nextSteps.push('Migration complete! Connect bank accounts via Plaid for ongoing transactions.');
+        }
+
+        return {
+            success: true,
+            migrationComplete: allPassed && checks.openInvoices.count > 0,
+            cutoffDate,
+            checks,
+            summary: {
+                openingBalanceJE: checks.openingBalanceJE.passed ? 'Created' : 'Missing',
+                customers: checks.customersCount.count,
+                vendors: checks.vendorsCount.count,
+                accounts: checks.accountsCount.count,
+                openInvoices: `${checks.openInvoices.count} (${checks.openInvoices.total})`,
+                openBills: `${checks.openBills.count} (${checks.openBills.total})`
+            },
+            nextSteps,
+            message: allPassed
+                ? `Migration verification passed! ${checks.customersCount.count} customers, ${checks.vendorsCount.count} vendors, ${checks.accountsCount.count} accounts migrated.`
+                : `Migration incomplete. See nextSteps for required actions.`
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 async function executeDeleteProducts(params) {
     try {
         const preview = params.preview !== false; // default true
@@ -5047,6 +5721,15 @@ async function executeFunction(name, args, authToken = null) {
             return executeMigrateInvoiceLines(args, authToken);
         case 'delete_products':
             return executeDeleteProducts(args);
+        // QBO Cutoff Date Migration Tools
+        case 'create_opening_balance_je':
+            return executeCreateOpeningBalanceJE(args, authToken);
+        case 'migrate_open_invoices':
+            return executeMigrateOpenInvoices(args, authToken);
+        case 'migrate_open_bills':
+            return executeMigrateOpenBills(args, authToken);
+        case 'verify_migration_complete':
+            return executeVerifyMigrationComplete(args, authToken);
         // Company Onboarding Tools
         case 'list_industry_templates':
             return executeListIndustryTemplates(args, authToken);
@@ -5361,6 +6044,16 @@ app.get('/api/qbo/analyze', async (req, res) => {
 // ============================================================================
 // Plaid Bank Feed Endpoints
 // ============================================================================
+
+// Health check for Plaid service (doesn't require DAB access)
+app.get('/api/plaid/health', (req, res) => {
+    const client = plaidService.getClient();
+    if (client) {
+        res.json({ status: 'ok', configured: true });
+    } else {
+        res.status(503).json({ status: 'unavailable', configured: false, error: 'Plaid client not initialized' });
+    }
+});
 
 // Create Plaid Link token for initializing Plaid Link
 app.post('/api/plaid/link-token', async (req, res) => {

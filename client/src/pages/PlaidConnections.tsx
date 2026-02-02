@@ -23,12 +23,12 @@ async function checkPlaidServiceAvailable(): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections`, {
+    const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/health`, {
       method: 'GET',
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    return response.ok || response.status === 404; // 404 means service is up but no connections
+    return response.ok;
   } catch {
     return false;
   }
