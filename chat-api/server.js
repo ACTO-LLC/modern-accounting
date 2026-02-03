@@ -6060,14 +6060,14 @@ app.post('/api/qbo/update-source-tracking', async (req, res) => {
             return res.status(400).json({ error: 'Not connected to QuickBooks', needsAuth: true });
         }
 
-        // Get QBO accounts
+        // Get QBO accounts (query() returns QueryResponse directly)
         const qboAccountsResult = await qboAuth.query('SELECT Id, Name, FullyQualifiedName, AccountType FROM Account MAXRESULTS 500');
-        const qboAccounts = qboAccountsResult?.QueryResponse?.Account || [];
+        const qboAccounts = qboAccountsResult?.Account || [];
         console.log(`[Source Tracking] Found ${qboAccounts.length} accounts in QBO`);
 
         // Get QBO customers
         const qboCustomersResult = await qboAuth.query('SELECT Id, DisplayName, CompanyName, PrimaryEmailAddr FROM Customer MAXRESULTS 500');
-        const qboCustomers = qboCustomersResult?.QueryResponse?.Customer || [];
+        const qboCustomers = qboCustomersResult?.Customer || [];
         console.log(`[Source Tracking] Found ${qboCustomers.length} customers in QBO`);
 
         // Get ACTO accounts without source tracking
