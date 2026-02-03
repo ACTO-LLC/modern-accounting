@@ -1571,73 +1571,21 @@ const tools = [
     {
         type: 'function',
         function: {
-            name: 'qbo_search_customers',
-            description: 'Search customers in QuickBooks Online.',
+            name: 'qbo_search_entity',
+            description: 'Search any QuickBooks Online entity type. Supports all QBO entities: Customer, Vendor, Account, Item, Invoice, Bill, Payment, BillPayment, JournalEntry, Purchase, Deposit, Transfer, Estimate, CreditMemo, SalesReceipt, RefundReceipt, VendorCredit, Employee, and more.',
             parameters: {
                 type: 'object',
                 properties: {
-                    display_name: { type: 'string', description: 'Filter by display name' },
+                    entity_type: { type: 'string', description: 'QBO entity type in PascalCase (e.g., Customer, Purchase, Deposit, Invoice)' },
+                    display_name: { type: 'string', description: 'Filter by display name or name' },
                     active: { type: 'boolean', description: 'Filter by active status' },
-                    fetch_all: { type: 'boolean', description: 'Fetch all customers (for migration)' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'qbo_search_invoices',
-            description: 'Search invoices in QuickBooks Online.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    customer_name: { type: 'string', description: 'Filter by customer name' },
-                    fetch_all: { type: 'boolean', description: 'Fetch all invoices (for migration)' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'qbo_search_vendors',
-            description: 'Search vendors in QuickBooks Online.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    display_name: { type: 'string', description: 'Filter by display name' },
-                    active: { type: 'boolean', description: 'Filter by active status' },
-                    fetch_all: { type: 'boolean', description: 'Fetch all vendors (for migration)' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'qbo_search_accounts',
-            description: 'Search chart of accounts in QuickBooks Online.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    account_type: { type: 'string', description: 'Filter by account type (Bank, Expense, Income, etc.)' },
-                    active: { type: 'boolean', description: 'Filter by active status' },
-                    fetch_all: { type: 'boolean', description: 'Fetch all accounts (for migration)' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'qbo_search_bills',
-            description: 'Search bills in QuickBooks Online.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    vendor_name: { type: 'string', description: 'Filter by vendor name' },
-                    fetch_all: { type: 'boolean', description: 'Fetch all bills (for migration)' }
-                }
+                    start_date: { type: 'string', description: 'Start date filter (YYYY-MM-DD) for transaction entities' },
+                    end_date: { type: 'string', description: 'End date filter (YYYY-MM-DD) for transaction entities' },
+                    customer_name: { type: 'string', description: 'Filter by customer name (for invoices, payments)' },
+                    vendor_name: { type: 'string', description: 'Filter by vendor name (for bills, bill payments)' },
+                    fetch_all: { type: 'boolean', description: 'Fetch all records with automatic pagination' }
+                },
+                required: ['entity_type']
             }
         }
     },
@@ -1645,7 +1593,7 @@ const tools = [
         type: 'function',
         function: {
             name: 'qbo_list_export_entities',
-            description: 'List available entities that can be exported from QuickBooks Online. Returns entity names, supported filters, and default columns. Use this to help users understand what QBO data they can export.',
+            description: 'List available entities that can be exported from QuickBooks Online. Dynamically discovers all supported QBO entity types.',
             parameters: {
                 type: 'object',
                 properties: {}
@@ -1656,14 +1604,13 @@ const tools = [
         type: 'function',
         function: {
             name: 'qbo_export_data',
-            description: 'Export data from QuickBooks Online to a downloadable file. Supports JSON and CSV formats. Use qbo_list_export_entities first to see available entities. Returns a download URL for the exported file.',
+            description: 'Export data from QuickBooks Online to a downloadable file. Supports JSON and CSV formats. Accepts any QBO entity type (e.g., Customer, Purchase, Deposit, Invoice, Vendor, etc.). Use qbo_list_export_entities to discover available types. Returns a download URL for the exported file.',
             parameters: {
                 type: 'object',
                 properties: {
                     entity: {
                         type: 'string',
-                        enum: ['customers', 'vendors', 'accounts', 'items', 'invoices', 'bills', 'payments', 'billPayments', 'journalEntries'],
-                        description: 'The type of data to export (required)'
+                        description: 'The QBO entity type to export (e.g., Customer, Vendor, Invoice, Purchase, Deposit, JournalEntry)'
                     },
                     format: {
                         type: 'string',
@@ -3169,100 +3116,29 @@ async function executeGetMigrationStatus(params, authToken = null) {
     }
 }
 
-async function executeQboSearchCustomers(params) {
+async function executeQboSearchEntity(params) {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        if (!params.entity_type) {
+            return { success: false, error: 'entity_type parameter is required (e.g., Customer, Purchase, Deposit)' };
         }
 
         const criteria = {
             name: params.display_name,
             active: params.active,
-            fetchAll: params.fetch_all
-        };
-
-        const result = await qboAuth.searchCustomers(criteria);
-        return { success: true, ...result };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeQboSearchInvoices(params) {
-    try {
-        const status = await qboAuth.getStatus();
-        if (!status.connected) {
-            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-        }
-
-        const criteria = {
-            fetchAll: params.fetch_all,
-            startDate: params.start_date,
-            endDate: params.end_date
-        };
-
-        const result = await qboAuth.searchInvoices(criteria);
-        return { success: true, ...result };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeQboSearchVendors(params) {
-    try {
-        const status = await qboAuth.getStatus();
-        if (!status.connected) {
-            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-        }
-
-        const criteria = {
-            name: params.display_name,
-            active: params.active,
-            fetchAll: params.fetch_all
-        };
-
-        const result = await qboAuth.searchVendors(criteria);
-        return { success: true, ...result };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeQboSearchAccounts(params) {
-    try {
-        const status = await qboAuth.getStatus();
-        if (!status.connected) {
-            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-        }
-
-        const criteria = {
             type: params.account_type,
-            active: params.active,
-            fetchAll: params.fetch_all
-        };
-
-        const result = await qboAuth.searchAccounts(criteria);
-        return { success: true, ...result };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeQboSearchBills(params) {
-    try {
-        const status = await qboAuth.getStatus();
-        if (!status.connected) {
-            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
-        }
-
-        const criteria = {
             fetchAll: params.fetch_all,
             startDate: params.start_date,
-            endDate: params.end_date
+            endDate: params.end_date,
+            customerName: params.customer_name,
+            vendorName: params.vendor_name
         };
 
-        const result = await qboAuth.searchBills(criteria);
+        const result = await qboAuth.searchEntity(params.entity_type, criteria);
         return { success: true, ...result };
     } catch (error) {
         return { success: false, error: error.message };
@@ -3270,8 +3146,10 @@ async function executeQboSearchBills(params) {
 }
 
 /**
- * List available QBO entities for export
- * Uses shared QBO_EXPORT_ENTITIES constant (defined later in file, but available at runtime)
+ * List available QBO entities for export - dynamically discovered, no hardcoded list.
+ * Common QBO entity types include: Customer, Vendor, Account, Item, Invoice, Bill,
+ * Payment, BillPayment, JournalEntry, Purchase, Deposit, Transfer, Estimate,
+ * CreditMemo, SalesReceipt, RefundReceipt, VendorCredit, Employee, etc.
  */
 async function executeQboListExportEntities(params) {
     try {
@@ -3280,12 +3158,34 @@ async function executeQboListExportEntities(params) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
+        // Common QBO entity types - listed for discovery, but any valid QBO entity can be queried
+        const commonEntities = [
+            { key: 'Customer', description: 'Customer records' },
+            { key: 'Vendor', description: 'Vendor records' },
+            { key: 'Account', description: 'Chart of Accounts' },
+            { key: 'Item', description: 'Products & Services' },
+            { key: 'Invoice', description: 'Invoice transactions' },
+            { key: 'Bill', description: 'Bill transactions' },
+            { key: 'Payment', description: 'Customer payments' },
+            { key: 'BillPayment', description: 'Bill payments (vendor payments)' },
+            { key: 'JournalEntry', description: 'Journal entries' },
+            { key: 'Purchase', description: 'Purchases (expenses, checks, credit card charges)' },
+            { key: 'Deposit', description: 'Bank deposits' },
+            { key: 'Transfer', description: 'Bank transfers' },
+            { key: 'Estimate', description: 'Estimates / quotes' },
+            { key: 'CreditMemo', description: 'Credit memos' },
+            { key: 'SalesReceipt', description: 'Sales receipts' },
+            { key: 'RefundReceipt', description: 'Refund receipts' },
+            { key: 'VendorCredit', description: 'Vendor credits' },
+            { key: 'Employee', description: 'Employee records' },
+        ];
+
         return {
             success: true,
             companyName: status.companyName,
             realmId: status.realmId,
-            entities: QBO_EXPORT_ENTITIES,
-            hint: 'Use qbo_export_data with the entity key to export data. You can filter by supported filters and specify columns.'
+            entities: commonEntities,
+            hint: 'Use qbo_export_data with any entity key. Column names are derived from the data - no predefined columns. Filter transactions with start_date/end_date.'
         };
     } catch (error) {
         return { success: false, error: error.message };
@@ -3294,7 +3194,8 @@ async function executeQboListExportEntities(params) {
 
 /**
  * Export QBO data to a downloadable file
- * Returns download URL without pre-fetching data (avoids double QBO API calls)
+ * Returns download URL without pre-fetching data (avoids double QBO API calls).
+ * Accepts any valid QBO entity type - no hardcoded validation list.
  */
 async function executeQboExportData(params) {
     try {
@@ -3305,12 +3206,6 @@ async function executeQboExportData(params) {
 
         if (!params.entity) {
             return { success: false, error: 'Entity parameter is required. Use qbo_list_export_entities to see available options.' };
-        }
-
-        // Validate entity type against shared constant
-        const validEntity = QBO_EXPORT_ENTITIES.find(e => e.key.toLowerCase() === params.entity.toLowerCase());
-        if (!validEntity) {
-            return { success: false, error: `Unknown entity: ${params.entity}. Use qbo_list_export_entities to see available options.` };
         }
 
         const format = params.format || 'json';
@@ -3333,7 +3228,6 @@ async function executeQboExportData(params) {
         return {
             success: true,
             entity: params.entity,
-            entityName: validEntity.name,
             format,
             filters: {
                 startDate: params.start_date,
@@ -3343,9 +3237,8 @@ async function executeQboExportData(params) {
                 customerName: params.customer_name,
                 vendorName: params.vendor_name
             },
-            supportedFilters: validEntity.supportedFilters,
             downloadUrl,
-            hint: `Export URL ready for ${validEntity.name}. The user can download the ${format.toUpperCase()} file from the download URL.`
+            hint: `Export URL ready for ${params.entity}. The user can download the ${format.toUpperCase()} file from the download URL.`
         };
     } catch (error) {
         return { success: false, error: error.message };
@@ -5840,16 +5733,8 @@ async function executeFunction(name, args, authToken = null) {
             return executeQboAnalyzeMigration(authToken);
         case 'get_migration_status':
             return executeGetMigrationStatus(args, authToken);
-        case 'qbo_search_customers':
-            return executeQboSearchCustomers(args);
-        case 'qbo_search_invoices':
-            return executeQboSearchInvoices(args);
-        case 'qbo_search_vendors':
-            return executeQboSearchVendors(args);
-        case 'qbo_search_accounts':
-            return executeQboSearchAccounts(args);
-        case 'qbo_search_bills':
-            return executeQboSearchBills(args);
+        case 'qbo_search_entity':
+            return executeQboSearchEntity(args);
         case 'qbo_list_export_entities':
             return executeQboListExportEntities(args);
         case 'qbo_export_data':
@@ -6300,103 +6185,17 @@ const QBO_EXPORT_CONFIG = {
  * Shared entity definitions for QBO export
  * Used by API endpoints, Milton tools, and tool definitions
  */
-const QBO_EXPORT_ENTITIES = [
-    {
-        key: 'customers',
-        name: 'Customers',
-        description: 'Customer records',
-        supportedFilters: ['name', 'active'],
-        defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
-    },
-    {
-        key: 'vendors',
-        name: 'Vendors',
-        description: 'Vendor records',
-        supportedFilters: ['name', 'active'],
-        defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
-    },
-    {
-        key: 'accounts',
-        name: 'Chart of Accounts',
-        description: 'Account records',
-        supportedFilters: ['name', 'type', 'active'],
-        defaultColumns: ['Id', 'Name', 'AccountType', 'AccountSubType', 'CurrentBalance']
-    },
-    {
-        key: 'items',
-        name: 'Products & Services',
-        description: 'Item records',
-        supportedFilters: ['name', 'type', 'active'],
-        defaultColumns: ['Id', 'Name', 'Type', 'UnitPrice', 'Active']
-    },
-    {
-        key: 'invoices',
-        name: 'Invoices',
-        description: 'Invoice transactions',
-        supportedFilters: ['customerName', 'startDate', 'endDate'],
-        defaultColumns: ['Id', 'DocNumber', 'CustomerRef', 'TxnDate', 'TotalAmt', 'Balance']
-    },
-    {
-        key: 'bills',
-        name: 'Bills',
-        description: 'Bill transactions',
-        supportedFilters: ['vendorName', 'startDate', 'endDate'],
-        defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'Balance']
-    },
-    {
-        key: 'payments',
-        name: 'Customer Payments',
-        description: 'Payment transactions',
-        supportedFilters: ['customerName', 'startDate', 'endDate'],
-        defaultColumns: ['Id', 'PaymentRefNum', 'CustomerRef', 'TxnDate', 'TotalAmt']
-    },
-    {
-        key: 'billPayments',
-        name: 'Bill Payments',
-        description: 'Bill payment transactions',
-        supportedFilters: ['vendorName', 'startDate', 'endDate'],
-        defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'PayType']
-    },
-    {
-        key: 'journalEntries',
-        name: 'Journal Entries',
-        description: 'Journal entry transactions',
-        supportedFilters: ['startDate', 'endDate'],
-        defaultColumns: ['Id', 'DocNumber', 'TxnDate', 'Line']
-    }
-];
-
 /**
- * Fetch QBO entity data with rate limiting and exponential backoff
- * Shared helper used by both API endpoint and Milton tool
+ * Fetch QBO entity data with rate limiting and exponential backoff.
+ * Uses the generic searchEntity() method - no hardcoded entity switch.
+ * Accepts any valid QBO entity type (e.g., Customer, Purchase, Deposit, etc.)
  */
 async function fetchQboEntityData(entityType, criteria) {
     let retryCount = 0;
 
     while (retryCount <= QBO_EXPORT_CONFIG.maxRetries) {
         try {
-            switch (entityType.toLowerCase()) {
-                case 'customers':
-                    return await qboAuth.searchCustomers(criteria);
-                case 'vendors':
-                    return await qboAuth.searchVendors(criteria);
-                case 'accounts':
-                    return await qboAuth.searchAccounts(criteria);
-                case 'items':
-                    return await qboAuth.searchItems(criteria);
-                case 'invoices':
-                    return await qboAuth.searchInvoices(criteria);
-                case 'bills':
-                    return await qboAuth.searchBills(criteria);
-                case 'payments':
-                    return await qboAuth.searchPayments(criteria);
-                case 'billpayments':
-                    return await qboAuth.searchBillPayments(criteria);
-                case 'journalentries':
-                    return await qboAuth.searchJournalEntries(criteria);
-                default:
-                    throw new Error(`Unknown entity: ${entityType}`);
-            }
+            return await qboAuth.searchEntity(entityType, criteria);
         } catch (error) {
             const isRateLimited =
                 error.response?.status === 429 ||
@@ -6439,10 +6238,32 @@ app.get('/api/qbo/export/entities', validateJWT, async (req, res) => {
             });
         }
 
+        // Return common entity types for discovery - but any valid QBO entity can be exported
+        const commonEntities = [
+            { key: 'Customer', description: 'Customer records' },
+            { key: 'Vendor', description: 'Vendor records' },
+            { key: 'Account', description: 'Chart of Accounts' },
+            { key: 'Item', description: 'Products & Services' },
+            { key: 'Invoice', description: 'Invoice transactions' },
+            { key: 'Bill', description: 'Bill transactions' },
+            { key: 'Payment', description: 'Customer payments' },
+            { key: 'BillPayment', description: 'Bill payments (vendor payments)' },
+            { key: 'JournalEntry', description: 'Journal entries' },
+            { key: 'Purchase', description: 'Purchases (expenses, checks, credit card charges)' },
+            { key: 'Deposit', description: 'Bank deposits' },
+            { key: 'Transfer', description: 'Bank transfers' },
+            { key: 'Estimate', description: 'Estimates / quotes' },
+            { key: 'CreditMemo', description: 'Credit memos' },
+            { key: 'SalesReceipt', description: 'Sales receipts' },
+            { key: 'RefundReceipt', description: 'Refund receipts' },
+            { key: 'VendorCredit', description: 'Vendor credits' },
+            { key: 'Employee', description: 'Employee records' },
+        ];
         res.json({
-            entities: QBO_EXPORT_ENTITIES,
+            entities: commonEntities,
             companyName: status.companyName,
-            realmId: status.realmId
+            realmId: status.realmId,
+            hint: 'Any valid QBO entity type can be exported, not just those listed here.'
         });
     } catch (error) {
         console.error('QBO entities discovery error:', error);
@@ -6499,14 +6320,8 @@ app.get('/api/qbo/export', validateJWT, async (req, res) => {
 
         console.log(`[QBO Export] Exporting ${entity} with criteria:`, criteria);
 
-        // Validate entity type
-        const validEntity = QBO_EXPORT_ENTITIES.find(e => e.key.toLowerCase() === entity.toLowerCase());
-        if (!validEntity) {
-            return res.status(400).json({
-                error: `Unknown entity: ${entity}`,
-                hint: 'Use GET /api/qbo/export/entities to see available entities'
-            });
-        }
+        // No hardcoded entity validation - let QBO's API validate the entity type.
+        // This allows any valid QBO entity to be exported without code changes.
 
         // Fetch data using shared helper with rate limiting
         const data = await fetchQboEntityData(entity, criteria);

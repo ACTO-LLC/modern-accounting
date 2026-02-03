@@ -547,435 +547,138 @@ class QBOAuth {
     }
 
     /**
-     * Search customers with pagination support
+     * Generic entity search - queries any QBO entity type dynamically.
+     * No hardcoded entity lists. Uses QBO Query API: SELECT * FROM <EntityType>.
+     *
+     * @param {string} entityType - QBO entity type in PascalCase (e.g., 'Customer', 'Purchase', 'Deposit')
+     * @param {object} criteria - Filter criteria: { fetchAll, limit, startDate, endDate, name, active, ... }
+     *   Any key matching a QBO field name will be added as a WHERE condition.
      */
+    async searchEntity(entityType, criteria = {}) {
+        const { fetchAll, limit, startDate, endDate, name, active, type,
+                customerName, vendorName, ...extraFilters } = criteria;
+
+        let baseQuery = `SELECT * FROM ${entityType}`;
+        const conditions = [];
+
+        // Common filter patterns
+        if (name) {
+            // Most entities use DisplayName; Account/Item use Name
+            const nameField = ['Account', 'Item', 'Class', 'Department'].includes(entityType) ? 'Name' : 'DisplayName';
+            conditions.push(`${nameField} LIKE '%${name}%'`);
+        }
+        if (active !== undefined) {
+            conditions.push(`Active = ${active}`);
+        }
+        if (type) {
+            const typeField = entityType === 'Account' ? 'AccountType' : 'Type';
+            conditions.push(`${typeField} = '${type}'`);
+        }
+        if (startDate) {
+            conditions.push(`TxnDate >= '${startDate}'`);
+        }
+        if (endDate) {
+            conditions.push(`TxnDate <= '${endDate}'`);
+        }
+        if (customerName) {
+            conditions.push(`CustomerRef LIKE '%${customerName}%'`);
+        }
+        if (vendorName) {
+            conditions.push(`VendorRef LIKE '%${vendorName}%'`);
+        }
+
+        if (conditions.length > 0) {
+            baseQuery += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        // Transaction entities get date ordering
+        if (startDate || endDate) {
+            baseQuery += ' ORDERBY TxnDate DESC';
+        }
+
+        // Paginate through all results
+        if (fetchAll) {
+            const allRecords = [];
+            const pageSize = 1000;
+            let startPosition = 1;
+            let hasMore = true;
+
+            while (hasMore) {
+                const query = `${baseQuery} STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`;
+                const response = await this.query(query);
+                const records = response?.[entityType] || [];
+
+                allRecords.push(...records);
+
+                if (records.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    startPosition += pageSize;
+                }
+            }
+
+            return {
+                count: allRecords.length,
+                data: allRecords
+            };
+        }
+
+        // Single-page query
+        const effectiveLimit = limit || 1000;
+        baseQuery += ` MAXRESULTS ${effectiveLimit}`;
+
+        const response = await this.query(baseQuery);
+        const records = response?.[entityType] || [];
+
+        return {
+            count: records.length,
+            data: records
+        };
+    }
+
+    // =========================================================================
+    // Backward-compatible wrappers (used by migration functions in server.js)
+    // These all delegate to searchEntity() - no duplicated query logic.
+    // =========================================================================
+
     async searchCustomers(criteria = {}) {
-        let baseQuery = 'SELECT * FROM Customer';
-        const conditions = [];
-
-        if (criteria.name) {
-            conditions.push(`DisplayName LIKE '%${criteria.name}%'`);
-        }
-        if (criteria.active !== undefined) {
-            conditions.push(`Active = ${criteria.active}`);
-        }
-
-        if (conditions.length > 0) {
-            baseQuery += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        // If fetchAll, paginate through all results
-        if (criteria.fetchAll) {
-            const allCustomers = [];
-            const pageSize = 1000; // QBO max per request
-            let startPosition = 1;
-            let hasMore = true;
-
-            while (hasMore) {
-                const query = `${baseQuery} STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`;
-                const response = await this.query(query);
-                const customers = response?.Customer || [];
-
-                allCustomers.push(...customers);
-
-                if (customers.length < pageSize) {
-                    hasMore = false;
-                } else {
-                    startPosition += pageSize;
-                }
-            }
-
-            return {
-                count: allCustomers.length,
-                data: allCustomers
-            };
-        }
-
-        // Non-paginated query
-        let query = baseQuery;
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const customers = response?.Customer || [];
-
-        return {
-            count: customers.length,
-            customers: customers.map(c => ({
-                id: c.Id,
-                name: c.DisplayName,
-                email: c.PrimaryEmailAddr?.Address,
-                balance: c.Balance
-            }))
-        };
+        return this.searchEntity('Customer', criteria);
     }
 
-    /**
-     * Search vendors with pagination support
-     */
     async searchVendors(criteria = {}) {
-        let baseQuery = 'SELECT * FROM Vendor';
-        const conditions = [];
-
-        if (criteria.name) {
-            conditions.push(`DisplayName LIKE '%${criteria.name}%'`);
-        }
-        if (criteria.active !== undefined) {
-            conditions.push(`Active = ${criteria.active}`);
-        }
-
-        if (conditions.length > 0) {
-            baseQuery += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        // If fetchAll, paginate through all results
-        if (criteria.fetchAll) {
-            const allVendors = [];
-            const pageSize = 1000; // QBO max per request
-            let startPosition = 1;
-            let hasMore = true;
-
-            while (hasMore) {
-                const query = `${baseQuery} STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`;
-                const response = await this.query(query);
-                const vendors = response?.Vendor || [];
-
-                allVendors.push(...vendors);
-
-                if (vendors.length < pageSize) {
-                    hasMore = false;
-                } else {
-                    startPosition += pageSize;
-                }
-            }
-
-            return {
-                count: allVendors.length,
-                data: allVendors
-            };
-        }
-
-        // Non-paginated query
-        let query = baseQuery;
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const vendors = response?.Vendor || [];
-
-        return {
-            count: vendors.length,
-            vendors: vendors.map(v => ({
-                id: v.Id,
-                name: v.DisplayName,
-                email: v.PrimaryEmailAddr?.Address,
-                balance: v.Balance
-            }))
-        };
+        return this.searchEntity('Vendor', criteria);
     }
 
-    /**
-     * Search accounts (Chart of Accounts)
-     */
     async searchAccounts(criteria = {}) {
-        let query = 'SELECT * FROM Account';
-        const conditions = [];
-
-        if (criteria.name) {
-            conditions.push(`Name LIKE '%${criteria.name}%'`);
-        }
-        if (criteria.type) {
-            conditions.push(`AccountType = '${criteria.type}'`);
-        }
-        if (criteria.active !== undefined) {
-            conditions.push(`Active = ${criteria.active}`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const accounts = response?.Account || [];
-
-        return {
-            count: accounts.length,
-            data: criteria.fetchAll ? accounts : undefined,
-            accounts: !criteria.fetchAll ? accounts.map(a => ({
-                id: a.Id,
-                name: a.Name,
-                type: a.AccountType,
-                subType: a.AccountSubType,
-                balance: a.CurrentBalance
-            })) : undefined
-        };
+        return this.searchEntity('Account', criteria);
     }
 
-    /**
-     * Search items (Products & Services)
-     */
     async searchItems(criteria = {}) {
-        let query = 'SELECT * FROM Item';
-        const conditions = [];
-
-        if (criteria.name) {
-            conditions.push(`Name LIKE '%${criteria.name}%'`);
-        }
-        if (criteria.type) {
-            conditions.push(`Type = '${criteria.type}'`);
-        }
-        if (criteria.active !== undefined) {
-            conditions.push(`Active = ${criteria.active}`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const items = response?.Item || [];
-
-        return {
-            count: items.length,
-            data: criteria.fetchAll ? items : undefined,
-            items: !criteria.fetchAll ? items.map(i => ({
-                id: i.Id,
-                name: i.Name,
-                type: i.Type,
-                unitPrice: i.UnitPrice,
-                active: i.Active
-            })) : undefined
-        };
+        return this.searchEntity('Item', criteria);
     }
 
-    /**
-     * Search invoices
-     */
     async searchInvoices(criteria = {}) {
-        let query = 'SELECT * FROM Invoice';
-        const conditions = [];
-
-        if (criteria.customerName) {
-            conditions.push(`CustomerRef LIKE '%${criteria.customerName}%'`);
-        }
-        if (criteria.startDate) {
-            conditions.push(`TxnDate >= '${criteria.startDate}'`);
-        }
-        if (criteria.endDate) {
-            conditions.push(`TxnDate <= '${criteria.endDate}'`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        query += ' ORDERBY TxnDate DESC';
-
-        // QBO defaults to 100 records, use 1000 (max) unless limited
-        query += ` MAXRESULTS ${criteria.limit || 1000}`;
-
-        const response = await this.query(query);
-        const invoices = response?.Invoice || [];
-
-        return {
-            count: invoices.length,
-            data: criteria.fetchAll ? invoices : undefined,
-            invoices: !criteria.fetchAll ? invoices.map(i => ({
-                id: i.Id,
-                docNumber: i.DocNumber,
-                customerName: i.CustomerRef?.name,
-                date: i.TxnDate,
-                total: i.TotalAmt,
-                balance: i.Balance
-            })) : undefined
-        };
+        return this.searchEntity('Invoice', criteria);
     }
 
-    /**
-     * Search bills
-     */
     async searchBills(criteria = {}) {
-        let query = 'SELECT * FROM Bill';
-        const conditions = [];
-
-        if (criteria.vendorName) {
-            conditions.push(`VendorRef LIKE '%${criteria.vendorName}%'`);
-        }
-        if (criteria.startDate) {
-            conditions.push(`TxnDate >= '${criteria.startDate}'`);
-        }
-        if (criteria.endDate) {
-            conditions.push(`TxnDate <= '${criteria.endDate}'`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        query += ' ORDERBY TxnDate DESC';
-
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const bills = response?.Bill || [];
-
-        return {
-            count: bills.length,
-            data: criteria.fetchAll ? bills : undefined,
-            bills: !criteria.fetchAll ? bills.map(b => ({
-                id: b.Id,
-                docNumber: b.DocNumber,
-                vendorName: b.VendorRef?.name,
-                date: b.TxnDate,
-                total: b.TotalAmt,
-                balance: b.Balance
-            })) : undefined
-        };
+        return this.searchEntity('Bill', criteria);
     }
 
-    /**
-     * Search payments (customer payments / receive payments)
-     */
     async searchPayments(criteria = {}) {
-        let query = 'SELECT * FROM Payment';
-        const conditions = [];
-
-        if (criteria.customerName) {
-            conditions.push(`CustomerRef LIKE '%${criteria.customerName}%'`);
-        }
-        if (criteria.startDate) {
-            conditions.push(`TxnDate >= '${criteria.startDate}'`);
-        }
-        if (criteria.endDate) {
-            conditions.push(`TxnDate <= '${criteria.endDate}'`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        query += ' ORDERBY TxnDate DESC';
-
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const payments = response?.Payment || [];
-
-        return {
-            count: payments.length,
-            data: criteria.fetchAll ? payments : undefined,
-            payments: !criteria.fetchAll ? payments.map(p => ({
-                id: p.Id,
-                refNumber: p.PaymentRefNum,
-                customerName: p.CustomerRef?.name,
-                date: p.TxnDate,
-                total: p.TotalAmt,
-                depositAccount: p.DepositToAccountRef?.name
-            })) : undefined
-        };
+        return this.searchEntity('Payment', criteria);
     }
 
-    /**
-     * Search bill payments (vendor payments)
-     */
     async searchBillPayments(criteria = {}) {
-        let query = 'SELECT * FROM BillPayment';
-        const conditions = [];
-
-        if (criteria.vendorName) {
-            conditions.push(`VendorRef LIKE '%${criteria.vendorName}%'`);
-        }
-        if (criteria.startDate) {
-            conditions.push(`TxnDate >= '${criteria.startDate}'`);
-        }
-        if (criteria.endDate) {
-            conditions.push(`TxnDate <= '${criteria.endDate}'`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        query += ' ORDERBY TxnDate DESC';
-
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const billPayments = response?.BillPayment || [];
-
-        return {
-            count: billPayments.length,
-            data: criteria.fetchAll ? billPayments : undefined,
-            billPayments: !criteria.fetchAll ? billPayments.map(bp => ({
-                id: bp.Id,
-                docNumber: bp.DocNumber,
-                vendorName: bp.VendorRef?.name,
-                date: bp.TxnDate,
-                total: bp.TotalAmt,
-                payType: bp.PayType
-            })) : undefined
-        };
+        return this.searchEntity('BillPayment', criteria);
     }
 
-    /**
-     * Search journal entries
-     */
     async searchJournalEntries(criteria = {}) {
-        let query = 'SELECT * FROM JournalEntry';
-        const conditions = [];
-
-        if (criteria.startDate) {
-            conditions.push(`TxnDate >= '${criteria.startDate}'`);
-        }
-        if (criteria.endDate) {
-            conditions.push(`TxnDate <= '${criteria.endDate}'`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        query += ' ORDERBY TxnDate DESC';
-
-        if (criteria.limit) {
-            query += ` MAXRESULTS ${criteria.limit}`;
-        }
-
-        const response = await this.query(query);
-        const journalEntries = response?.JournalEntry || [];
-
-        return {
-            count: journalEntries.length,
-            data: criteria.fetchAll ? journalEntries : undefined,
-            journalEntries: !criteria.fetchAll ? journalEntries.map(je => ({
-                id: je.Id,
-                docNumber: je.DocNumber,
-                date: je.TxnDate,
-                totalDebit: je.Line?.filter(l => l.JournalEntryLineDetail?.PostingType === 'Debit')
-                    .reduce((sum, l) => sum + (l.Amount || 0), 0) || 0,
-                lineCount: je.Line?.length || 0
-            })) : undefined
-        };
+        return this.searchEntity('JournalEntry', criteria);
     }
 
     /**
-     * Analyze QBO data for migration
+     * Analyze QBO data for migration - dynamically queries entity counts
      */
     async analyzeForMigration() {
         const realmId = await this.getActiveRealmId();
@@ -983,32 +686,32 @@ class QBOAuth {
             throw new Error('Not connected to QuickBooks');
         }
 
-        // Get counts for each entity type
-        const [customers, vendors, accounts, items, invoices, bills, payments, billPayments, journalEntries] = await Promise.all([
-            this.query('SELECT COUNT(*) FROM Customer'),
-            this.query('SELECT COUNT(*) FROM Vendor'),
-            this.query('SELECT COUNT(*) FROM Account'),
-            this.query('SELECT COUNT(*) FROM Item'),
-            this.query('SELECT COUNT(*) FROM Invoice'),
-            this.query('SELECT COUNT(*) FROM Bill'),
-            this.query('SELECT COUNT(*) FROM Payment'),
-            this.query('SELECT COUNT(*) FROM BillPayment'),
-            this.query('SELECT COUNT(*) FROM JournalEntry')
-        ]);
+        const entityTypes = [
+            'Customer', 'Vendor', 'Account', 'Item',
+            'Invoice', 'Bill', 'Payment', 'BillPayment', 'JournalEntry',
+            'Purchase', 'Deposit', 'Transfer', 'Estimate',
+            'CreditMemo', 'SalesReceipt', 'RefundReceipt', 'VendorCredit'
+        ];
 
-        return {
-            // Priority 1
-            customers: customers?.totalCount || 0,
-            vendors: vendors?.totalCount || 0,
-            accounts: accounts?.totalCount || 0,
-            items: items?.totalCount || 0,
-            // Priority 2
-            invoices: invoices?.totalCount || 0,
-            bills: bills?.totalCount || 0,
-            payments: payments?.totalCount || 0,
-            billPayments: billPayments?.totalCount || 0,
-            journalEntries: journalEntries?.totalCount || 0
-        };
+        const counts = {};
+        const results = await Promise.all(
+            entityTypes.map(async (entityType) => {
+                try {
+                    const response = await this.query(`SELECT COUNT(*) FROM ${entityType}`);
+                    return { entityType, count: response?.totalCount || 0 };
+                } catch {
+                    return { entityType, count: 0 };
+                }
+            })
+        );
+
+        for (const { entityType, count } of results) {
+            // Use camelCase keys for backward compatibility
+            const key = entityType.charAt(0).toLowerCase() + entityType.slice(1);
+            counts[key] = count;
+        }
+
+        return counts;
     }
 }
 

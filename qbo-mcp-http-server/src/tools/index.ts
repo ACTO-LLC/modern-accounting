@@ -1,5 +1,8 @@
 /**
  * QBO MCP Tool definitions and handlers
+ *
+ * Uses dynamic entity discovery - no hardcoded entity lists.
+ * Entity types and find methods are auto-discovered from the node-quickbooks prototype.
  */
 
 import { z } from 'zod';
@@ -31,25 +34,83 @@ export interface ToolResponse<T> {
     error: string | null;
 }
 
-// Build QuickBooks search criteria from advanced filters
-function buildSearchCriteria(criteria: any[], options: any = {}): any {
-    if (!criteria || criteria.length === 0) {
-        return { ...options };
+// ============================================================================
+// Dynamic Entity Discovery
+// ============================================================================
+
+/**
+ * Entity metadata derived from node-quickbooks prototype.
+ * Maps entity type (e.g., "Customer") to its find method and response key.
+ */
+interface EntityMeta {
+    entityType: string;      // Singular PascalCase: "Customer", "JournalEntry"
+    findMethod: string;      // e.g., "findCustomers", "findJournalEntries"
+    description: string;     // Human-readable name
+}
+
+/**
+ * Derive singular entity type from a find method name.
+ * e.g., "findCustomers" -> "Customer", "findJournalEntries" -> "JournalEntry"
+ */
+function singularize(plural: string): string {
+    if (plural.endsWith('ies')) {
+        return plural.slice(0, -3) + 'y';   // JournalEntries -> JournalEntry, TaxAgencies -> TaxAgency
+    }
+    if (plural.endsWith('sses')) {
+        return plural.slice(0, -2);          // Classes -> Class
+    }
+    if (plural.endsWith('s')) {
+        return plural.slice(0, -1);          // Customers -> Customer, Purchases -> Purchase
+    }
+    return plural;
+}
+
+/**
+ * Convert PascalCase to human-readable name.
+ * e.g., "JournalEntry" -> "Journal Entry", "BillPayment" -> "Bill Payment"
+ */
+function humanize(name: string): string {
+    return name.replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+
+/**
+ * Auto-discover available QBO entities from the node-quickbooks prototype.
+ * Scans for all find* methods and derives entity metadata.
+ */
+function discoverEntities(): Map<string, EntityMeta> {
+    const entityMap = new Map<string, EntityMeta>();
+    const proto = Object.getOwnPropertyNames(QuickBooks.prototype);
+
+    // Skip these - they're not queryable entities
+    const skipMethods = new Set([
+        'findPreferenceses',   // Malformed in library, and Preferences is a singleton
+        'findCompanyInfos',    // Singleton - use getCompanyInfo instead
+    ]);
+
+    for (const method of proto) {
+        if (!method.startsWith('find') || skipMethods.has(method)) continue;
+
+        const plural = method.slice(4); // Remove "find" prefix
+        const entityType = singularize(plural);
+
+        entityMap.set(entityType.toLowerCase(), {
+            entityType,
+            findMethod: method,
+            description: humanize(entityType)
+        });
     }
 
-    // Check if using advanced format
-    const first = criteria[0];
-    if (typeof first === 'object' && 'field' in first) {
-        return [...criteria, ...Object.entries(options).map(([key, value]) => ({ field: key, value }))];
-    }
+    return entityMap;
+}
 
-    // Simple key/value format
-    return criteria.reduce((acc: Record<string, any>, item: any) => {
-        if (item.key && item.value !== undefined) {
-            acc[item.key] = item.value;
-        }
-        return acc;
-    }, { ...options });
+// Build entity map at module load time
+const ENTITY_MAP = discoverEntities();
+
+/**
+ * Look up entity metadata by name (case-insensitive).
+ */
+function getEntityMeta(entityName: string): EntityMeta | undefined {
+    return ENTITY_MAP.get(entityName.toLowerCase());
 }
 
 // ============================================================================
@@ -78,46 +139,87 @@ export const tools = [
         }
     },
     {
-        name: 'qbo_search_customers',
-        description: 'Search customers in QuickBooks Online. Use fetchAll=true to get ALL customers with automatic pagination.',
+        name: 'qbo_list_entities',
+        description: 'List all available QBO entity types that can be queried. Returns entity names, find methods, and descriptions. Use this to discover what data can be exported or queried from QuickBooks Online.',
+        schema: z.object({}),
+        handler: async (_sessionId: string, _args: any) => {
+            const entities = Array.from(ENTITY_MAP.values()).map(e => ({
+                entity: e.entityType,
+                description: e.description
+            }));
+
+            // Sort alphabetically
+            entities.sort((a, b) => a.entity.localeCompare(b.entity));
+
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: `Available QBO entities (${entities.length}): ${entities.map(e => e.entity).join(', ')}`
+                }],
+                data: entities
+            };
+        }
+    },
+    {
+        name: 'qbo_query',
+        description: 'Query any QuickBooks Online entity type. Use qbo_list_entities to see available types. Supports filtering, pagination, and fetchAll for complete data export. Examples: entity="Customer", entity="Purchase", entity="Deposit", entity="Invoice".',
         schema: z.object({
+            entity: z.string().describe('The QBO entity type to query (e.g., Customer, Vendor, Invoice, Purchase, Deposit, Transfer, JournalEntry)'),
             criteria: z.array(z.object({
                 field: z.string(),
                 value: z.union([z.string(), z.boolean(), z.number()]),
                 operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            offset: z.number().optional(),
-            fetchAll: z.boolean().optional()
+            })).optional().describe('Filter criteria as field/value/operator objects'),
+            limit: z.number().optional().describe('Max records per request (default 1000)'),
+            offset: z.number().optional().describe('Pagination offset'),
+            fetchAll: z.boolean().optional().describe('Set to true to fetch ALL records with automatic pagination')
         }),
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
+                const { entity, criteria = [], fetchAll, limit } = args.params || {};
 
-                // If fetchAll is true, use pagination to get ALL records
+                if (!entity) {
+                    return {
+                        content: [{ type: 'text' as const, text: 'Error: entity parameter is required. Use qbo_list_entities to see available types.' }],
+                        isError: true
+                    };
+                }
+
+                const meta = getEntityMeta(entity);
+                if (!meta) {
+                    const available = Array.from(ENTITY_MAP.values()).map(e => e.entityType).sort().join(', ');
+                    return {
+                        content: [{ type: 'text' as const, text: `Error: Unknown entity "${entity}". Available entities: ${available}` }],
+                        isError: true
+                    };
+                }
+
+                // fetchAll mode: paginate through all records
                 if (fetchAll) {
                     const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Customer', 'findCustomers', criteria
+                        qb, meta.entityType, meta.findMethod, criteria
                     );
+
+                    // Derive columns from first record
+                    const columns = records.length > 0 ? Object.keys(records[0]) : [];
 
                     return {
                         content: [
-                            { type: 'text' as const, text: `Found ${totalCount} customers (fetched all with pagination)` }
+                            { type: 'text' as const, text: `Found ${totalCount} ${meta.description.toLowerCase()} records (fetched all with pagination). Columns: ${columns.slice(0, 15).join(', ')}${columns.length > 15 ? '...' : ''}` }
                         ],
                         data: records,
                         totalCount
                     };
                 }
 
-                // Otherwise, single query with limit/offset for batch support
+                // Single query with limit/offset
                 const { offset = 0 } = args.params || {};
                 const searchCriteria: any = {
                     limit: limit || 1000,
                     offset: offset
                 };
 
-                // Add filter criteria if provided
                 if (Array.isArray(criteria)) {
                     criteria.forEach((c: any) => {
                         if (c.field && c.value !== undefined) {
@@ -127,843 +229,60 @@ export const tools = [
                 }
 
                 const result = await new Promise<any>((resolve, reject) => {
-                    qb.findCustomers(searchCriteria, (err: any, data: any) => {
+                    (qb as any)[meta.findMethod](searchCriteria, (err: any, data: any) => {
                         if (err) reject(err);
                         else resolve(data);
                     });
                 });
 
-                const customers = result?.QueryResponse?.Customer || [];
+                const records = result?.QueryResponse?.[meta.entityType] || [];
 
                 // Get total count to detect truncation
-                let totalCount = customers.length;
-                if (customers.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findCustomers');
+                let totalCount = records.length;
+                if (records.length >= (limit || 1000)) {
+                    totalCount = await getEntityCount(qb, meta.findMethod);
                 }
+
+                // Derive columns from first record
+                const columns = records.length > 0 ? Object.keys(records[0]) : [];
+
+                // Show first few records as preview (all fields, not cherry-picked)
+                const preview = records.slice(0, 5).map((r: any) => {
+                    // Show a compact summary of each record
+                    const summary: Record<string, any> = {};
+                    for (const key of columns.slice(0, 10)) {
+                        const val = r[key];
+                        // Flatten refs for readability
+                        if (val && typeof val === 'object' && 'name' in val) {
+                            summary[key] = val.name;
+                        } else if (Array.isArray(val)) {
+                            summary[key] = `[${val.length} items]`;
+                        } else {
+                            summary[key] = val;
+                        }
+                    }
+                    return summary;
+                });
 
                 const response: any = {
                     content: [
-                        { type: 'text' as const, text: `Found ${customers.length} customers${totalCount > customers.length ? ` (${totalCount} total, use fetchAll=true for all)` : ''}` },
-                        ...customers.slice(0, 10).map((c: any) => ({
+                        { type: 'text' as const, text: `Found ${records.length} ${meta.description.toLowerCase()} records${totalCount > records.length ? ` (${totalCount} total, use fetchAll=true for all)` : ''}. Columns: ${columns.slice(0, 15).join(', ')}${columns.length > 15 ? '...' : ''}` },
+                        ...preview.map((p: any) => ({
                             type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: c.Id,
-                                DisplayName: c.DisplayName,
-                                CompanyName: c.CompanyName,
-                                PrimaryEmailAddr: c.PrimaryEmailAddr?.Address,
-                                PrimaryPhone: c.PrimaryPhone?.FreeFormNumber,
-                                Balance: c.Balance,
-                                Active: c.Active
-                            })
+                            text: JSON.stringify(p)
                         }))
                     ],
-                    data: customers,  // Always include raw data for migration batching
+                    data: records,
                     totalCount,
-                    truncated: customers.length < totalCount
+                    truncated: records.length < totalCount
                 };
 
                 return response;
             } catch (error: any) {
                 return {
-                    content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                    content: [{ type: 'text' as const, text: `Error querying ${args.params?.entity || 'entity'}: ${error.message}` }],
                     isError: true
                 };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_invoices',
-        description: 'Search invoices in QuickBooks Online. Use fetchAll=true to get ALL invoices with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            offset: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                // If fetchAll is true, use pagination to get ALL records
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Invoice', 'findInvoices', criteria
-                    );
-
-                    return {
-                        content: [
-                            { type: 'text' as const, text: `Found ${totalCount} invoices (fetched all with pagination)` }
-                        ],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                // Otherwise, single query with limit/offset for batch support
-                const { offset = 0 } = args.params || {};
-                const searchCriteria: any = {
-                    limit: limit || 1000,
-                    offset: offset
-                };
-
-                if (Array.isArray(criteria)) {
-                    criteria.forEach((c: any) => {
-                        if (c.field && c.value !== undefined) {
-                            searchCriteria[c.field] = c.value;
-                        }
-                    });
-                }
-
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findInvoices(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const invoices = result?.QueryResponse?.Invoice || [];
-
-                let totalCount = invoices.length;
-                if (invoices.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findInvoices');
-                }
-
-                const response: any = {
-                    content: [
-                        { type: 'text' as const, text: `Found ${invoices.length} invoices${totalCount > invoices.length ? ` (${totalCount} total, use fetchAll=true for all)` : ''}` },
-                        ...invoices.slice(0, 10).map((inv: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: inv.Id,
-                                DocNumber: inv.DocNumber,
-                                CustomerRef: inv.CustomerRef,
-                                TxnDate: inv.TxnDate,
-                                DueDate: inv.DueDate,
-                                TotalAmt: inv.TotalAmt,
-                                Balance: inv.Balance
-                            })
-                        }))
-                    ],
-                    data: invoices,
-                    totalCount,
-                    truncated: invoices.length < totalCount
-                };
-
-                return response;
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
-                    isError: true
-                };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_vendors',
-        description: 'Search vendors in QuickBooks Online. Use fetchAll=true to get ALL vendors with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                // If fetchAll is true, use pagination to get ALL records
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Vendor', 'findVendors', criteria
-                    );
-
-                    return {
-                        content: [
-                            { type: 'text' as const, text: `Found ${totalCount} vendors (fetched all with pagination)` }
-                        ],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                // Otherwise, single query with limit/offset for batch support
-                const { offset = 0 } = args.params || {};
-                const searchCriteria: any = {
-                    limit: limit || 1000,
-                    offset: offset
-                };
-
-                if (Array.isArray(criteria)) {
-                    criteria.forEach((c: any) => {
-                        if (c.field && c.value !== undefined) {
-                            searchCriteria[c.field] = c.value;
-                        }
-                    });
-                }
-
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findVendors(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const vendors = result?.QueryResponse?.Vendor || [];
-
-                let totalCount = vendors.length;
-                if (vendors.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findVendors');
-                }
-
-                const response: any = {
-                    content: [
-                        { type: 'text' as const, text: `Found ${vendors.length} vendors${totalCount > vendors.length ? ` (${totalCount} total, use fetchAll=true for all)` : ''}` },
-                        ...vendors.slice(0, 10).map((v: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: v.Id,
-                                DisplayName: v.DisplayName,
-                                CompanyName: v.CompanyName,
-                                PrimaryEmailAddr: v.PrimaryEmailAddr?.Address,
-                                PrimaryPhone: v.PrimaryPhone?.FreeFormNumber,
-                                Balance: v.Balance,
-                                Active: v.Active,
-                                Vendor1099: v.Vendor1099
-                            })
-                        }))
-                    ],
-                    data: vendors,
-                    totalCount,
-                    truncated: vendors.length < totalCount
-                };
-
-                return response;
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
-                    isError: true
-                };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_accounts',
-        description: 'Search chart of accounts in QuickBooks Online. Use fetchAll=true to get ALL accounts with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                // If fetchAll is true, use pagination to get ALL records
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Account', 'findAccounts', criteria
-                    );
-
-                    return {
-                        content: [
-                            { type: 'text' as const, text: `Found ${totalCount} accounts (fetched all with pagination)` }
-                        ],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                // Otherwise, single query with limit/offset for batch support
-                const { offset = 0 } = args.params || {};
-                const searchCriteria: any = {
-                    limit: limit || 1000,
-                    offset: offset
-                };
-
-                if (Array.isArray(criteria)) {
-                    criteria.forEach((c: any) => {
-                        if (c.field && c.value !== undefined) {
-                            searchCriteria[c.field] = c.value;
-                        }
-                    });
-                }
-
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findAccounts(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const accounts = result?.QueryResponse?.Account || [];
-
-                let totalCount = accounts.length;
-                if (accounts.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findAccounts');
-                }
-
-                const response: any = {
-                    content: [
-                        { type: 'text' as const, text: `Found ${accounts.length} accounts${totalCount > accounts.length ? ` (${totalCount} total, use fetchAll=true for all)` : ''}` },
-                        ...accounts.slice(0, 10).map((acc: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: acc.Id,
-                                Name: acc.Name,
-                                AcctNum: acc.AcctNum,
-                                AccountType: acc.AccountType,
-                                AccountSubType: acc.AccountSubType,
-                                CurrentBalance: acc.CurrentBalance,
-                                Active: acc.Active
-                            })
-                        }))
-                    ],
-                    data: accounts,
-                    totalCount,
-                    truncated: accounts.length < totalCount
-                };
-
-                return response;
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
-                    isError: true
-                };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_bills',
-        description: 'Search bills in QuickBooks Online. Use fetchAll=true to get ALL bills with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                // If fetchAll is true, use pagination to get ALL records
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Bill', 'findBills', criteria
-                    );
-
-                    return {
-                        content: [
-                            { type: 'text' as const, text: `Found ${totalCount} bills (fetched all with pagination)` }
-                        ],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                // Otherwise, single query with limit/offset for batch support
-                const { offset = 0 } = args.params || {};
-                const searchCriteria: any = {
-                    limit: limit || 1000,
-                    offset: offset
-                };
-
-                if (Array.isArray(criteria)) {
-                    criteria.forEach((c: any) => {
-                        if (c.field && c.value !== undefined) {
-                            searchCriteria[c.field] = c.value;
-                        }
-                    });
-                }
-
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findBills(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const bills = result?.QueryResponse?.Bill || [];
-
-                let totalCount = bills.length;
-                if (bills.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findBills');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${bills.length} bills${totalCount > bills.length ? ` (${totalCount} total, use fetchAll=true for all)` : ''}` },
-                        ...bills.slice(0, 10).map((b: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: b.Id,
-                                DocNumber: b.DocNumber,
-                                VendorRef: b.VendorRef,
-                                TxnDate: b.TxnDate,
-                                DueDate: b.DueDate,
-                                TotalAmt: b.TotalAmt,
-                                Balance: b.Balance
-                            })
-                        }))
-                    ],
-                    data: bills,
-                    totalCount,
-                    truncated: bills.length < totalCount
-                };
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
-                    isError: true
-                };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_items',
-        description: 'Search items (products & services) in QuickBooks Online. Use fetchAll=true to get ALL items with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Item', 'findItems', criteria
-                    );
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${totalCount} items (fetched all with pagination)` }],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findItems(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const items = result?.QueryResponse?.Item || [];
-                let totalCount = items.length;
-                if (items.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findItems');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${items.length} items${totalCount > items.length ? ` (${totalCount} total)` : ''}` },
-                        ...items.slice(0, 10).map((i: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: i.Id, Name: i.Name, Type: i.Type, Active: i.Active,
-                                UnitPrice: i.UnitPrice, Description: i.Description
-                            })
-                        }))
-                    ],
-                    totalCount,
-                    truncated: items.length < totalCount
-                };
-            } catch (error: any) {
-                return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_employees',
-        description: 'Search employees in QuickBooks Online. Use fetchAll=true to get ALL employees with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Employee', 'findEmployees', criteria
-                    );
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${totalCount} employees (fetched all with pagination)` }],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findEmployees(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const employees = result?.QueryResponse?.Employee || [];
-                let totalCount = employees.length;
-                if (employees.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findEmployees');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${employees.length} employees${totalCount > employees.length ? ` (${totalCount} total)` : ''}` },
-                        ...employees.slice(0, 10).map((e: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: e.Id, DisplayName: e.DisplayName, GivenName: e.GivenName,
-                                FamilyName: e.FamilyName, Active: e.Active,
-                                PrimaryEmailAddr: e.PrimaryEmailAddr?.Address
-                            })
-                        }))
-                    ],
-                    totalCount,
-                    truncated: employees.length < totalCount
-                };
-            } catch (error: any) {
-                return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_estimates',
-        description: 'Search estimates in QuickBooks Online. Use fetchAll=true to get ALL estimates with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Estimate', 'findEstimates', criteria
-                    );
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${totalCount} estimates (fetched all with pagination)` }],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findEstimates(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const estimates = result?.QueryResponse?.Estimate || [];
-                let totalCount = estimates.length;
-                if (estimates.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findEstimates');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${estimates.length} estimates${totalCount > estimates.length ? ` (${totalCount} total)` : ''}` },
-                        ...estimates.slice(0, 10).map((e: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: e.Id, DocNumber: e.DocNumber, CustomerRef: e.CustomerRef,
-                                TxnDate: e.TxnDate, ExpirationDate: e.ExpirationDate,
-                                TotalAmt: e.TotalAmt, TxnStatus: e.TxnStatus
-                            })
-                        }))
-                    ],
-                    totalCount,
-                    truncated: estimates.length < totalCount
-                };
-            } catch (error: any) {
-                return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_journal_entries',
-        description: 'Search journal entries in QuickBooks Online. Use fetchAll=true to get ALL journal entries with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'JournalEntry', 'findJournalEntries', criteria
-                    );
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${totalCount} journal entries (fetched all with pagination)` }],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findJournalEntries(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const entries = result?.QueryResponse?.JournalEntry || [];
-                let totalCount = entries.length;
-                if (entries.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findJournalEntries');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${entries.length} journal entries${totalCount > entries.length ? ` (${totalCount} total)` : ''}` },
-                        ...entries.slice(0, 10).map((je: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: je.Id, DocNumber: je.DocNumber, TxnDate: je.TxnDate,
-                                TotalAmt: je.TotalAmt, Adjustment: je.Adjustment,
-                                LineCount: je.Line?.length || 0
-                            })
-                        }))
-                    ],
-                    totalCount,
-                    truncated: entries.length < totalCount
-                };
-            } catch (error: any) {
-                return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_payments',
-        description: 'Search customer payments in QuickBooks Online. Use fetchAll=true to get ALL payments with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Payment', 'findPayments', criteria
-                    );
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${totalCount} payments (fetched all with pagination)` }],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findPayments(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const payments = result?.QueryResponse?.Payment || [];
-                let totalCount = payments.length;
-                if (payments.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findPayments');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${payments.length} payments${totalCount > payments.length ? ` (${totalCount} total)` : ''}` },
-                        ...payments.slice(0, 10).map((p: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: p.Id, PaymentRefNum: p.PaymentRefNum, CustomerRef: p.CustomerRef,
-                                TxnDate: p.TxnDate, TotalAmt: p.TotalAmt,
-                                DepositToAccountRef: p.DepositToAccountRef
-                            })
-                        }))
-                    ],
-                    totalCount,
-                    truncated: payments.length < totalCount
-                };
-            } catch (error: any) {
-                return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_bill_payments',
-        description: 'Search bill payments (vendor payments) in QuickBooks Online. Use fetchAll=true to get ALL bill payments with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'BillPayment', 'findBillPayments', criteria
-                    );
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${totalCount} bill payments (fetched all with pagination)` }],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findBillPayments(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const billPayments = result?.QueryResponse?.BillPayment || [];
-                let totalCount = billPayments.length;
-                if (billPayments.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findBillPayments');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${billPayments.length} bill payments${totalCount > billPayments.length ? ` (${totalCount} total)` : ''}` },
-                        ...billPayments.slice(0, 10).map((bp: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: bp.Id, DocNumber: bp.DocNumber, VendorRef: bp.VendorRef,
-                                TxnDate: bp.TxnDate, TotalAmt: bp.TotalAmt, PayType: bp.PayType
-                            })
-                        }))
-                    ],
-                    totalCount,
-                    truncated: billPayments.length < totalCount
-                };
-            } catch (error: any) {
-                return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
-            }
-        }
-    },
-    {
-        name: 'qbo_search_purchases',
-        description: 'Search purchases (expenses, checks) in QuickBooks Online. Use fetchAll=true to get ALL purchases with automatic pagination.',
-        schema: z.object({
-            criteria: z.array(z.object({
-                field: z.string(),
-                value: z.union([z.string(), z.boolean(), z.number()]),
-                operator: z.enum(['=', '<', '>', '<=', '>=', 'LIKE', 'IN']).optional()
-            })).optional(),
-            limit: z.number().optional(),
-            fetchAll: z.boolean().optional()
-        }),
-        handler: async (sessionId: string, args: any) => {
-            try {
-                const qb = await getClient(sessionId, args);
-                const { criteria = [], fetchAll, limit } = args.params || {};
-
-                if (fetchAll) {
-                    const { records, totalCount } = await queryAllPaginated(
-                        qb, 'Purchase', 'findPurchases', criteria
-                    );
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${totalCount} purchases (fetched all with pagination)` }],
-                        data: records,
-                        totalCount
-                    };
-                }
-
-                const searchCriteria = buildSearchCriteria(criteria, { limit: limit || 1000 });
-                const result = await new Promise<any>((resolve, reject) => {
-                    qb.findPurchases(searchCriteria, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    });
-                });
-
-                const purchases = result?.QueryResponse?.Purchase || [];
-                let totalCount = purchases.length;
-                if (purchases.length >= (limit || 1000)) {
-                    totalCount = await getEntityCount(qb, 'findPurchases');
-                }
-
-                return {
-                    content: [
-                        { type: 'text' as const, text: `Found ${purchases.length} purchases${totalCount > purchases.length ? ` (${totalCount} total)` : ''}` },
-                        ...purchases.slice(0, 10).map((p: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify({
-                                Id: p.Id, DocNumber: p.DocNumber, TxnDate: p.TxnDate,
-                                TotalAmt: p.TotalAmt, PaymentType: p.PaymentType,
-                                AccountRef: p.AccountRef, EntityRef: p.EntityRef
-                            })
-                        }))
-                    ],
-                    totalCount,
-                    truncated: purchases.length < totalCount
-                };
-            } catch (error: any) {
-                return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }], isError: true };
             }
         }
     },
@@ -975,9 +294,11 @@ export const tools = [
             try {
                 const qb = await getClient(sessionId, args);
 
+                const accountMeta = getEntityMeta('Account')!;
+
                 // Fetch all accounts with pagination
                 const { records: accounts } = await queryAllPaginated(
-                    qb, 'Account', 'findAccounts', []
+                    qb, accountMeta.entityType, accountMeta.findMethod, []
                 );
 
                 // Account types that have normal DEBIT balances
@@ -998,18 +319,16 @@ export const tools = [
 
                 for (const account of accounts) {
                     const balance = parseFloat(account.CurrentBalance) || 0;
-                    if (Math.abs(balance) < 0.01) continue; // Skip zero-balance accounts
+                    if (Math.abs(balance) < 0.01) continue;
 
                     const accountType = account.AccountType || '';
                     const isDebitNormal = debitNormalTypes.some(t => accountType.includes(t));
                     const isCreditNormal = creditNormalTypes.some(t => accountType.includes(t));
 
-                    // Determine debit/credit amounts based on normal balance and actual balance sign
                     let debit = 0;
                     let credit = 0;
 
                     if (isDebitNormal) {
-                        // For debit-normal accounts: positive balance = debit, negative = credit
                         if (balance > 0) {
                             debit = balance;
                             totalDebits += balance;
@@ -1018,7 +337,6 @@ export const tools = [
                             totalCredits += Math.abs(balance);
                         }
                     } else if (isCreditNormal) {
-                        // For credit-normal accounts: positive balance = credit, negative = debit
                         if (balance > 0) {
                             credit = balance;
                             totalCredits += balance;
@@ -1027,7 +345,6 @@ export const tools = [
                             totalDebits += Math.abs(balance);
                         }
                     } else {
-                        // Unknown type - treat positive as debit
                         if (balance > 0) {
                             debit = balance;
                             totalDebits += balance;
@@ -1102,23 +419,16 @@ export const tools = [
                 const qb = await getClient(sessionId, args);
                 const { as_of_date, date_macro } = args.params || {};
 
-                // Build report options
-                // Note: QBO Trial Balance needs both start_date and end_date, or date_macro
                 const reportOptions: any = {};
                 if (as_of_date) {
-                    // For trial balance, start_date should be beginning of time or fiscal year
-                    // Using a very early date to capture all history
                     reportOptions.start_date = '2000-01-01';
                     reportOptions.end_date = as_of_date;
                 } else if (date_macro) {
                     reportOptions.date_macro = date_macro;
                 } else {
-                    // Default to All Dates
                     reportOptions.date_macro = 'All';
                 }
 
-                // Call the actual Trial Balance report API
-                // Note: reportTrialBalance exists in node-quickbooks but types may be incomplete
                 console.log('[TrialBalance] Options:', JSON.stringify(reportOptions));
                 const result = await new Promise<any>((resolve, reject) => {
                     (qb as any).reportTrialBalance(reportOptions, (err: any, data: any) => {
@@ -1133,28 +443,21 @@ export const tools = [
                     });
                 });
 
-                // Parse the report response
                 const header = result?.Header || {};
                 const columns = result?.Columns?.Column || [];
 
-                // DEBUG: Check for nested row structure (Rows.Row may have Section/Data arrays)
                 let rows = result?.Rows?.Row || [];
                 console.log('[TrialBalance] Raw Rows:', JSON.stringify(result?.Rows || {}).substring(0, 2000));
 
-                // Handle nested structure: Rows.Row may contain { Header, Rows, Summary } sections
-                // Extract actual account rows from nested structure
                 const flattenedRows: any[] = [];
                 for (const row of rows) {
                     if (row.Rows?.Row) {
-                        // This row contains nested account rows
                         for (const nestedRow of row.Rows.Row) {
                             flattenedRows.push(nestedRow);
                         }
                     } else if (row.ColData) {
-                        // Direct account row
                         flattenedRows.push(row);
                     }
-                    // Summary rows (row.Summary) will also be included below
                     if (row.Summary) {
                         flattenedRows.push({ Summary: row.Summary, type: row.type });
                     }
@@ -1166,16 +469,11 @@ export const tools = [
                     console.log('[TrialBalance] First row:', JSON.stringify(rows[0]).substring(0, 500));
                 }
 
-                // Extract column names
-                const colNames = columns.map((c: any) => c.ColTitle || c.ColType);
-
-                // Parse rows into structured data
                 const lines: any[] = [];
                 let totalDebits = 0;
                 let totalCredits = 0;
 
                 for (const row of rows) {
-                    // Direct ColData format: [{value: "name", id: "qboId"}, {value: "debit"}, {value: "credit"}]
                     if (row.ColData && Array.isArray(row.ColData)) {
                         const colData = row.ColData;
                         const name = colData[0]?.value || '';
@@ -1185,17 +483,14 @@ export const tools = [
                         const debit = parseFloat(debitStr) || 0;
                         const credit = parseFloat(creditStr) || 0;
 
-                        // Skip empty rows and TOTAL row (handle separately)
                         if (name && name !== 'TOTAL' && (debit !== 0 || credit !== 0)) {
                             lines.push({ qboId, name, debit, credit });
                             totalDebits += debit;
                             totalCredits += credit;
                         } else if (name === 'TOTAL') {
-                            // Store total for verification
                             lines.push({ name: 'TOTAL', debit, credit, isTotal: true });
                         }
                     } else if (row.Summary?.ColData) {
-                        // Summary row format
                         const colData = row.Summary.ColData;
                         const name = colData[0]?.value || 'TOTAL';
                         const debit = parseFloat(colData[1]?.value) || 0;
@@ -1245,32 +540,35 @@ export const tools = [
                 const qb = await getClient(sessionId, args);
                 const session = args.statelessAuth ? null : getSessionInfo(sessionId);
 
-                // Fetch counts for each entity type using the count helper
-                const [
-                    customerCount, invoiceCount, vendorCount, accountCount, billCount,
-                    itemCount, employeeCount, estimateCount, journalEntryCount,
-                    paymentCount, billPaymentCount, purchaseCount
-                ] = await Promise.all([
-                    getEntityCount(qb, 'findCustomers').catch(() => 0),
-                    getEntityCount(qb, 'findInvoices').catch(() => 0),
-                    getEntityCount(qb, 'findVendors').catch(() => 0),
-                    getEntityCount(qb, 'findAccounts').catch(() => 0),
-                    getEntityCount(qb, 'findBills').catch(() => 0),
-                    getEntityCount(qb, 'findItems').catch(() => 0),
-                    getEntityCount(qb, 'findEmployees').catch(() => 0),
-                    getEntityCount(qb, 'findEstimates').catch(() => 0),
-                    getEntityCount(qb, 'findJournalEntries').catch(() => 0),
-                    getEntityCount(qb, 'findPayments').catch(() => 0),
-                    getEntityCount(qb, 'findBillPayments').catch(() => 0),
-                    getEntityCount(qb, 'findPurchases').catch(() => 0)
-                ]);
+                // Key entities to count for migration analysis
+                const migrationEntities = [
+                    'Customer', 'Vendor', 'Account', 'Item', 'Employee',
+                    'Invoice', 'Estimate', 'Bill', 'Payment', 'BillPayment',
+                    'JournalEntry', 'Purchase', 'Deposit', 'Transfer',
+                    'CreditMemo', 'SalesReceipt', 'RefundReceipt', 'VendorCredit'
+                ];
+
+                // Get counts dynamically
+                const counts: Record<string, number> = {};
+                const countPromises = migrationEntities.map(async (entityName) => {
+                    const meta = getEntityMeta(entityName);
+                    if (!meta) return;
+                    try {
+                        const count = await getEntityCount(qb, meta.findMethod);
+                        counts[entityName] = count;
+                    } catch {
+                        counts[entityName] = 0;
+                    }
+                });
+                await Promise.all(countPromises);
 
                 // Get unpaid invoice total
                 let unpaidTotal = 0;
                 let unpaidCount = 0;
                 try {
+                    const invoiceMeta = getEntityMeta('Invoice')!;
                     const unpaidResult = await new Promise<any>((resolve, reject) => {
-                        qb.findInvoices([{ field: 'Balance', value: '0', operator: '>' }], (err: any, data: any) => {
+                        (qb as any)[invoiceMeta.findMethod]([{ field: 'Balance', value: '0', operator: '>' }], (err: any, data: any) => {
                             if (err) reject(err);
                             else resolve(data);
                         });
@@ -1285,20 +583,7 @@ export const tools = [
                 const summary = {
                     companyName: session?.companyName || (args.statelessAuth ? 'Connected via token' : 'Unknown'),
                     realmId: session?.realmId || args.statelessAuth?.realmId,
-                    entities: {
-                        customers: customerCount,
-                        vendors: vendorCount,
-                        accounts: accountCount,
-                        items: itemCount,
-                        employees: employeeCount,
-                        invoices: invoiceCount,
-                        estimates: estimateCount,
-                        bills: billCount,
-                        payments: paymentCount,
-                        billPayments: billPaymentCount,
-                        journalEntries: journalEntryCount,
-                        purchases: purchaseCount
-                    },
+                    entities: counts,
                     financials: {
                         unpaidInvoices: unpaidCount,
                         unpaidTotal: unpaidTotal
