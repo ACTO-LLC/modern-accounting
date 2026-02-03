@@ -422,20 +422,23 @@ class DabRestClient {
 
     _buildHeaders(authToken = null, role = null) {
         const headers = { 'Content-Type': 'application/json' };
+
+        // DAB requires X-MS-API-ROLE header for authorization
+        // Always include it - for local DAB Simulator auth and production
+        const effectiveRole = role || 'Admin';
+        headers['X-MS-API-ROLE'] = effectiveRole;
+
         if (authToken) {
             headers['Authorization'] = `Bearer ${authToken}`;
-            // DAB requires X-MS-API-ROLE header to use non-default roles
-            // Default to 'Admin' for authenticated users performing writes
-            headers['X-MS-API-ROLE'] = role || 'Admin';
 
             // Log token details for debugging
             const payload = this._decodeJwtPayload(authToken);
             if (payload) {
                 console.log(`[DAB REST] Token: aud=${payload.aud}, roles=${JSON.stringify(payload.roles)}, sub=${payload.sub?.substring(0, 8)}...`);
             }
-            console.log(`[DAB REST] Headers: X-MS-API-ROLE=${headers['X-MS-API-ROLE']}`);
+            console.log(`[DAB REST] Headers: X-MS-API-ROLE=${effectiveRole}`);
         } else {
-            console.log('[DAB REST] No auth token provided for request');
+            console.log(`[DAB REST] No auth token - using X-MS-API-ROLE=${effectiveRole} for local DAB Simulator`);
         }
         return headers;
     }
@@ -6385,19 +6388,32 @@ app.get('/api/plaid/verify-bank/unverified-employees', async (req, res) => {
 // Transaction Learning Endpoints
 // ============================================================================
 
+// Helper to extract Bearer token from request
+function extractAuthToken(req) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.substring(7);
+    }
+    return null;
+}
+
 // Approve transaction and learn from correction
 app.post('/api/transactions/:id/approve', async (req, res) => {
     try {
         const { id } = req.params;
         const { accountId, category, memo } = req.body;
+        const authToken = extractAuthToken(req);
 
         if (!accountId) {
             return res.status(400).json({ error: 'accountId is required' });
         }
 
-        // Get the original transaction
-        const txnResponse = await axios.get(`${DAB_REST_URL}/banktransactions/Id/${id}`);
-        const transaction = txnResponse.data?.value?.[0];
+        // Get the original transaction using dab client
+        const txnResult = await dab.getById('banktransactions', id, authToken);
+        if (!txnResult.success) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+        const transaction = txnResult.value?.value?.[0] || txnResult.value;
 
         if (!transaction) {
             return res.status(404).json({ error: 'Transaction not found' });
@@ -6407,14 +6423,19 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
         const suggestedAccountId = transaction.SuggestedAccountId;
         const shouldLearn = suggestedAccountId && suggestedAccountId.toLowerCase() !== accountId.toLowerCase();
 
-        // Update the transaction
-        await axios.patch(`${DAB_REST_URL}/banktransactions/Id/${id}`, {
+        // Update the transaction using dab client
+        const updateResult = await dab.update('banktransactions', id, {
             ApprovedAccountId: accountId,
             ApprovedCategory: category || transaction.SuggestedCategory,
             ApprovedMemo: memo || transaction.SuggestedMemo,
             Status: 'Approved',
             ReviewedDate: new Date().toISOString()
-        });
+        }, authToken);
+
+        if (!updateResult.success) {
+            console.error('Transaction update failed:', updateResult.error);
+            return res.status(500).json({ error: updateResult.error || 'Failed to update transaction' });
+        }
 
         // Learn from the correction - create a rule if different from AI suggestion
         let ruleCreated = false;
@@ -6426,14 +6447,14 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
 
             if (pattern) {
                 try {
-                    // Check if rule already exists
-                    const existingRules = await axios.get(
-                        `${DAB_REST_URL}/categorizationrules?$filter=MatchValue eq '${pattern.replace(/'/g, "''")}'`
-                    );
+                    // Check if rule already exists using dab client
+                    const existingRulesResult = await dab.get('categorizationrules', {
+                        filter: `MatchValue eq '${pattern.replace(/'/g, "''")}'`
+                    }, authToken);
 
-                    if (!existingRules.data?.value?.length) {
-                        // Create new rule
-                        await axios.post(`${DAB_REST_URL}/categorizationrules`, {
+                    if (existingRulesResult.success && (!existingRulesResult.value || existingRulesResult.value.length === 0)) {
+                        // Create new rule using dab client
+                        const createResult = await dab.create('categorizationrules', {
                             MatchType: 'contains',
                             MatchField: 'Description',
                             MatchValue: pattern,
@@ -6441,9 +6462,11 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
                             Category: category || transaction.SuggestedCategory,
                             Priority: 50,  // User-learned rules have higher priority
                             CreatedBy: 'user-feedback'
-                        });
-                        ruleCreated = true;
-                        console.log(`Learning: Created rule for "${pattern}" -> ${category}`);
+                        }, authToken);
+                        if (createResult.success) {
+                            ruleCreated = true;
+                            console.log(`Learning: Created rule for "${pattern}" -> ${category}`);
+                        }
                     }
                 } catch (ruleError) {
                     console.warn('Failed to create learning rule:', ruleError.message);
@@ -6467,30 +6490,43 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
 app.post('/api/transactions/batch-approve', async (req, res) => {
     try {
         const { transactions } = req.body;  // Array of { id, accountId, category }
+        const authToken = extractAuthToken(req);
 
         if (!Array.isArray(transactions) || transactions.length === 0) {
             return res.status(400).json({ error: 'transactions array is required' });
         }
 
+        console.log(`[Batch Approve] Processing ${transactions.length} transactions`);
+
         const results = [];
         for (const txn of transactions) {
             try {
-                await axios.patch(`${DAB_REST_URL}/banktransactions/Id/${txn.id}`, {
+                // Use dab client with proper headers for DAB Simulator auth
+                const updateResult = await dab.update('banktransactions', txn.id, {
                     ApprovedAccountId: txn.accountId,
                     ApprovedCategory: txn.category,
                     Status: 'Approved',
                     ReviewedDate: new Date().toISOString()
-                });
-                results.push({ id: txn.id, success: true });
+                }, authToken);
+
+                if (updateResult.success) {
+                    results.push({ id: txn.id, success: true });
+                } else {
+                    results.push({ id: txn.id, success: false, error: updateResult.error });
+                }
             } catch (err) {
                 results.push({ id: txn.id, success: false, error: err.message });
             }
         }
 
+        const approved = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+        console.log(`[Batch Approve] Completed: ${approved} approved, ${failed} failed`);
+
         res.json({
             success: true,
-            approved: results.filter(r => r.success).length,
-            failed: results.filter(r => !r.success).length,
+            approved,
+            failed,
             results
         });
     } catch (error) {
@@ -6502,8 +6538,11 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
 // Get categorization rules
 app.get('/api/categorization-rules', async (req, res) => {
     try {
-        const response = await axios.get(`${DAB_REST_URL}/categorizationrules?$orderby=Priority,HitCount desc`);
-        res.json({ rules: response.data?.value || [] });
+        const authToken = extractAuthToken(req);
+        const result = await dab.get('categorizationrules', {
+            orderby: ['Priority', 'HitCount desc']
+        }, authToken);
+        res.json({ rules: result.value || [] });
     } catch (error) {
         console.error('Get rules error:', error.message);
         res.status(500).json({ error: error.message || 'Failed to get rules' });
@@ -6514,18 +6553,20 @@ app.get('/api/categorization-rules', async (req, res) => {
 app.post('/api/post-transactions', async (req, res) => {
     try {
         const { transactionIds } = req.body;
+        const authToken = extractAuthToken(req);
 
         if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
             return res.status(400).json({ error: 'transactionIds array is required' });
         }
 
+        console.log(`[Post Transactions] Processing ${transactionIds.length} transactions`);
         const results = { posted: 0, failed: 0, errors: [] };
 
         for (const txnId of transactionIds) {
             try {
-                // Get the transaction
-                const txnResponse = await axios.get(`${DAB_REST_URL}/banktransactions/Id/${txnId}`);
-                const txn = txnResponse.data?.value?.[0];
+                // Get the transaction using dab client
+                const txnResult = await dab.getById('banktransactions', txnId, authToken);
+                const txn = txnResult.value?.value?.[0] || txnResult.value;
 
                 if (!txn) {
                     results.failed++;
@@ -6550,8 +6591,8 @@ app.post('/api/post-transactions', async (req, res) => {
                 const amount = Math.abs(parseFloat(txn.Amount));
                 const isOutflow = parseFloat(txn.Amount) < 0;
 
-                // Create the journal entry header
-                await axios.post(`${DAB_REST_URL}/journalentries`, {
+                // Create the journal entry header using dab client
+                const jeResult = await dab.create('journalentries', {
                     Id: journalEntryId,
                     TransactionDate: txn.TransactionDate,
                     Description: txn.ApprovedMemo || txn.Description,
@@ -6563,7 +6604,13 @@ app.post('/api/post-transactions', async (req, res) => {
                     PostedBy: 'system',
                     SourceSystem: 'BankTransaction',
                     SourceId: txnId
-                });
+                }, authToken);
+
+                if (!jeResult.success) {
+                    results.failed++;
+                    results.errors.push({ id: txnId, error: `Failed to create journal entry: ${jeResult.error}` });
+                    continue;
+                }
 
                 // Create journal entry lines (double-entry)
                 // For outflow (negative amount): Debit expense/asset, Credit bank
@@ -6573,7 +6620,7 @@ app.post('/api/post-transactions', async (req, res) => {
 
                 if (isOutflow) {
                     // Debit the expense/asset account
-                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                    await dab.create('journalentrylines', {
                         Id: line1Id,
                         JournalEntryId: journalEntryId,
                         AccountId: txn.ApprovedAccountId,
@@ -6581,9 +6628,9 @@ app.post('/api/post-transactions', async (req, res) => {
                         Debit: amount,
                         Credit: 0,
                         CreatedAt: new Date().toISOString()
-                    });
+                    }, authToken);
                     // Credit the bank account
-                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                    await dab.create('journalentrylines', {
                         Id: line2Id,
                         JournalEntryId: journalEntryId,
                         AccountId: txn.SourceAccountId,
@@ -6591,10 +6638,10 @@ app.post('/api/post-transactions', async (req, res) => {
                         Debit: 0,
                         Credit: amount,
                         CreatedAt: new Date().toISOString()
-                    });
+                    }, authToken);
                 } else {
                     // Debit the bank account
-                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                    await dab.create('journalentrylines', {
                         Id: line1Id,
                         JournalEntryId: journalEntryId,
                         AccountId: txn.SourceAccountId,
@@ -6602,9 +6649,9 @@ app.post('/api/post-transactions', async (req, res) => {
                         Debit: amount,
                         Credit: 0,
                         CreatedAt: new Date().toISOString()
-                    });
+                    }, authToken);
                     // Credit the income/liability account
-                    await axios.post(`${DAB_REST_URL}/journalentrylines`, {
+                    await dab.create('journalentrylines', {
                         Id: line2Id,
                         JournalEntryId: journalEntryId,
                         AccountId: txn.ApprovedAccountId,
@@ -6612,14 +6659,14 @@ app.post('/api/post-transactions', async (req, res) => {
                         Debit: 0,
                         Credit: amount,
                         CreatedAt: new Date().toISOString()
-                    });
+                    }, authToken);
                 }
 
                 // Update the bank transaction status and link to journal entry
-                await axios.patch(`${DAB_REST_URL}/banktransactions/Id/${txnId}`, {
+                await dab.update('banktransactions', txnId, {
                     Status: 'Posted',
                     JournalEntryId: journalEntryId
-                });
+                }, authToken);
 
                 results.posted++;
             } catch (txnError) {
@@ -6629,6 +6676,7 @@ app.post('/api/post-transactions', async (req, res) => {
             }
         }
 
+        console.log(`[Post Transactions] Completed: ${results.posted} posted, ${results.failed} failed`);
         res.json({
             success: true,
             count: results.posted,
