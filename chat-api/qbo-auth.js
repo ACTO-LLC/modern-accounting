@@ -555,36 +555,50 @@ class QBOAuth {
      *   Any key matching a QBO field name will be added as a WHERE condition.
      */
     async searchEntity(entityType, criteria = {}) {
+        // Validate entity type: must be PascalCase alphanumeric only (prevents injection)
+        if (!entityType || !/^[A-Z][a-zA-Z]+$/.test(entityType)) {
+            throw new Error(`Invalid entity type: "${entityType}". Must be PascalCase (e.g., Customer, Purchase, Deposit).`);
+        }
+
         const { fetchAll, limit, startDate, endDate, name, active, type,
                 customerName, vendorName, ...extraFilters } = criteria;
+
+        // Escape single quotes in string values to prevent QBO query injection
+        const esc = (val) => typeof val === 'string' ? val.replace(/'/g, "''") : val;
 
         let baseQuery = `SELECT * FROM ${entityType}`;
         const conditions = [];
 
-        // Common filter patterns
+        // Common filter patterns (all string values escaped)
         if (name) {
             // Most entities use DisplayName; Account/Item use Name
             const nameField = ['Account', 'Item', 'Class', 'Department'].includes(entityType) ? 'Name' : 'DisplayName';
-            conditions.push(`${nameField} LIKE '%${name}%'`);
+            conditions.push(`${nameField} LIKE '%${esc(name)}%'`);
         }
         if (active !== undefined) {
             conditions.push(`Active = ${active}`);
         }
         if (type) {
             const typeField = entityType === 'Account' ? 'AccountType' : 'Type';
-            conditions.push(`${typeField} = '${type}'`);
+            conditions.push(`${typeField} = '${esc(type)}'`);
         }
         if (startDate) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+                throw new Error('Invalid startDate format. Use YYYY-MM-DD.');
+            }
             conditions.push(`TxnDate >= '${startDate}'`);
         }
         if (endDate) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+                throw new Error('Invalid endDate format. Use YYYY-MM-DD.');
+            }
             conditions.push(`TxnDate <= '${endDate}'`);
         }
         if (customerName) {
-            conditions.push(`CustomerRef LIKE '%${customerName}%'`);
+            conditions.push(`CustomerRef LIKE '%${esc(customerName)}%'`);
         }
         if (vendorName) {
-            conditions.push(`VendorRef LIKE '%${vendorName}%'`);
+            conditions.push(`VendorRef LIKE '%${esc(vendorName)}%'`);
         }
 
         if (conditions.length > 0) {
