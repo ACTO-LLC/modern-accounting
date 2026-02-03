@@ -6060,7 +6060,8 @@ function getQboSessionId(req) {
 }
 
 // Initiate QBO OAuth flow (now uses direct OAuth, saves to DB)
-app.post('/api/qbo/connect', async (req, res) => {
+// Requires authentication to prevent unauthorized connection attempts
+app.post('/api/qbo/connect', validateJWT, async (req, res) => {
     try {
         const state = randomUUID(); // Use as session correlation
         const authUrl = qboAuth.getAuthorizationUrl(state);
@@ -6150,7 +6151,8 @@ app.get('/api/qbo/callback', async (req, res) => {
 });
 
 // Get QBO connection status (now uses DB-backed auth)
-app.get('/api/qbo/status', async (req, res) => {
+// Requires authentication to prevent exposing company info
+app.get('/api/qbo/status', validateJWT, async (req, res) => {
     try {
         const status = await qboAuth.getStatus();
 
@@ -6165,7 +6167,8 @@ app.get('/api/qbo/status', async (req, res) => {
 });
 
 // Disconnect QBO (marks connection as inactive in DB)
-app.post('/api/qbo/disconnect', async (req, res) => {
+// Requires authentication to prevent unauthorized disconnection
+app.post('/api/qbo/disconnect', validateJWT, async (req, res) => {
     try {
         const status = await qboAuth.getStatus();
         if (status.realmId) {
@@ -6179,7 +6182,8 @@ app.post('/api/qbo/disconnect', async (req, res) => {
 });
 
 // Analyze QBO data for migration
-app.get('/api/qbo/analyze', async (req, res) => {
+// Requires authentication to prevent exposing QBO entity counts
+app.get('/api/qbo/analyze', validateJWT, async (req, res) => {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -6199,7 +6203,8 @@ app.get('/api/qbo/analyze', async (req, res) => {
 
 // Update source tracking for accounts/customers imported from QBO
 // This links existing records to their QBO source for migration tracking
-app.post('/api/qbo/update-source-tracking', async (req, res) => {
+// Requires authentication to prevent unauthorized database modifications
+app.post('/api/qbo/update-source-tracking', validateJWT, async (req, res) => {
     const dryRun = req.query.dryRun === 'true';
     const results = { accounts: { matched: 0, updated: 0, unmatched: [] }, customers: { matched: 0, updated: 0, unmatched: [] } };
 
