@@ -6,7 +6,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { plaidService } from './plaid-service.js';
+import { plaidService, getDabHeaders } from './plaid-service.js';
 import axios from 'axios';
 import crypto from 'crypto';
 import { OpenAI } from 'openai';
@@ -55,6 +55,7 @@ class PlaidSync {
         try {
             const accessToken = await plaidService.getAccessToken(itemId);
             const cursor = connection.LastSyncCursor || null;
+            console.log(`[Plaid Sync DEBUG] Connection ID: ${connection.Id}, Cursor: ${cursor ? cursor.substring(0, 20) + '...' : 'null'}`);
 
             // Call Plaid transactions/sync endpoint
             let hasMore = true;
@@ -71,6 +72,7 @@ class PlaidSync {
                 });
 
                 const { added, modified, removed, next_cursor, has_more } = syncResponse.data;
+                console.log(`[Plaid Sync DEBUG] Plaid returned: added=${added?.length || 0}, modified=${modified?.length || 0}, removed=${removed?.length || 0}, has_more=${has_more}`);
 
                 // Process added transactions
                 if (added && added.length > 0) {
@@ -120,7 +122,8 @@ class PlaidSync {
         let successCount = 0;
 
         // Get chart of accounts for categorization
-        const accountsResponse = await axios.get(`${DAB_API_URL}/accounts`);
+        const headers = await getDabHeaders();
+        const accountsResponse = await axios.get(`${DAB_API_URL}/accounts`, { headers });
         const accounts = accountsResponse.data?.value || [];
 
         // Get Plaid accounts for this connection
@@ -402,8 +405,10 @@ Respond in JSON format:
     async checkCategorizationRules(description, merchant) {
         try {
             // Get active rules ordered by priority
+            const headers = await getDabHeaders();
             const response = await axios.get(
-                `${DAB_API_URL}/categorizationrules?$filter=IsActive eq true&$orderby=Priority`
+                `${DAB_API_URL}/categorizationrules?$filter=IsActive eq true&$orderby=Priority`,
+                { headers }
             );
             const rules = response.data?.value || [];
 
@@ -431,9 +436,10 @@ Respond in JSON format:
 
                 if (matches) {
                     // Increment hit count (fire and forget)
+                    const patchHeaders = await getDabHeaders();
                     axios.patch(`${DAB_API_URL}/categorizationrules/Id/${rule.Id}`, {
                         HitCount: (rule.HitCount || 0) + 1
-                    }).catch(() => {});
+                    }, { headers: patchHeaders }).catch(() => {});
 
                     return rule;
                 }
@@ -441,7 +447,10 @@ Respond in JSON format:
 
             return null;
         } catch (error) {
-            console.warn('Rule check error:', error.message);
+            // 404 means categorizationrules entity doesn't exist yet - that's OK
+            if (error.response?.status !== 404) {
+                console.warn('Rule check error:', error.message);
+            }
             return null;
         }
     }
@@ -464,6 +473,7 @@ Respond in JSON format:
 
         // Create new account
         const newId = crypto.randomUUID();
+        const headers = await getDabHeaders();
         await axios.post(
             `${DAB_API_URL}/accounts`,
             {
@@ -474,7 +484,7 @@ Respond in JSON format:
                 Description: `Auto-created from Plaid bank feed`,
                 IsActive: true,
             },
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
 
         console.log(`Created source account: ${fullName} (${type})`);
@@ -486,7 +496,8 @@ Respond in JSON format:
      */
     async getTransactionByPlaidId(plaidTransactionId) {
         try {
-            const response = await axios.get(`${DAB_API_URL}/banktransactions`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/banktransactions`, { headers });
             const transactions = response.data?.value || [];
             return transactions.find(t => t.PlaidTransactionId === plaidTransactionId) || null;
         } catch (error) {
@@ -502,8 +513,11 @@ Respond in JSON format:
     async checkForDuplicates(date, amount, description) {
         try {
             // Build filter for same date and amount
-            const filter = `TransactionDate eq '${date}' and Amount eq ${amount}`;
-            const response = await axios.get(`${DAB_API_URL}/banktransactions?$filter=${encodeURIComponent(filter)}`);
+            // Use ISO datetime format for OData compatibility
+            const dateForFilter = `${date}T00:00:00Z`;
+            const filter = `TransactionDate eq ${dateForFilter} and Amount eq ${amount}`;
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/banktransactions?$filter=${encodeURIComponent(filter)}`, { headers });
             const candidates = response.data?.value || [];
 
             if (candidates.length === 0) return null;
@@ -544,10 +558,11 @@ Respond in JSON format:
      * Save bank transaction to database
      */
     async saveBankTransaction(transaction) {
+        const headers = await getDabHeaders();
         await axios.post(
             `${DAB_API_URL}/banktransactions`,
             transaction,
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -555,10 +570,11 @@ Respond in JSON format:
      * Update bank transaction
      */
     async updateBankTransaction(id, updates) {
+        const headers = await getDabHeaders();
         await axios.patch(
             `${DAB_API_URL}/banktransactions/Id/${id}`,
             updates,
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -566,6 +582,7 @@ Respond in JSON format:
      * Update connection status
      */
     async updateConnectionStatus(connectionId, status, errorMessage = null) {
+        const headers = await getDabHeaders();
         await axios.patch(
             `${DAB_API_URL}/plaidconnections/Id/${connectionId}`,
             {
@@ -573,7 +590,7 @@ Respond in JSON format:
                 SyncErrorMessage: errorMessage,
                 UpdatedAt: new Date().toISOString(),
             },
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -581,6 +598,7 @@ Respond in JSON format:
      * Update connection after successful sync
      */
     async updateConnectionAfterSync(connectionId, cursor, status) {
+        const headers = await getDabHeaders();
         await axios.patch(
             `${DAB_API_URL}/plaidconnections/Id/${connectionId}`,
             {
@@ -590,7 +608,7 @@ Respond in JSON format:
                 SyncErrorMessage: null,
                 UpdatedAt: new Date().toISOString(),
             },
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -639,6 +657,7 @@ Respond in JSON format:
                 const plaidAccount = plaidAccounts.find(a => a.PlaidAccountId === account.account_id);
 
                 if (plaidAccount) {
+                    const headers = await getDabHeaders();
                     await axios.patch(
                         `${DAB_API_URL}/plaidaccounts/Id/${plaidAccount.Id}`,
                         {
@@ -646,7 +665,7 @@ Respond in JSON format:
                             AvailableBalance: account.balances?.available,
                             UpdatedAt: new Date().toISOString(),
                         },
-                        { headers: { 'Content-Type': 'application/json' } }
+                        { headers }
                     );
                 }
             }

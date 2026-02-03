@@ -61,17 +61,19 @@ async function getDabAuthToken() {
 /**
  * Build headers for DAB API calls
  * Uses Service role (assigned to App Service managed identity)
+ * For local development with Simulator auth, X-MS-API-ROLE is required even without token
  */
 async function getDabHeaders() {
     const headers = { 'Content-Type': 'application/json' };
     const token = await getDabAuthToken();
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        // Service role is assigned to the App Service managed identity
         headers['X-MS-API-ROLE'] = 'Service';
         console.log('[Plaid] Using managed identity token with Service role');
     } else {
-        console.log('[Plaid] No managed identity token available');
+        // For local development with DAB Simulator auth, still need role header
+        headers['X-MS-API-ROLE'] = 'Service';
+        console.log('[Plaid] Using Service role for local DAB (no token)');
     }
     return headers;
 }
@@ -629,6 +631,26 @@ class PlaidService {
     }
 
     /**
+     * Refresh transactions - triggers Plaid to fetch new transaction data
+     * For sandbox with user_transactions_dynamic, this generates test transactions
+     */
+    async refreshTransactions(itemId) {
+        if (!this.client) {
+            throw new Error('Plaid client not initialized');
+        }
+
+        const accessToken = await this.getAccessToken(itemId);
+
+        console.log(`[Plaid] Refreshing transactions for item ${itemId}`);
+        const response = await this.client.transactionsRefresh({
+            access_token: accessToken,
+        });
+
+        console.log(`[Plaid] Transactions refresh triggered for item ${itemId}`);
+        return response.data;
+    }
+
+    /**
      * Reset sandbox item to get fresh transactions
      */
     async resetSandboxItem(itemId) {
@@ -891,4 +913,5 @@ class PlaidService {
 }
 
 export const plaidService = new PlaidService();
+export { getDabHeaders };
 export default plaidService;
