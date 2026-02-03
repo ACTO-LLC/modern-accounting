@@ -1641,6 +1641,68 @@ const tools = [
             }
         }
     },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_list_export_entities',
+            description: 'List available entities that can be exported from QuickBooks Online. Returns entity names, supported filters, and default columns. Use this to help users understand what QBO data they can export.',
+            parameters: {
+                type: 'object',
+                properties: {}
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'qbo_export_data',
+            description: 'Export data from QuickBooks Online to a downloadable file. Supports JSON and CSV formats. Use qbo_list_export_entities first to see available entities. Returns a download URL for the exported file.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    entity: {
+                        type: 'string',
+                        enum: ['customers', 'vendors', 'accounts', 'items', 'invoices', 'bills', 'payments', 'billPayments', 'journalEntries'],
+                        description: 'The type of data to export (required)'
+                    },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'csv'],
+                        description: 'Output format: json (default) or csv'
+                    },
+                    columns: {
+                        type: 'string',
+                        description: 'Comma-separated list of columns to include. If not specified, all columns are included.'
+                    },
+                    start_date: {
+                        type: 'string',
+                        description: 'Start date filter (YYYY-MM-DD) for transaction entities like invoices, bills, payments'
+                    },
+                    end_date: {
+                        type: 'string',
+                        description: 'End date filter (YYYY-MM-DD) for transaction entities'
+                    },
+                    name: {
+                        type: 'string',
+                        description: 'Filter by name/display name (for customers, vendors, accounts, items)'
+                    },
+                    active: {
+                        type: 'boolean',
+                        description: 'Filter by active status (true/false)'
+                    },
+                    customer_name: {
+                        type: 'string',
+                        description: 'Filter by customer name (for invoices, payments)'
+                    },
+                    vendor_name: {
+                        type: 'string',
+                        description: 'Filter by vendor name (for bills, billPayments)'
+                    }
+                },
+                required: ['entity']
+            }
+        }
+    },
     // ========== Migration Status Tools ==========
     {
         type: 'function',
@@ -3202,6 +3264,89 @@ async function executeQboSearchBills(params) {
 
         const result = await qboAuth.searchBills(criteria);
         return { success: true, ...result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * List available QBO entities for export
+ * Uses shared QBO_EXPORT_ENTITIES constant (defined later in file, but available at runtime)
+ */
+async function executeQboListExportEntities(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        return {
+            success: true,
+            companyName: status.companyName,
+            realmId: status.realmId,
+            entities: QBO_EXPORT_ENTITIES,
+            hint: 'Use qbo_export_data with the entity key to export data. You can filter by supported filters and specify columns.'
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Export QBO data to a downloadable file
+ * Returns download URL without pre-fetching data (avoids double QBO API calls)
+ */
+async function executeQboExportData(params) {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
+        }
+
+        if (!params.entity) {
+            return { success: false, error: 'Entity parameter is required. Use qbo_list_export_entities to see available options.' };
+        }
+
+        // Validate entity type against shared constant
+        const validEntity = QBO_EXPORT_ENTITIES.find(e => e.key.toLowerCase() === params.entity.toLowerCase());
+        if (!validEntity) {
+            return { success: false, error: `Unknown entity: ${params.entity}. Use qbo_list_export_entities to see available options.` };
+        }
+
+        const format = params.format || 'json';
+
+        // Build the download URL (data will be fetched when user clicks the link)
+        const baseUrl = process.env.API_URL || 'http://localhost:3001';
+        const queryParams = new URLSearchParams();
+        queryParams.set('entity', params.entity);
+        queryParams.set('format', format);
+        if (params.columns) queryParams.set('columns', params.columns);
+        if (params.start_date) queryParams.set('startDate', params.start_date);
+        if (params.end_date) queryParams.set('endDate', params.end_date);
+        if (params.name) queryParams.set('name', params.name);
+        if (params.active !== undefined) queryParams.set('active', params.active.toString());
+        if (params.customer_name) queryParams.set('customerName', params.customer_name);
+        if (params.vendor_name) queryParams.set('vendorName', params.vendor_name);
+
+        const downloadUrl = `${baseUrl}/api/qbo/export?${queryParams.toString()}`;
+
+        return {
+            success: true,
+            entity: params.entity,
+            entityName: validEntity.name,
+            format,
+            filters: {
+                startDate: params.start_date,
+                endDate: params.end_date,
+                name: params.name,
+                active: params.active,
+                customerName: params.customer_name,
+                vendorName: params.vendor_name
+            },
+            supportedFilters: validEntity.supportedFilters,
+            downloadUrl,
+            hint: `Export URL ready for ${validEntity.name}. The user can download the ${format.toUpperCase()} file from the download URL.`
+        };
     } catch (error) {
         return { success: false, error: error.message };
     }
@@ -5705,6 +5850,10 @@ async function executeFunction(name, args, authToken = null) {
             return executeQboSearchAccounts(args);
         case 'qbo_search_bills':
             return executeQboSearchBills(args);
+        case 'qbo_list_export_entities':
+            return executeQboListExportEntities(args);
+        case 'qbo_export_data':
+            return executeQboExportData(args);
         // Migration Tools - pass authToken for DAB authentication
         case 'migrate_customers':
             return executeMigrateCustomers(args, authToken);
@@ -6128,6 +6277,328 @@ app.post('/api/qbo/update-source-tracking', async (req, res) => {
         res.status(500).json({ error: error.message || 'Failed to update source tracking' });
     }
 });
+
+// ============================================================================
+// QBO Data Export Endpoints (Issue #375)
+// ============================================================================
+
+/**
+ * Rate limiting config for QBO export requests
+ */
+const QBO_EXPORT_CONFIG = {
+    maxRetries: 5,
+    initialDelayMs: 1000,
+    maxDelayMs: 60000
+};
+
+/**
+ * Shared entity definitions for QBO export
+ * Used by API endpoints, Milton tools, and tool definitions
+ */
+const QBO_EXPORT_ENTITIES = [
+    {
+        key: 'customers',
+        name: 'Customers',
+        description: 'Customer records',
+        supportedFilters: ['name', 'active'],
+        defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
+    },
+    {
+        key: 'vendors',
+        name: 'Vendors',
+        description: 'Vendor records',
+        supportedFilters: ['name', 'active'],
+        defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
+    },
+    {
+        key: 'accounts',
+        name: 'Chart of Accounts',
+        description: 'Account records',
+        supportedFilters: ['name', 'type', 'active'],
+        defaultColumns: ['Id', 'Name', 'AccountType', 'AccountSubType', 'CurrentBalance']
+    },
+    {
+        key: 'items',
+        name: 'Products & Services',
+        description: 'Item records',
+        supportedFilters: ['name', 'type', 'active'],
+        defaultColumns: ['Id', 'Name', 'Type', 'UnitPrice', 'Active']
+    },
+    {
+        key: 'invoices',
+        name: 'Invoices',
+        description: 'Invoice transactions',
+        supportedFilters: ['customerName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'CustomerRef', 'TxnDate', 'TotalAmt', 'Balance']
+    },
+    {
+        key: 'bills',
+        name: 'Bills',
+        description: 'Bill transactions',
+        supportedFilters: ['vendorName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'Balance']
+    },
+    {
+        key: 'payments',
+        name: 'Customer Payments',
+        description: 'Payment transactions',
+        supportedFilters: ['customerName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'PaymentRefNum', 'CustomerRef', 'TxnDate', 'TotalAmt']
+    },
+    {
+        key: 'billPayments',
+        name: 'Bill Payments',
+        description: 'Bill payment transactions',
+        supportedFilters: ['vendorName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'PayType']
+    },
+    {
+        key: 'journalEntries',
+        name: 'Journal Entries',
+        description: 'Journal entry transactions',
+        supportedFilters: ['startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'TxnDate', 'Line']
+    }
+];
+
+/**
+ * Fetch QBO entity data with rate limiting and exponential backoff
+ * Shared helper used by both API endpoint and Milton tool
+ */
+async function fetchQboEntityData(entityType, criteria) {
+    let retryCount = 0;
+
+    while (retryCount <= QBO_EXPORT_CONFIG.maxRetries) {
+        try {
+            switch (entityType.toLowerCase()) {
+                case 'customers':
+                    return await qboAuth.searchCustomers(criteria);
+                case 'vendors':
+                    return await qboAuth.searchVendors(criteria);
+                case 'accounts':
+                    return await qboAuth.searchAccounts(criteria);
+                case 'items':
+                    return await qboAuth.searchItems(criteria);
+                case 'invoices':
+                    return await qboAuth.searchInvoices(criteria);
+                case 'bills':
+                    return await qboAuth.searchBills(criteria);
+                case 'payments':
+                    return await qboAuth.searchPayments(criteria);
+                case 'billpayments':
+                    return await qboAuth.searchBillPayments(criteria);
+                case 'journalentries':
+                    return await qboAuth.searchJournalEntries(criteria);
+                default:
+                    throw new Error(`Unknown entity: ${entityType}`);
+            }
+        } catch (error) {
+            const isRateLimited =
+                error.response?.status === 429 ||
+                error.message?.toLowerCase().includes('rate limit') ||
+                error.message?.toLowerCase().includes('throttl');
+
+            if (isRateLimited && retryCount < QBO_EXPORT_CONFIG.maxRetries) {
+                const delay = Math.min(
+                    QBO_EXPORT_CONFIG.initialDelayMs * Math.pow(2, retryCount),
+                    QBO_EXPORT_CONFIG.maxDelayMs
+                );
+                console.log(`[QBO Export] Rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${QBO_EXPORT_CONFIG.maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                retryCount++;
+            } else {
+                throw error;
+            }
+        }
+    }
+}
+
+/**
+ * Get a nested property value using dot notation (e.g., "CustomerRef.name" or "Line.0.Amount")
+ */
+function getNestedProperty(obj, path) {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+/**
+ * Get available QBO entities for export
+ * Requires authentication to prevent unauthorized data access
+ */
+app.get('/api/qbo/export/entities', validateJWT, async (req, res) => {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return res.status(400).json({
+                error: 'Not connected to QuickBooks',
+                needsAuth: true
+            });
+        }
+
+        res.json({
+            entities: QBO_EXPORT_ENTITIES,
+            companyName: status.companyName,
+            realmId: status.realmId
+        });
+    } catch (error) {
+        console.error('QBO entities discovery error:', error);
+        res.status(500).json({ error: 'Failed to get available entities' });
+    }
+});
+
+/**
+ * Export QBO data to JSON or CSV
+ * Supports filtering, column selection, and rate limiting
+ * Requires authentication to prevent unauthorized data access
+ */
+app.get('/api/qbo/export', validateJWT, async (req, res) => {
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return res.status(400).json({
+                error: 'Not connected to QuickBooks',
+                needsAuth: true
+            });
+        }
+
+        const {
+            entity,           // Required: customers, vendors, accounts, etc.
+            format = 'json',  // json or csv
+            columns,          // Optional: comma-separated column names
+            startDate,        // Optional: YYYY-MM-DD
+            endDate,          // Optional: YYYY-MM-DD
+            name,             // Optional: filter by name/displayName
+            active,           // Optional: true/false
+            type,             // Optional: account type, item type
+            customerName,     // Optional: for invoices/payments
+            vendorName        // Optional: for bills/billPayments
+        } = req.query;
+
+        if (!entity) {
+            return res.status(400).json({
+                error: 'Entity parameter is required',
+                hint: 'Use GET /api/qbo/export/entities to see available entities'
+            });
+        }
+
+        // Build criteria object based on entity type
+        const criteria = { fetchAll: true };
+
+        // Apply filters based on entity type
+        if (name) criteria.name = name;
+        if (active !== undefined) criteria.active = active === 'true';
+        if (type) criteria.type = type;
+        if (startDate) criteria.startDate = startDate;
+        if (endDate) criteria.endDate = endDate;
+        if (customerName) criteria.customerName = customerName;
+        if (vendorName) criteria.vendorName = vendorName;
+
+        console.log(`[QBO Export] Exporting ${entity} with criteria:`, criteria);
+
+        // Validate entity type
+        const validEntity = QBO_EXPORT_ENTITIES.find(e => e.key.toLowerCase() === entity.toLowerCase());
+        if (!validEntity) {
+            return res.status(400).json({
+                error: `Unknown entity: ${entity}`,
+                hint: 'Use GET /api/qbo/export/entities to see available entities'
+            });
+        }
+
+        // Fetch data using shared helper with rate limiting
+        const data = await fetchQboEntityData(entity, criteria);
+
+        // Extract records array from response
+        const records = data?.data || [];
+        console.log(`[QBO Export] Retrieved ${records.length} ${entity} records`);
+
+        // Filter columns if specified
+        let outputData = records;
+        if (columns) {
+            const colList = columns.split(',').map(c => c.trim());
+            outputData = records.map(record => {
+                const filtered = {};
+                for (const col of colList) {
+                    // Handle nested properties like CustomerRef.name or Line.0.Amount
+                    filtered[col] = getNestedProperty(record, col);
+                }
+                return filtered;
+            });
+        }
+
+        // Return in requested format
+        if (format.toLowerCase() === 'csv') {
+            const csvContent = convertToCSV(outputData);
+            const filename = `qbo-${entity}-${new Date().toISOString().split('T')[0]}.csv`;
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            return res.send(csvContent);
+        }
+
+        // Default JSON format
+        const filename = `qbo-${entity}-${new Date().toISOString().split('T')[0]}.json`;
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.json({
+            exportDate: new Date().toISOString(),
+            entity,
+            filters: { startDate, endDate, name, active, type, customerName, vendorName },
+            count: outputData.length,
+            data: outputData
+        });
+
+    } catch (error) {
+        console.error('QBO export error:', error);
+        res.status(500).json({ error: error.message || 'Failed to export QBO data' });
+    }
+});
+
+/**
+ * Convert array of objects to CSV string
+ */
+function convertToCSV(data) {
+    if (!data || data.length === 0) {
+        return '';
+    }
+
+    // Get all unique keys from all objects (in case objects have different keys)
+    const allKeys = new Set();
+    data.forEach(obj => {
+        Object.keys(obj).forEach(key => allKeys.add(key));
+    });
+    const headers = Array.from(allKeys);
+
+    // Create CSV header row
+    const csvRows = [headers.map(h => escapeCSVField(h)).join(',')];
+
+    // Create data rows
+    for (const row of data) {
+        const values = headers.map(header => {
+            let value = row[header];
+            // Handle nested objects and arrays
+            if (value && typeof value === 'object') {
+                value = JSON.stringify(value);
+            }
+            return escapeCSVField(value);
+        });
+        csvRows.push(values.join(','));
+    }
+
+    return csvRows.join('\n');
+}
+
+/**
+ * Escape a field for CSV format
+ */
+function escapeCSVField(field) {
+    if (field === null || field === undefined) {
+        return '';
+    }
+    const str = String(field);
+    // Escape quotes and wrap in quotes if contains comma, quote, or newline
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+}
 
 // ============================================================================
 // Plaid Bank Feed Endpoints
