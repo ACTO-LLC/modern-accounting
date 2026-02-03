@@ -6048,6 +6048,87 @@ app.get('/api/qbo/analyze', async (req, res) => {
     }
 });
 
+// Update source tracking for accounts/customers imported from QBO
+// This links existing records to their QBO source for migration tracking
+app.post('/api/qbo/update-source-tracking', async (req, res) => {
+    const dryRun = req.query.dryRun === 'true';
+    const results = { accounts: { matched: 0, updated: 0, unmatched: [] }, customers: { matched: 0, updated: 0, unmatched: [] } };
+
+    try {
+        const status = await qboAuth.getStatus();
+        if (!status.connected) {
+            return res.status(400).json({ error: 'Not connected to QuickBooks', needsAuth: true });
+        }
+
+        // Get QBO accounts
+        const qboAccountsResult = await qboAuth.query('SELECT Id, Name, FullyQualifiedName, AccountType FROM Account MAXRESULTS 500');
+        const qboAccounts = qboAccountsResult?.QueryResponse?.Account || [];
+        console.log(`[Source Tracking] Found ${qboAccounts.length} accounts in QBO`);
+
+        // Get QBO customers
+        const qboCustomersResult = await qboAuth.query('SELECT Id, DisplayName, CompanyName, PrimaryEmailAddr FROM Customer MAXRESULTS 500');
+        const qboCustomers = qboCustomersResult?.QueryResponse?.Customer || [];
+        console.log(`[Source Tracking] Found ${qboCustomers.length} customers in QBO`);
+
+        // Get ACTO accounts without source tracking
+        const dabClient = new DabRestClient();
+        const actoAccountsResp = await dabClient.get('/accounts?$filter=SourceSystem eq null');
+        const actoAccounts = actoAccountsResp?.value || [];
+        console.log(`[Source Tracking] Found ${actoAccounts.length} ACTO accounts without source tracking`);
+
+        // Get ACTO customers without source tracking
+        const actoCustomersResp = await dabClient.get('/customers?$filter=SourceSystem eq null');
+        const actoCustomers = actoCustomersResp?.value || [];
+        console.log(`[Source Tracking] Found ${actoCustomers.length} ACTO customers without source tracking`);
+
+        // Match and update accounts
+        for (const acct of actoAccounts) {
+            const qboMatch = qboAccounts.find(q =>
+                q.Name?.toLowerCase().trim() === acct.Name?.toLowerCase().trim() ||
+                q.FullyQualifiedName?.toLowerCase().trim() === acct.Name?.toLowerCase().trim()
+            );
+            if (qboMatch) {
+                results.accounts.matched++;
+                if (!dryRun) {
+                    await dabClient.patch(`/accounts/Id/${acct.Id}`, { SourceSystem: 'QBO', SourceId: String(qboMatch.Id) });
+                    results.accounts.updated++;
+                }
+            } else {
+                results.accounts.unmatched.push(acct.Name);
+            }
+        }
+
+        // Match and update customers
+        for (const cust of actoCustomers) {
+            const qboMatch = qboCustomers.find(q =>
+                q.DisplayName?.toLowerCase().trim() === cust.Name?.toLowerCase().trim() ||
+                q.CompanyName?.toLowerCase().trim() === cust.Name?.toLowerCase().trim() ||
+                (q.PrimaryEmailAddr?.Address && cust.Email && q.PrimaryEmailAddr.Address.toLowerCase() === cust.Email.toLowerCase())
+            );
+            if (qboMatch) {
+                results.customers.matched++;
+                if (!dryRun) {
+                    await dabClient.patch(`/customers/Id/${cust.Id}`, { SourceSystem: 'QBO', SourceId: String(qboMatch.Id) });
+                    results.customers.updated++;
+                }
+            } else {
+                results.customers.unmatched.push(cust.Name);
+            }
+        }
+
+        res.json({
+            success: true,
+            dryRun,
+            qboCounts: { accounts: qboAccounts.length, customers: qboCustomers.length },
+            actoCounts: { accounts: actoAccounts.length, customers: actoCustomers.length },
+            results
+        });
+    } catch (error) {
+        console.error('Source tracking update error:', error);
+        res.status(500).json({ error: error.message || 'Failed to update source tracking' });
+    }
+});
+
 // ============================================================================
 // Plaid Bank Feed Endpoints
 // ============================================================================
