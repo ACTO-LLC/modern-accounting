@@ -198,7 +198,11 @@ const DAB_EXCLUDED_PATHS = [
     '/api/deployments',
     '/api/extract-contact',
     '/api/upload-document',
-    '/api/upload-receipt'
+    '/api/upload-receipt',
+    '/api/transactions',
+    '/api/banktransactions',
+    '/api/post-transactions',
+    '/api/categorization-rules'
 ];
 
 // Create proxy middleware instance once (not per-request)
