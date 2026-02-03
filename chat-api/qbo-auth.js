@@ -561,7 +561,7 @@ class QBOAuth {
         }
 
         const { fetchAll, limit, startDate, endDate, name, active, type,
-                customerName, vendorName, ...extraFilters } = criteria;
+                customerName, vendorName } = criteria;
 
         // Escape single quotes in string values to prevent QBO query injection
         const esc = (val) => typeof val === 'string' ? val.replace(/'/g, "''") : val;
