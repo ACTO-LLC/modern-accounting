@@ -6422,8 +6422,9 @@ function getNestedProperty(obj, path) {
 
 /**
  * Get available QBO entities for export
+ * Requires authentication to prevent unauthorized data access
  */
-app.get('/api/qbo/export/entities', async (req, res) => {
+app.get('/api/qbo/export/entities', validateJWT, async (req, res) => {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
@@ -6447,8 +6448,9 @@ app.get('/api/qbo/export/entities', async (req, res) => {
 /**
  * Export QBO data to JSON or CSV
  * Supports filtering, column selection, and rate limiting
+ * Requires authentication to prevent unauthorized data access
  */
-app.get('/api/qbo/export', async (req, res) => {
+app.get('/api/qbo/export', validateJWT, async (req, res) => {
     try {
         const status = await qboAuth.getStatus();
         if (!status.connected) {
