@@ -3271,6 +3271,7 @@ async function executeQboSearchBills(params) {
 
 /**
  * List available QBO entities for export
+ * Uses shared QBO_EXPORT_ENTITIES constant (defined later in file, but available at runtime)
  */
 async function executeQboListExportEntities(params) {
     try {
@@ -3279,77 +3280,11 @@ async function executeQboListExportEntities(params) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
 
-        const entities = [
-            {
-                key: 'customers',
-                name: 'Customers',
-                description: 'Customer records',
-                supportedFilters: ['name', 'active'],
-                defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
-            },
-            {
-                key: 'vendors',
-                name: 'Vendors',
-                description: 'Vendor records',
-                supportedFilters: ['name', 'active'],
-                defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
-            },
-            {
-                key: 'accounts',
-                name: 'Chart of Accounts',
-                description: 'Account records',
-                supportedFilters: ['name', 'type', 'active'],
-                defaultColumns: ['Id', 'Name', 'AccountType', 'AccountSubType', 'CurrentBalance']
-            },
-            {
-                key: 'items',
-                name: 'Products & Services',
-                description: 'Item records',
-                supportedFilters: ['name', 'type', 'active'],
-                defaultColumns: ['Id', 'Name', 'Type', 'UnitPrice', 'Active']
-            },
-            {
-                key: 'invoices',
-                name: 'Invoices',
-                description: 'Invoice transactions',
-                supportedFilters: ['customerName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'CustomerRef', 'TxnDate', 'TotalAmt', 'Balance']
-            },
-            {
-                key: 'bills',
-                name: 'Bills',
-                description: 'Bill transactions',
-                supportedFilters: ['vendorName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'Balance']
-            },
-            {
-                key: 'payments',
-                name: 'Customer Payments',
-                description: 'Payment transactions',
-                supportedFilters: ['customerName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'PaymentRefNum', 'CustomerRef', 'TxnDate', 'TotalAmt']
-            },
-            {
-                key: 'billPayments',
-                name: 'Bill Payments',
-                description: 'Bill payment transactions',
-                supportedFilters: ['vendorName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'PayType']
-            },
-            {
-                key: 'journalEntries',
-                name: 'Journal Entries',
-                description: 'Journal entry transactions',
-                supportedFilters: ['startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'TxnDate', 'Line']
-            }
-        ];
-
         return {
             success: true,
             companyName: status.companyName,
             realmId: status.realmId,
-            entities,
+            entities: QBO_EXPORT_ENTITIES,
             hint: 'Use qbo_export_data with the entity key to export data. You can filter by supported filters and specify columns.'
         };
     } catch (error) {
@@ -3359,7 +3294,7 @@ async function executeQboListExportEntities(params) {
 
 /**
  * Export QBO data to a downloadable file
- * Returns export info including record count and download URL
+ * Returns download URL without pre-fetching data (avoids double QBO API calls)
  */
 async function executeQboExportData(params) {
     try {
@@ -3372,53 +3307,15 @@ async function executeQboExportData(params) {
             return { success: false, error: 'Entity parameter is required. Use qbo_list_export_entities to see available options.' };
         }
 
-        const criteria = { fetchAll: true };
-        if (params.name) criteria.name = params.name;
-        if (params.active !== undefined) criteria.active = params.active;
-        if (params.type) criteria.type = params.type;
-        if (params.start_date) criteria.startDate = params.start_date;
-        if (params.end_date) criteria.endDate = params.end_date;
-        if (params.customer_name) criteria.customerName = params.customer_name;
-        if (params.vendor_name) criteria.vendorName = params.vendor_name;
-
-        // Fetch data from QBO
-        let data;
-        switch (params.entity.toLowerCase()) {
-            case 'customers':
-                data = await qboAuth.searchCustomers(criteria);
-                break;
-            case 'vendors':
-                data = await qboAuth.searchVendors(criteria);
-                break;
-            case 'accounts':
-                data = await qboAuth.searchAccounts(criteria);
-                break;
-            case 'items':
-                data = await qboAuth.searchItems(criteria);
-                break;
-            case 'invoices':
-                data = await qboAuth.searchInvoices(criteria);
-                break;
-            case 'bills':
-                data = await qboAuth.searchBills(criteria);
-                break;
-            case 'payments':
-                data = await qboAuth.searchPayments(criteria);
-                break;
-            case 'billpayments':
-                data = await qboAuth.searchBillPayments(criteria);
-                break;
-            case 'journalentries':
-                data = await qboAuth.searchJournalEntries(criteria);
-                break;
-            default:
-                return { success: false, error: `Unknown entity: ${params.entity}. Use qbo_list_export_entities to see available options.` };
+        // Validate entity type against shared constant
+        const validEntity = QBO_EXPORT_ENTITIES.find(e => e.key.toLowerCase() === params.entity.toLowerCase());
+        if (!validEntity) {
+            return { success: false, error: `Unknown entity: ${params.entity}. Use qbo_list_export_entities to see available options.` };
         }
 
-        const records = data?.data || [];
         const format = params.format || 'json';
 
-        // Build the download URL
+        // Build the download URL (data will be fetched when user clicks the link)
         const baseUrl = process.env.API_URL || 'http://localhost:3001';
         const queryParams = new URLSearchParams();
         queryParams.set('entity', params.entity);
@@ -3436,8 +3333,8 @@ async function executeQboExportData(params) {
         return {
             success: true,
             entity: params.entity,
+            entityName: validEntity.name,
             format,
-            recordCount: records.length,
             filters: {
                 startDate: params.start_date,
                 endDate: params.end_date,
@@ -3446,8 +3343,9 @@ async function executeQboExportData(params) {
                 customerName: params.customer_name,
                 vendorName: params.vendor_name
             },
+            supportedFilters: validEntity.supportedFilters,
             downloadUrl,
-            hint: `Found ${records.length} ${params.entity}. The user can download the ${format.toUpperCase()} file from the download URL.`
+            hint: `Export URL ready for ${validEntity.name}. The user can download the ${format.toUpperCase()} file from the download URL.`
         };
     } catch (error) {
         return { success: false, error: error.message };
@@ -6385,19 +6283,145 @@ app.post('/api/qbo/update-source-tracking', async (req, res) => {
 // ============================================================================
 
 /**
- * Rate limiting for QBO export requests
- * Uses exponential backoff on rate limit errors
+ * Rate limiting config for QBO export requests
  */
 const QBO_EXPORT_CONFIG = {
     maxRetries: 5,
     initialDelayMs: 1000,
-    maxDelayMs: 60000,
-    requestDelayMs: 500  // Delay between batch requests
+    maxDelayMs: 60000
 };
 
 /**
+ * Shared entity definitions for QBO export
+ * Used by API endpoints, Milton tools, and tool definitions
+ */
+const QBO_EXPORT_ENTITIES = [
+    {
+        key: 'customers',
+        name: 'Customers',
+        description: 'Customer records',
+        supportedFilters: ['name', 'active'],
+        defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
+    },
+    {
+        key: 'vendors',
+        name: 'Vendors',
+        description: 'Vendor records',
+        supportedFilters: ['name', 'active'],
+        defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
+    },
+    {
+        key: 'accounts',
+        name: 'Chart of Accounts',
+        description: 'Account records',
+        supportedFilters: ['name', 'type', 'active'],
+        defaultColumns: ['Id', 'Name', 'AccountType', 'AccountSubType', 'CurrentBalance']
+    },
+    {
+        key: 'items',
+        name: 'Products & Services',
+        description: 'Item records',
+        supportedFilters: ['name', 'type', 'active'],
+        defaultColumns: ['Id', 'Name', 'Type', 'UnitPrice', 'Active']
+    },
+    {
+        key: 'invoices',
+        name: 'Invoices',
+        description: 'Invoice transactions',
+        supportedFilters: ['customerName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'CustomerRef', 'TxnDate', 'TotalAmt', 'Balance']
+    },
+    {
+        key: 'bills',
+        name: 'Bills',
+        description: 'Bill transactions',
+        supportedFilters: ['vendorName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'Balance']
+    },
+    {
+        key: 'payments',
+        name: 'Customer Payments',
+        description: 'Payment transactions',
+        supportedFilters: ['customerName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'PaymentRefNum', 'CustomerRef', 'TxnDate', 'TotalAmt']
+    },
+    {
+        key: 'billPayments',
+        name: 'Bill Payments',
+        description: 'Bill payment transactions',
+        supportedFilters: ['vendorName', 'startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'PayType']
+    },
+    {
+        key: 'journalEntries',
+        name: 'Journal Entries',
+        description: 'Journal entry transactions',
+        supportedFilters: ['startDate', 'endDate'],
+        defaultColumns: ['Id', 'DocNumber', 'TxnDate', 'Line']
+    }
+];
+
+/**
+ * Fetch QBO entity data with rate limiting and exponential backoff
+ * Shared helper used by both API endpoint and Milton tool
+ */
+async function fetchQboEntityData(entityType, criteria) {
+    let retryCount = 0;
+
+    while (retryCount <= QBO_EXPORT_CONFIG.maxRetries) {
+        try {
+            switch (entityType.toLowerCase()) {
+                case 'customers':
+                    return await qboAuth.searchCustomers(criteria);
+                case 'vendors':
+                    return await qboAuth.searchVendors(criteria);
+                case 'accounts':
+                    return await qboAuth.searchAccounts(criteria);
+                case 'items':
+                    return await qboAuth.searchItems(criteria);
+                case 'invoices':
+                    return await qboAuth.searchInvoices(criteria);
+                case 'bills':
+                    return await qboAuth.searchBills(criteria);
+                case 'payments':
+                    return await qboAuth.searchPayments(criteria);
+                case 'billpayments':
+                    return await qboAuth.searchBillPayments(criteria);
+                case 'journalentries':
+                    return await qboAuth.searchJournalEntries(criteria);
+                default:
+                    throw new Error(`Unknown entity: ${entityType}`);
+            }
+        } catch (error) {
+            const isRateLimited =
+                error.response?.status === 429 ||
+                error.message?.toLowerCase().includes('rate limit') ||
+                error.message?.toLowerCase().includes('throttl');
+
+            if (isRateLimited && retryCount < QBO_EXPORT_CONFIG.maxRetries) {
+                const delay = Math.min(
+                    QBO_EXPORT_CONFIG.initialDelayMs * Math.pow(2, retryCount),
+                    QBO_EXPORT_CONFIG.maxDelayMs
+                );
+                console.log(`[QBO Export] Rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${QBO_EXPORT_CONFIG.maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                retryCount++;
+            } else {
+                throw error;
+            }
+        }
+    }
+}
+
+/**
+ * Get a nested property value using dot notation (e.g., "CustomerRef.name" or "Line.0.Amount")
+ */
+function getNestedProperty(obj, path) {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+/**
  * Get available QBO entities for export
- * Dynamically discovers entities from qboAuth methods
  */
 app.get('/api/qbo/export/entities', async (req, res) => {
     try {
@@ -6409,76 +6433,8 @@ app.get('/api/qbo/export/entities', async (req, res) => {
             });
         }
 
-        // Dynamically discover available entities from qboAuth methods
-        // These map to search{Entity} methods in qbo-auth.js
-        const entities = [
-            {
-                key: 'customers',
-                name: 'Customers',
-                description: 'Customer records',
-                supportedFilters: ['name', 'active'],
-                defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
-            },
-            {
-                key: 'vendors',
-                name: 'Vendors',
-                description: 'Vendor records',
-                supportedFilters: ['name', 'active'],
-                defaultColumns: ['Id', 'DisplayName', 'PrimaryEmailAddr', 'Balance']
-            },
-            {
-                key: 'accounts',
-                name: 'Chart of Accounts',
-                description: 'Account records',
-                supportedFilters: ['name', 'type', 'active'],
-                defaultColumns: ['Id', 'Name', 'AccountType', 'AccountSubType', 'CurrentBalance']
-            },
-            {
-                key: 'items',
-                name: 'Products & Services',
-                description: 'Item records',
-                supportedFilters: ['name', 'type', 'active'],
-                defaultColumns: ['Id', 'Name', 'Type', 'UnitPrice', 'Active']
-            },
-            {
-                key: 'invoices',
-                name: 'Invoices',
-                description: 'Invoice transactions',
-                supportedFilters: ['customerName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'CustomerRef', 'TxnDate', 'TotalAmt', 'Balance']
-            },
-            {
-                key: 'bills',
-                name: 'Bills',
-                description: 'Bill transactions',
-                supportedFilters: ['vendorName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'Balance']
-            },
-            {
-                key: 'payments',
-                name: 'Customer Payments',
-                description: 'Payment transactions',
-                supportedFilters: ['customerName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'PaymentRefNum', 'CustomerRef', 'TxnDate', 'TotalAmt']
-            },
-            {
-                key: 'billPayments',
-                name: 'Bill Payments',
-                description: 'Bill payment transactions',
-                supportedFilters: ['vendorName', 'startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'VendorRef', 'TxnDate', 'TotalAmt', 'PayType']
-            },
-            {
-                key: 'journalEntries',
-                name: 'Journal Entries',
-                description: 'Journal entry transactions',
-                supportedFilters: ['startDate', 'endDate'],
-                defaultColumns: ['Id', 'DocNumber', 'TxnDate', 'Line']
-            }
-        ];
-
         res.json({
-            entities,
+            entities: QBO_EXPORT_ENTITIES,
             companyName: status.companyName,
             realmId: status.realmId
         });
@@ -6536,66 +6492,17 @@ app.get('/api/qbo/export', async (req, res) => {
 
         console.log(`[QBO Export] Exporting ${entity} with criteria:`, criteria);
 
-        // Call the appropriate qboAuth method with retry logic
-        let data;
-        let retryCount = 0;
-
-        while (retryCount <= QBO_EXPORT_CONFIG.maxRetries) {
-            try {
-                switch (entity.toLowerCase()) {
-                    case 'customers':
-                        data = await qboAuth.searchCustomers(criteria);
-                        break;
-                    case 'vendors':
-                        data = await qboAuth.searchVendors(criteria);
-                        break;
-                    case 'accounts':
-                        data = await qboAuth.searchAccounts(criteria);
-                        break;
-                    case 'items':
-                        data = await qboAuth.searchItems(criteria);
-                        break;
-                    case 'invoices':
-                        data = await qboAuth.searchInvoices(criteria);
-                        break;
-                    case 'bills':
-                        data = await qboAuth.searchBills(criteria);
-                        break;
-                    case 'payments':
-                        data = await qboAuth.searchPayments(criteria);
-                        break;
-                    case 'billpayments':
-                        data = await qboAuth.searchBillPayments(criteria);
-                        break;
-                    case 'journalentries':
-                        data = await qboAuth.searchJournalEntries(criteria);
-                        break;
-                    default:
-                        return res.status(400).json({
-                            error: `Unknown entity: ${entity}`,
-                            hint: 'Use GET /api/qbo/export/entities to see available entities'
-                        });
-                }
-                break;  // Success, exit retry loop
-            } catch (error) {
-                const isRateLimited =
-                    error.response?.status === 429 ||
-                    error.message?.toLowerCase().includes('rate limit') ||
-                    error.message?.toLowerCase().includes('throttl');
-
-                if (isRateLimited && retryCount < QBO_EXPORT_CONFIG.maxRetries) {
-                    const delay = Math.min(
-                        QBO_EXPORT_CONFIG.initialDelayMs * Math.pow(2, retryCount),
-                        QBO_EXPORT_CONFIG.maxDelayMs
-                    );
-                    console.log(`[QBO Export] Rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${QBO_EXPORT_CONFIG.maxRetries})`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    retryCount++;
-                } else {
-                    throw error;
-                }
-            }
+        // Validate entity type
+        const validEntity = QBO_EXPORT_ENTITIES.find(e => e.key.toLowerCase() === entity.toLowerCase());
+        if (!validEntity) {
+            return res.status(400).json({
+                error: `Unknown entity: ${entity}`,
+                hint: 'Use GET /api/qbo/export/entities to see available entities'
+            });
         }
+
+        // Fetch data using shared helper with rate limiting
+        const data = await fetchQboEntityData(entity, criteria);
 
         // Extract records array from response
         const records = data?.data || [];
@@ -6608,13 +6515,8 @@ app.get('/api/qbo/export', async (req, res) => {
             outputData = records.map(record => {
                 const filtered = {};
                 for (const col of colList) {
-                    // Handle nested properties like CustomerRef.name
-                    if (col.includes('.')) {
-                        const [parent, child] = col.split('.');
-                        filtered[col] = record[parent]?.[child];
-                    } else {
-                        filtered[col] = record[col];
-                    }
+                    // Handle nested properties like CustomerRef.name or Line.0.Amount
+                    filtered[col] = getNestedProperty(record, col);
                 }
                 return filtered;
             });
