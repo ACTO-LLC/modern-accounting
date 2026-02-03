@@ -64,6 +64,7 @@ interface LedgerAccount {
   Id: string;
   Name: string;
   Type: string;
+  Subtype: string | null;
   Code: string;
 }
 
@@ -119,9 +120,9 @@ export default function PlaidConnections() {
   const plaidAccounts: PlaidAccount[] = accountsData?.accounts || [];
   const ledgerAccounts: LedgerAccount[] = ledgerAccountsData || [];
 
-  // Filter ledger accounts for linking (Bank and Credit Card types)
+  // Filter ledger accounts for linking (Bank and Credit Card subtypes)
   const linkableAccounts = ledgerAccounts.filter(
-    (a) => a.Type === 'Bank' || a.Type === 'Credit Card'
+    (a) => a.Subtype === 'Bank' || a.Subtype === 'CreditCard'
   );
 
   // Create link token - only if service is available
@@ -467,7 +468,7 @@ export default function PlaidConnections() {
                               <option value="">Select account...</option>
                               {linkableAccounts.map((la) => (
                                 <option key={la.Id} value={la.Id}>
-                                  {la.Name} ({la.Type})
+                                  {la.Code} - {la.Name}
                                 </option>
                               ))}
                             </select>
