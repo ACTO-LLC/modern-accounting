@@ -1091,6 +1091,152 @@ export const tools = [
         }
     },
     {
+        name: 'qbo_report_trial_balance',
+        description: 'Get Trial Balance REPORT from QuickBooks Online as of a specific date. This uses the Reports API (not account balances) and provides proper historical balances including Retained Earnings.',
+        schema: z.object({
+            as_of_date: z.string().optional().describe('Date in YYYY-MM-DD format. If not provided, uses current date.'),
+            date_macro: z.string().optional().describe('Preset date like "Last Year", "Last Month", etc. Use instead of as_of_date.')
+        }),
+        handler: async (sessionId: string, args: any) => {
+            try {
+                const qb = await getClient(sessionId, args);
+                const { as_of_date, date_macro } = args.params || {};
+
+                // Build report options
+                // Note: QBO Trial Balance needs both start_date and end_date, or date_macro
+                const reportOptions: any = {};
+                if (as_of_date) {
+                    // For trial balance, start_date should be beginning of time or fiscal year
+                    // Using a very early date to capture all history
+                    reportOptions.start_date = '2000-01-01';
+                    reportOptions.end_date = as_of_date;
+                } else if (date_macro) {
+                    reportOptions.date_macro = date_macro;
+                } else {
+                    // Default to All Dates
+                    reportOptions.date_macro = 'All';
+                }
+
+                // Call the actual Trial Balance report API
+                // Note: reportTrialBalance exists in node-quickbooks but types may be incomplete
+                console.log('[TrialBalance] Options:', JSON.stringify(reportOptions));
+                const result = await new Promise<any>((resolve, reject) => {
+                    (qb as any).reportTrialBalance(reportOptions, (err: any, data: any) => {
+                        if (err) {
+                            console.error('[TrialBalance] Error:', err);
+                            reject(err);
+                        } else {
+                            console.log('[TrialBalance] Raw response keys:', Object.keys(data || {}));
+                            console.log('[TrialBalance] Header:', JSON.stringify(data?.Header || {}));
+                            resolve(data);
+                        }
+                    });
+                });
+
+                // Parse the report response
+                const header = result?.Header || {};
+                const columns = result?.Columns?.Column || [];
+
+                // DEBUG: Check for nested row structure (Rows.Row may have Section/Data arrays)
+                let rows = result?.Rows?.Row || [];
+                console.log('[TrialBalance] Raw Rows:', JSON.stringify(result?.Rows || {}).substring(0, 2000));
+
+                // Handle nested structure: Rows.Row may contain { Header, Rows, Summary } sections
+                // Extract actual account rows from nested structure
+                const flattenedRows: any[] = [];
+                for (const row of rows) {
+                    if (row.Rows?.Row) {
+                        // This row contains nested account rows
+                        for (const nestedRow of row.Rows.Row) {
+                            flattenedRows.push(nestedRow);
+                        }
+                    } else if (row.ColData) {
+                        // Direct account row
+                        flattenedRows.push(row);
+                    }
+                    // Summary rows (row.Summary) will also be included below
+                    if (row.Summary) {
+                        flattenedRows.push({ Summary: row.Summary, type: row.type });
+                    }
+                }
+                rows = flattenedRows;
+
+                console.log('[TrialBalance] Flattened rows count:', rows.length);
+                if (rows.length > 0) {
+                    console.log('[TrialBalance] First row:', JSON.stringify(rows[0]).substring(0, 500));
+                }
+
+                // Extract column names
+                const colNames = columns.map((c: any) => c.ColTitle || c.ColType);
+
+                // Parse rows into structured data
+                const lines: any[] = [];
+                let totalDebits = 0;
+                let totalCredits = 0;
+
+                for (const row of rows) {
+                    // Direct ColData format: [{value: "name", id: "qboId"}, {value: "debit"}, {value: "credit"}]
+                    if (row.ColData && Array.isArray(row.ColData)) {
+                        const colData = row.ColData;
+                        const name = colData[0]?.value || '';
+                        const qboId = colData[0]?.id || null;
+                        const debitStr = colData[1]?.value || '';
+                        const creditStr = colData[2]?.value || '';
+                        const debit = parseFloat(debitStr) || 0;
+                        const credit = parseFloat(creditStr) || 0;
+
+                        // Skip empty rows and TOTAL row (handle separately)
+                        if (name && name !== 'TOTAL' && (debit !== 0 || credit !== 0)) {
+                            lines.push({ qboId, name, debit, credit });
+                            totalDebits += debit;
+                            totalCredits += credit;
+                        } else if (name === 'TOTAL') {
+                            // Store total for verification
+                            lines.push({ name: 'TOTAL', debit, credit, isTotal: true });
+                        }
+                    } else if (row.Summary?.ColData) {
+                        // Summary row format
+                        const colData = row.Summary.ColData;
+                        const name = colData[0]?.value || 'TOTAL';
+                        const debit = parseFloat(colData[1]?.value) || 0;
+                        const credit = parseFloat(colData[2]?.value) || 0;
+                        lines.push({ name, debit, credit, isTotal: true });
+                    }
+                }
+
+                const reportDate = header.EndPeriod || header.ReportBasis || 'Unknown';
+                const isBalanced = Math.abs(totalDebits - totalCredits) < 0.01;
+
+                const reportData = {
+                    reportDate,
+                    reportName: header.ReportName || 'Trial Balance',
+                    currency: header.Currency || 'USD',
+                    totalDebits: Math.round(totalDebits * 100) / 100,
+                    totalCredits: Math.round(totalCredits * 100) / 100,
+                    isBalanced,
+                    outOfBalance: Math.round(Math.abs(totalDebits - totalCredits) * 100) / 100,
+                    lineCount: lines.filter(l => !l.isTotal).length,
+                    lines
+                };
+
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: `Trial Balance Report as of ${reportDate}: ${reportData.lineCount} accounts. ` +
+                            `Debits: $${totalDebits.toFixed(2)}, Credits: $${totalCredits.toFixed(2)}. ` +
+                            (isBalanced ? 'BALANCED' : `OUT OF BALANCE by $${reportData.outOfBalance.toFixed(2)}`)
+                    }],
+                    data: reportData
+                };
+            } catch (error: any) {
+                return {
+                    content: [{ type: 'text' as const, text: `Error getting trial balance report: ${error.message}` }],
+                    isError: true
+                };
+            }
+        }
+    },
+    {
         name: 'qbo_analyze_for_migration',
         description: 'Analyze QuickBooks data and provide summary for migration planning. Returns accurate counts for all entity types.',
         schema: z.object({}),
