@@ -404,8 +404,8 @@ Respond in JSON format:
      */
     async checkCategorizationRules(description, merchant) {
         try {
-            // Get active rules ordered by priority
             const headers = await getDabHeaders();
+            // Get active rules ordered by priority
             const response = await axios.get(
                 `${DAB_API_URL}/categorizationrules?$filter=IsActive eq true&$orderby=Priority`,
                 { headers }
@@ -436,10 +436,9 @@ Respond in JSON format:
 
                 if (matches) {
                     // Increment hit count (fire and forget)
-                    const patchHeaders = await getDabHeaders();
                     axios.patch(`${DAB_API_URL}/categorizationrules/Id/${rule.Id}`, {
                         HitCount: (rule.HitCount || 0) + 1
-                    }, { headers: patchHeaders }).catch(() => {});
+                    }, { headers }).catch(() => {});
 
                     return rule;
                 }
@@ -472,8 +471,8 @@ Respond in JSON format:
         const code = `PLAID-${crypto.randomUUID()}`.toUpperCase();
 
         // Create new account
-        const newId = crypto.randomUUID();
         const headers = await getDabHeaders();
+        const newId = crypto.randomUUID();
         await axios.post(
             `${DAB_API_URL}/accounts`,
             {
@@ -493,13 +492,20 @@ Respond in JSON format:
 
     /**
      * Get transaction by Plaid transaction ID
+     * Uses OData filter for efficient database lookup instead of fetching all
      */
     async getTransactionByPlaidId(plaidTransactionId) {
         try {
             const headers = await getDabHeaders();
-            const response = await axios.get(`${DAB_API_URL}/banktransactions`, { headers });
+            const response = await axios.get(`${DAB_API_URL}/banktransactions`, {
+                headers,
+                params: {
+                    $filter: `PlaidTransactionId eq '${plaidTransactionId}'`,
+                    $top: 1
+                }
+            });
             const transactions = response.data?.value || [];
-            return transactions.find(t => t.PlaidTransactionId === plaidTransactionId) || null;
+            return transactions[0] || null;
         } catch (error) {
             console.error('Failed to get transaction:', error.message);
             return null;
@@ -512,11 +518,11 @@ Respond in JSON format:
      */
     async checkForDuplicates(date, amount, description) {
         try {
+            const headers = await getDabHeaders();
             // Build filter for same date and amount
-            // Use ISO datetime format for OData compatibility
+            // Use ISO datetime format for OData compatibility (per CLAUDE.md guidelines)
             const dateForFilter = `${date}T00:00:00Z`;
             const filter = `TransactionDate eq ${dateForFilter} and Amount eq ${amount}`;
-            const headers = await getDabHeaders();
             const response = await axios.get(`${DAB_API_URL}/banktransactions?$filter=${encodeURIComponent(filter)}`, { headers });
             const candidates = response.data?.value || [];
 
