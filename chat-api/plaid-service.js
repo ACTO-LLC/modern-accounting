@@ -169,6 +169,47 @@ class PlaidService {
     }
 
     /**
+     * Create an update Link token for re-authenticating an existing item
+     * Use this when a connection needs re-authentication (ITEM_LOGIN_REQUIRED)
+     * @param {string} itemId - The Plaid Item ID to re-authenticate
+     */
+    async createUpdateLinkToken(itemId) {
+        if (!this.client) {
+            throw new Error('Plaid client not initialized. Check PLAID_CLIENT_ID and PLAID_SECRET.');
+        }
+
+        try {
+            // Get the connection to retrieve the access token
+            const connection = await this.getConnectionByItemId(itemId);
+            if (!connection) {
+                throw new Error('Connection not found for itemId: ' + itemId);
+            }
+
+            const accessToken = this.decryptToken(connection.AccessToken);
+
+            const response = await this.client.linkTokenCreate({
+                user: {
+                    client_user_id: 'actollc',  // Same user ID used for initial link
+                },
+                client_name: 'Modern Accounting',
+                country_codes: [CountryCode.Us],
+                language: 'en',
+                access_token: accessToken,  // Providing access_token creates update mode link
+            });
+
+            return {
+                success: true,
+                linkToken: response.data.link_token,
+                expiration: response.data.expiration,
+                itemId: itemId,
+            };
+        } catch (error) {
+            console.error('Failed to create update link token:', error.response?.data || error.message);
+            throw new Error('Failed to create update link token: ' + (error.response?.data?.error_message || error.message));
+        }
+    }
+
+    /**
      * Exchange public token for access token and save connection
      * @param {string} publicToken - Public token from Plaid Link
      * @param {object} metadata - Metadata from Plaid Link (institution, accounts)

@@ -13,6 +13,7 @@ import {
   Landmark,
   Settings,
   WifiOff,
+  KeyRound,
 } from 'lucide-react';
 import api from '../lib/api';
 
@@ -75,6 +76,8 @@ export default function PlaidConnections() {
   const [linkingAccountId, setLinkingAccountId] = useState<string | null>(null);
   const [selectedLedgerAccount, setSelectedLedgerAccount] = useState<string>('');
   const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
+  const [updateLinkToken, setUpdateLinkToken] = useState<string | null>(null);
+  const [reauthItemId, setReauthItemId] = useState<string | null>(null);
 
   // Check if Plaid service is available on mount
   useEffect(() => {
@@ -277,6 +280,59 @@ export default function PlaidConnections() {
     },
   });
 
+  // Re-authenticate mutation - creates update link token
+  const reauthMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections/${itemId}/update-link-token`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to create update link token');
+      return response.json();
+    },
+    onSuccess: (data, itemId) => {
+      setUpdateLinkToken(data.linkToken);
+      setReauthItemId(itemId);
+    },
+  });
+
+  // Handler for re-auth success
+  const onReauthSuccess = useCallback(
+    async () => {
+      // After re-auth, the connection is fixed on Plaid's side
+      // Refresh connection data and try syncing again
+      queryClient.invalidateQueries({ queryKey: ['plaid-connections'] });
+      queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] });
+      setUpdateLinkToken(null);
+      setReauthItemId(null);
+      // Optionally trigger a sync after re-auth
+      if (reauthItemId) {
+        setTimeout(() => {
+          syncMutation.mutate(reauthItemId);
+        }, 1000);
+      }
+    },
+    [queryClient, reauthItemId, syncMutation]
+  );
+
+  // Plaid Link config for re-authentication (update mode)
+  const reauthPlaidConfig: PlaidLinkOptions = {
+    token: updateLinkToken,
+    onSuccess: onReauthSuccess,
+    onExit: () => {
+      setUpdateLinkToken(null);
+      setReauthItemId(null);
+    },
+  };
+
+  const { open: openReauthPlaidLink, ready: reauthPlaidReady } = usePlaidLink(reauthPlaidConfig);
+
+  // Auto-open reauth link when token is ready
+  useEffect(() => {
+    if (updateLinkToken && reauthPlaidReady) {
+      openReauthPlaidLink();
+    }
+  }, [updateLinkToken, reauthPlaidReady, openReauthPlaidLink]);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Success':
@@ -432,6 +488,18 @@ export default function PlaidConnections() {
                       />
                     </button>
                     <button
+                      onClick={() => reauthMutation.mutate(conn.itemId)}
+                      disabled={reauthMutation.isPending}
+                      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      title="Re-authenticate connection"
+                    >
+                      <KeyRound
+                        className={`w-5 h-5 text-gray-600 dark:text-gray-400 ${
+                          reauthMutation.isPending ? 'animate-pulse' : ''
+                        }`}
+                      />
+                    </button>
+                    <button
                       onClick={() => {
                         if (confirm('Are you sure you want to disconnect this bank?')) {
                           disconnectMutation.mutate(conn.itemId);
@@ -445,10 +513,18 @@ export default function PlaidConnections() {
                   </div>
                 </div>
 
-                {/* Error message */}
+                {/* Error message with re-authenticate button */}
                 {conn.syncStatus === 'Error' && conn.syncErrorMessage && (
-                  <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+                  <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 flex items-center justify-between">
                     <p className="text-sm text-red-600 dark:text-red-400">{conn.syncErrorMessage}</p>
+                    <button
+                      onClick={() => reauthMutation.mutate(conn.itemId)}
+                      disabled={reauthMutation.isPending}
+                      className="ml-4 flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${reauthMutation.isPending ? 'animate-spin' : ''}`} />
+                      Re-authenticate
+                    </button>
                   </div>
                 )}
 

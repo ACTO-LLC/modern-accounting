@@ -6155,6 +6155,18 @@ app.post('/api/plaid/link-token', async (req, res) => {
     }
 });
 
+// Create Plaid Link token in update mode for re-authenticating existing connections
+app.post('/api/plaid/connections/:itemId/update-link-token', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const result = await plaidService.createUpdateLinkToken(itemId);
+        res.json(result);
+    } catch (error) {
+        console.error('Plaid update link token error:', error);
+        res.status(500).json({ error: error.message || 'Failed to create update link token' });
+    }
+});
+
 // Exchange public token for access token (called after Plaid Link success)
 app.post('/api/plaid/exchange-token', async (req, res) => {
     try {
