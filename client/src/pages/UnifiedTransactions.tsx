@@ -219,7 +219,15 @@ export default function UnifiedTransactions() {
         toast.success(`Approved ${data.approved} transactions`);
       }
       if (data?.failed > 0) {
-        toast.error(`Failed to approve ${data.failed} transactions`);
+        // Check if failures are due to missing categorization
+        const needsCategorization = data.results?.filter(
+          (r: { success: boolean; error?: string }) => !r.success && r.error?.includes('manual categorization')
+        ).length || 0;
+        if (needsCategorization > 0) {
+          toast.warning(`${needsCategorization} transactions need manual categorization (no AI suggestion)`);
+        } else {
+          toast.error(`Failed to approve ${data.failed} transactions`);
+        }
       }
     },
     onError: (error: Error) => {

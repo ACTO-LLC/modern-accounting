@@ -6505,6 +6505,13 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
         const results = [];
         for (const txn of transactions) {
             try {
+                // Skip transactions without a valid accountId
+                if (!txn.accountId) {
+                    console.log(`[Batch Approve] Skipping ${txn.id} - no accountId (AI not categorized)`);
+                    results.push({ id: txn.id, success: false, error: 'No suggested account - needs manual categorization' });
+                    continue;
+                }
+
                 // Use dab client with proper headers for DAB Simulator auth
                 const updateResult = await dab.update('banktransactions', txn.id, {
                     ApprovedAccountId: txn.accountId,
@@ -6516,9 +6523,11 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
                 if (updateResult.success) {
                     results.push({ id: txn.id, success: true });
                 } else {
+                    console.log(`[Batch Approve] Failed ${txn.id}: ${updateResult.error}`);
                     results.push({ id: txn.id, success: false, error: updateResult.error });
                 }
             } catch (err) {
+                console.log(`[Batch Approve] Error ${txn.id}: ${err.message}`);
                 results.push({ id: txn.id, success: false, error: err.message });
             }
         }
