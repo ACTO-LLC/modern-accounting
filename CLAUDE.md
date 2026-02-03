@@ -39,6 +39,30 @@
 
 ---
 
+## CRITICAL: NO WORKAROUNDS WITHOUT APPROVAL
+
+**NEVER implement workarounds without explicit developer approval.** This includes:
+
+1. **NEVER insert fake/test data** as a substitute for fixing the actual functionality
+2. **NEVER bypass or mock APIs** when the real integration isn't working
+3. **NEVER implement "temporary" solutions** that circumvent the intended architecture
+4. **NEVER assume a workaround is acceptable** - always ask first
+
+**If something isn't working:**
+- **DIAGNOSE** the root cause
+- **EXPLAIN** the issue to the developer
+- **ASK** before proposing any workaround
+- **WAIT** for approval before implementing alternatives
+
+**Feb 2026 incident:** When Plaid sandbox wasn't returning transactions, attempted to insert fake transactions directly into the database instead of:
+1. Explaining that sandbox mode requires time to generate test data
+2. Asking if the developer wanted to test on production instead
+3. Waiting for guidance on the preferred approach
+
+**The correct approach:** Explain the limitation, present options, and let the developer decide.
+
+---
+
 ## Lessons Learned & Best Practices
 
 ### DAB Config Validation (Feb 2026)

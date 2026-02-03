@@ -108,22 +108,47 @@ export default function PlaidConnections() {
   });
 
   // Fetch chart of accounts (for linking)
-  const { data: ledgerAccountsData } = useQuery({
+  const { data: ledgerAccountsData, isLoading: ledgerAccountsLoading, error: ledgerAccountsError } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await api.get<{ value: LedgerAccount[] }>('/accounts');
-      return response.data.value;
+      console.log('[PlaidConnections] Fetching accounts from /accounts...');
+      try {
+        const response = await api.get<{ value: LedgerAccount[] }>('/accounts');
+        console.log('[PlaidConnections] Raw API response:', response.data);
+        console.log('[PlaidConnections] Accounts count:', response.data?.value?.length);
+        if (response.data?.value?.length > 0) {
+          console.log('[PlaidConnections] Sample account:', JSON.stringify(response.data.value[0]));
+        }
+        return response.data.value;
+      } catch (err: any) {
+        console.error('[PlaidConnections] Failed to fetch accounts:', err.message, err.response?.status, err.response?.data);
+        throw err;
+      }
     },
   });
+
+  // Debug: Log query state
+  console.log('[PlaidConnections] ledgerAccountsLoading:', ledgerAccountsLoading);
+  console.log('[PlaidConnections] ledgerAccountsError:', ledgerAccountsError);
 
   const connections: PlaidConnection[] = connectionsData?.connections || [];
   const plaidAccounts: PlaidAccount[] = accountsData?.accounts || [];
   const ledgerAccounts: LedgerAccount[] = ledgerAccountsData || [];
 
+  // Debug: Log the accounts data
+  console.log('[PlaidConnections] ledgerAccountsData:', ledgerAccountsData);
+  console.log('[PlaidConnections] ledgerAccounts length:', ledgerAccounts.length);
+  if (ledgerAccounts.length > 0) {
+    console.log('[PlaidConnections] First account:', ledgerAccounts[0]);
+    console.log('[PlaidConnections] Account fields:', Object.keys(ledgerAccounts[0]));
+    console.log('[PlaidConnections] Subtypes found:', [...new Set(ledgerAccounts.map(a => a.Subtype))]);
+  }
+
   // Filter ledger accounts for linking (Bank and Credit Card subtypes)
   const linkableAccounts = ledgerAccounts.filter(
     (a) => a.Subtype === 'Bank' || a.Subtype === 'CreditCard'
   );
+  console.log('[PlaidConnections] linkableAccounts length:', linkableAccounts.length);
 
   // Create link token - only if service is available
   const createLinkToken = useCallback(async () => {
@@ -460,30 +485,42 @@ export default function PlaidConnections() {
                           </span>
                         ) : linkingAccountId === account.id ? (
                           <div className="flex items-center gap-2">
-                            <select
-                              value={selectedLedgerAccount}
-                              onChange={(e) => setSelectedLedgerAccount(e.target.value)}
-                              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                            >
-                              <option value="">Select account...</option>
-                              {linkableAccounts.map((la) => (
-                                <option key={la.Id} value={la.Id}>
-                                  {la.Code} - {la.Name}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={() =>
-                                linkAccountMutation.mutate({
-                                  accountId: account.id,
-                                  ledgerAccountId: selectedLedgerAccount,
-                                })
-                              }
-                              disabled={!selectedLedgerAccount || linkAccountMutation.isPending}
-                              className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                              Save
-                            </button>
+                            {ledgerAccountsLoading ? (
+                              <span className="text-xs text-gray-500">Loading accounts...</span>
+                            ) : ledgerAccountsError ? (
+                              <span className="text-xs text-red-500">Failed to load accounts</span>
+                            ) : linkableAccounts.length === 0 ? (
+                              <span className="text-xs text-amber-500">
+                                No Bank/CreditCard accounts found ({ledgerAccounts.length} total)
+                              </span>
+                            ) : (
+                              <>
+                                <select
+                                  value={selectedLedgerAccount}
+                                  onChange={(e) => setSelectedLedgerAccount(e.target.value)}
+                                  className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                >
+                                  <option value="">Select account...</option>
+                                  {linkableAccounts.map((la) => (
+                                    <option key={la.Id} value={la.Id}>
+                                      {la.Code} - {la.Name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() =>
+                                    linkAccountMutation.mutate({
+                                      accountId: account.id,
+                                      ledgerAccountId: selectedLedgerAccount,
+                                    })
+                                  }
+                                  disabled={!selectedLedgerAccount || linkAccountMutation.isPending}
+                                  className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                  Save
+                                </button>
+                              </>
+                            )}
                             <button
                               onClick={() => {
                                 setLinkingAccountId(null);

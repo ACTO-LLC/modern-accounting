@@ -6,7 +6,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { plaidService } from './plaid-service.js';
+import { plaidService, getDabHeaders } from './plaid-service.js';
 import axios from 'axios';
 import crypto from 'crypto';
 import { OpenAI } from 'openai';
@@ -55,6 +55,7 @@ class PlaidSync {
         try {
             const accessToken = await plaidService.getAccessToken(itemId);
             const cursor = connection.LastSyncCursor || null;
+            console.log(`[Plaid Sync DEBUG] Connection ID: ${connection.Id}, Cursor: ${cursor ? cursor.substring(0, 20) + '...' : 'null'}`);
 
             // Call Plaid transactions/sync endpoint
             let hasMore = true;
@@ -71,6 +72,7 @@ class PlaidSync {
                 });
 
                 const { added, modified, removed, next_cursor, has_more } = syncResponse.data;
+                console.log(`[Plaid Sync DEBUG] Plaid returned: added=${added?.length || 0}, modified=${modified?.length || 0}, removed=${removed?.length || 0}, has_more=${has_more}`);
 
                 // Process added transactions
                 if (added && added.length > 0) {
@@ -444,7 +446,10 @@ Respond in JSON format:
 
             return null;
         } catch (error) {
-            console.warn('Rule check error:', error.message);
+            // 404 means categorizationrules entity doesn't exist yet - that's OK
+            if (error.response?.status !== 404) {
+                console.warn('Rule check error:', error.message);
+            }
             return null;
         }
     }
@@ -515,7 +520,9 @@ Respond in JSON format:
         try {
             const headers = await getDabHeaders();
             // Build filter for same date and amount
-            const filter = `TransactionDate eq '${date}' and Amount eq ${amount}`;
+            // Use ISO datetime format for OData compatibility (per CLAUDE.md guidelines)
+            const dateForFilter = `${date}T00:00:00Z`;
+            const filter = `TransactionDate eq ${dateForFilter} and Amount eq ${amount}`;
             const response = await axios.get(`${DAB_API_URL}/banktransactions?$filter=${encodeURIComponent(filter)}`, { headers });
             const candidates = response.data?.value || [];
 
@@ -650,13 +657,13 @@ Respond in JSON format:
             });
 
             const accounts = response.data.accounts;
-            const headers = await getDabHeaders();
 
             for (const account of accounts) {
                 const plaidAccounts = await plaidService.getAllAccounts();
                 const plaidAccount = plaidAccounts.find(a => a.PlaidAccountId === account.account_id);
 
                 if (plaidAccount) {
+                    const headers = await getDabHeaders();
                     await axios.patch(
                         `${DAB_API_URL}/plaidaccounts/Id/${plaidAccount.Id}`,
                         {

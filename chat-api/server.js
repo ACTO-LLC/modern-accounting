@@ -6207,6 +6207,59 @@ app.post('/api/plaid/connections/:itemId/sync', async (req, res) => {
     }
 });
 
+// Refresh transactions for a Plaid connection (triggers Plaid to fetch new data)
+// For sandbox with user_transactions_dynamic, this generates test transactions
+app.post('/api/plaid/connections/:itemId/refresh', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+
+        // Trigger refresh
+        await plaidService.refreshTransactions(itemId);
+
+        // Wait a moment for Plaid to process
+        await new Promise(r => setTimeout(r, 2000));
+
+        // Then sync to pull the new transactions
+        const syncResult = await plaidSync.syncConnection(itemId);
+
+        res.json({
+            success: true,
+            message: 'Transactions refreshed and synced',
+            ...syncResult
+        });
+    } catch (error) {
+        console.error('Plaid refresh error:', error);
+        res.status(500).json({ error: error.message || 'Failed to refresh transactions' });
+    }
+});
+
+// DEBUG: Get raw Plaid transactions response
+app.get('/api/plaid/connections/:itemId/debug-transactions', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const accessToken = await plaidService.getAccessToken(itemId);
+        const client = plaidService.getClient();
+
+        // Call Plaid directly with no cursor to get all transactions
+        const response = await client.transactionsSync({
+            access_token: accessToken,
+            cursor: undefined,
+            count: 100,
+        });
+
+        res.json({
+            added: response.data.added?.length || 0,
+            modified: response.data.modified?.length || 0,
+            removed: response.data.removed?.length || 0,
+            has_more: response.data.has_more,
+            transactions: response.data.added?.slice(0, 5) || [], // First 5 for debug
+        });
+    } catch (error) {
+        console.error('Debug transactions error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Sync all active Plaid connections
 app.post('/api/plaid/sync-all', async (req, res) => {
     try {

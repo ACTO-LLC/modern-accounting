@@ -57,6 +57,13 @@
                     ]
                 },
                 {
+                    "role": "Service",
+                    "actions": [
+                        "create",
+                        "read"
+                    ]
+                },
+                {
                     "role": "Accountant",
                     "actions": [
                         "create",
@@ -134,6 +141,14 @@
                 },
                 {
                     "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                },
+                {
+                    "role": "Service",
                     "actions": [
                         "create",
                         "read",
