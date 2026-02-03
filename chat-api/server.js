@@ -6535,6 +6535,70 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
     }
 });
 
+// Get bank transactions (proxy to DAB with proper headers)
+app.get('/api/banktransactions', async (req, res) => {
+    try {
+        const authToken = extractAuthToken(req);
+        // Forward OData query params
+        const filter = req.query.$filter;
+        const orderby = req.query.$orderby;
+        const options = {};
+        if (filter) options.filter = filter;
+        if (orderby) options.orderby = orderby;
+
+        const result = await dab.get('banktransactions', options, authToken);
+
+        if (!result.success) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        res.json({ value: result.value });
+    } catch (error) {
+        console.error('Bank transactions get error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to get transactions' });
+    }
+});
+
+// Get single bank transaction by ID
+app.get('/api/banktransactions/Id/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const authToken = extractAuthToken(req);
+
+        const result = await dab.getById('banktransactions', id, authToken);
+
+        if (!result.success) {
+            return res.status(404).json({ error: result.error || 'Transaction not found' });
+        }
+
+        res.json(result.value);
+    } catch (error) {
+        console.error('Bank transaction get error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to get transaction' });
+    }
+});
+
+// Update individual bank transaction (proxy to DAB with proper headers)
+app.patch('/api/banktransactions/Id/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const authToken = extractAuthToken(req);
+        console.log(`[Bank Transaction] Updating ${id}`);
+
+        const result = await dab.update('banktransactions', id, req.body, authToken);
+
+        if (!result.success) {
+            console.error(`[Bank Transaction] Update failed: ${result.error}`);
+            return res.status(500).json({ error: result.error });
+        }
+
+        res.json(result.value);
+    } catch (error) {
+        console.error('Bank transaction update error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to update transaction' });
+    }
+});
+
 // Get categorization rules
 app.get('/api/categorization-rules', async (req, res) => {
     try {

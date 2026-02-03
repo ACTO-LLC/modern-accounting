@@ -23,6 +23,10 @@ export default defineConfig(({ mode }) => {
           target: chatApiUrl,
           changeOrigin: true,
         },
+        '/api/banktransactions': {
+          target: chatApiUrl,
+          changeOrigin: true,
+        },
         '/api/post-transactions': {
           target: chatApiUrl,
           changeOrigin: true,

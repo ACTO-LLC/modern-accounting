@@ -193,24 +193,37 @@ export default function UnifiedTransactions() {
     },
   });
 
-  // Bulk actions
+  // Bulk actions - uses chat-api batch-approve endpoint for proper DAB auth
   const bulkApproveMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(
-        ids.map(id => {
-          const txn = transactions.find(t => t.Id === id);
-          return api.patch(`/banktransactions/Id/${id}`, {
-            Status: 'Approved',
-            ApprovedAccountId: txn?.SuggestedAccountId,
-            ApprovedCategory: txn?.SuggestedCategory,
-            ApprovedMemo: txn?.SuggestedMemo,
-          });
-        })
-      );
+      // Build transaction list with suggested values
+      const txnList = ids.map(id => {
+        const txn = transactions.find(t => t.Id === id);
+        return {
+          id,
+          accountId: txn?.SuggestedAccountId || '',
+          category: txn?.SuggestedCategory || '',
+        };
+      });
+
+      // Use chat-api batch-approve endpoint which has proper X-MS-API-ROLE headers
+      const response = await api.post('/transactions/batch-approve', {
+        transactions: txnList,
+      });
+      return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
       setSelectedIds({ type: 'include', ids: new Set() });
+      if (data?.approved > 0) {
+        toast.success(`Approved ${data.approved} transactions`);
+      }
+      if (data?.failed > 0) {
+        toast.error(`Failed to approve ${data.failed} transactions`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Error approving transactions: ${error.message}`);
     },
   });
 
