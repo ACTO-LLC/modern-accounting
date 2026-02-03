@@ -6504,32 +6504,73 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
 
         // Pre-fetch accounts for category lookup if needed
         let accountsCache = null;
-        const getAccountByCategory = async (category) => {
-            if (!category) return null;
+        const getAccounts = async () => {
             if (!accountsCache) {
                 const accountsResult = await dab.get('accounts', {}, authToken);
                 accountsCache = accountsResult.success ? accountsResult.value : [];
             }
+            return accountsCache;
+        };
+
+        const getAccountByCategory = async (category) => {
+            if (!category) return null;
+            const accounts = await getAccounts();
             // Try exact match first, then partial match
-            const exactMatch = accountsCache.find(a => a.Name?.toLowerCase() === category.toLowerCase());
+            const exactMatch = accounts.find(a => a.Name?.toLowerCase() === category.toLowerCase());
             if (exactMatch) return exactMatch.Id;
-            const partialMatch = accountsCache.find(a =>
+            const partialMatch = accounts.find(a =>
                 a.Name?.toLowerCase().includes(category.toLowerCase()) ||
                 category.toLowerCase().includes(a.Name?.toLowerCase())
             );
             return partialMatch?.Id || null;
         };
 
+        // Get fallback account based on transaction type (income vs expense)
+        const getFallbackAccount = async (isIncome) => {
+            const accounts = await getAccounts();
+            if (isIncome) {
+                // Look for Other Income or Miscellaneous Income
+                return accounts.find(a =>
+                    a.Name?.toLowerCase().includes('other') && a.Type === 'Revenue'
+                )?.Id || accounts.find(a =>
+                    a.Name?.toLowerCase().includes('miscellaneous') && a.Type === 'Revenue'
+                )?.Id;
+            } else {
+                // Look for Miscellaneous Expense or Other Expense
+                return accounts.find(a =>
+                    a.Name?.toLowerCase().includes('miscellaneous') && a.Type === 'Expense'
+                )?.Id || accounts.find(a =>
+                    a.Name?.toLowerCase().includes('other') && a.Type === 'Expense'
+                )?.Id;
+            }
+        };
+
         const results = [];
         for (const txn of transactions) {
             try {
                 let accountId = txn.accountId;
+                let category = txn.category;
 
                 // If no accountId but have category, try to look up by category name
-                if (!accountId && txn.category) {
-                    accountId = await getAccountByCategory(txn.category);
+                if (!accountId && category) {
+                    accountId = await getAccountByCategory(category);
                     if (accountId) {
-                        console.log(`[Batch Approve] Resolved "${txn.category}" -> account ${accountId}`);
+                        console.log(`[Batch Approve] Resolved "${category}" -> account ${accountId}`);
+                    }
+                }
+
+                // If still no accountId, use fallback based on transaction amount
+                if (!accountId) {
+                    // Fetch transaction to determine if income or expense
+                    const txnResult = await dab.getById('banktransactions', txn.id, authToken);
+                    const txnData = txnResult.value?.value?.[0] || txnResult.value;
+                    if (txnData) {
+                        const isIncome = parseFloat(txnData.Amount) > 0;
+                        accountId = await getFallbackAccount(isIncome);
+                        if (accountId) {
+                            category = isIncome ? 'Other Income' : 'Miscellaneous Expense';
+                            console.log(`[Batch Approve] Using fallback ${category} for ${txn.id}`);
+                        }
                     }
                 }
 
@@ -6543,7 +6584,7 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
                 // Use dab client with proper headers for DAB Simulator auth
                 const updateResult = await dab.update('banktransactions', txn.id, {
                     ApprovedAccountId: accountId,
-                    ApprovedCategory: txn.category,
+                    ApprovedCategory: category || txn.category,
                     Status: 'Approved',
                     ReviewedDate: new Date().toISOString()
                 }, authToken);
