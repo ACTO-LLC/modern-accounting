@@ -6502,19 +6502,47 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
 
         console.log(`[Batch Approve] Processing ${transactions.length} transactions`);
 
+        // Pre-fetch accounts for category lookup if needed
+        let accountsCache = null;
+        const getAccountByCategory = async (category) => {
+            if (!category) return null;
+            if (!accountsCache) {
+                const accountsResult = await dab.get('accounts', {}, authToken);
+                accountsCache = accountsResult.success ? accountsResult.value : [];
+            }
+            // Try exact match first, then partial match
+            const exactMatch = accountsCache.find(a => a.Name?.toLowerCase() === category.toLowerCase());
+            if (exactMatch) return exactMatch.Id;
+            const partialMatch = accountsCache.find(a =>
+                a.Name?.toLowerCase().includes(category.toLowerCase()) ||
+                category.toLowerCase().includes(a.Name?.toLowerCase())
+            );
+            return partialMatch?.Id || null;
+        };
+
         const results = [];
         for (const txn of transactions) {
             try {
+                let accountId = txn.accountId;
+
+                // If no accountId but have category, try to look up by category name
+                if (!accountId && txn.category) {
+                    accountId = await getAccountByCategory(txn.category);
+                    if (accountId) {
+                        console.log(`[Batch Approve] Resolved "${txn.category}" -> account ${accountId}`);
+                    }
+                }
+
                 // Skip transactions without a valid accountId
-                if (!txn.accountId) {
-                    console.log(`[Batch Approve] Skipping ${txn.id} - no accountId (AI not categorized)`);
-                    results.push({ id: txn.id, success: false, error: 'No suggested account - needs manual categorization' });
+                if (!accountId) {
+                    console.log(`[Batch Approve] Skipping ${txn.id} - no matching account for category "${txn.category}"`);
+                    results.push({ id: txn.id, success: false, error: `No matching account for category "${txn.category}"` });
                     continue;
                 }
 
                 // Use dab client with proper headers for DAB Simulator auth
                 const updateResult = await dab.update('banktransactions', txn.id, {
-                    ApprovedAccountId: txn.accountId,
+                    ApprovedAccountId: accountId,
                     ApprovedCategory: txn.category,
                     Status: 'Approved',
                     ReviewedDate: new Date().toISOString()
