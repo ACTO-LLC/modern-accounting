@@ -120,7 +120,8 @@ class PlaidSync {
         let successCount = 0;
 
         // Get chart of accounts for categorization
-        const accountsResponse = await axios.get(`${DAB_API_URL}/accounts`);
+        const headers = await getDabHeaders();
+        const accountsResponse = await axios.get(`${DAB_API_URL}/accounts`, { headers });
         const accounts = accountsResponse.data?.value || [];
 
         // Get Plaid accounts for this connection
@@ -401,9 +402,11 @@ Respond in JSON format:
      */
     async checkCategorizationRules(description, merchant) {
         try {
+            const headers = await getDabHeaders();
             // Get active rules ordered by priority
             const response = await axios.get(
-                `${DAB_API_URL}/categorizationrules?$filter=IsActive eq true&$orderby=Priority`
+                `${DAB_API_URL}/categorizationrules?$filter=IsActive eq true&$orderby=Priority`,
+                { headers }
             );
             const rules = response.data?.value || [];
 
@@ -433,7 +436,7 @@ Respond in JSON format:
                     // Increment hit count (fire and forget)
                     axios.patch(`${DAB_API_URL}/categorizationrules/Id/${rule.Id}`, {
                         HitCount: (rule.HitCount || 0) + 1
-                    }).catch(() => {});
+                    }, { headers }).catch(() => {});
 
                     return rule;
                 }
@@ -463,6 +466,7 @@ Respond in JSON format:
         const code = `PLAID-${crypto.randomUUID()}`.toUpperCase();
 
         // Create new account
+        const headers = await getDabHeaders();
         const newId = crypto.randomUUID();
         await axios.post(
             `${DAB_API_URL}/accounts`,
@@ -474,7 +478,7 @@ Respond in JSON format:
                 Description: `Auto-created from Plaid bank feed`,
                 IsActive: true,
             },
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
 
         console.log(`Created source account: ${fullName} (${type})`);
@@ -483,12 +487,20 @@ Respond in JSON format:
 
     /**
      * Get transaction by Plaid transaction ID
+     * Uses OData filter for efficient database lookup instead of fetching all
      */
     async getTransactionByPlaidId(plaidTransactionId) {
         try {
-            const response = await axios.get(`${DAB_API_URL}/banktransactions`);
+            const headers = await getDabHeaders();
+            const response = await axios.get(`${DAB_API_URL}/banktransactions`, {
+                headers,
+                params: {
+                    $filter: `PlaidTransactionId eq '${plaidTransactionId}'`,
+                    $top: 1
+                }
+            });
             const transactions = response.data?.value || [];
-            return transactions.find(t => t.PlaidTransactionId === plaidTransactionId) || null;
+            return transactions[0] || null;
         } catch (error) {
             console.error('Failed to get transaction:', error.message);
             return null;
@@ -501,9 +513,10 @@ Respond in JSON format:
      */
     async checkForDuplicates(date, amount, description) {
         try {
+            const headers = await getDabHeaders();
             // Build filter for same date and amount
             const filter = `TransactionDate eq '${date}' and Amount eq ${amount}`;
-            const response = await axios.get(`${DAB_API_URL}/banktransactions?$filter=${encodeURIComponent(filter)}`);
+            const response = await axios.get(`${DAB_API_URL}/banktransactions?$filter=${encodeURIComponent(filter)}`, { headers });
             const candidates = response.data?.value || [];
 
             if (candidates.length === 0) return null;
@@ -544,10 +557,11 @@ Respond in JSON format:
      * Save bank transaction to database
      */
     async saveBankTransaction(transaction) {
+        const headers = await getDabHeaders();
         await axios.post(
             `${DAB_API_URL}/banktransactions`,
             transaction,
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -555,10 +569,11 @@ Respond in JSON format:
      * Update bank transaction
      */
     async updateBankTransaction(id, updates) {
+        const headers = await getDabHeaders();
         await axios.patch(
             `${DAB_API_URL}/banktransactions/Id/${id}`,
             updates,
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -566,6 +581,7 @@ Respond in JSON format:
      * Update connection status
      */
     async updateConnectionStatus(connectionId, status, errorMessage = null) {
+        const headers = await getDabHeaders();
         await axios.patch(
             `${DAB_API_URL}/plaidconnections/Id/${connectionId}`,
             {
@@ -573,7 +589,7 @@ Respond in JSON format:
                 SyncErrorMessage: errorMessage,
                 UpdatedAt: new Date().toISOString(),
             },
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -581,6 +597,7 @@ Respond in JSON format:
      * Update connection after successful sync
      */
     async updateConnectionAfterSync(connectionId, cursor, status) {
+        const headers = await getDabHeaders();
         await axios.patch(
             `${DAB_API_URL}/plaidconnections/Id/${connectionId}`,
             {
@@ -590,7 +607,7 @@ Respond in JSON format:
                 SyncErrorMessage: null,
                 UpdatedAt: new Date().toISOString(),
             },
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers }
         );
     }
 
@@ -633,6 +650,7 @@ Respond in JSON format:
             });
 
             const accounts = response.data.accounts;
+            const headers = await getDabHeaders();
 
             for (const account of accounts) {
                 const plaidAccounts = await plaidService.getAllAccounts();
@@ -646,7 +664,7 @@ Respond in JSON format:
                             AvailableBalance: account.balances?.available,
                             UpdatedAt: new Date().toISOString(),
                         },
-                        { headers: { 'Content-Type': 'application/json' } }
+                        { headers }
                     );
                 }
             }
