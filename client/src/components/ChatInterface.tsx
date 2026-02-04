@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useChat, Insight, FileAttachment, ProactiveSuggestion, SuggestionFrequency } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 import QBOConnectButton, { getQboSessionId } from './QBOConnectButton';
+import api from '../lib/api';
 
 // API configuration
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
@@ -527,9 +528,8 @@ export default function ChatInterface() {
   // Fetch insights when chat opens
   useEffect(() => {
     if (isOpen) {
-      fetch(`${CHAT_API_BASE_URL}/api/insights`)
-        .then((r) => r.json())
-        .then((data) => setInsights(data.insights || []))
+      api.get('/insights')
+        .then((r) => setInsights(r.data.insights || []))
         .catch(console.error);
     }
   }, [isOpen, setInsights]);

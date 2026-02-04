@@ -202,7 +202,8 @@ const DAB_EXCLUDED_PATHS = [
     '/api/transactions',
     '/api/banktransactions',
     '/api/post-transactions',
-    '/api/categorization-rules'
+    '/api/categorization-rules',
+    '/api/insights'
 ];
 
 // Create proxy middleware instance once (not per-request)
@@ -7625,7 +7626,7 @@ app.post('/api/chat', optionalJWT, async (req, res) => {
     }
 });
 
-app.get('/api/insights', async (req, res) => {
+app.get('/api/insights', validateJWT, async (req, res) => {
     try {
         const insights = [];
         const today = getTodayDate();

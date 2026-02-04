@@ -257,10 +257,13 @@ export async function resolveTenant(req, res, next) {
     try {
         let tenant = null;
 
-        // Priority 1: Explicit X-Tenant-Id header
+        // Priority 1: Explicit X-Tenant-Id header (check both internal ID and Entra ID)
         const tenantIdHeader = req.headers['x-tenant-id'];
         if (tenantIdHeader) {
             tenant = await getTenantById(tenantIdHeader);
+            if (!tenant) {
+                tenant = await getTenantByEntraId(tenantIdHeader);
+            }
         }
 
         // Priority 2: X-Tenant-Slug header
