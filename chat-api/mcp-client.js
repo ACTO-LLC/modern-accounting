@@ -99,7 +99,7 @@ class McpServer {
         }
     }
 
-    async callTool(toolName, args = {}, authToken = null) {
+    async callTool(toolName, args = {}, authToken = null, extraHeaders = {}) {
         if (!await this.initialize()) {
             return { error: `${this.name} MCP not initialized` };
         }
@@ -113,7 +113,7 @@ class McpServer {
         };
 
         try {
-            const headers = { 'Content-Type': 'application/json', ...this.headers };
+            const headers = { 'Content-Type': 'application/json', ...this.headers, ...extraHeaders };
             if (this.sessionId) headers['Mcp-Session-Id'] = this.sessionId;
             // Forward auth token for authenticated requests
             if (authToken) {
@@ -136,7 +136,7 @@ class McpServer {
                     console.log(`[${this.name}] Session expired, reinitializing...`);
                     this.initialized = false;
                     this.sessionId = null;
-                    return this.callTool(toolName, args, authToken);
+                    return this.callTool(toolName, args, authToken, extraHeaders);
                 }
                 return { error: parsed.error.message };
             }
@@ -156,7 +156,7 @@ class McpServer {
                 console.log(`[${this.name}] Session not found, reinitializing...`);
                 this.initialized = false;
                 this.sessionId = null;
-                return this.callTool(toolName, args, authToken);
+                return this.callTool(toolName, args, authToken, extraHeaders);
             }
             console.error(`[${this.name}] Tool call failed:`, error.message);
             return { error: error.message };
@@ -216,7 +216,7 @@ class McpClientManager {
         return this.allTools;
     }
 
-    async callTool(toolName, args = {}, authToken = null) {
+    async callTool(toolName, args = {}, authToken = null, extraHeaders = {}) {
         const mapping = this.toolToServer.get(toolName);
         if (!mapping) {
             return { error: `Unknown tool: ${toolName}` };
@@ -224,7 +224,7 @@ class McpClientManager {
 
         const { server, originalName } = mapping;
         console.log(`Routing ${toolName} -> ${server.name}::${originalName}`);
-        return server.callTool(originalName, args, authToken);
+        return server.callTool(originalName, args, authToken, extraHeaders);
     }
 
     // Direct access to specific server

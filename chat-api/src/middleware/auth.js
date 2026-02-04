@@ -10,17 +10,22 @@ import * as jose from 'jose';
 /**
  * Configuration for JWT validation
  */
+const tenantId = process.env.AZURE_AD_TENANT_ID || 'common';
 const config = {
-    // Primary Entra ID issuer (enterprise)
+    // Primary Entra ID issuer - v2.0 format
     entraIdIssuer: process.env.AZURE_AD_ISSUER ||
-        `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID || 'common'}/v2.0`,
+        `https://login.microsoftonline.com/${tenantId}/v2.0`,
+    // Entra ID issuer - v1.0 format (Azure AD issues v1 tokens by default)
+    entraIdV1Issuer: `https://sts.windows.net/${tenantId}/`,
     // B2C issuer (SMB users)
     b2cIssuer: process.env.AZURE_B2C_ISSUER || null,
-    // Expected audience (API client ID)
+    // Expected audience (API client ID) - accept with or without api:// prefix
     audience: process.env.AZURE_AD_AUDIENCE || process.env.VITE_AZURE_CLIENT_ID,
-    // JWKS endpoint for key verification
+    // JWKS endpoint for key verification - v2.0
     jwksUri: process.env.AZURE_AD_JWKS_URI ||
-        `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID || 'common'}/discovery/v2.0/keys`,
+        `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
+    // JWKS endpoint - v1.0 (uses common endpoint)
+    v1JwksUri: `https://login.microsoftonline.com/${tenantId}/discovery/keys`,
     // B2C JWKS endpoint
     b2cJwksUri: process.env.AZURE_B2C_JWKS_URI || null,
     // Skip auth in development if explicitly configured
@@ -28,14 +33,31 @@ const config = {
 };
 
 /**
+ * Build array of acceptable audiences
+ * Accepts both with and without api:// prefix
+ */
+function getAcceptableAudiences() {
+    const aud = config.audience;
+    if (!aud) return [];
+    const audiences = [aud];
+    if (aud.startsWith('api://')) {
+        audiences.push(aud.substring(6)); // Also accept without prefix
+    } else {
+        audiences.push(`api://${aud}`); // Also accept with prefix
+    }
+    return audiences;
+}
+
+/**
  * JWKS clients for token verification
  * Cached for performance
  */
 let jwksClient = null;
+let v1JwksClient = null;
 let b2cJwksClient = null;
 
 /**
- * Get or create the JWKS client for Entra ID
+ * Get or create the JWKS client for Entra ID v2.0
  * @returns {jose.JWTVerifyGetKey}
  */
 function getJwksClient() {
@@ -43,6 +65,17 @@ function getJwksClient() {
         jwksClient = jose.createRemoteJWKSet(new URL(config.jwksUri));
     }
     return jwksClient;
+}
+
+/**
+ * Get or create the JWKS client for Entra ID v1.0
+ * @returns {jose.JWTVerifyGetKey}
+ */
+function getV1JwksClient() {
+    if (!v1JwksClient) {
+        v1JwksClient = jose.createRemoteJWKSet(new URL(config.v1JwksUri));
+    }
+    return v1JwksClient;
 }
 
 /**
@@ -122,34 +155,45 @@ function extractUserInfo(payload) {
  * @throws {Error} If token is invalid
  */
 async function validateToken(token) {
-    const validIssuers = [config.entraIdIssuer];
-    if (config.b2cIssuer) {
-        validIssuers.push(config.b2cIssuer);
-    }
+    const audiences = getAcceptableAudiences();
 
-    // Try Entra ID first
+    // Try Entra ID v2.0 first
     try {
         const result = await jose.jwtVerify(token, getJwksClient(), {
             issuer: config.entraIdIssuer,
-            audience: config.audience,
+            audience: audiences,
         });
         return result;
-    } catch (entraError) {
-        // If B2C is configured, try that
-        const b2cClient = getB2CJwksClient();
-        if (b2cClient && config.b2cIssuer) {
-            try {
-                const result = await jose.jwtVerify(token, b2cClient, {
-                    issuer: config.b2cIssuer,
-                    audience: config.audience,
-                });
-                return result;
-            } catch (b2cError) {
-                // Both failed, throw the original Entra error
-                throw entraError;
+    } catch (v2Error) {
+        console.log('[Auth] v2.0 validation failed:', v2Error.code || v2Error.message);
+
+        // Try Entra ID v1.0 (Azure AD issues v1 tokens by default)
+        try {
+            const result = await jose.jwtVerify(token, getV1JwksClient(), {
+                issuer: config.entraIdV1Issuer,
+                audience: audiences,
+            });
+            console.log('[Auth] v1.0 validation succeeded');
+            return result;
+        } catch (v1Error) {
+            console.log('[Auth] v1.0 validation failed:', v1Error.code || v1Error.message);
+
+            // If B2C is configured, try that
+            const b2cClient = getB2CJwksClient();
+            if (b2cClient && config.b2cIssuer) {
+                try {
+                    const result = await jose.jwtVerify(token, b2cClient, {
+                        issuer: config.b2cIssuer,
+                        audience: audiences,
+                    });
+                    return result;
+                } catch (b2cError) {
+                    // All failed, throw the v2 error (most likely intended provider)
+                    throw v2Error;
+                }
             }
+            throw v2Error;
         }
-        throw entraError;
     }
 }
 
