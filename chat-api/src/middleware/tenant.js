@@ -63,6 +63,44 @@ async function getTenantById(tenantId) {
 }
 
 /**
+ * Get tenant by internal ID or Entra ID in a single query.
+ * Used when X-Tenant-Id header may contain either value.
+ * @param {string} idValue - Internal tenant UUID or Azure AD tenant ID
+ * @returns {Promise<Object | null>}
+ */
+async function getTenantByIdOrEntraId(idValue) {
+    // Check both caches first
+    const cachedById = tenantCache.get(`id:${idValue}`);
+    if (cachedById && Date.now() < cachedById.expiresAt) {
+        return cachedById.data;
+    }
+    const cachedByEntra = tenantCache.get(`entra:${idValue}`);
+    if (cachedByEntra && Date.now() < cachedByEntra.expiresAt) {
+        return cachedByEntra.data;
+    }
+
+    const result = await query(
+        `SELECT Id, Name, Slug, EntraIdTenantId, B2CTenantName,
+                SubscriptionTier, MaxUsers, MaxCompanies, BrandingConfig,
+                ComplianceFlags, IsActive
+         FROM Tenants WHERE (Id = @idValue OR EntraIdTenantId = @idValue) AND IsActive = 1`,
+        { idValue }
+    );
+
+    const tenant = result.recordset[0] || null;
+
+    if (tenant) {
+        const expiresAt = Date.now() + TENANT_CACHE_TTL;
+        tenantCache.set(`id:${tenant.Id}`, { data: tenant, expiresAt });
+        if (tenant.EntraIdTenantId) {
+            tenantCache.set(`entra:${tenant.EntraIdTenantId}`, { data: tenant, expiresAt });
+        }
+    }
+
+    return tenant;
+}
+
+/**
  * Get tenant from cache or database by Entra ID tenant ID
  * @param {string} entraIdTenantId - Azure AD tenant ID
  * @returns {Promise<Object | null>}
@@ -257,10 +295,10 @@ export async function resolveTenant(req, res, next) {
     try {
         let tenant = null;
 
-        // Priority 1: Explicit X-Tenant-Id header
+        // Priority 1: Explicit X-Tenant-Id header (matches internal ID or Entra ID)
         const tenantIdHeader = req.headers['x-tenant-id'];
         if (tenantIdHeader) {
-            tenant = await getTenantById(tenantIdHeader);
+            tenant = await getTenantByIdOrEntraId(tenantIdHeader);
         }
 
         // Priority 2: X-Tenant-Slug header

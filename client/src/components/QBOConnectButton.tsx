@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link2, Link2Off, Loader2, Building2 } from 'lucide-react';
-
-// API configuration
-const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
+import api from '../lib/api';
 
 interface QBOStatus {
   connected: boolean;
@@ -36,15 +34,11 @@ export default function QBOConnectButton({ onStatusChange, compact = false }: QB
   // Check connection status
   const checkStatus = useCallback(async () => {
     try {
-      const response = await fetch(`${CHAT_API_BASE_URL}/api/qbo/status`, {
-        headers: {
-          'X-QBO-Session-Id': sessionId
-        }
+      const response = await api.get('/qbo/status', {
+        headers: { 'X-QBO-Session-Id': sessionId }
       });
 
-      if (!response.ok) throw new Error('Status check failed');
-
-      const data = await response.json();
+      const data = response.data;
       const newStatus = {
         connected: data.connected,
         companyName: data.companyName,
@@ -107,20 +101,13 @@ export default function QBOConnectButton({ onStatusChange, compact = false }: QB
     setIsConnecting(true);
 
     try {
-      const response = await fetch(`${CHAT_API_BASE_URL}/api/qbo/connect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-QBO-Session-Id': sessionId
-        },
-        body: JSON.stringify({
-          redirectUrl: window.location.origin + window.location.pathname
-        })
+      const response = await api.post('/qbo/connect', {
+        redirectUrl: window.location.origin + window.location.pathname
+      }, {
+        headers: { 'X-QBO-Session-Id': sessionId }
       });
 
-      if (!response.ok) throw new Error('Connect initiation failed');
-
-      const data = await response.json();
+      const data = response.data;
 
       if (data.authUrl) {
         // Open OAuth in popup or redirect
@@ -144,12 +131,8 @@ export default function QBOConnectButton({ onStatusChange, compact = false }: QB
   // Disconnect
   const handleDisconnect = async () => {
     try {
-      await fetch(`${CHAT_API_BASE_URL}/api/qbo/disconnect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-QBO-Session-Id': sessionId
-        }
+      await api.post('/qbo/disconnect', {}, {
+        headers: { 'X-QBO-Session-Id': sessionId }
       });
 
       setStatus({ connected: false, sessionId });

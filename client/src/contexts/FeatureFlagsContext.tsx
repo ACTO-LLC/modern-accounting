@@ -74,7 +74,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       // Try to fetch existing feature flags for the company
-      const response = await api.get(`/companyfeatureflags?$filter=CompanyId eq '${DEFAULT_COMPANY_ID}'`);
+      const response = await api.get(`/companyfeatureflags?$filter=CompanyId eq ${DEFAULT_COMPANY_ID}`);
       const records = response.data?.value || [];
 
       if (records.length > 0) {

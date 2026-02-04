@@ -202,7 +202,8 @@ const DAB_EXCLUDED_PATHS = [
     '/api/transactions',
     '/api/banktransactions',
     '/api/post-transactions',
-    '/api/categorization-rules'
+    '/api/categorization-rules',
+    '/api/insights'
 ];
 
 // Create proxy middleware instance once (not per-request)
@@ -5687,7 +5688,36 @@ async function executeFunction(name, args, authToken = null) {
     const isDynamicTool = dynamicTools.some(t => t.function.name === name);
     if (isDynamicTool) {
         console.log(`Executing MCP tool: ${name}`);
-        const result = await mcpManager.callTool(name, args, authToken);
+        // For QBO tools, inject access token and realm ID from stored connection
+        let extraHeaders = {};
+        if (name.startsWith('qbo_')) {
+            try {
+                const connection = await qboAuth.getActiveConnection();
+                if (connection && connection.AccessToken && connection.RealmId) {
+                    // Refresh token if needed before passing to MCP
+                    const tokenExpiry = new Date(connection.TokenExpiry);
+                    if (tokenExpiry < new Date(Date.now() + 5 * 60 * 1000)) {
+                        console.log('[QBO MCP] Token near expiry, refreshing...');
+                        await qboAuth.refreshTokenIfNeeded(connection.RealmId);
+                        // Re-fetch after refresh
+                        const refreshed = await qboAuth.getActiveConnection();
+                        if (refreshed) {
+                            extraHeaders['X-QBO-Access-Token'] = refreshed.AccessToken;
+                            extraHeaders['X-QBO-Realm-Id'] = refreshed.RealmId;
+                        }
+                    } else {
+                        extraHeaders['X-QBO-Access-Token'] = connection.AccessToken;
+                        extraHeaders['X-QBO-Realm-Id'] = connection.RealmId;
+                    }
+                    console.log(`[QBO MCP] Injecting access token for realm ${connection.RealmId}`);
+                } else {
+                    console.warn('[QBO MCP] No active QBO connection for tool call');
+                }
+            } catch (err) {
+                console.warn('[QBO MCP] Could not get QBO connection:', err.message);
+            }
+        }
+        const result = await mcpManager.callTool(name, args, authToken, extraHeaders);
         return result;
     }
 
@@ -7625,7 +7655,7 @@ app.post('/api/chat', optionalJWT, async (req, res) => {
     }
 });
 
-app.get('/api/insights', async (req, res) => {
+app.get('/api/insights', validateJWT, async (req, res) => {
     try {
         const insights = [];
         const today = getTodayDate();
@@ -7979,6 +8009,34 @@ async function startServer() {
             console.warn('Using fallback static tools');
         }
     });
+
+    // QBO OAuth redirect listener
+    // Intuit developer portal has localhost:7071 registered as redirect URI,
+    // but chat-api runs on PORT (8080). This listener redirects OAuth callbacks.
+    const QBO_REDIRECT_PORT = 7071;
+    if (parseInt(PORT) !== QBO_REDIRECT_PORT) {
+        const http = await import('http');
+        const redirectServer = http.createServer((req, res) => {
+            if (req.url.startsWith('/api/qbo/oauth-callback')) {
+                const redirectUrl = `http://localhost:${PORT}${req.url}`;
+                console.log(`[QBO Redirect] ${QBO_REDIRECT_PORT} -> ${redirectUrl}`);
+                res.writeHead(302, { Location: redirectUrl });
+                res.end();
+            } else {
+                res.writeHead(404);
+                res.end('Not found');
+            }
+        });
+        redirectServer.listen(QBO_REDIRECT_PORT, () => {
+            console.log(`QBO OAuth redirect listener on http://localhost:${QBO_REDIRECT_PORT} -> :${PORT}`);
+        }).on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.warn(`[QBO Redirect] Port ${QBO_REDIRECT_PORT} already in use, skipping redirect listener`);
+            } else {
+                console.warn(`[QBO Redirect] Could not start redirect listener:`, err.message);
+            }
+        });
+    }
 }
 
 startServer();
