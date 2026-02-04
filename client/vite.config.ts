@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       host: true,
       allowedHosts: ['host.docker.internal'],
       proxy: {
-        // Route transaction endpoints to chat-api (must come before generic /api)
+        // Route chat-api endpoints (must come before generic /api catch-all)
         '/api/transactions': {
           target: chatApiUrl,
           changeOrigin: true,
@@ -36,6 +36,22 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
         '/api/plaid': {
+          target: chatApiUrl,
+          changeOrigin: true,
+        },
+        '/api/qbo': {
+          target: chatApiUrl,
+          changeOrigin: true,
+        },
+        '/api/insights': {
+          target: chatApiUrl,
+          changeOrigin: true,
+        },
+        '/api/users': {
+          target: chatApiUrl,
+          changeOrigin: true,
+        },
+        '/api/chat': {
           target: chatApiUrl,
           changeOrigin: true,
         },
