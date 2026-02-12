@@ -39,6 +39,17 @@ function log(message, type = 'info') {
   console.log(`${prefix[type] || prefix.info} ${message}`);
 }
 
+/**
+ * Shell-quote a value for safe interpolation into a command string.
+ * Windows cmd.exe uses double quotes; bash/sh uses single quotes.
+ */
+function q(value) {
+  if (process.platform === 'win32') {
+    return `"${value.replace(/"/g, '\\"')}"`;
+  }
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
 function az(command, { json: parseJson = false, silent = false } = {}) {
   try {
     const output = execSync(`az ${command}`, {
@@ -202,11 +213,11 @@ async function doBackup() {
     `--resource-group ${resourceGroup} ` +
     `--server ${sqlServer} ` +
     `--name ${database} ` +
-    `--admin-user '${creds.user}' ` +
-    `--admin-password '${creds.password}' ` +
+    `--admin-user ${q(creds.user)} ` +
+    `--admin-password ${q(creds.password)} ` +
     `--storage-key-type StorageAccessKey ` +
-    `--storage-key '${storageKey}' ` +
-    `--storage-uri "${storageUri}"`
+    `--storage-key ${q(storageKey)} ` +
+    `--storage-uri ${q(storageUri)}`
   );
 
   log(`Backup complete: ${fileName}`, 'success');
@@ -251,7 +262,7 @@ async function doRestore() {
     const blobs = az(
       `storage blob list ` +
       `--account-name ${storageAccount} ` +
-      `--account-key '${storageKey}' ` +
+      `--account-key ${q(storageKey)} ` +
       `--container-name ${container} ` +
       `--query "[?ends_with(name, '.bacpac') && contains(name, '-${env}-')] | sort_by(@, &properties.lastModified) | [-1].name" ` +
       `-o tsv`,
@@ -295,6 +306,21 @@ async function doRestore() {
     log('No existing database found, proceeding with import');
   }
 
+  // Create empty database for import (az sql db import requires existing DB)
+  log('Creating database for import...', 'step');
+  az(
+    `sql db create ` +
+    `--resource-group ${resourceGroup} ` +
+    `--server ${sqlServer} ` +
+    `--name ${database} ` +
+    `--edition GeneralPurpose ` +
+    `--capacity 1 ` +
+    `--family Gen5 ` +
+    `--compute-model Serverless ` +
+    `--auto-pause-delay 60`
+  );
+  log('Empty database created', 'success');
+
   log(`Importing ${targetFile}...`, 'step');
   log(`Storage URI: ${storageUri}`);
 
@@ -303,29 +329,14 @@ async function doRestore() {
     `--resource-group ${resourceGroup} ` +
     `--server ${sqlServer} ` +
     `--name ${database} ` +
-    `--admin-user '${creds.user}' ` +
-    `--admin-password '${creds.password}' ` +
+    `--admin-user ${q(creds.user)} ` +
+    `--admin-password ${q(creds.password)} ` +
     `--storage-key-type StorageAccessKey ` +
-    `--storage-key '${storageKey}' ` +
-    `--storage-uri "${storageUri}" ` +
-    `--edition GeneralPurpose ` +
-    `--service-objective GP_S_Gen5 ` +
-    `--capacity 1 ` +
-    `--family Gen5`
+    `--storage-key ${q(storageKey)} ` +
+    `--storage-uri ${q(storageUri)}`
   );
 
   log('Import complete', 'success');
-
-  // Re-apply auto-pause setting (60 min)
-  log('Configuring auto-pause (60 minutes)...', 'step');
-  az(
-    `sql db update ` +
-    `--resource-group ${resourceGroup} ` +
-    `--server ${sqlServer} ` +
-    `--name ${database} ` +
-    `--auto-pause-delay 60`
-  );
-  log('Auto-pause configured', 'success');
 
   // Update Key Vault connection string
   log('Updating Key Vault connection string...', 'step');
@@ -337,7 +348,7 @@ async function doRestore() {
       `keyvault secret set ` +
       `--vault-name ${vaultName} ` +
       `--name SqlConnectionString ` +
-      `--value "${connStr}"`,
+      `--value ${q(connStr)}`,
       { silent: true }
     );
     log('Key Vault updated', 'success');
@@ -356,7 +367,7 @@ async function doList() {
   const blobs = az(
     `storage blob list ` +
     `--account-name ${storageAccount} ` +
-    `--account-key '${storageKey}' ` +
+    `--account-key ${q(storageKey)} ` +
     `--container-name ${container} ` +
     `--query "[?ends_with(name, '.bacpac')].{Name:name, Size:properties.contentLength, Modified:properties.lastModified}" ` +
     `-o table`
