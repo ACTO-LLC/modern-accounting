@@ -30,6 +30,10 @@ on:
         required: false
         type: string
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   # ============================================================================
   # Validate Job - Safety checks before execution
@@ -116,7 +120,6 @@ jobs:
             fi
           fi
 
-          # Add delete-after for backup (not used in workflow, but kept for completeness)
           echo "Running: node scripts/manage-db.js $ARGS"
           node scripts/manage-db.js $ARGS
 

@@ -202,10 +202,10 @@ async function doBackup() {
     `--resource-group ${resourceGroup} ` +
     `--server ${sqlServer} ` +
     `--name ${database} ` +
-    `--admin-user "${creds.user}" ` +
-    `--admin-password "${creds.password}" ` +
+    `--admin-user '${creds.user}' ` +
+    `--admin-password '${creds.password}' ` +
     `--storage-key-type StorageAccessKey ` +
-    `--storage-key "${storageKey}" ` +
+    `--storage-key '${storageKey}' ` +
     `--storage-uri "${storageUri}"`
   );
 
@@ -238,6 +238,11 @@ function doDeleteDb() {
 async function doRestore() {
   requireProdConfirmation('restore');
 
+  if (latest && backupFile) {
+    log('Cannot specify both --file and --latest', 'error');
+    process.exit(1);
+  }
+
   let targetFile = backupFile;
 
   if (latest) {
@@ -246,9 +251,9 @@ async function doRestore() {
     const blobs = az(
       `storage blob list ` +
       `--account-name ${storageAccount} ` +
-      `--account-key "${storageKey}" ` +
+      `--account-key '${storageKey}' ` +
       `--container-name ${container} ` +
-      `--query "[?ends_with(name, '.bacpac')] | sort_by(@, &properties.lastModified) | [-1].name" ` +
+      `--query "[?ends_with(name, '.bacpac') && contains(name, '-${env}-')] | sort_by(@, &properties.lastModified) | [-1].name" ` +
       `-o tsv`,
       { silent: true }
     );
@@ -298,10 +303,10 @@ async function doRestore() {
     `--resource-group ${resourceGroup} ` +
     `--server ${sqlServer} ` +
     `--name ${database} ` +
-    `--admin-user "${creds.user}" ` +
-    `--admin-password "${creds.password}" ` +
+    `--admin-user '${creds.user}' ` +
+    `--admin-password '${creds.password}' ` +
     `--storage-key-type StorageAccessKey ` +
-    `--storage-key "${storageKey}" ` +
+    `--storage-key '${storageKey}' ` +
     `--storage-uri "${storageUri}" ` +
     `--edition GeneralPurpose ` +
     `--service-objective GP_S_Gen5 ` +
@@ -344,14 +349,14 @@ async function doRestore() {
   log(`Database ${database} restored from ${targetFile}`, 'success');
 }
 
-function doList() {
+async function doList() {
   log(`Listing backups in ${storageAccount}/${container}...`, 'step');
 
   const storageKey = getStorageKey();
   const blobs = az(
     `storage blob list ` +
     `--account-name ${storageAccount} ` +
-    `--account-key "${storageKey}" ` +
+    `--account-key '${storageKey}' ` +
     `--container-name ${container} ` +
     `--query "[?ends_with(name, '.bacpac')].{Name:name, Size:properties.contentLength, Modified:properties.lastModified}" ` +
     `-o table`
@@ -428,7 +433,7 @@ async function main() {
         await doRestore();
         break;
       case 'list':
-        doList();
+        await doList();
         break;
       case 'delete':
         requireProdConfirmation('delete');
