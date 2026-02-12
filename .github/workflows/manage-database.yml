@@ -1,0 +1,145 @@
+name: Manage Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Database action'
+        required: true
+        type: choice
+        options:
+          - list
+          - backup
+          - restore
+          - delete
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      backup_file:
+        description: 'Backup file name for restore (leave empty with --latest to use most recent)'
+        required: false
+        type: string
+      confirm_destructive:
+        description: 'Type YES to confirm destructive operations (restore/delete on prod)'
+        required: false
+        type: string
+
+jobs:
+  # ============================================================================
+  # Validate Job - Safety checks before execution
+  # ============================================================================
+  validate:
+    name: Validate Request
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check destructive confirmation
+        if: >-
+          (inputs.action == 'restore' || inputs.action == 'delete') &&
+          inputs.environment == 'prod' &&
+          inputs.confirm_destructive != 'YES'
+        run: |
+          echo "::error::Production ${{ inputs.action }} requires typing 'YES' in the confirm_destructive field"
+          exit 1
+
+      - name: Validate restore inputs
+        if: inputs.action == 'restore'
+        run: |
+          if [ -z "${{ inputs.backup_file }}" ]; then
+            echo "No backup file specified, will use --latest flag"
+          else
+            echo "Will restore from: ${{ inputs.backup_file }}"
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Database Management Request" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Action | \`${{ inputs.action }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | \`${{ inputs.environment }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backup File | \`${{ inputs.backup_file || '(latest)' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Confirmed | \`${{ inputs.confirm_destructive || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # Execute Job - Run the database management script
+  # ============================================================================
+  execute:
+    name: Execute ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    needs: validate
+    environment:
+      name: ${{ inputs.environment == 'prod' && 'production' || inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Azure CLI
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run database management
+        env:
+          SQL_ADMIN_LOGIN: ${{ secrets.SQL_ADMIN_LOGIN }}
+          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+        run: |
+          # Build command arguments
+          ARGS="${{ inputs.action }} --env ${{ inputs.environment }}"
+
+          # Add prod confirmation flag for destructive operations
+          if [[ "${{ inputs.environment }}" == "prod" ]]; then
+            ARGS="$ARGS --confirm-prod"
+          fi
+
+          # Add restore-specific flags
+          if [[ "${{ inputs.action }}" == "restore" ]]; then
+            if [[ -n "${{ inputs.backup_file }}" ]]; then
+              ARGS="$ARGS --file ${{ inputs.backup_file }}"
+            else
+              ARGS="$ARGS --latest"
+            fi
+          fi
+
+          # Add delete-after for backup (not used in workflow, but kept for completeness)
+          echo "Running: node scripts/manage-db.js $ARGS"
+          node scripts/manage-db.js $ARGS
+
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "### Database Management Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action:** \`${{ inputs.action }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ inputs.action }}" == "backup" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Backup saved to \`stmodernaccounting${{ inputs.environment }}/backups\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ inputs.action }}" == "restore" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Database restored. Verify connectivity and run smoke tests." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ inputs.action }}" == "delete" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Database deleted. Use \`restore\` action to bring it back from a backup." >> $GITHUB_STEP_SUMMARY
+          fi
