@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Invoice Add Line Item', () => {
   test('should add a line item to an invoice', async ({ page }) => {
@@ -19,7 +19,7 @@ test.describe('Invoice Add Line Item', () => {
       ]
     };
 
-    const createResponse = await page.request.post('http://localhost:7071/api/invoices', {
+    const createResponse = await page.request.post('http://localhost:8080/api/invoices', {
       data: invoiceData
     });
     const createResult = await createResponse.json();

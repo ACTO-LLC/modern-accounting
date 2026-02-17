@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../coverage.fixture';
 
 /**
  * Demo: Dashboard Overview
@@ -39,7 +39,7 @@ test.describe('Dashboard Overview Demo', () => {
     await demoPause(1500);
 
     // Scene 4: Show Recent Activity
-    await expect(page.getByText('Recent Activity')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Recent Activity' })).toBeVisible();
     await demoPause(1500);
 
     // Scene 5: Show Cash Flow Chart

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Dashboard', () => {
   test('should load dashboard and display key metrics', async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Unreviewed Transactions')).toBeVisible();
 
     // 5. Verify Recent Activity
-    await expect(page.getByText('Recent Activity')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Recent Activity' })).toBeVisible();
 
     // 6. Verify Cash Flow Chart
     await expect(page.getByText('Cash Flow (Last 6 Months)')).toBeVisible();

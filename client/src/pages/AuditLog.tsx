@@ -561,10 +561,11 @@ export default function AuditLog() {
 
               {/* Action Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="action-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Action
                 </label>
                 <select
+                  id="action-filter"
                   value={actionFilter}
                   onChange={(e) => setActionFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
@@ -579,10 +580,11 @@ export default function AuditLog() {
 
               {/* Entity Type Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="entity-type-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Entity Type
                 </label>
                 <select
+                  id="entity-type-filter"
                   value={entityTypeFilter}
                   onChange={(e) => setEntityTypeFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
@@ -597,10 +599,11 @@ export default function AuditLog() {
 
               {/* Date Range Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="date-range-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Date Range
                 </label>
                 <select
+                  id="date-range-filter"
                   value={dateRangeFilter}
                   onChange={(e) => setDateRangeFilter(e.target.value as typeof dateRangeFilter)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"

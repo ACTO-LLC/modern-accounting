@@ -5,9 +5,11 @@ node_modules
 
 # Testing
 coverage
+.nyc_output
 playwright-report/
 test-results/
 demo-report/
+screenshots/
 client/demo-report/
 client/tests/demos/test-results/
 client/tests/demos/videos/

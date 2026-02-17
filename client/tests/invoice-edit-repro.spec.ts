@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Invoice Edit', () => {
   test('should load invoice for editing', async ({ page }) => {
@@ -21,7 +21,7 @@ test.describe('Invoice Edit', () => {
     };
 
     // Create invoice via API (Node.js API)
-    const createResponse = await page.request.post('http://localhost:7071/api/invoices', {
+    const createResponse = await page.request.post('http://localhost:8080/api/invoices', {
       data: invoiceData
     });
     

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Sales Receipt Creation', () => {
   test('can navigate to sales receipts page', async ({ page }) => {

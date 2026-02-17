@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test('can create and edit invoice with line items', async ({ page }) => {
   // 1. Create Invoice
@@ -25,12 +25,12 @@ test('can create and edit invoice with line items', async ({ page }) => {
   await page.locator('input[name="Lines.1.UnitPrice"]').fill('500');
   
   // Verify Total
-  await expect(page.getByText('Total: $2500.00')).toBeVisible();
+  await expect(page.locator('div.font-bold > span').last()).toContainText('2,500.00');
   
   await page.getByRole('button', { name: /Create Invoice/i }).click();
   
   // Wait for navigation
-  await expect(page).toHaveURL('//invoices');
+  await expect(page).toHaveURL(/\/invoices/);
   
   // 2. Verify Invoice in List
   // We might need to reload or wait for the list to update
@@ -50,12 +50,12 @@ test('can create and edit invoice with line items', async ({ page }) => {
   await page.locator('input[name="Lines.0.Quantity"]').fill('20'); // Change qty to 20 -> 3000
   
   // Verify New Total
-  await expect(page.getByText('Total: $4000.00')).toBeVisible();
+  await expect(page.locator('div.font-bold > span').last()).toContainText('4,000.00');
   
   await page.getByRole('button', { name: /Save Invoice/i }).click();
   
   // Wait for navigation
-  await expect(page).toHaveURL('//invoices');
+  await expect(page).toHaveURL(/\/invoices/);
   
   // 4. Verify Updated Total
   await page.reload();

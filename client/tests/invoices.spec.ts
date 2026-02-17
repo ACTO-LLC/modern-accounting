@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test('can view invoices list', async ({ page }) => {
   await page.goto('/invoices');

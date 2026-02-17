@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Locations Management', () => {
   test('should create a new location', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Inventory Management', () => {
   test('should navigate to Inventory page and display inventory items', async ({ page }) => {

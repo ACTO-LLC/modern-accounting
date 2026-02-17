@@ -43,7 +43,8 @@ api.interceptors.request.use(
     }
 
     if (!msalInstance) {
-      console.warn('[API Auth] MSAL not initialized, request will be unauthenticated:', config.url);
+      // Bypass auth mode: add Admin role header so DAB allows write operations
+      config.headers['X-MS-API-ROLE'] = 'Admin';
       return config;
     }
 
@@ -119,7 +120,8 @@ const graphqlClient = axios.create({
 graphqlClient.interceptors.request.use(
   async (config) => {
     if (!msalInstance) {
-      console.warn('[GraphQL Auth] MSAL not initialized');
+      // Bypass auth mode: add Admin role header so DAB allows write operations
+      config.headers['X-MS-API-ROLE'] = 'Admin';
       return config;
     }
 

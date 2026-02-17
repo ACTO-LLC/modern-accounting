@@ -12,6 +12,10 @@
         "test:ui": "playwright test --ui",
         "test:bank": "playwright test bank-transactions.spec.ts",
         "test:headed": "playwright test --headed",
+        "test:coverage": "cross-env VITE_COVERAGE=true playwright test --config=playwright.coverage.config.ts",
+        "test:coverage:headed": "cross-env VITE_COVERAGE=true playwright test --config=playwright.coverage.config.ts --headed",
+        "coverage:report": "nyc report --reporter=text --reporter=html --reporter=json-summary",
+        "coverage:open": "npx open-cli coverage/index.html",
         "test:unit": "vitest run",
         "test:unit:watch": "vitest",
         "demo": "playwright test --config=playwright.demo.config.ts --project=demo-landscape",
@@ -59,13 +63,16 @@
         "@vitejs/plugin-react": "^4.0.3",
         "@vitest/ui": "^4.0.17",
         "autoprefixer": "^10.4.14",
+        "cross-env": "^10.1.0",
         "eslint": "^8.45.0",
         "eslint-plugin-react-hooks": "^4.6.0",
         "eslint-plugin-react-refresh": "^0.4.3",
+        "nyc": "^17.1.0",
         "postcss": "^8.4.27",
         "tailwindcss": "^3.3.3",
         "typescript": "^5.0.2",
         "vite": "^4.4.5",
+        "vite-plugin-istanbul": "^7.2.1",
         "vitest": "^4.0.17"
     }
 }

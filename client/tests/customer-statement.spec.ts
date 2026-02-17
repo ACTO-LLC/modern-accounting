@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Customer Statement Report', () => {
   test('can navigate to customer statement from reports', async ({ page }) => {

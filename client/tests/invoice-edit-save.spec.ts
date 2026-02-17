@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Invoice Edit and Save', () => {
   // TODO: Known issue - form save not triggering in test environment (works in browser)

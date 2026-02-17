@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 /**
  * Tests for Plaid Connections page when service is unavailable (#286)
@@ -26,7 +26,7 @@ test.describe('Plaid Connections - Service Unavailable', () => {
 
     // Should show the expected endpoint
     await expect(
-      page.getByText(/localhost:7071/i)
+      page.getByText(/Expected endpoint.*\/api\/plaid/i)
     ).toBeVisible();
 
     // Should have a retry button

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 /**
  * End-to-End Test: Admin submits enhancement request through UI

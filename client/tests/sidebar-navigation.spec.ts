@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Sidebar Navigation', () => {
   test.beforeEach(async ({ page }) => {

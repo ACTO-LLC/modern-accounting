@@ -1,5 +1,72 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import istanbul from 'vite-plugin-istanbul'
+import http from 'http'
+
+// Vite plugin that buffers and forwards write requests to DAB directly.
+// DAB's Kestrel server enforces MinRequestBodyDataRate, and Vite's
+// http-proxy streams bodies too slowly, causing 500 errors on writes.
+// This plugin intercepts POST/PUT/PATCH/DELETE to /api, buffers the body,
+// and sends it as a single chunk directly to DAB.
+function dabProxyBufferPlugin(dabUrl: string): Plugin {
+  // Always target DAB directly for write ops, bypassing any Express proxy chain
+  const target = new URL(dabUrl)
+
+  return {
+    name: 'dab-proxy-buffer',
+    configureServer(server) {
+      // Chat-api routes that should NOT be intercepted (they go to Express, not DAB)
+      const chatApiPrefixes = [
+        '/api/transactions', '/api/banktransactions', '/api/post-transactions',
+        '/api/categorization-rules', '/api/plaid', '/api/qbo',
+        '/api/insights', '/api/users', '/api/chat',
+      ]
+
+      server.middlewares.use((req: any, res: any, next: any) => {
+        const url = req.url ?? ''
+        // Only intercept write requests destined for DAB (not chat-api)
+        const isChatApi = chatApiPrefixes.some(prefix => url.startsWith(prefix))
+        const isDabWrite = !isChatApi
+          && (url.startsWith('/api') || url.startsWith('/graphql'))
+          && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method ?? '')
+        if (!isDabWrite) return next()
+
+        // Buffer the request body
+        const chunks: Buffer[] = []
+        req.on('data', (chunk: Buffer) => chunks.push(chunk))
+        req.on('end', () => {
+          const body = Buffer.concat(chunks)
+
+          // Forward directly to DAB with buffered body
+          const proxyReq = http.request({
+            hostname: target.hostname,
+            port: target.port,
+            path: req.url,
+            method: req.method,
+            headers: {
+              ...req.headers,
+              host: `${target.hostname}:${target.port}`,
+              'content-length': String(body.length),
+            },
+          }, (proxyRes) => {
+            res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers)
+            proxyRes.pipe(res)
+          })
+
+          proxyReq.on('error', (err: any) => {
+            console.error('[dab-proxy-buffer] Error:', err.message)
+            if (!res.headersSent) {
+              res.writeHead(502)
+              res.end(JSON.stringify({ error: { code: 'ProxyError', message: err.message, status: 502 } }))
+            }
+          })
+
+          proxyReq.end(body)
+        })
+      })
+    },
+  }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -11,7 +78,20 @@ export default defineConfig(({ mode }) => {
   const chatApiUrl = env.VITE_CHAT_API_URL || 'http://localhost:8080'
 
   return {
-    plugins: [react()],
+    plugins: [
+      // DAB URL - always port 5000 for direct write operations (bypasses Express proxy chain)
+      dabProxyBufferPlugin(env.VITE_DAB_URL || 'http://localhost:5000'),
+      react(),
+      ...(process.env.VITE_COVERAGE === 'true'
+        ? [istanbul({
+            include: 'src/*',
+            exclude: ['node_modules', 'tests/'],
+            extension: ['.ts', '.tsx', '.js', '.jsx'],
+            requireEnv: true,
+            forceBuildInstrument: mode === 'production',
+          })]
+        : []),
+    ],
     server: {
       port,
       strictPort: true,

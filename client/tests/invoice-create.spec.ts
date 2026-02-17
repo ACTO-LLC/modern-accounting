@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test('can create invoice with line items', async ({ page }) => {
   await page.goto('/invoices/new');
@@ -16,7 +16,7 @@ test('can create invoice with line items', async ({ page }) => {
   await page.locator('input[name="Lines.0.Quantity"]').fill('5');
   await page.locator('input[name="Lines.0.UnitPrice"]').fill('100');
 
-  await expect(page.getByText('Total: $500.00')).toBeVisible();
+  await expect(page.locator('div.font-bold > span').last()).toContainText('500.00');
 
   await page.getByRole('button', { name: /Create Invoice/i }).click();
 

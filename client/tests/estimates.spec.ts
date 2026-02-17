@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Estimates Management', () => {
   test('should navigate to estimates page', async ({ page }) => {

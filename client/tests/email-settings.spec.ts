@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Email Settings', () => {
   test('email settings section visible on company settings page', async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe('Email Settings', () => {
 
     // Verify buttons
     await expect(page.getByRole('button', { name: /Test Connection/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Save Settings/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Save Settings/i }).last()).toBeVisible();
   });
 
   test('email settings form has default template values', async ({ page }) => {

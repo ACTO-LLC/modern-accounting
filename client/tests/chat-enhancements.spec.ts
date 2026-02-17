@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Chat Enhancements', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Verify chat is open
-    await expect(page.getByText('Milton')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milton' })).toBeVisible();
     
     // Verify initial welcome message
     await expect(page.getByText(/Hi! I'm Milton, your accounting assistant/)).toBeVisible();
@@ -42,10 +42,10 @@ test.describe('Chat Enhancements', () => {
     await expect(page.getByText('What is double-entry accounting?')).toBeVisible();
     
     // Wait for loading indicator
-    await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 2000 });
     
     // Wait for AI response (with longer timeout for API)
-    await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 30000 });
+    await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 30000 });
     
     // Check if there's a response (should be at least 2 messages now)
     const messages = await page.locator('.rounded-lg.p-3').count();
@@ -80,7 +80,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Verify the chat interface loads
-    await expect(page.getByText('Milton')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milton' })).toBeVisible();
     
     // Note: Testing actual retry functionality would require mocking the API
     // or creating a test scenario that produces an error
@@ -91,7 +91,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Verify quick action buttons are visible
-    await expect(page.getByText('Quick actions:')).toBeVisible();
+    await expect(page.getByText('Quick actions')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show overdue invoices' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Revenue this month' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Top customers' })).toBeVisible();
@@ -121,7 +121,7 @@ test.describe('Chat Enhancements', () => {
     await page.click('button[aria-label="Open chat"]');
     
     // Verify chat is open
-    await expect(page.getByText('Milton')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milton' })).toBeVisible();
     
     // Close chat
     await page.click('button[aria-label="Close chat"]');

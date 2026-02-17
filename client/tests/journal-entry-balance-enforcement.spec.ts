@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Journal Entry Balance Enforcement', () => {
   test.beforeEach(async ({ page }) => {

@@ -9,7 +9,11 @@ export default function NewCustomer() {
 
   const mutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
-      await api.post('/customers', data);
+      // Convert empty strings to null for DAB compatibility
+      const payload = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v === '' ? null : v])
+      );
+      await api.post('/customers', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });

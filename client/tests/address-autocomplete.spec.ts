@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Address Autocomplete', () => {
   test('should show address suggestions in CustomerForm', async ({ page }) => {

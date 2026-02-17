@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Unified Import Page', () => {
   test.beforeEach(async ({ page }) => {

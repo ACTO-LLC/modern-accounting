@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Statement of Cash Flows Report', () => {
   test('can navigate to cash flow statement from reports', async ({ page }) => {
@@ -37,7 +37,7 @@ test.describe('Statement of Cash Flows Report', () => {
     await expect(page.getByText('CASH FLOWS FROM OPERATING ACTIVITIES')).toBeVisible({ timeout: 10000 });
 
     // Verify key line items for indirect method
-    await expect(page.getByText('Net Income')).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Net Income', exact: true })).toBeVisible();
     await expect(page.getByText('Net cash provided by operating activities')).toBeVisible();
   });
 
@@ -57,7 +57,7 @@ test.describe('Statement of Cash Flows Report', () => {
     await page.goto('/reports/cash-flow');
 
     // Look for the date range picker button
-    const dateRangeButton = page.locator('button:has(svg.lucide-calendar)');
+    const dateRangeButton = page.locator('button').filter({ has: page.locator('[class*="lucide-calendar"]') });
     await expect(dateRangeButton).toBeVisible();
 
     // Click to open dropdown
@@ -104,7 +104,7 @@ test.describe('Statement of Cash Flows Report', () => {
     await expect(page.getByText('CASH FLOWS FROM OPERATING ACTIVITIES')).toBeVisible({ timeout: 10000 });
 
     // Open date range picker
-    const dateRangeButton = page.locator('button:has(svg.lucide-calendar)');
+    const dateRangeButton = page.locator('button').filter({ has: page.locator('[class*="lucide-calendar"]') });
     await dateRangeButton.click();
 
     // Select "This Year"

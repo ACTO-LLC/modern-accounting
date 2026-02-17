@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Classes Management', () => {
   test('should create a new class', async ({ page }) => {

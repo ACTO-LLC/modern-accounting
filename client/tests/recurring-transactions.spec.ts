@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Recurring Transactions', () => {
   test('should navigate to Recurring Transactions page', async ({ page }) => {

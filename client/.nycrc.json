@@ -1,0 +1,17 @@
+{
+  "all": true,
+  "include": ["src/**/*.{ts,tsx}"],
+  "exclude": [
+    "src/**/*.test.{ts,tsx}",
+    "src/**/*.spec.{ts,tsx}",
+    "src/**/*.d.ts",
+    "src/vite-env.d.ts"
+  ],
+  "report-dir": "coverage",
+  "temp-dir": ".nyc_output",
+  "reporter": ["text", "html", "json-summary"],
+  "branches": 0,
+  "lines": 0,
+  "functions": 0,
+  "statements": 0
+}

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Customer Management', () => {
   test('should create and edit a customer', async ({ page }) => {
@@ -18,16 +18,17 @@ test.describe('Customer Management', () => {
     await page.getByLabel('Name').fill(customerName);
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Phone').fill('555-0123');
-    // New address fields
-    await page.getByLabel('Street Address').fill('123 Test St');
+    // Address autocomplete combobox - fill and dismiss dropdown
+    await page.getByRole('combobox', { name: /Street Address/ }).fill('123 Test St');
+    await page.getByRole('combobox', { name: /Street Address/ }).press('Escape');
     await page.getByLabel('Address Line 2').fill('Suite 100');
     await page.getByLabel('City').fill('Springfield');
-    await page.getByLabel('State').selectOption('IL');
+    await page.getByRole('combobox', { name: 'State' }).selectOption('IL');
     await page.getByLabel('ZIP Code').fill('62701');
 
     // 4. Save - wait for API response
     const responsePromise = page.waitForResponse(
-      resp => resp.url().includes('/customers') && resp.status() < 400
+      resp => resp.url().includes('/customers') && resp.request().method() === 'POST' && resp.status() < 400
     );
     await page.getByRole('button', { name: 'Save Customer' }).click();
     await responsePromise;

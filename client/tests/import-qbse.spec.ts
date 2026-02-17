@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 import path from 'path';
 
 test.describe('Import Historical Data', () => {

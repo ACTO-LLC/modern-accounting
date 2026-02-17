@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Journal Entry Creation', () => {
   test('should create a new journal entry', async ({ page }) => {

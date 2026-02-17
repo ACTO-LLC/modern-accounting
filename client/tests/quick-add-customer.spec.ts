@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Quick Add Customer from Invoice', () => {
   test('can create a new customer while creating an invoice', async ({ page }) => {

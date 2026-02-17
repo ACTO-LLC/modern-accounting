@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../coverage.fixture';
 
 /**
  * Demo: AI Chat Assistant
@@ -23,7 +23,7 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 2: Open the Chat Interface
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Milton')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milton' })).toBeVisible();
     await demoPause(1500);
 
     // Scene 3: Show the welcome message
@@ -40,8 +40,8 @@ test.describe('AI Chat Assistant Demo', () => {
       await expect(page.getByText('Show overdue invoices')).toBeVisible();
 
       // Wait for AI response (loading indicator appears then disappears)
-      await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 5000 });
-      await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 45000 });
+      await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 45000 });
       await demoPause(3000);
     }
 
@@ -51,8 +51,8 @@ test.describe('AI Chat Assistant Demo', () => {
     await page.click('button[aria-label="Send message"]');
 
     // Wait for AI response
-    await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 45000 });
+    await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 45000 });
     await demoPause(3000);
 
     // Scene 6: Ask a follow-up question
@@ -61,8 +61,8 @@ test.describe('AI Chat Assistant Demo', () => {
     await page.click('button[aria-label="Send message"]');
 
     // Wait for AI response
-    await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 45000 });
+    await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 45000 });
     await demoPause(4000);
 
     // Scene 7: Close chat
@@ -78,7 +78,7 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 2: Open Chat
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Milton')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milton' })).toBeVisible();
     await demoPause(1500);
 
     // Wait for welcome message
@@ -91,8 +91,8 @@ test.describe('AI Chat Assistant Demo', () => {
     await page.click('button[aria-label="Send message"]');
 
     // Wait for AI response
-    await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 60000 });
+    await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 60000 });
     await demoPause(4000);
 
     // Scene 4: Ask practical question
@@ -101,8 +101,8 @@ test.describe('AI Chat Assistant Demo', () => {
     await page.click('button[aria-label="Send message"]');
 
     // Wait for AI response
-    await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 60000 });
+    await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 60000 });
     await demoPause(4000);
 
     // Final pause
@@ -117,7 +117,7 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 2: Open Chat - it should show context-aware suggestions
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Milton')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milton' })).toBeVisible();
     await demoPause(2000);
 
     // Scene 3: Ask about current page context
@@ -126,8 +126,8 @@ test.describe('AI Chat Assistant Demo', () => {
     await page.click('button[aria-label="Send message"]');
 
     // Wait for AI response
-    await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 45000 });
+    await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 45000 });
     await demoPause(3000);
 
     // Scene 4: Navigate to Customers
@@ -140,7 +140,7 @@ test.describe('AI Chat Assistant Demo', () => {
 
     // Scene 5: Open chat again on new page
     await page.click('button[aria-label="Open chat"]');
-    await expect(page.getByText('Milton')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milton' })).toBeVisible();
     await demoPause(1500);
 
     // Scene 6: Ask about customers
@@ -149,8 +149,8 @@ test.describe('AI Chat Assistant Demo', () => {
     await page.click('button[aria-label="Send message"]');
 
     // Wait for AI response
-    await expect(page.locator('.animate-bounce')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.animate-bounce')).not.toBeVisible({ timeout: 45000 });
+    await expect(page.locator('.animate-bounce').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.animate-bounce').first()).not.toBeVisible({ timeout: 45000 });
     await demoPause(4000);
 
     // Final view

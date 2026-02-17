@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Pay Run Management', () => {
   test('should navigate to pay runs page', async ({ page }) => {

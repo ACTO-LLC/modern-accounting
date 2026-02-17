@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 /**
  * Tests for Plaid Bank Verification feature (#116)

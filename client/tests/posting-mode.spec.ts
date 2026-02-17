@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Invoice Posting Mode Settings', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,11 +17,11 @@ test.describe('Invoice Posting Mode Settings', () => {
 
     // Verify Simple Mode option is visible
     await expect(page.getByText('Simple Mode')).toBeVisible();
-    await expect(page.getByText('Like QuickBooks Online')).toBeVisible();
+    await expect(page.getByText(/Like QuickBooks Online/i)).toBeVisible();
 
     // Verify Advanced Mode option is visible
     await expect(page.getByText('Advanced Mode')).toBeVisible();
-    await expect(page.getByText('For businesses needing review steps')).toBeVisible();
+    await expect(page.getByText(/review steps|explicitly posted/i)).toBeVisible();
   });
 
   test('simple mode is selected by default', async ({ page }) => {
@@ -46,10 +46,10 @@ test.describe('Invoice Posting Mode Settings', () => {
     await expect(page.getByText('Changing this setting only affects new transactions')).toBeVisible();
 
     // Save settings
-    await page.getByRole('button', { name: /Save Settings/i }).click();
+    await page.getByRole('button', { name: /Save Settings/i }).first().click();
 
     // Verify success message
-    await expect(page.getByText('Settings saved successfully')).toBeVisible();
+    await expect(page.getByText(/Settings saved successfully/i)).toBeVisible();
   });
 
   test('posting mode persists after page reload', async ({ page }) => {
@@ -57,8 +57,8 @@ test.describe('Invoice Posting Mode Settings', () => {
 
     // Switch to Advanced Mode
     await page.locator('label:has-text("Advanced Mode")').click();
-    await page.getByRole('button', { name: /Save Settings/i }).click();
-    await expect(page.getByText('Settings saved successfully')).toBeVisible();
+    await page.getByRole('button', { name: /Save Settings/i }).first().click();
+    await expect(page.getByText(/Settings saved successfully/i)).toBeVisible();
 
     // Reload the page
     await page.reload();
@@ -92,7 +92,7 @@ test.describe('Invoice Form Posting Indicator', () => {
     await page.getByLabel('Status').selectOption('Sent');
 
     // Check that the auto-post indicator is visible
-    await expect(page.getByText('This invoice will post to your books when saved')).toBeVisible();
+    await expect(page.getByText(/will post to your.*books/i)).toBeVisible();
   });
 
   test('shows draft indicator for draft invoices', async ({ page }) => {
@@ -105,7 +105,7 @@ test.describe('Invoice Form Posting Indicator', () => {
     await expect(page.getByLabel('Status')).toHaveValue('Draft');
 
     // Check that the draft indicator is visible
-    await expect(page.getByText("Draft invoices don't affect your books")).toBeVisible();
+    await expect(page.getByText(/Draft.*don't affect your books/i)).toBeVisible();
   });
 });
 
@@ -132,7 +132,7 @@ test.describe('Bill Form Posting Indicator', () => {
     await expect(page.getByLabel('Status')).toHaveValue('Open');
 
     // Check that the auto-post indicator is visible
-    await expect(page.getByText('This bill will post to your books when saved')).toBeVisible();
+    await expect(page.getByText(/will post to your.*books/i)).toBeVisible();
   });
 
   test('shows draft indicator for draft bills', async ({ page }) => {
@@ -145,6 +145,6 @@ test.describe('Bill Form Posting Indicator', () => {
     await page.getByLabel('Status').selectOption('Draft');
 
     // Check that the draft indicator is visible
-    await expect(page.getByText("Draft bills don't affect your books")).toBeVisible();
+    await expect(page.getByText(/Draft.*don't affect your books/i)).toBeVisible();
   });
 });

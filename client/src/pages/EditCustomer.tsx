@@ -19,7 +19,11 @@ export default function EditCustomer() {
 
   const mutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
-      await api.patch(`/customers/Id/${id}`, data);
+      // Convert empty strings to null for DAB compatibility
+      const payload = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v === '' ? null : v])
+      );
+      await api.patch(`/customers/Id/${id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 // Enable video recording for this test to capture flyout interaction
 test.use({ video: 'on' });

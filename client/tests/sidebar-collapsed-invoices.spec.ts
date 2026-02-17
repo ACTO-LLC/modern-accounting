@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Collapsed Sidebar - Invoices Navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe('Collapsed Sidebar - Invoices Navigation', () => {
       await btn.hover();
 
       // Check if SALES flyout appeared
-      const flyout = page.getByText('SALES');
+      const flyout = page.getByText('Sales', { exact: true });
       if (await flyout.isVisible({ timeout: 500 }).catch(() => false)) {
         foundSalesGroup = true;
 
@@ -63,7 +63,7 @@ test.describe('Collapsed Sidebar - Invoices Navigation', () => {
       const btn = groupButtons.nth(i);
       await btn.hover();
 
-      const flyout = page.getByText('SALES');
+      const flyout = page.getByText('Sales', { exact: true });
       if (await flyout.isVisible({ timeout: 500 }).catch(() => false)) {
         foundSalesGroup = true;
 
@@ -88,7 +88,7 @@ test.describe('Collapsed Sidebar - Invoices Navigation', () => {
       const btn = groupButtons.nth(i);
       await btn.hover();
 
-      const flyout = page.getByText('SALES');
+      const flyout = page.getByText('Sales', { exact: true });
       if (await flyout.isVisible({ timeout: 500 }).catch(() => false)) {
         // Get Invoices link and hover directly on it
         const invoicesLink = page.getByRole('link', { name: 'Invoices' });

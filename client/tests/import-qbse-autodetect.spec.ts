@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage.fixture';
 
 test.describe('Import Historical Data (Auto-detect)', () => {
   test('should auto-detect source account and create new accounts', async ({ page }) => {
