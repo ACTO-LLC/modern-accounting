@@ -366,7 +366,7 @@ router.get('/rate', validateJWT, async (req, res) => {
                     });
                 }
 
-                rateData = await getAvalaraFreeRate(postalCode);
+                rateData = await getAvalaraFreeRate(postalCode, state);
             } else if (method === 'paid_api') {
                 // Get decrypted credentials
                 const credsResult = await query(

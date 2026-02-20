@@ -19,7 +19,7 @@ function dabProxyBufferPlugin(dabUrl: string): Plugin {
       const chatApiPrefixes = [
         '/api/transactions', '/api/banktransactions', '/api/post-transactions',
         '/api/categorization-rules', '/api/plaid', '/api/qbo',
-        '/api/insights', '/api/users', '/api/chat',
+        '/api/insights', '/api/users', '/api/chat', '/api/tax',
       ]
 
       server.middlewares.use((req: any, res: any, next: any) => {
@@ -132,6 +132,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
         '/api/chat': {
+          target: chatApiUrl,
+          changeOrigin: true,
+        },
+        '/api/tax': {
           target: chatApiUrl,
           changeOrigin: true,
         },
