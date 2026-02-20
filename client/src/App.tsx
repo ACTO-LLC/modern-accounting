@@ -11,6 +11,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { TenantProvider } from './contexts/TenantContext';
 import { CompanySettingsProvider } from './contexts/CompanySettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import appTheme from './theme';
 import { ChatProvider } from './contexts/ChatContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import { FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
@@ -345,16 +347,18 @@ function App() {
         <CompanySettingsProvider>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-              <Toaster position="top-right" richColors />
-              <ToastProvider>
-                <ChatProvider>
-                  <FeatureFlagsProvider>
-                    <OnboardingProvider>
-                      <AppContent />
-                    </OnboardingProvider>
-                  </FeatureFlagsProvider>
-                </ChatProvider>
-              </ToastProvider>
+              <MuiThemeProvider theme={appTheme}>
+                <Toaster position="top-right" richColors />
+                <ToastProvider>
+                  <ChatProvider>
+                    <FeatureFlagsProvider>
+                      <OnboardingProvider>
+                        <AppContent />
+                      </OnboardingProvider>
+                    </FeatureFlagsProvider>
+                  </ChatProvider>
+                </ToastProvider>
+              </MuiThemeProvider>
             </ThemeProvider>
           </QueryClientProvider>
         </CompanySettingsProvider>

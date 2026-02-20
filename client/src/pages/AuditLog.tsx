@@ -20,9 +20,7 @@ import {
   Info
 } from 'lucide-react';
 import { GridColDef, GridRowParams } from '@mui/x-data-grid';
-import { ThemeProvider } from '@mui/material/styles';
 import { DataGrid, GridPaginationModel } from '@mui/x-data-grid';
-import dataGridTheme from '../lib/dataGridTheme';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
@@ -659,28 +657,26 @@ export default function AuditLog() {
 
       {/* Data Grid */}
       <div ref={gridRef} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden" style={{ height: gridHeight }}>
-        <ThemeProvider theme={dataGridTheme}>
-          <DataGrid
-            rows={filteredData}
-            columns={columns}
-            loading={isLoading}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            pageSizeOptions={[10, 25, 50, 100]}
-            disableRowSelectionOnClick
-            getRowId={(row) => row.Id}
-            sx={{
-              border: 0,
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: 'rgba(79, 70, 229, 0.04)',
-              },
-            }}
-            localeText={{
-              noRowsLabel: 'No audit log entries found.',
-            }}
-            onRowClick={handleRowClick}
-          />
-        </ThemeProvider>
+        <DataGrid
+          rows={filteredData}
+          columns={columns}
+          loading={isLoading}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          pageSizeOptions={[10, 25, 50, 100]}
+          disableRowSelectionOnClick
+          getRowId={(row) => row.Id}
+          sx={{
+            border: 0,
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(79, 70, 229, 0.04)',
+            },
+          }}
+          localeText={{
+            noRowsLabel: 'No audit log entries found.',
+          }}
+          onRowClick={handleRowClick}
+        />
       </div>
 
       {/* Compliance Notice */}

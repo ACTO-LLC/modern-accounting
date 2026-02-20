@@ -2,13 +2,13 @@ import { createTheme } from '@mui/material/styles';
 import type {} from '@mui/x-data-grid/themeAugmentation';
 
 /**
- * Shared MUI DataGrid theme that syncs with Tailwind's dark mode.
+ * Shared MUI theme that syncs with Tailwind's dark mode.
  *
  * Uses `colorSchemeSelector: '.dark'` so MUI switches schemes based on the
  * `.dark` class on <html> — the same selector Tailwind uses. This keeps both
  * systems in sync regardless of whether the user picked light/dark/system.
  */
-const dataGridTheme = createTheme({
+const appTheme = createTheme({
   cssVariables: { colorSchemeSelector: '.dark' },
   colorSchemes: {
     light: {
@@ -77,4 +77,4 @@ const dataGridTheme = createTheme({
   },
 });
 
-export default dataGridTheme;
+export default appTheme;

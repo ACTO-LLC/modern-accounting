@@ -8,8 +8,7 @@ import {
   GridRowParams,
   GridValidRowModel,
 } from '@mui/x-data-grid';
-import { ThemeProvider } from '@mui/material/styles';
-import dataGridTheme from '../lib/dataGridTheme';
+
 import { graphql } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import useGridHeight from '../hooks/useGridHeight';
@@ -324,48 +323,46 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
         </div>
       )}
       <div ref={gridRef} style={{ height: resolvedHeight, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
-        <ThemeProvider theme={dataGridTheme}>
-          <DataGrid
-            rows={rows}
-            columns={columnsWithActions}
-            getRowId={getRowId}
-            loading={loading}
-            // Pagination
-            paginationMode="server"
-            paginationModel={paginationModel}
-            onPaginationModelChange={handlePaginationModelChange}
-            pageSizeOptions={pageSizeOptions}
-            rowCount={totalRows}
-            // Sorting
-            sortingMode="server"
-            sortModel={sortModel}
-            onSortModelChange={handleSortModelChange}
-            // Filtering
-            filterMode="server"
-            filterModel={filterModel}
-            onFilterModelChange={handleFilterModelChange}
-            // Row interaction
-            onRowClick={handleRowClick}
-            checkboxSelection={checkboxSelection}
-            disableRowSelectionOnClick={disableRowSelectionOnClick}
-            // Styling
-            sx={{
-              '& .MuiDataGrid-main': {
-                overflow: 'auto',
-              },
-              '& .MuiDataGrid-virtualScroller': {
-                overflow: 'auto !important',
-              },
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: 'rgba(79, 70, 229, 0.04)',
-                cursor: editPath || onRowClick ? 'pointer' : 'default',
-              },
-            }}
-            localeText={{
-              noRowsLabel: emptyMessage,
-            }}
-          />
-        </ThemeProvider>
+        <DataGrid
+          rows={rows}
+          columns={columnsWithActions}
+          getRowId={getRowId}
+          loading={loading}
+          // Pagination
+          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={handlePaginationModelChange}
+          pageSizeOptions={pageSizeOptions}
+          rowCount={totalRows}
+          // Sorting
+          sortingMode="server"
+          sortModel={sortModel}
+          onSortModelChange={handleSortModelChange}
+          // Filtering
+          filterMode="server"
+          filterModel={filterModel}
+          onFilterModelChange={handleFilterModelChange}
+          // Row interaction
+          onRowClick={handleRowClick}
+          checkboxSelection={checkboxSelection}
+          disableRowSelectionOnClick={disableRowSelectionOnClick}
+          // Styling
+          sx={{
+            '& .MuiDataGrid-main': {
+              overflow: 'auto',
+            },
+            '& .MuiDataGrid-virtualScroller': {
+              overflow: 'auto !important',
+            },
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(79, 70, 229, 0.04)',
+              cursor: editPath || onRowClick ? 'pointer' : 'default',
+            },
+          }}
+          localeText={{
+            noRowsLabel: emptyMessage,
+          }}
+        />
       </div>
     </div>
   );
