@@ -128,13 +128,30 @@ For detailed technical guidance on specific topics, see these documents:
 
 ## Local Development with Git Worktrees
 
-When creating a worktree for a feature branch, `.env.local` (gitignored) won't be present. Copy it over or the client will fail to authenticate:
+When creating a worktree for a feature branch, you must install dependencies and copy gitignored env files or services will fail:
 
 ```bash
+# 1. Create worktree
 git worktree add ../modern-accounting-XXX -b fix/XXX-description main
+
+# 2. Copy gitignored env files (BOTH are required)
 cp client/.env.local ../modern-accounting-XXX/client/.env.local
-cd ../modern-accounting-XXX/client && npm install
+cp chat-api/.env ../modern-accounting-XXX/chat-api/.env
+
+# 3. Install dependencies (ALL THREE are required)
+cd ../modern-accounting-XXX && npm install          # root (concurrently, etc.)
+cd ../modern-accounting-XXX/client && npm install   # client (React, MUI, etc.)
+cd ../modern-accounting-XXX/chat-api && npm install  # chat-api (Express, etc.)
+
+# 4. Start dev server
+cd ../modern-accounting-XXX && VITE_BYPASS_AUTH=true npm run dev
 ```
+
+**Both env files are required:**
+- `client/.env.local` — Sets `VITE_API_URL=http://localhost:8080` so the client proxies to chat-api. Without it, API calls go to the wrong URL.
+- `chat-api/.env` — Sets `PORT=8080` plus Azure OpenAI, QBO, and Plaid config. Without it, chat-api defaults to port 7071, but the client expects 8080, so all API calls fail with 500.
+
+**All three `npm install` steps are required.** Missing root deps → `concurrently` not found. Missing chat-api deps → API returns 500 on all proxied requests. Missing client deps → build fails.
 
 **Also note:** DAB runs in Docker and reads `dab-config.json` from the main repo via volume mount — not from the worktree. If your fix changes `dab-config.json`, update it in the main repo too and restart DAB (`docker restart accounting-dab`).
 
@@ -142,7 +159,7 @@ cd ../modern-accounting-XXX/client && npm install
 
 ## Quick Reference: Common Pitfalls
 
-1. **MUI + Tailwind Dark Mode:** They don't sync automatically. MUI uses system preference; Tailwind uses `.dark` class.
+1. **MUI + Tailwind Dark Mode:** Root-level `ThemeProvider` in `App.tsx` syncs MUI with Tailwind's `.dark` class via `colorSchemeSelector: '.dark'`. All MUI components must be inside this provider. Use MUI Autocomplete for complex interactive dropdowns (not custom HTML). For simple inputs, use Tailwind `dark:` variants for backgrounds, borders, and text colors.
 
 2. **QBO Migration Data:** Use `fetchAll: true` to get raw data in the `data` field for migration purposes.
 
