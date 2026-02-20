@@ -126,6 +126,20 @@ For detailed technical guidance on specific topics, see these documents:
 
 ---
 
+## Local Development with Git Worktrees
+
+When creating a worktree for a feature branch, `.env.local` (gitignored) won't be present. Copy it over or the client will fail to authenticate:
+
+```bash
+git worktree add ../modern-accounting-XXX -b fix/XXX-description main
+cp client/.env.local ../modern-accounting-XXX/client/.env.local
+cd ../modern-accounting-XXX/client && npm install
+```
+
+**Also note:** DAB runs in Docker and reads `dab-config.json` from the main repo via volume mount — not from the worktree. If your fix changes `dab-config.json`, update it in the main repo too and restart DAB (`docker restart accounting-dab`).
+
+---
+
 ## Quick Reference: Common Pitfalls
 
 1. **MUI + Tailwind Dark Mode:** They don't sync automatically. MUI uses system preference; Tailwind uses `.dark` class.
