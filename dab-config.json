@@ -3814,6 +3814,7 @@
                 "Notes": "Notes",
                 "IsRoundTrip": "IsRoundTrip",
                 "Status": "Status",
+                "IsPersonal": "IsPersonal",
                 "CreatedBy": "CreatedBy",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
