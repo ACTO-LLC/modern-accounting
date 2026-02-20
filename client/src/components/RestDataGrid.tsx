@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DataGrid,
   GridColDef,
@@ -12,6 +12,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import dataGridTheme from '../lib/dataGridTheme';
 import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
+import useGridHeight from '../hooks/useGridHeight';
 
 interface RestDataGridProps<T extends GridValidRowModel> {
   // The REST API endpoint (e.g., '/invoices', '/customers')
@@ -56,7 +57,7 @@ export default function RestDataGrid<T extends GridValidRowModel>({
   getRowId = (row) => (row as unknown as { Id: string }).Id,
   baseFilter,
   transformData,
-  height = 600,
+  height,
   checkboxSelection = false,
   disableRowSelectionOnClick = true,
   emptyMessage = 'No data found.',
@@ -64,6 +65,9 @@ export default function RestDataGrid<T extends GridValidRowModel>({
   refreshKey = 0,
 }: RestDataGridProps<T>) {
   const navigate = useNavigate();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const autoHeight = useGridHeight(gridRef);
+  const resolvedHeight = height ?? autoHeight;
 
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +149,7 @@ export default function RestDataGrid<T extends GridValidRowModel>({
           {headerActions}
         </div>
       )}
-      <div style={{ height, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+      <div ref={gridRef} style={{ height: resolvedHeight, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
         <ThemeProvider theme={dataGridTheme}>
           <DataGrid
             rows={rows}

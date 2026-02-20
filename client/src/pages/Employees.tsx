@@ -99,7 +99,7 @@ export default function Employees() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Employees</h1>
         <Link

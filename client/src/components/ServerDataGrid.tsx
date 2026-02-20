@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   DataGrid,
   GridColDef,
@@ -12,6 +12,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import dataGridTheme from '../lib/dataGridTheme';
 import { graphql } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
+import useGridHeight from '../hooks/useGridHeight';
 
 // DAB GraphQL filter operators
 type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'startsWith' | 'endsWith';
@@ -91,12 +92,15 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   transformData,
   renderActions,
   headerActions,
-  height = 600,
+  height,
   checkboxSelection = false,
   disableRowSelectionOnClick = true,
   emptyMessage = 'No data found.',
 }: ServerDataGridProps<T>) {
   const navigate = useNavigate();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const autoHeight = useGridHeight(gridRef);
+  const resolvedHeight = height ?? autoHeight;
 
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,7 +323,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
           {headerActions}
         </div>
       )}
-      <div style={{ height, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+      <div ref={gridRef} style={{ height: resolvedHeight, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
         <ThemeProvider theme={dataGridTheme}>
           <DataGrid
             rows={rows}

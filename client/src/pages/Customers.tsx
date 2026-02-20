@@ -52,7 +52,7 @@ export default function Customers() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
         <Link

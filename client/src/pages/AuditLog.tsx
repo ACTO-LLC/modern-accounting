@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Search,
@@ -25,6 +25,7 @@ import { DataGrid, GridPaginationModel } from '@mui/x-data-grid';
 import dataGridTheme from '../lib/dataGridTheme';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import useGridHeight from '../hooks/useGridHeight';
 
 // Audit Log entry interface
 interface AuditLogEntry {
@@ -245,6 +246,9 @@ function AuditDetailRow({ entry }: { entry: AuditLogEntry }) {
 }
 
 export default function AuditLog() {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridHeight = useGridHeight(gridRef);
+
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState('All Actions');
@@ -485,7 +489,7 @@ export default function AuditLog() {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto">
+      <div>
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md p-4">
           <p className="text-red-600 dark:text-red-400">
             Error loading audit log: {error instanceof Error ? error.message : 'Unknown error'}
@@ -496,7 +500,7 @@ export default function AuditLog() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -654,7 +658,7 @@ export default function AuditLog() {
       </div>
 
       {/* Data Grid */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+      <div ref={gridRef} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden" style={{ height: gridHeight }}>
         <ThemeProvider theme={dataGridTheme}>
           <DataGrid
             rows={filteredData}
@@ -665,7 +669,6 @@ export default function AuditLog() {
             pageSizeOptions={[10, 25, 50, 100]}
             disableRowSelectionOnClick
             getRowId={(row) => row.Id}
-            autoHeight
             sx={{
               border: 0,
               '& .MuiDataGrid-row:hover': {

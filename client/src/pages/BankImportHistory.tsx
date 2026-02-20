@@ -140,7 +140,7 @@ export default function BankImportHistory() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Bank Import History</h1>

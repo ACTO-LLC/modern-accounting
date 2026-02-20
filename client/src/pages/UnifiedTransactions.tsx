@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import dataGridTheme from '../lib/dataGridTheme';
+import useGridHeight from '../hooks/useGridHeight';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
 import BulkActionsBar from '../components/transactions/BulkActionsBar';
 import PlaidLinkButton from '../components/PlaidLinkButton';
@@ -61,6 +62,8 @@ const initialFilters: TransactionFiltersState = {
 export default function UnifiedTransactions() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridHeight = useGridHeight(gridRef);
 
   // Initialize filters based on URL params
   const [filters, setFilters] = useState<TransactionFiltersState>(() => {
@@ -562,7 +565,7 @@ export default function UnifiedTransactions() {
   ];
 
   return (
-    <div className="max-w-full">
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -632,7 +635,7 @@ export default function UnifiedTransactions() {
       )}
 
       {/* DataGrid */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow" style={{ height: 600, width: '100%' }}>
+      <div ref={gridRef} className="bg-white dark:bg-gray-800 rounded-lg shadow" style={{ height: gridHeight, width: '100%' }}>
         <ThemeProvider theme={dataGridTheme}>
           <DataGrid
             rows={transactions}
