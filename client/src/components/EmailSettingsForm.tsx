@@ -178,7 +178,7 @@ export default function EmailSettingsForm() {
             {...register('SmtpHost')}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
-          {errors.SmtpHost && <p className="mt-1 text-sm text-red-600">{errors.SmtpHost.message}</p>}
+          {errors.SmtpHost && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.SmtpHost.message}</p>}
         </div>
 
         <div>
@@ -191,7 +191,7 @@ export default function EmailSettingsForm() {
             {...register('SmtpPort')}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
-          {errors.SmtpPort && <p className="mt-1 text-sm text-red-600">{errors.SmtpPort.message}</p>}
+          {errors.SmtpPort && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.SmtpPort.message}</p>}
         </div>
 
         <div className="flex items-center">
@@ -217,7 +217,7 @@ export default function EmailSettingsForm() {
             {...register('SmtpUsername')}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
-          {errors.SmtpUsername && <p className="mt-1 text-sm text-red-600">{errors.SmtpUsername.message}</p>}
+          {errors.SmtpUsername && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.SmtpUsername.message}</p>}
         </div>
 
         <div>
@@ -235,7 +235,7 @@ export default function EmailSettingsForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -258,7 +258,7 @@ export default function EmailSettingsForm() {
               {...register('FromName')}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
-            {errors.FromName && <p className="mt-1 text-sm text-red-600">{errors.FromName.message}</p>}
+            {errors.FromName && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.FromName.message}</p>}
           </div>
 
           <div>
@@ -272,7 +272,7 @@ export default function EmailSettingsForm() {
               {...register('FromEmail')}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
-            {errors.FromEmail && <p className="mt-1 text-sm text-red-600">{errors.FromEmail.message}</p>}
+            {errors.FromEmail && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.FromEmail.message}</p>}
           </div>
 
           <div className="sm:col-span-2">
@@ -286,7 +286,7 @@ export default function EmailSettingsForm() {
               {...register('ReplyToEmail')}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
-            {errors.ReplyToEmail && <p className="mt-1 text-sm text-red-600">{errors.ReplyToEmail.message}</p>}
+            {errors.ReplyToEmail && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ReplyToEmail.message}</p>}
           </div>
         </div>
       </div>
@@ -296,7 +296,7 @@ export default function EmailSettingsForm() {
         <div className="flex items-start justify-between mb-4">
           <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200">Email Template</h3>
           <div className="relative group">
-            <button type="button" className="text-gray-400 hover:text-gray-600">
+            <button type="button" className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400">
               <Info className="h-5 w-5" />
             </button>
             <div className="absolute right-0 w-64 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
@@ -323,7 +323,7 @@ export default function EmailSettingsForm() {
               {...register('EmailSubjectTemplate')}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
-            {errors.EmailSubjectTemplate && <p className="mt-1 text-sm text-red-600">{errors.EmailSubjectTemplate.message}</p>}
+            {errors.EmailSubjectTemplate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EmailSubjectTemplate.message}</p>}
           </div>
 
           <div>
@@ -336,7 +336,7 @@ export default function EmailSettingsForm() {
               {...register('EmailBodyTemplate')}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
-            {errors.EmailBodyTemplate && <p className="mt-1 text-sm text-red-600">{errors.EmailBodyTemplate.message}</p>}
+            {errors.EmailBodyTemplate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EmailBodyTemplate.message}</p>}
           </div>
         </div>
       </div>

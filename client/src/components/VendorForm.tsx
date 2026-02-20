@@ -75,21 +75,21 @@ export default function VendorForm({
       <div className="mb-6 flex items-center">
         <button
           onClick={() => navigate('/vendors')}
-          className="mr-4 text-gray-500 hover:text-gray-700"
+          className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-white shadow rounded-lg p-6 space-y-6"
+        className="bg-white shadow rounded-lg p-6 space-y-6 dark:bg-gray-800"
       >
         <div>
           <label
             htmlFor="Name"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
             Name
           </label>
@@ -97,10 +97,10 @@ export default function VendorForm({
             id="Name"
             type="text"
             {...register('Name')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
           {errors.Name && (
-            <p className="mt-1 text-sm text-red-600">{errors.Name.message}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Name.message}</p>
           )}
         </div>
 
@@ -108,7 +108,7 @@ export default function VendorForm({
           <div>
             <label
               htmlFor="Email"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Email
             </label>
@@ -116,17 +116,17 @@ export default function VendorForm({
               id="Email"
               type="email"
               {...register('Email')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
             {errors.Email && (
-              <p className="mt-1 text-sm text-red-600">{errors.Email.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Email.message}</p>
             )}
           </div>
 
           <div>
             <label
               htmlFor="Phone"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Phone
             </label>
@@ -134,17 +134,17 @@ export default function VendorForm({
               id="Phone"
               type="text"
               {...register('Phone')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
             {errors.Phone && (
-              <p className="mt-1 text-sm text-red-600">{errors.Phone.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Phone.message}</p>
             )}
           </div>
         </div>
 
         {/* Address Section */}
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
+        <div className="border-t pt-4 dark:border-gray-600">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Address</h3>
           <AddressFields<VendorFormData>
             register={register}
             errors={errors}
@@ -158,14 +158,14 @@ export default function VendorForm({
           <div>
             <label
               htmlFor="PaymentTerms"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Payment Terms
             </label>
             <select
               id="PaymentTerms"
               {...register('PaymentTerms')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select payment terms</option>
               <option value="Net 15">Net 15</option>
@@ -175,7 +175,7 @@ export default function VendorForm({
               <option value="Due on Receipt">Due on Receipt</option>
             </select>
             {errors.PaymentTerms && (
-              <p className="mt-1 text-sm text-red-600">
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                 {errors.PaymentTerms.message}
               </p>
             )}
@@ -184,20 +184,20 @@ export default function VendorForm({
           <div>
             <label
               htmlFor="Status"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Status
             </label>
             <select
               id="Status"
               {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
             {errors.Status && (
-              <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>
             )}
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function VendorForm({
           <div>
             <label
               htmlFor="TaxId"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Tax ID (EIN/SSN)
             </label>
@@ -215,24 +215,24 @@ export default function VendorForm({
               type="text"
               {...register('TaxId')}
               placeholder="XX-XXXXXXX"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
             {errors.TaxId && (
-              <p className="mt-1 text-sm text-red-600">{errors.TaxId.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.TaxId.message}</p>
             )}
           </div>
 
           <div>
             <label
               htmlFor="DefaultExpenseAccountId"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Default Expense Account
             </label>
             <select
               id="DefaultExpenseAccountId"
               {...register('DefaultExpenseAccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select an account</option>
               {accounts?.map((account: any) => (
@@ -242,7 +242,7 @@ export default function VendorForm({
               ))}
             </select>
             {errors.DefaultExpenseAccountId && (
-              <p className="mt-1 text-sm text-red-600">
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                 {errors.DefaultExpenseAccountId.message}
               </p>
             )}
@@ -258,17 +258,17 @@ export default function VendorForm({
           />
           <label
             htmlFor="Is1099Vendor"
-            className="ml-2 block text-sm text-gray-700"
+            className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
           >
             1099 Vendor (requires tax reporting)
           </label>
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
+        <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
           <button
             type="button"
             onClick={() => navigate('/vendors')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

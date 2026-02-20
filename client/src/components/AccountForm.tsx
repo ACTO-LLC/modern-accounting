@@ -50,7 +50,7 @@ export default function AccountForm({ initialValues, onSubmit, title, isSubmitti
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/accounts')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/accounts')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -117,7 +117,7 @@ export default function AccountForm({ initialValues, onSubmit, title, isSubmitti
               id="Subtype"
               {...register('Subtype')}
               disabled={!selectedType}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 disabled:bg-gray-100 dark:disabled:bg-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">{selectedType ? 'Select a subtype...' : 'Select type first'}</option>
               {availableSubtypes.map(subtype => (
@@ -152,7 +152,7 @@ export default function AccountForm({ initialValues, onSubmit, title, isSubmitti
           </label>
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
           <button
             type="button"
             onClick={() => navigate('/accounts')}

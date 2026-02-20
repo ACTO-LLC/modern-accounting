@@ -131,7 +131,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/bills')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/bills')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -241,7 +241,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
             <button
               type="button"
               onClick={() => append({ AccountId: '', Description: '', Amount: 0 })}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
+              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900 dark:hover:bg-indigo-800"
             >
               <Plus className="w-4 h-4 mr-1" />
               Add Item
@@ -250,9 +250,9 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
 
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex gap-4 items-start bg-gray-50 p-4 rounded-md">
+              <div key={field.id} className="flex gap-4 items-start bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
                 <div className="w-48">
-                  <label className="block text-xs font-medium text-gray-500">Account</label>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Account</label>
                   <select
                     {...register(`Lines.${index}.AccountId`)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
@@ -265,11 +265,11 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                     ))}
                   </select>
                   {errors.Lines?.[index]?.AccountId && (
-                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.AccountId?.message}</p>
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.Lines[index]?.AccountId?.message}</p>
                   )}
                 </div>
                 <div className="flex-grow">
-                  <label className="block text-xs font-medium text-gray-500">Description</label>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Description</label>
                   <input
                     {...register(`Lines.${index}.Description`)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
@@ -277,7 +277,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                   />
                 </div>
                 <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-500">Amount</label>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Amount</label>
                   <input
                     type="number"
                     step="0.01"
@@ -285,7 +285,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                   />
                   {errors.Lines?.[index]?.Amount && (
-                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Amount?.message}</p>
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.Lines[index]?.Amount?.message}</p>
                   )}
                 </div>
                 <button
@@ -308,20 +308,20 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
         {settings.invoicePostingMode === 'simple' && (
           <div className={`flex items-center gap-2 p-3 rounded-lg ${
             willAutoPost
-              ? 'bg-amber-50 border border-amber-200'
-              : 'bg-gray-50 border border-gray-200'
+              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-700'
+              : 'bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600'
           }`}>
             {willAutoPost ? (
               <>
                 <Zap className="h-4 w-4 text-amber-500" />
-                <span className="text-sm text-amber-700">
+                <span className="text-sm text-amber-700 dark:text-amber-400">
                   This bill will <strong>post to your books</strong> when saved (AP + Expense entries).
                 </span>
               </>
             ) : (
               <>
-                <Info className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
+                <Info className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   Draft bills don't affect your books until the status is changed.
                 </span>
               </>
@@ -329,8 +329,8 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
           </div>
         )}
 
-        <div className="flex justify-end items-center border-t pt-4">
-          <div className="text-xl font-bold text-gray-900 mr-6">
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
             Total: ${lines.reduce((sum, line) => sum + (line.Amount || 0), 0).toFixed(2)}
           </div>
           <button

@@ -134,30 +134,30 @@ export default function CustomerDepositForm({
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center">
-          <button onClick={() => navigate(-1)} className="mr-4 text-gray-500 hover:text-gray-700">
+          <button onClick={() => navigate(-1)} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
         </div>
         {headerActions && <div className="flex items-center">{headerActions}</div>}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6 dark:bg-gray-800">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label htmlFor="DepositNumber" className="block text-sm font-medium text-gray-700">Deposit Number</label>
+            <label htmlFor="DepositNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Deposit Number</label>
             <input
               id="DepositNumber"
               type="text"
               {...register('DepositNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="DEP-001"
             />
-            {errors.DepositNumber && <p className="mt-1 text-sm text-red-600">{errors.DepositNumber.message}</p>}
+            {errors.DepositNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.DepositNumber.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">Customer</label>
+            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Customer</label>
             <Controller
               name="CustomerId"
               control={control}
@@ -173,21 +173,21 @@ export default function CustomerDepositForm({
           </div>
 
           <div>
-            <label htmlFor="DepositDate" className="block text-sm font-medium text-gray-700">Deposit Date</label>
+            <label htmlFor="DepositDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Deposit Date</label>
             <input
               id="DepositDate"
               type="date"
               {...register('DepositDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
-            {errors.DepositDate && <p className="mt-1 text-sm text-red-600">{errors.DepositDate.message}</p>}
+            {errors.DepositDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.DepositDate.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Amount" className="block text-sm font-medium text-gray-700">Amount</label>
+            <label htmlFor="Amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
             <div className="mt-1 relative rounded-md shadow-sm">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <span className="text-gray-500 sm:text-sm">$</span>
+                <span className="text-gray-500 sm:text-sm dark:text-gray-400">$</span>
               </div>
               <input
                 id="Amount"
@@ -195,44 +195,44 @@ export default function CustomerDepositForm({
                 step="0.01"
                 min="0.01"
                 {...register('Amount', { valueAsNumber: true })}
-                className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 placeholder="0.00"
               />
             </div>
-            {errors.Amount && <p className="mt-1 text-sm text-red-600">{errors.Amount.message}</p>}
+            {errors.Amount && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Amount.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700">Payment Method</label>
+            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
             <select
               id="PaymentMethod"
               {...register('PaymentMethod')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               {PAYMENT_METHODS.map(method => (
                 <option key={method} value={method}>{method}</option>
               ))}
             </select>
-            {errors.PaymentMethod && <p className="mt-1 text-sm text-red-600">{errors.PaymentMethod.message}</p>}
+            {errors.PaymentMethod && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PaymentMethod.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="Reference" className="block text-sm font-medium text-gray-700">Reference / Check #</label>
+            <label htmlFor="Reference" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reference / Check #</label>
             <input
               id="Reference"
               type="text"
               {...register('Reference')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="Optional reference number"
             />
           </div>
 
           <div>
-            <label htmlFor="DepositAccountId" className="block text-sm font-medium text-gray-700">Deposit To Account</label>
+            <label htmlFor="DepositAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Deposit To Account</label>
             <select
               id="DepositAccountId"
               {...register('DepositAccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select bank account</option>
               {bankAccounts?.map(account => (
@@ -241,17 +241,17 @@ export default function CustomerDepositForm({
                 </option>
               ))}
             </select>
-            {errors.DepositAccountId && <p className="mt-1 text-sm text-red-600">{errors.DepositAccountId.message}</p>}
+            {errors.DepositAccountId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.DepositAccountId.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="LiabilityAccountId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="LiabilityAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Liability Account (Unearned Revenue)
             </label>
             <select
               id="LiabilityAccountId"
               {...register('LiabilityAccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select liability account</option>
               {liabilityAccounts?.map(account => (
@@ -260,19 +260,19 @@ export default function CustomerDepositForm({
                 </option>
               ))}
             </select>
-            {errors.LiabilityAccountId && <p className="mt-1 text-sm text-red-600">{errors.LiabilityAccountId.message}</p>}
+            {errors.LiabilityAccountId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.LiabilityAccountId.message}</p>}
           </div>
 
           {/* Optional: Link to Project */}
           {watchedCustomerId && projects && projects.length > 0 && (
             <div>
-              <label htmlFor="ProjectId" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="ProjectId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Project (Optional)
               </label>
               <select
                 id="ProjectId"
                 {...register('ProjectId')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="">No project</option>
                 {projects.map(project => (
@@ -287,13 +287,13 @@ export default function CustomerDepositForm({
           {/* Optional: Link to Estimate */}
           {watchedCustomerId && estimates && estimates.length > 0 && (
             <div>
-              <label htmlFor="EstimateId" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="EstimateId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Estimate (Optional)
               </label>
               <select
                 id="EstimateId"
                 {...register('EstimateId')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="">No estimate</option>
                 {estimates.map(estimate => (
@@ -306,37 +306,37 @@ export default function CustomerDepositForm({
           )}
 
           <div className="sm:col-span-2">
-            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700">Memo</label>
+            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Memo</label>
             <textarea
               id="Memo"
               {...register('Memo')}
               rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               placeholder="Optional notes about this deposit"
             />
           </div>
         </div>
 
         {/* Info box about journal entry */}
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-          <h4 className="text-sm font-medium text-blue-800 mb-2">Journal Entry Preview</h4>
-          <p className="text-sm text-blue-700">
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 dark:bg-blue-950 dark:border-blue-800">
+          <h4 className="text-sm font-medium text-blue-800 mb-2 dark:text-blue-300">Journal Entry Preview</h4>
+          <p className="text-sm text-blue-700 dark:text-blue-400">
             This deposit will create a journal entry:
           </p>
-          <ul className="text-sm text-blue-700 mt-2 space-y-1">
+          <ul className="text-sm text-blue-700 dark:text-blue-400 mt-2 space-y-1">
             <li><strong>Debit:</strong> Selected bank account (Asset increases)</li>
             <li><strong>Credit:</strong> Unearned Revenue (Liability increases)</li>
           </ul>
-          <p className="text-sm text-blue-600 mt-2 italic">
+          <p className="text-sm text-blue-600 mt-2 italic dark:text-blue-400">
             When applied to an invoice, the liability is reversed and revenue is recognized.
           </p>
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
+        <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             Cancel
           </button>

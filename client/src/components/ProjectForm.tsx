@@ -52,7 +52,7 @@ export default function ProjectForm({
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/projects')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/projects')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -165,7 +165,7 @@ export default function ProjectForm({
           </div>
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
           <button
             type="button"
             onClick={() => navigate('/projects')}

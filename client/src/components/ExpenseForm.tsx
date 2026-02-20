@@ -220,7 +220,7 @@ export default function ExpenseForm({
       <div className="mb-6 flex items-center">
         <button
           onClick={() => navigate('/expenses')}
-          className="mr-4 text-gray-500 hover:text-gray-700"
+          className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
@@ -236,14 +236,14 @@ export default function ExpenseForm({
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer"
+            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Receipt className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-600">
+            <Receipt className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Drag and drop receipt images or PDFs here, or click to browse
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Supports JPG, PNG, and PDF files
             </p>
             <input
@@ -271,8 +271,8 @@ export default function ExpenseForm({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <span className="text-xs text-gray-600 text-center px-1 truncate">
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-600">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 text-center px-1 truncate">
                         {receipt.file.name}
                       </span>
                     </div>
@@ -316,14 +316,14 @@ export default function ExpenseForm({
             </label>
             <div className="mt-1 relative rounded-md shadow-sm">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <span className="text-gray-500 sm:text-sm">$</span>
+                <span className="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
               </div>
               <input
                 id="Amount"
                 type="number"
                 step="0.01"
                 {...register('Amount', { valueAsNumber: true })}
-                className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 placeholder="0.00"
               />
             </div>
@@ -348,7 +348,7 @@ export default function ExpenseForm({
                     setValue('VendorName', null);
                   }
                 }}
-                className="text-xs text-indigo-600 hover:text-indigo-800"
+                className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
               >
                 {useQuickVendor ? 'Select from list' : 'Enter name manually'}
               </button>
@@ -357,13 +357,13 @@ export default function ExpenseForm({
               <input
                 type="text"
                 {...register('VendorName')}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 placeholder="Enter vendor name..."
               />
             ) : (
               <select
                 {...register('VendorId')}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="">Select a vendor (optional)...</option>
                 {vendors?.map((vendor) => (
@@ -473,7 +473,7 @@ export default function ExpenseForm({
                 {...register('IsPersonal')}
                 className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
               />
-              <label htmlFor="IsPersonal" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="IsPersonal" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                 This is a personal expense (not business-related)
               </label>
             </div>
@@ -484,7 +484,7 @@ export default function ExpenseForm({
                 {...register('IsReimbursable')}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
-              <label htmlFor="IsReimbursable" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="IsReimbursable" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                 This is a reimbursable expense
               </label>
             </div>
@@ -551,7 +551,7 @@ export default function ExpenseForm({
         </div>
 
         {/* Submit Buttons */}
-        <div className="flex justify-end items-center border-t pt-4">
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
           <button
             type="button"
             onClick={() => navigate('/expenses')}

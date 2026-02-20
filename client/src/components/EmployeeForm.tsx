@@ -137,17 +137,17 @@ export default function EmployeeForm({
             <div>
               <label htmlFor="FirstName" className={labelClass}>First Name *</label>
               <input id="FirstName" type="text" {...register('FirstName')} className={inputClass} />
-              {errors.FirstName && <p className="mt-1 text-sm text-red-600">{errors.FirstName.message}</p>}
+              {errors.FirstName && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.FirstName.message}</p>}
             </div>
             <div>
               <label htmlFor="LastName" className={labelClass}>Last Name *</label>
               <input id="LastName" type="text" {...register('LastName')} className={inputClass} />
-              {errors.LastName && <p className="mt-1 text-sm text-red-600">{errors.LastName.message}</p>}
+              {errors.LastName && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.LastName.message}</p>}
             </div>
             <div>
               <label htmlFor="Email" className={labelClass}>Email</label>
               <input id="Email" type="email" {...register('Email')} className={inputClass} />
-              {errors.Email && <p className="mt-1 text-sm text-red-600">{errors.Email.message}</p>}
+              {errors.Email && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Email.message}</p>}
             </div>
             <div>
               <label htmlFor="Phone" className={labelClass}>Phone</label>
@@ -156,7 +156,7 @@ export default function EmployeeForm({
             <div>
               <label htmlFor="SSNLast4" className={labelClass}>SSN (Last 4 Digits)</label>
               <input id="SSNLast4" type="text" maxLength={4} {...register('SSNLast4')} className={inputClass} placeholder="1234" />
-              {errors.SSNLast4 && <p className="mt-1 text-sm text-red-600">{errors.SSNLast4.message}</p>}
+              {errors.SSNLast4 && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.SSNLast4.message}</p>}
             </div>
             <div>
               <label htmlFor="DateOfBirth" className={labelClass}>Date of Birth</label>
@@ -172,7 +172,7 @@ export default function EmployeeForm({
             <div>
               <label htmlFor="EmployeeNumber" className={labelClass}>Employee Number *</label>
               <input id="EmployeeNumber" type="text" {...register('EmployeeNumber')} className={inputClass} placeholder="EMP001" />
-              {errors.EmployeeNumber && <p className="mt-1 text-sm text-red-600">{errors.EmployeeNumber.message}</p>}
+              {errors.EmployeeNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EmployeeNumber.message}</p>}
             </div>
             <div>
               <label htmlFor="Status" className={labelClass}>Status</label>
@@ -185,7 +185,7 @@ export default function EmployeeForm({
             <div>
               <label htmlFor="HireDate" className={labelClass}>Hire Date *</label>
               <input id="HireDate" type="date" {...register('HireDate')} className={inputClass} />
-              {errors.HireDate && <p className="mt-1 text-sm text-red-600">{errors.HireDate.message}</p>}
+              {errors.HireDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.HireDate.message}</p>}
             </div>
             <div>
               <label htmlFor="TerminationDate" className={labelClass}>Termination Date</label>
@@ -221,7 +221,7 @@ export default function EmployeeForm({
                   placeholder={payType === 'Hourly' ? '25.00' : '52000.00'}
                 />
               </div>
-              {errors.PayRate && <p className="mt-1 text-sm text-red-600">{errors.PayRate.message}</p>}
+              {errors.PayRate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PayRate.message}</p>}
             </div>
             <div>
               <label htmlFor="PayFrequency" className={labelClass}>Pay Frequency *</label>

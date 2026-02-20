@@ -247,7 +247,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center">
-          <button onClick={() => navigate('/invoices')} className="mr-4 text-gray-500 hover:text-gray-700">
+          <button onClick={() => navigate('/invoices')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -501,7 +501,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
         </div>
 
         {/* Totals Section */}
-        <div className="border-t pt-4">
+        <div className="border-t dark:border-gray-600 pt-4">
           <div className="flex justify-end">
             <div className="w-72 space-y-2">
               <div className="flex justify-between text-sm">
@@ -524,7 +524,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                   )}
                 </>
               )}
-              <div className="flex justify-between text-lg font-bold border-t pt-2">
+              <div className="flex justify-between text-lg font-bold border-t dark:border-gray-600 pt-2">
                 <span className="text-gray-900 dark:text-gray-100">Total:</span>
                 <span className="text-gray-900 dark:text-gray-100">${calculations.total.toFixed(2)}</span>
               </div>
@@ -557,7 +557,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
           </div>
         )}
 
-        <div className="flex justify-end items-center border-t pt-4">
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
           <button
             type="button"
             onClick={() => navigate('/invoices')}
