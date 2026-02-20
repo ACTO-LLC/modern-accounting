@@ -399,10 +399,10 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
               const isTaxable = lineTaxableStatus[index] ?? true;
 
               return (
-                <div key={field.id} className="bg-gray-50 p-4 rounded-md">
+                <div key={field.id} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
                   <div className="flex gap-4 items-start mb-3">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">Product/Service</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Product/Service</label>
                       <Controller
                         name={`Lines.${index}.ProductServiceId`}
                         control={control}
@@ -426,14 +426,14 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                         }}
                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                       />
-                      <label htmlFor={`taxable-${index}`} className="ml-2 text-xs text-gray-600">
+                      <label htmlFor={`taxable-${index}`} className="ml-2 text-xs text-gray-600 dark:text-gray-400">
                         Taxable
                       </label>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">Description</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Description</label>
                       <input
                         {...register(`Lines.${index}.Description`)}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
@@ -444,7 +444,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                       )}
                     </div>
                     <div className="w-24">
-                      <label className="block text-xs font-medium text-gray-500">Qty</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Qty</label>
                       <input
                         type="number"
                         step="0.01"
@@ -453,7 +453,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                       />
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">Unit Price</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Unit Price</label>
                       <input
                         type="number"
                         step="0.01"
@@ -462,8 +462,8 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                       />
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">Amount</label>
-                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Amount</label>
+                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 dark:text-gray-300 font-medium">
                         ${lineAmount.toFixed(2)}
                         {!isTaxable && selectedTaxRate && (
                           <span className="ml-1 text-xs text-gray-400">(no tax)</span>
@@ -505,16 +505,16 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
           <div className="flex justify-end">
             <div className="w-72 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal:</span>
-                <span className="font-medium text-gray-900">${calculations.subtotal.toFixed(2)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">${calculations.subtotal.toFixed(2)}</span>
               </div>
               {selectedTaxRate && (
                 <>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-400">
                       Tax ({selectedTaxRate.Name} - {formatTaxRate(selectedTaxRate.Rate)}):
                     </span>
-                    <span className="font-medium text-gray-900">${calculations.taxAmount.toFixed(2)}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">${calculations.taxAmount.toFixed(2)}</span>
                   </div>
                   {calculations.taxableAmount !== calculations.subtotal && (
                     <div className="flex justify-between text-xs text-gray-500">
@@ -525,8 +525,8 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                 </>
               )}
               <div className="flex justify-between text-lg font-bold border-t pt-2">
-                <span className="text-gray-900">Total:</span>
-                <span className="text-gray-900">${calculations.total.toFixed(2)}</span>
+                <span className="text-gray-900 dark:text-gray-100">Total:</span>
+                <span className="text-gray-900 dark:text-gray-100">${calculations.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -536,20 +536,20 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
         {settings.invoicePostingMode === 'simple' && (
           <div className={`flex items-center gap-2 p-3 rounded-lg ${
             willAutoPost
-              ? 'bg-amber-50 border border-amber-200'
-              : 'bg-gray-50 border border-gray-200'
+              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-700'
+              : 'bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600'
           }`}>
             {willAutoPost ? (
               <>
                 <Zap className="h-4 w-4 text-amber-500" />
-                <span className="text-sm text-amber-700">
+                <span className="text-sm text-amber-700 dark:text-amber-300">
                   This invoice will <strong>post to your books</strong> when saved (AR + Revenue entries).
                 </span>
               </>
             ) : (
               <>
                 <Info className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   Draft invoices don't affect your books until the status is changed.
                 </span>
               </>
