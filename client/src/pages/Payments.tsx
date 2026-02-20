@@ -17,10 +17,10 @@ interface Payment {
 }
 
 const statusColors: Record<string, string> = {
-  Completed: 'bg-green-100 text-green-800',
-  Pending: 'bg-yellow-100 text-yellow-800',
-  Voided: 'bg-red-100 text-red-800',
-  Failed: 'bg-red-100 text-red-800',
+  Completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  Pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  Voided: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  Failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 };
 
 export default function Payments() {
@@ -44,7 +44,7 @@ export default function Payments() {
       width: 120,
       filterable: true,
       renderCell: (params) => (
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
           {params.value}
         </span>
       ),

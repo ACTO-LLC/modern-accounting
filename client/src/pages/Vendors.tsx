@@ -28,7 +28,7 @@ export default function Vendors() {
       filterable: true,
       renderCell: (params) => (
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          params.value === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+          params.value === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         }`}>
           {params.value}
         </span>
@@ -40,7 +40,7 @@ export default function Vendors() {
       width: 80,
       filterable: true,
       renderCell: (params) => params.value ? (
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Yes</span>
+        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Yes</span>
       ) : (
         <span className="text-gray-400">No</span>
       ),

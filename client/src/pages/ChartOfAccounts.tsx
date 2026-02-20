@@ -15,11 +15,11 @@ interface Account {
 }
 
 const typeColors: Record<string, string> = {
-  Asset: 'bg-blue-100 text-blue-800',
-  Liability: 'bg-red-100 text-red-800',
-  Equity: 'bg-purple-100 text-purple-800',
-  Revenue: 'bg-green-100 text-green-800',
-  Expense: 'bg-orange-100 text-orange-800',
+  Asset: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  Liability: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  Equity: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  Revenue: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  Expense: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
 };
 
 export default function ChartOfAccounts() {
@@ -33,7 +33,7 @@ export default function ChartOfAccounts() {
       width: 120,
       filterable: true,
       renderCell: (params) => (
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeColors[params.value] || 'bg-gray-100 text-gray-800'}`}>
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeColors[params.value] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
           {params.value}
         </span>
       ),
@@ -45,7 +45,7 @@ export default function ChartOfAccounts() {
       width: 100,
       filterable: true,
       renderCell: (params) => (
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${params.value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${params.value ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
           {params.value ? 'Active' : 'Inactive'}
         </span>
       ),

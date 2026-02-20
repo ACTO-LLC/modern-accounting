@@ -21,10 +21,10 @@ interface BankTransactionImport {
 }
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string }> = {
-  Pending: { icon: <Clock className="w-4 h-4" />, color: 'bg-yellow-100 text-yellow-800' },
-  Processing: { icon: <RefreshCw className="w-4 h-4 animate-spin" />, color: 'bg-blue-100 text-blue-800' },
-  Completed: { icon: <CheckCircle className="w-4 h-4" />, color: 'bg-green-100 text-green-800' },
-  Failed: { icon: <AlertCircle className="w-4 h-4" />, color: 'bg-red-100 text-red-800' },
+  Pending: { icon: <Clock className="w-4 h-4" />, color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  Processing: { icon: <RefreshCw className="w-4 h-4 animate-spin" />, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
+  Completed: { icon: <CheckCircle className="w-4 h-4" />, color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
+  Failed: { icon: <AlertCircle className="w-4 h-4" />, color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
 };
 
 export default function BankImportHistory() {
@@ -54,7 +54,7 @@ export default function BankImportHistory() {
       width: 80,
       filterable: true,
       renderCell: (params) => (
-        <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-700">
+        <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
           {params.value}
         </span>
       ),
@@ -66,7 +66,7 @@ export default function BankImportHistory() {
       filterable: true,
       renderCell: (params) => (
         <div>
-          <div className="text-sm text-gray-900">{params.value}</div>
+          <div className="text-sm text-gray-900 dark:text-gray-100">{params.value}</div>
           {params.row.BankAccountNumber && (
             <div className="text-xs text-gray-500">({params.row.BankAccountNumber})</div>
           )}

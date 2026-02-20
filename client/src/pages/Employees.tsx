@@ -53,10 +53,10 @@ export default function Employees() {
       renderCell: (params) => {
         const status = params.value as string;
         const colorClass = status === 'Active'
-          ? 'bg-green-100 text-green-800'
+          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
           : status === 'Inactive'
-            ? 'bg-yellow-100 text-yellow-800'
-            : 'bg-red-100 text-red-800';
+            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
         return (
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
             {status}
@@ -81,7 +81,7 @@ export default function Employees() {
 
         if (status === 'Verified') {
           return (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
               <ShieldCheck className="w-3 h-3" />
               Verified
             </span>

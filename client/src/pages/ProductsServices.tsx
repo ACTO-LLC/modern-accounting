@@ -36,7 +36,7 @@ export default function ProductsServices() {
         return (
           <div className="flex items-center">
             <IconComponent className={`w-4 h-4 mr-2 ${iconColor}`} />
-            <span className="text-sm font-medium text-gray-900">{params.value}</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{params.value}</span>
           </div>
         );
       }
@@ -49,9 +49,9 @@ export default function ProductsServices() {
       filterable: true,
       renderCell: (params) => {
         const styles: Record<string, string> = {
-          Service: 'bg-blue-100 text-blue-800',
-          Inventory: 'bg-green-100 text-green-800',
-          NonInventory: 'bg-orange-100 text-orange-800'
+          Service: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+          Inventory: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+          NonInventory: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
         };
         const labels: Record<string, string> = {
           Service: 'Service',
@@ -59,7 +59,7 @@ export default function ProductsServices() {
           NonInventory: 'Non-Inventory'
         };
         return (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[params.value] || 'bg-gray-100 text-gray-800'}`}>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[params.value] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
             {labels[params.value] || params.value}
           </span>
         );
@@ -83,7 +83,7 @@ export default function ProductsServices() {
       filterable: true,
       renderCell: (params) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          params.value ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+          params.value ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         }`}>
           {params.value ? 'Yes' : 'No'}
         </span>
@@ -96,7 +96,7 @@ export default function ProductsServices() {
       filterable: true,
       renderCell: (params) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          params.value === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+          params.value === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         }`}>
           {params.value}
         </span>
