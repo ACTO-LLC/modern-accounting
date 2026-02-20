@@ -2,13 +2,14 @@ import { createTheme } from '@mui/material/styles';
 import type {} from '@mui/x-data-grid/themeAugmentation';
 
 /**
- * Shared MUI DataGrid theme that forces light mode.
+ * Shared MUI DataGrid theme that syncs with Tailwind's dark mode.
  *
- * MUI auto-detects system `prefers-color-scheme: dark` and applies dark mode
- * colors (light text on light background), even when the app UI is in light mode.
- * Defining only `colorSchemes.light` prevents the automatic dark mode switch.
+ * Uses `colorSchemeSelector: '.dark'` so MUI switches schemes based on the
+ * `.dark` class on <html> — the same selector Tailwind uses. This keeps both
+ * systems in sync regardless of whether the user picked light/dark/system.
  */
 const dataGridTheme = createTheme({
+  cssVariables: { colorSchemeSelector: '.dark' },
   colorSchemes: {
     light: {
       palette: {
@@ -16,15 +17,61 @@ const dataGridTheme = createTheme({
           primary: '#111827',   // Tailwind gray-900
           secondary: '#374151', // Tailwind gray-700
         },
+        divider: '#e5e7eb',     // Tailwind gray-200
+        background: {
+          default: '#ffffff',
+          paper: '#f9fafb',     // Tailwind gray-50 (header bg)
+        },
+      },
+    },
+    dark: {
+      palette: {
+        text: {
+          primary: '#f3f4f6',   // Tailwind gray-100
+          secondary: '#d1d5db', // Tailwind gray-300
+        },
+        divider: '#374151',     // Tailwind gray-700
+        background: {
+          default: '#1f2937',   // Tailwind gray-800
+          paper: '#1f2937',
+        },
       },
     },
   },
   components: {
     MuiDataGrid: {
       styleOverrides: {
-        root: { color: '#111827' },
-        cell: { color: '#111827' },
-        columnHeaderTitle: { color: '#374151', fontWeight: 600 },
+        root: {
+          '--DataGrid-containerBackground': 'var(--mui-palette-background-default)',
+          '& .MuiDataGrid-columnHeaderTitle': {
+            fontWeight: 600,
+          },
+          '& .MuiDataGrid-cell:focus': {
+            outline: 'none',
+          },
+        },
+        columnHeaders: {
+          '--DataGrid-containerBackground': 'var(--mui-palette-background-default)',
+        },
+      },
+    },
+    MuiTablePagination: {
+      styleOverrides: {
+        root: { color: 'var(--mui-palette-text-secondary)' },
+        selectLabel: { color: 'var(--mui-palette-text-secondary)' },
+        displayedRows: { color: 'var(--mui-palette-text-secondary)' },
+        select: { color: 'var(--mui-palette-text-primary)' },
+        selectIcon: { color: 'var(--mui-palette-text-secondary)' },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          color: 'var(--mui-palette-text-secondary)',
+          '&.Mui-disabled': {
+            color: 'var(--mui-palette-action-disabled)',
+          },
+        },
       },
     },
   },

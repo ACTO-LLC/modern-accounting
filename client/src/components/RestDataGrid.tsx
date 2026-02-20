@@ -168,47 +168,15 @@ export default function RestDataGrid<T extends GridValidRowModel>({
             disableRowSelectionOnClick={disableRowSelectionOnClick}
             // Styling
             sx={{
-              // Enable horizontal scrolling when columns exceed container width
               '& .MuiDataGrid-main': {
                 overflow: 'auto',
               },
               '& .MuiDataGrid-virtualScroller': {
                 overflow: 'auto !important',
               },
-              '& .MuiDataGrid-cell': {
-                color: '#111827 !important',
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                color: '#374151 !important',
-              },
               '& .MuiDataGrid-row:hover': {
                 backgroundColor: 'rgba(79, 70, 229, 0.04)',
                 cursor: editPath || onRowClick ? 'pointer' : 'default',
-              },
-              '& .MuiDataGrid-cell:focus': {
-                outline: 'none',
-              },
-              // Footer/pagination styling
-              '& .MuiTablePagination-root': {
-                color: '#374151 !important',
-              },
-              '& .MuiTablePagination-selectLabel': {
-                color: '#374151 !important',
-              },
-              '& .MuiTablePagination-displayedRows': {
-                color: '#374151 !important',
-              },
-              '& .MuiTablePagination-select': {
-                color: '#111827 !important',
-              },
-              '& .MuiTablePagination-selectIcon': {
-                color: '#374151 !important',
-              },
-              '& .MuiIconButton-root': {
-                color: '#374151 !important',
-              },
-              '& .MuiIconButton-root.Mui-disabled': {
-                color: '#9ca3af !important',
               },
             }}
             localeText={{

@@ -18,74 +18,8 @@
   --datagrid-text-secondary: #9ca3af;
 }
 
-/* MUI DataGrid base styles (light mode) */
-.MuiDataGrid-root {
-  color: #111827 !important;
-}
-
-.MuiDataGrid-cell {
-  color: #111827 !important;
-  border-color: #e5e7eb !important;
-}
-
-.MuiDataGrid-columnHeaders {
-  background-color: #f9fafb !important;
-  border-color: #e5e7eb !important;
-  color: #374151 !important;
-}
-
-.MuiDataGrid-columnHeaderTitle {
-  color: #374151 !important;
-  font-weight: 600 !important;
-}
-
-.MuiDataGrid-footerContainer {
-  border-color: #e5e7eb !important;
-}
-
-.MuiTablePagination-root {
-  color: #374151 !important;
-}
-
-.MuiDataGrid-row:hover {
-  background-color: rgba(79, 70, 229, 0.04) !important;
-}
-
-/* MUI DataGrid dark mode overrides */
-.dark .MuiDataGrid-root {
-  color: #f9fafb !important;
-}
-
-.dark .MuiDataGrid-cell {
-  color: #f3f4f6 !important;
-  border-color: #374151 !important;
-}
-
-.dark .MuiDataGrid-columnHeaders {
-  background-color: #1f2937 !important;
-  border-color: #374151 !important;
-  color: #d1d5db !important;
-}
-
-.dark .MuiDataGrid-columnHeaderTitle {
-  color: #d1d5db !important;
-}
-
-.dark .MuiDataGrid-footerContainer {
-  border-color: #374151 !important;
-}
-
-.dark .MuiTablePagination-root {
-  color: #d1d5db !important;
-}
-
-.dark .MuiIconButton-root {
-  color: #9ca3af !important;
-}
-
-.dark .MuiDataGrid-row:hover {
-  background-color: rgba(79, 70, 229, 0.15) !important;
-}
+/* MUI DataGrid colors are handled by dataGridTheme.ts via ThemeProvider.
+   Do NOT add !important color overrides here — they fight with the theme. */
 
 /* Print styles for tax forms - force light mode colors */
 @media print {

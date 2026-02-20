@@ -346,25 +346,15 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
             disableRowSelectionOnClick={disableRowSelectionOnClick}
             // Styling
             sx={{
-              // Enable horizontal scrolling when columns exceed container width
               '& .MuiDataGrid-main': {
                 overflow: 'auto',
               },
               '& .MuiDataGrid-virtualScroller': {
                 overflow: 'auto !important',
               },
-              '& .MuiDataGrid-cell': {
-                color: '#111827 !important',
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                color: '#374151 !important',
-              },
               '& .MuiDataGrid-row:hover': {
                 backgroundColor: 'rgba(79, 70, 229, 0.04)',
                 cursor: editPath || onRowClick ? 'pointer' : 'default',
-              },
-              '& .MuiDataGrid-cell:focus': {
-                outline: 'none',
               },
             }}
             localeText={{

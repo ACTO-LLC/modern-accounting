@@ -668,39 +668,8 @@ export default function AuditLog() {
             autoHeight
             sx={{
               border: 0,
-              '& .MuiDataGrid-cell': {
-                color: '#111827 !important',
-              },
-              '& .MuiDataGrid-columnHeaderTitle': {
-                color: '#374151 !important',
-                fontWeight: 600,
-              },
               '& .MuiDataGrid-row:hover': {
                 backgroundColor: 'rgba(79, 70, 229, 0.04)',
-              },
-              '& .MuiDataGrid-cell:focus': {
-                outline: 'none',
-              },
-              '& .MuiTablePagination-root': {
-                color: '#374151 !important',
-              },
-              '& .MuiTablePagination-selectLabel': {
-                color: '#374151 !important',
-              },
-              '& .MuiTablePagination-displayedRows': {
-                color: '#374151 !important',
-              },
-              '& .MuiTablePagination-select': {
-                color: '#111827 !important',
-              },
-              '& .MuiTablePagination-selectIcon': {
-                color: '#374151 !important',
-              },
-              '& .MuiIconButton-root': {
-                color: '#374151 !important',
-              },
-              '& .MuiIconButton-root.Mui-disabled': {
-                color: '#9ca3af !important',
               },
             }}
             localeText={{
