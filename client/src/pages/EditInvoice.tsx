@@ -186,8 +186,18 @@ export default function EditInvoice() {
         Status: 'Draft'
       };
 
-      const createResponse = await api.post<Invoice>('/invoices_write', newInvoice);
-      const createdInvoice = createResponse.data;
+      await api.post('/invoices_write', newInvoice);
+
+      // DAB doesn't return the created entity, so query for it by InvoiceNumber
+      const escapedInvoiceNumber = newInvoiceNumber.replace(/'/g, "''");
+      const queryResponse = await api.get<{ value: Invoice[] }>(
+        `/invoices?$filter=InvoiceNumber eq '${escapedInvoiceNumber}'`
+      );
+      const createdInvoice = queryResponse.data.value[0];
+
+      if (!createdInvoice?.Id) {
+        throw new Error('Failed to retrieve duplicated invoice');
+      }
 
       // Create line items for the new invoice in parallel
       await Promise.all(
