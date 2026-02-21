@@ -232,8 +232,8 @@ export default function TaxRates() {
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Tax Rates</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Tax Rates</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Manage sales tax rates for your invoices
           </p>
         </div>
@@ -248,9 +248,9 @@ export default function TaxRates() {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-white shadow sm:rounded-lg mb-6 p-6">
+        <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg mb-6 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               {editingTaxRate ? 'Edit Tax Rate' : 'New Tax Rate'}
             </h2>
             <button
@@ -265,7 +265,7 @@ export default function TaxRates() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Name *
                 </label>
@@ -282,20 +282,20 @@ export default function TaxRates() {
                     }
                   }}
                   placeholder="e.g., California Sales Tax"
-                  className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 sm:text-sm border p-2 ${
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:text-gray-100 ${
                     validationErrors.name
                       ? 'border-red-300 focus:border-red-500'
-                      : 'border-gray-300 focus:border-indigo-500'
+                      : 'border-gray-300 dark:border-gray-600 focus:border-indigo-500'
                   }`}
                 />
                 {validationErrors.name && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors.name}</p>
                 )}
               </div>
               <div>
                 <label
                   htmlFor="rate"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Rate (%) *
                 </label>
@@ -316,10 +316,10 @@ export default function TaxRates() {
                       }
                     }}
                     placeholder="8.25"
-                    className={`block w-full pr-10 rounded-md shadow-sm focus:ring-indigo-500 sm:text-sm border p-2 ${
+                    className={`block w-full pr-10 rounded-md shadow-sm focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:text-gray-100 ${
                       validationErrors.rate
                         ? 'border-red-300 focus:border-red-500'
-                        : 'border-gray-300 focus:border-indigo-500'
+                        : 'border-gray-300 dark:border-gray-600 focus:border-indigo-500'
                     }`}
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -327,13 +327,13 @@ export default function TaxRates() {
                   </div>
                 </div>
                 {validationErrors.rate && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.rate}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors.rate}</p>
                 )}
               </div>
               <div className="sm:col-span-2">
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Description
                 </label>
@@ -345,7 +345,7 @@ export default function TaxRates() {
                     setFormData({ ...formData, Description: e.target.value })
                   }
                   placeholder="Optional description for this tax rate"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
                 />
               </div>
               <div className="flex items-center gap-6">
@@ -358,7 +358,7 @@ export default function TaxRates() {
                     }
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-700">Default tax rate</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Default tax rate</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -369,7 +369,7 @@ export default function TaxRates() {
                     }
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-700">Active</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Active</span>
                 </label>
               </div>
             </div>
@@ -377,7 +377,7 @@ export default function TaxRates() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 dark:bg-gray-700"
               >
                 Cancel
               </button>
@@ -406,14 +406,14 @@ export default function TaxRates() {
             placeholder="Search tax rates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            className="pl-10 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
           />
         </div>
         <select
           data-testid="status-filter"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+          className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
         >
           <option value="all">All Status</option>
           <option value="active">Active</option>
@@ -422,31 +422,31 @@ export default function TaxRates() {
       </div>
 
       {/* Table */}
-      <div className="bg-white shadow overflow-x-auto sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-900/50">
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
               >
                 Name
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
               >
                 Rate
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
               >
                 Description
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
               >
                 Status
               </th>
@@ -455,10 +455,10 @@ export default function TaxRates() {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredTaxRates?.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                   No tax rates found. Create your first tax rate to get started.
                 </td>
               </tr>
@@ -467,28 +467,28 @@ export default function TaxRates() {
                 <tr key={taxRate.Id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {taxRate.Name}
                       </span>
                       {taxRate.IsDefault && (
-                        <span className="ml-2 inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">
+                        <span className="ml-2 inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
                           Default
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-mono">
                     {formatRate(taxRate.Rate)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
                     {taxRate.Description || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         taxRate.IsActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {taxRate.IsActive ? 'Active' : 'Inactive'}
@@ -498,20 +498,20 @@ export default function TaxRates() {
                     {!taxRate.IsDefault && taxRate.IsActive && (
                       <button
                         onClick={() => handleSetDefault(taxRate.Id)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
                       >
                         Set Default
                       </button>
                     )}
                     <button
                       onClick={() => handleEdit(taxRate)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(taxRate.Id, taxRate.Name)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                     >
                       Delete
                     </button>
@@ -523,7 +523,7 @@ export default function TaxRates() {
         </table>
       </div>
 
-      <div className="mt-4 text-sm text-gray-500">
+      <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
         <p>
           Tax rates are automatically applied to taxable line items on invoices.
           The default tax rate will be pre-selected when creating new invoices.
