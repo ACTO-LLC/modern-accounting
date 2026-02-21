@@ -137,10 +137,13 @@ test.describe('Sales Receipt Creation', () => {
         await editLink.click();
         await expect(page).toHaveURL(/\/sales-receipts\/.*\/edit/);
 
+        // Wait for form data to load
+        await expect(page.locator('input[name="Lines.0.Description"]')).not.toHaveValue('', { timeout: 10000 });
+
         await page.locator('input[name="Lines.0.Quantity"]').clear();
         await page.locator('input[name="Lines.0.Quantity"]').fill('3');
 
-        await page.getByRole('button', { name: /Save|Update/i }).click();
+        await page.getByRole('button', { name: /Save Changes/i }).click();
         await expect(page).toHaveURL(/\/sales-receipts$/);
       }
     }

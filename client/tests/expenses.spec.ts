@@ -24,6 +24,11 @@ test.describe('Expenses', () => {
     // Select payment method
     await page.locator('#PaymentMethod').selectOption('Credit Card');
 
+    // Select payment account (avoid empty-string UUID validation)
+    const paymentSelect = page.locator('#PaymentAccountId');
+    await expect(paymentSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
+    await paymentSelect.selectOption({ index: 1 });
+
     // Fill reference
     await page.locator('#Reference').fill(`REF-${timestamp}`);
 
@@ -53,6 +58,12 @@ test.describe('Expenses', () => {
     await accountSelect.selectOption({ index: 1 });
 
     await page.locator('#PaymentMethod').selectOption('Cash');
+
+    // Select payment account (avoid empty-string UUID validation)
+    const paymentSelect = page.locator('#PaymentAccountId');
+    await expect(paymentSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
+    await paymentSelect.selectOption({ index: 1 });
+
     await page.locator('#Description').fill('Initial expense');
 
     const createPromise = page.waitForResponse(
@@ -68,6 +79,9 @@ test.describe('Expenses', () => {
     if (createdId) {
       await page.goto(`/expenses/${createdId}/edit`);
       await expect(page.getByRole('heading', { name: /Edit Expense/i })).toBeVisible();
+
+      // Wait for form data to load
+      await expect(page.locator('#Amount')).not.toHaveValue('0', { timeout: 10000 });
 
       await page.locator('#Amount').clear();
       await page.locator('#Amount').fill('75.00');

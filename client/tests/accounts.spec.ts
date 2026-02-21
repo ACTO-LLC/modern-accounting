@@ -61,9 +61,17 @@ test.describe('Chart of Accounts', () => {
     await page.goto(`/accounts/${createdId}/edit`);
     await expect(page.getByRole('heading', { name: /Edit Account/i })).toBeVisible();
 
+    // Wait for form data to load
+    await expect(page.locator('#Name')).not.toHaveValue('', { timeout: 10000 });
+
     await page.locator('#Description').fill(updatedDesc);
 
+    const editPromise = page.waitForResponse(
+      resp => resp.url().includes('/accounts') && (resp.status() === 200 || resp.status() === 204),
+      { timeout: 15000 }
+    );
     await page.getByRole('button', { name: 'Save Account' }).click();
+    await editPromise;
     await expect(page).toHaveURL(/\/accounts$/);
   });
 

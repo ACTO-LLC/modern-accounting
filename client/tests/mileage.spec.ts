@@ -7,7 +7,7 @@ test.describe('Mileage Tracking', () => {
     const timestamp = Date.now();
 
     await page.goto('/mileage/new');
-    await expect(page.getByRole('heading', { name: /New.*Trip|New.*Mileage/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Log New Trip/i })).toBeVisible();
 
     // Fill required fields
     const today = new Date().toISOString().split('T')[0];
@@ -19,7 +19,7 @@ test.describe('Mileage Tracking', () => {
 
     // Save
     const responsePromise = page.waitForResponse(
-      resp => resp.url().includes('/mileage') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/mileagetrips') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /Save Trip/i }).click();
@@ -41,7 +41,7 @@ test.describe('Mileage Tracking', () => {
     await page.locator('#Distance').fill('15');
 
     const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/mileage') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/mileagetrips') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /Save Trip/i }).click();
@@ -52,7 +52,10 @@ test.describe('Mileage Tracking', () => {
     // Edit
     if (createdId) {
       await page.goto(`/mileage/${createdId}/edit`);
-      await expect(page.getByRole('heading', { name: /Edit.*Trip|Edit.*Mileage/i })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /Edit Trip/i })).toBeVisible();
+
+      // Wait for form data to load
+      await expect(page.locator('#Purpose')).not.toHaveValue('', { timeout: 10000 });
 
       await page.locator('#Distance').clear();
       await page.locator('#Distance').fill('30');

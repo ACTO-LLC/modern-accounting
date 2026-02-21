@@ -21,14 +21,14 @@ test.describe('Vehicles (Inline CRUD)', () => {
 
     // Save
     const responsePromise = page.waitForResponse(
-      resp => resp.url().includes('/vehicles') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/vehicles') && resp.request().method() === 'POST' && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /^Add$/i }).click();
     await responsePromise;
 
     // Verify vehicle appears in list
-    await expect(page.getByText(vehicleName)).toBeVisible();
+    await expect(page.getByText(vehicleName)).toBeVisible({ timeout: 5000 });
   });
 
   test('should edit an existing vehicle', async ({ page }) => {
@@ -44,26 +44,32 @@ test.describe('Vehicles (Inline CRUD)', () => {
     await page.getByLabel('Model').fill('Civic');
 
     const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/vehicles') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/vehicles') && resp.request().method() === 'POST' && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /^Add$/i }).click();
     await createPromise;
 
-    await expect(page.getByText(vehicleName)).toBeVisible();
+    await expect(page.getByText(vehicleName)).toBeVisible({ timeout: 5000 });
 
-    // Click edit on the vehicle
-    const vehicleCard = page.locator('div').filter({ hasText: vehicleName }).first();
-    const editButton = vehicleCard.getByRole('button', { name: /Edit/i });
-    if (await editButton.isVisible()) {
+    // Click edit on the vehicle - use the edit button with title attribute
+    const editButton = page.locator('button[title="Edit vehicle"]').first();
+    const hasEdit = await editButton.isVisible({ timeout: 3000 }).catch(() => false);
+    if (hasEdit) {
       await editButton.click();
 
-      // Update name in the modal form
+      // Wait for modal and update name
+      await expect(page.getByText('Edit Vehicle')).toBeVisible({ timeout: 5000 });
       await page.getByLabel('Name *').clear();
       await page.getByLabel('Name *').fill(`${vehicleName} Updated`);
 
+      const updatePromise = page.waitForResponse(
+        resp => resp.url().includes('/vehicles') && resp.request().method() === 'PATCH' && (resp.status() === 200 || resp.status() === 204),
+        { timeout: 15000 }
+      );
       await page.getByRole('button', { name: /Update/i }).click();
-      await expect(page.getByText(`${vehicleName} Updated`)).toBeVisible();
+      await updatePromise;
+      await expect(page.getByText(`${vehicleName} Updated`)).toBeVisible({ timeout: 5000 });
     }
   });
 
@@ -78,25 +84,27 @@ test.describe('Vehicles (Inline CRUD)', () => {
     await page.getByLabel('Name *').fill(vehicleName);
 
     const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/vehicles') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/vehicles') && resp.request().method() === 'POST' && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /^Add$/i }).click();
     await createPromise;
 
-    await expect(page.getByText(vehicleName)).toBeVisible();
+    await expect(page.getByText(vehicleName)).toBeVisible({ timeout: 5000 });
 
-    // Click delete
-    const vehicleCard = page.locator('div').filter({ hasText: vehicleName }).first();
-    const deleteButton = vehicleCard.getByRole('button', { name: /Delete/i });
-    if (await deleteButton.isVisible()) {
+    // Handle the confirm dialog before clicking delete
+    page.on('dialog', dialog => dialog.accept());
+
+    // Click delete button
+    const deleteButton = page.locator('button[title="Delete vehicle"]').first();
+    const hasDelete = await deleteButton.isVisible({ timeout: 3000 }).catch(() => false);
+    if (hasDelete) {
+      const deletePromise = page.waitForResponse(
+        resp => resp.url().includes('/vehicles') && resp.request().method() === 'DELETE',
+        { timeout: 15000 }
+      );
       await deleteButton.click();
-
-      // Confirm deletion
-      const confirmButton = page.getByRole('button', { name: /Delete/i }).last();
-      if (await confirmButton.isVisible()) {
-        await confirmButton.click();
-      }
+      await deletePromise;
 
       // Verify removed
       await expect(page.getByText(vehicleName)).not.toBeVisible({ timeout: 5000 });

@@ -22,6 +22,11 @@ test.describe('Vendors', () => {
     await page.locator('#Status').selectOption('Active');
     await page.locator('#TaxId').fill('12-3456789');
 
+    // Select default expense account (required to avoid empty-string UUID validation)
+    const expenseAccountSelect = page.locator('#DefaultExpenseAccountId');
+    await expect(expenseAccountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
+    await expenseAccountSelect.selectOption({ index: 1 });
+
     // Save and capture ID
     const responsePromise = page.waitForResponse(
       resp => resp.url().includes('/vendors') && (resp.status() === 201 || resp.status() === 200),
@@ -53,6 +58,11 @@ test.describe('Vendors', () => {
     await page.locator('#Email').fill(`edit${timestamp}@test.com`);
     await page.locator('#PaymentTerms').selectOption('Net 30');
 
+    // Select default expense account to avoid UUID validation
+    const expenseAccountSelect = page.locator('#DefaultExpenseAccountId');
+    await expect(expenseAccountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
+    await expenseAccountSelect.selectOption({ index: 1 });
+
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/vendors') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
@@ -65,6 +75,9 @@ test.describe('Vendors', () => {
     // Navigate to edit
     await page.goto(`/vendors/${createdId}/edit`);
     await expect(page.getByRole('heading', { name: 'Edit Vendor' })).toBeVisible();
+
+    // Wait for form data to load
+    await expect(page.locator('#Name')).not.toHaveValue('', { timeout: 10000 });
 
     // Update name
     await page.locator('#Name').clear();

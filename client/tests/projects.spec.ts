@@ -63,11 +63,19 @@ test.describe('Projects', () => {
       await page.goto(`/projects/${createdId}/edit`);
       await expect(page.getByRole('heading', { name: /Edit Project/i })).toBeVisible();
 
+      // Wait for form data to load
+      await expect(page.locator('#Name')).not.toHaveValue('', { timeout: 10000 });
+
       await page.locator('#Description').fill('Updated project description via E2E');
       await page.locator('#BudgetedHours').clear();
       await page.locator('#BudgetedHours').fill('200');
 
+      const editPromise = page.waitForResponse(
+        resp => resp.url().includes('/projects') && (resp.status() === 200 || resp.status() === 204),
+        { timeout: 15000 }
+      );
       await page.getByRole('button', { name: /Update Project/i }).click();
+      await editPromise;
       await expect(page).toHaveURL(/\/projects$/);
     }
   });

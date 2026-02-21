@@ -57,10 +57,18 @@ test.describe('Submissions', () => {
       await page.goto(`/submissions/${createdId}/edit`);
       await expect(page.getByRole('heading', { name: /Edit Submission/i })).toBeVisible();
 
+      // Wait for form data to load
+      await expect(page.locator('#Title')).not.toHaveValue('', { timeout: 10000 });
+
       await page.locator('#Priority').selectOption('Critical');
       await page.locator('#Description').fill('Updated description via E2E');
 
+      const editPromise = page.waitForResponse(
+        resp => resp.url().includes('/submissions') && (resp.status() === 200 || resp.status() === 204),
+        { timeout: 15000 }
+      );
       await page.getByRole('button', { name: /Save Changes/i }).click();
+      await editPromise;
       await expect(page).toHaveURL(/\/submissions$/);
     }
   });

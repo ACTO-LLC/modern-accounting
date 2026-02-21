@@ -76,11 +76,19 @@ test.describe('Purchase Orders', () => {
       await page.goto(`/purchase-orders/${createdId}/edit`);
       await expect(page.getByRole('heading', { name: /Edit Purchase Order/i })).toBeVisible();
 
+      // Wait for form data to load
+      await expect(page.locator('#PONumber')).not.toHaveValue('', { timeout: 10000 });
+
       await page.locator('#Notes').fill('Updated notes via E2E');
       await page.locator('input[name="Lines.0.Quantity"]').clear();
       await page.locator('input[name="Lines.0.Quantity"]').fill('5');
 
+      const editPromise = page.waitForResponse(
+        resp => resp.url().includes('/purchaseorders') && (resp.status() === 200 || resp.status() === 204),
+        { timeout: 15000 }
+      );
       await page.getByRole('button', { name: /Save Purchase Order/i }).click();
+      await editPromise;
       await expect(page).toHaveURL(/\/purchase-orders$/);
     }
   });
