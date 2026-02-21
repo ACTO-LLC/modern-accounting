@@ -5,7 +5,7 @@ test.describe('Pay Runs DataGrid', () => {
     await page.goto('/payruns');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
-    await expect(page.getByRole('heading', { name: /Pay Runs/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Payroll Runs/i })).toBeVisible();
 
     // Verify key column headers
     await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: /Pay Run.*#/i })).toBeVisible();

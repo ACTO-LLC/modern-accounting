@@ -16,7 +16,7 @@ test.describe('Vendors', () => {
     await page.locator('#Phone').fill('555-0100');
     await page.locator('#AddressLine1').fill('123 Vendor St');
     await page.locator('#City').fill('Test City');
-    await page.locator('#State').fill('TX');
+    await page.locator('#State').selectOption('TX');
     await page.locator('#PostalCode').fill('75001');
     await page.locator('#PaymentTerms').selectOption('Net 30');
     await page.locator('#Status').selectOption('Active');

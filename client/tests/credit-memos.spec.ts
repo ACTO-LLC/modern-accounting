@@ -35,7 +35,7 @@ test.describe('Credit Memos', () => {
       resp => resp.url().includes('/creditmemos') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Credit Memo/i }).click();
+    await page.getByRole('button', { name: /Create Credit Memo/i }).click();
     await responsePromise;
 
     await expect(page).toHaveURL(/\/credit-memos$/);

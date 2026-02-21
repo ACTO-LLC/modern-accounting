@@ -39,10 +39,10 @@ test.describe('Unified Transactions DataGrid', () => {
     await expect(page.locator('.MuiDataGrid-filterForm')).toBeVisible({ timeout: 5000 });
 
     const filterInput = page.locator('.MuiDataGrid-filterForm input[type="text"]');
-    await filterInput.fill('Categorized');
+    await filterInput.fill('Posted');
     await page.keyboard.press('Enter');
 
     const rows = page.locator('.MuiDataGrid-row');
-    await expect(rows.first().getByText('Categorized')).toBeVisible({ timeout: 10000 });
+    await expect(rows.first().getByText('Posted')).toBeVisible({ timeout: 10000 });
   });
 });

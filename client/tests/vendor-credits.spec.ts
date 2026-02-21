@@ -35,7 +35,7 @@ test.describe('Vendor Credits', () => {
       resp => resp.url().includes('/vendorcredits') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Vendor Credit/i }).click();
+    await page.getByRole('button', { name: /Create Vendor Credit/i }).click();
     await responsePromise;
 
     await expect(page).toHaveURL(/\/vendor-credits$/);
@@ -63,7 +63,7 @@ test.describe('Vendor Credits', () => {
       resp => resp.url().includes('/vendorcredits') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Vendor Credit/i }).click();
+    await page.getByRole('button', { name: /Create Vendor Credit/i }).click();
     const createResp = await createPromise;
     const createBody = await createResp.json();
     const createdId = createBody.value?.[0]?.Id || createBody.Id;

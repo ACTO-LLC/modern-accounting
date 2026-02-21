@@ -97,6 +97,7 @@ test.describe('Submissions', () => {
     await page.keyboard.press('Enter');
 
     const rows = page.locator('.MuiDataGrid-row');
-    await expect(rows.first().getByText('Bug')).toBeVisible({ timeout: 10000 });
+    // Use locator within cell to avoid matching both title text and type badge
+    await expect(rows.first().locator('.MuiDataGrid-cell').getByText('Bug', { exact: true })).toBeVisible({ timeout: 10000 });
   });
 });

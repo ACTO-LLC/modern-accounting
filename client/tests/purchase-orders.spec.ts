@@ -41,7 +41,7 @@ test.describe('Purchase Orders', () => {
       resp => resp.url().includes('/purchaseorders') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Purchase Order/i }).click();
+    await page.getByRole('button', { name: /Create Purchase Order/i }).click();
     await responsePromise;
 
     await expect(page).toHaveURL(/\/purchase-orders$/);
@@ -66,7 +66,7 @@ test.describe('Purchase Orders', () => {
       resp => resp.url().includes('/purchaseorders') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Purchase Order/i }).click();
+    await page.getByRole('button', { name: /Create Purchase Order/i }).click();
     const createResp = await createPromise;
     const createBody = await createResp.json();
     const createdId = createBody.value?.[0]?.Id || createBody.Id;

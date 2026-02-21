@@ -3,7 +3,7 @@ import { test, expect } from './coverage.fixture';
 test.describe('Company Settings', () => {
   test('should display settings page', async ({ page }) => {
     await page.goto('/settings');
-    await expect(page.getByRole('heading', { name: /Settings|Company/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
 
     // Verify key sections are present
     await expect(page.getByText(/Company.*Name/i)).toBeVisible();
@@ -13,7 +13,7 @@ test.describe('Company Settings', () => {
     const timestamp = Date.now();
 
     await page.goto('/settings');
-    await expect(page.getByRole('heading', { name: /Settings|Company/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
 
     // Wait for settings to load
     await page.waitForTimeout(1000);
@@ -48,7 +48,7 @@ test.describe('Company Settings', () => {
 
   test('should update tax information', async ({ page }) => {
     await page.goto('/settings');
-    await expect(page.getByRole('heading', { name: /Settings|Company/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
 
     // Wait for settings to load
     await page.waitForTimeout(1000);

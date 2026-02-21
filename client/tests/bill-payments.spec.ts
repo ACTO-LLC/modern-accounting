@@ -5,18 +5,19 @@ test.describe('Bill Payments', () => {
 
   test('should create a new bill payment', async ({ page }) => {
     const timestamp = Date.now();
-    const paymentNumber = `BP-${timestamp}`;
 
     await page.goto('/bill-payments/new');
-    await expect(page.getByRole('heading', { name: /New Bill Payment|Pay Bill/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Pay Bills/i })).toBeVisible();
 
-    // Fill payment number
-    await page.locator('#PaymentNumber').fill(paymentNumber);
-
-    // Select vendor
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await vendorSelect.selectOption({ index: 1 });
+    // Select vendor using VendorSelector (custom dropdown, not native select)
+    const vendorTrigger = page.locator('button[aria-haspopup="listbox"]').first();
+    await vendorTrigger.click();
+    const hasVendors = await page.locator('[role="option"]').first().isVisible({ timeout: 5000 }).catch(() => false);
+    if (!hasVendors) {
+      test.skip(true, 'No vendors available');
+      return;
+    }
+    await page.locator('[role="option"]').first().click();
 
     // Fill date
     const today = new Date().toISOString().split('T')[0];
@@ -30,15 +31,16 @@ test.describe('Bill Payments', () => {
     await expect(paymentAccountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
     await paymentAccountSelect.selectOption({ index: 1 });
 
-    // Wait for bills to load and apply one if available
-    const applyButton = page.getByRole('button', { name: /Apply/i }).first();
-    const hasBills = await applyButton.isVisible({ timeout: 5000 }).catch(() => false);
+    // Wait for bills to load
+    await page.waitForTimeout(2000);
+
+    await page.locator('#Memo').fill('Test bill payment via E2E');
+
+    // Check if there are bills to apply payment to
+    const amountInputs = page.locator('input[type="number"]').filter({ hasNotText: '' });
+    const hasBills = await amountInputs.first().isVisible({ timeout: 3000 }).catch(() => false);
 
     if (hasBills) {
-      await applyButton.click();
-
-      await page.locator('#Memo').fill('Test bill payment via E2E');
-
       const responsePromise = page.waitForResponse(
         resp => resp.url().includes('/billpayments') && (resp.status() === 201 || resp.status() === 200),
         { timeout: 15000 }

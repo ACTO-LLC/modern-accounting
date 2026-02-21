@@ -5,20 +5,19 @@ test.describe('Vehicles (Inline CRUD)', () => {
     const timestamp = Date.now();
     const vehicleName = `Test Car ${timestamp}`;
 
-    await page.goto('/vehicles');
+    await page.goto('/mileage/vehicles');
     await expect(page.getByRole('heading', { name: /Vehicles/i })).toBeVisible();
 
     // Click Add Vehicle button
     await page.getByRole('button', { name: /Add Vehicle/i }).click();
 
-    // Fill the inline form
-    await page.locator('#Name').fill(vehicleName);
-    await page.locator('#Year').fill('2024');
-    await page.locator('#Make').fill('Toyota');
-    await page.locator('#Model').fill('Camry');
-    await page.locator('#LicensePlate').fill(`TST-${timestamp.toString().slice(-4)}`);
-    await page.locator('#OdometerStart').fill('15000');
-    await page.locator('#Status').selectOption('Active');
+    // Fill the modal form (fields use labels, not IDs)
+    await page.getByLabel('Name *').fill(vehicleName);
+    await page.getByLabel('Year').fill('2024');
+    await page.getByLabel('Make').fill('Toyota');
+    await page.getByLabel('Model').fill('Camry');
+    await page.getByLabel('License Plate').fill(`TST-${timestamp.toString().slice(-4)}`);
+    await page.getByLabel('Starting Odometer').fill('15000');
 
     // Save
     const responsePromise = page.waitForResponse(
@@ -36,13 +35,13 @@ test.describe('Vehicles (Inline CRUD)', () => {
     const timestamp = Date.now();
     const vehicleName = `Edit Car ${timestamp}`;
 
-    await page.goto('/vehicles');
+    await page.goto('/mileage/vehicles');
 
     // Create first
     await page.getByRole('button', { name: /Add Vehicle/i }).click();
-    await page.locator('#Name').fill(vehicleName);
-    await page.locator('#Make').fill('Honda');
-    await page.locator('#Model').fill('Civic');
+    await page.getByLabel('Name *').fill(vehicleName);
+    await page.getByLabel('Make').fill('Honda');
+    await page.getByLabel('Model').fill('Civic');
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/vehicles') && (resp.status() === 201 || resp.status() === 200),
@@ -59,9 +58,9 @@ test.describe('Vehicles (Inline CRUD)', () => {
     if (await editButton.isVisible()) {
       await editButton.click();
 
-      // Update name
-      await page.locator('#Name').clear();
-      await page.locator('#Name').fill(`${vehicleName} Updated`);
+      // Update name in the modal form
+      await page.getByLabel('Name *').clear();
+      await page.getByLabel('Name *').fill(`${vehicleName} Updated`);
 
       await page.getByRole('button', { name: /Update/i }).click();
       await expect(page.getByText(`${vehicleName} Updated`)).toBeVisible();
@@ -72,11 +71,11 @@ test.describe('Vehicles (Inline CRUD)', () => {
     const timestamp = Date.now();
     const vehicleName = `Delete Car ${timestamp}`;
 
-    await page.goto('/vehicles');
+    await page.goto('/mileage/vehicles');
 
     // Create first
     await page.getByRole('button', { name: /Add Vehicle/i }).click();
-    await page.locator('#Name').fill(vehicleName);
+    await page.getByLabel('Name *').fill(vehicleName);
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/vehicles') && (resp.status() === 201 || resp.status() === 200),

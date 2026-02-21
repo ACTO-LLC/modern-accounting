@@ -41,7 +41,7 @@ test.describe('Apply Credit Memo', () => {
       resp => resp.url().includes('/creditmemos') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Credit Memo/i }).click();
+    await page.getByRole('button', { name: /Create Credit Memo/i }).click();
     const createResp = await createPromise;
     const createBody = await createResp.json();
     const createdId = createBody.value?.[0]?.Id || createBody.Id;

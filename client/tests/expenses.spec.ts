@@ -35,7 +35,7 @@ test.describe('Expenses', () => {
       resp => resp.url().includes('/expenses') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Expense/i }).click();
+    await page.getByRole('button', { name: /Create Expense/i }).click();
     await responsePromise;
 
     await expect(page).toHaveURL(/\/expenses$/);
@@ -59,7 +59,7 @@ test.describe('Expenses', () => {
       resp => resp.url().includes('/expenses') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: /Save Expense/i }).click();
+    await page.getByRole('button', { name: /Create Expense/i }).click();
     const createResp = await createPromise;
     const createBody = await createResp.json();
     const createdId = createBody.value?.[0]?.Id || createBody.Id;
@@ -73,7 +73,7 @@ test.describe('Expenses', () => {
       await page.locator('#Amount').fill('75.00');
       await page.locator('#Description').fill('Updated expense via E2E');
 
-      await page.getByRole('button', { name: /Save Expense/i }).click();
+      await page.getByRole('button', { name: /Save Changes/i }).click();
       await expect(page).toHaveURL(/\/expenses$/);
     }
   });

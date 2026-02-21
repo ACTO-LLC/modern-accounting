@@ -11,14 +11,14 @@ test.describe('Bank Rules (Inline CRUD)', () => {
     // Click New Rule button
     await page.getByRole('button', { name: /New Rule/i }).click();
 
-    // Fill the form
-    await page.locator('#Name').fill(ruleName);
-    await page.locator('#MatchField').selectOption('Description');
-    await page.locator('#MatchType').selectOption('Contains');
-    await page.locator('#MatchValue').fill('STAPLES');
+    // Fill the form (field IDs are lowercase)
+    await page.locator('#name').fill(ruleName);
+    await page.locator('#matchField').selectOption('Description');
+    await page.locator('#matchType').selectOption('Contains');
+    await page.locator('#matchValue').fill('STAPLES');
 
     // Select an account to assign
-    const accountSelect = page.locator('#AssignAccountId');
+    const accountSelect = page.locator('#assignAccount');
     await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
     await accountSelect.selectOption({ index: 1 });
 
@@ -42,12 +42,12 @@ test.describe('Bank Rules (Inline CRUD)', () => {
 
     // Create first
     await page.getByRole('button', { name: /New Rule/i }).click();
-    await page.locator('#Name').fill(ruleName);
-    await page.locator('#MatchField').selectOption('Description');
-    await page.locator('#MatchType').selectOption('Contains');
-    await page.locator('#MatchValue').fill('AMAZON');
+    await page.locator('#name').fill(ruleName);
+    await page.locator('#matchField').selectOption('Description');
+    await page.locator('#matchType').selectOption('Contains');
+    await page.locator('#matchValue').fill('AMAZON');
 
-    const accountSelect = page.locator('#AssignAccountId');
+    const accountSelect = page.locator('#assignAccount');
     await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
     await accountSelect.selectOption({ index: 1 });
 
@@ -60,15 +60,15 @@ test.describe('Bank Rules (Inline CRUD)', () => {
 
     await expect(page.getByText(ruleName)).toBeVisible();
 
-    // Find the rule's edit button (pencil icon)
+    // Find the rule's edit button
     const ruleRow = page.locator('tr, div').filter({ hasText: ruleName }).first();
     const editButton = ruleRow.locator('button[aria-label="Edit"], button').filter({ hasText: /Edit/i }).first();
     if (await editButton.isVisible()) {
       await editButton.click();
 
       // Update match value
-      await page.locator('#MatchValue').clear();
-      await page.locator('#MatchValue').fill('AMAZON PRIME');
+      await page.locator('#matchValue').clear();
+      await page.locator('#matchValue').fill('AMAZON PRIME');
 
       await page.getByRole('button', { name: /Update Rule/i }).click();
       await expect(page.getByText('AMAZON PRIME')).toBeVisible();
@@ -83,12 +83,12 @@ test.describe('Bank Rules (Inline CRUD)', () => {
 
     // Create first
     await page.getByRole('button', { name: /New Rule/i }).click();
-    await page.locator('#Name').fill(ruleName);
-    await page.locator('#MatchField').selectOption('Description');
-    await page.locator('#MatchType').selectOption('Equals');
-    await page.locator('#MatchValue').fill('DELETE-ME');
+    await page.locator('#name').fill(ruleName);
+    await page.locator('#matchField').selectOption('Description');
+    await page.locator('#matchType').selectOption('Equals');
+    await page.locator('#matchValue').fill('DELETE-ME');
 
-    const accountSelect = page.locator('#AssignAccountId');
+    const accountSelect = page.locator('#assignAccount');
     await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
     await accountSelect.selectOption({ index: 1 });
 

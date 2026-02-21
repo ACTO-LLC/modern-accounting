@@ -8,15 +8,15 @@ test.describe('Customer Deposits', () => {
     const depositNumber = `DEP-${timestamp}`;
 
     await page.goto('/customer-deposits/new');
-    await expect(page.getByRole('heading', { name: /New.*Deposit|Receive Deposit/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Receive.*Deposit/i })).toBeVisible();
 
     // Fill deposit number
     await page.locator('#DepositNumber').fill(depositNumber);
 
-    // Select customer
-    const customerSelect = page.locator('#CustomerId');
-    await expect(customerSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await customerSelect.selectOption({ index: 1 });
+    // Select customer using CustomerSelector (custom dropdown, not native select)
+    const customerTrigger = page.locator('button[aria-haspopup="listbox"]').first();
+    await customerTrigger.click();
+    await page.locator('[role="option"]').first().click();
 
     // Fill date
     const today = new Date().toISOString().split('T')[0];

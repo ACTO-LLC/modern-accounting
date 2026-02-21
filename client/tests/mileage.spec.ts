@@ -58,7 +58,7 @@ test.describe('Mileage Tracking', () => {
       await page.locator('#Distance').fill('30');
       await page.locator('#Notes').fill('Updated via E2E');
 
-      await page.getByRole('button', { name: /Save Trip/i }).click();
+      await page.getByRole('button', { name: /Update Trip/i }).click();
       await expect(page).toHaveURL(/\/mileage$/);
     }
   });
