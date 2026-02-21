@@ -1,10 +1,14 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { customersApi, Customer } from '../lib/api';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import InputAdornment from '@mui/material/InputAdornment';
+import Button from '@mui/material/Button';
 
 export const projectSchema = z.object({
   Name: z.string().min(1, 'Project name is required'),
@@ -41,9 +45,14 @@ export default function ProjectForm({
     queryFn: customersApi.getAll,
   });
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProjectFormData>({
+  const { control, handleSubmit } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
+      Name: '',
+      CustomerId: '',
+      Description: '',
+      StartDate: '',
+      EndDate: '',
       Status: 'Active',
       ...initialValues,
     }
@@ -52,134 +61,176 @@ export default function ProjectForm({
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/projects')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/projects')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
-        <div>
-          <label htmlFor="Name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Project Name</label>
-          <input
-            id="Name"
-            type="text"
-            {...register('Name')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+        <Controller
+          name="Name"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Project Name"
+              required
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
+
+        <Controller
+          name="CustomerId"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              select
+              label="Customer"
+              required
+              disabled={customersLoading}
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="">Select a customer...</MenuItem>
+              {customers.map((customer) => (
+                <MenuItem key={customer.Id} value={customer.Id}>{customer.Name}</MenuItem>
+              ))}
+            </TextField>
+          )}
+        />
+
+        <Controller
+          name="Description"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              label="Description"
+              multiline
+              rows={3}
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
+
+        <Controller
+          name="Status"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              select
+              label="Status"
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="Active">Active</MenuItem>
+              <MenuItem value="OnHold">On Hold</MenuItem>
+              <MenuItem value="Completed">Completed</MenuItem>
+            </TextField>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <Controller
+            name="StartDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Start Date"
+                type="date"
+                slotProps={{ inputLabel: { shrink: true } }}
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
           />
-          {errors.Name && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Name.message}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Customer</label>
-          <select
-            id="CustomerId"
-            {...register('CustomerId')}
-            disabled={customersLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Select a customer...</option>
-            {customers.map((customer) => (
-              <option key={customer.Id} value={customer.Id}>
-                {customer.Name}
-              </option>
-            ))}
-          </select>
-          {errors.CustomerId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.CustomerId.message}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-          <textarea
-            id="Description"
-            rows={3}
-            {...register('Description')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          <Controller
+            name="EndDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="End Date"
+                type="date"
+                slotProps={{ inputLabel: { shrink: true } }}
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
           />
-          {errors.Description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Description.message}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-          <select
-            id="Status"
-            {...register('Status')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="Active">Active</option>
-            <option value="OnHold">On Hold</option>
-            <option value="Completed">Completed</option>
-          </select>
-          {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="StartDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
-            <input
-              id="StartDate"
-              type="date"
-              {...register('StartDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.StartDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.StartDate.message}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="EndDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
-            <input
-              id="EndDate"
-              type="date"
-              {...register('EndDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.EndDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EndDate.message}</p>}
-          </div>
+          <Controller
+            name="BudgetedHours"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Budgeted Hours"
+                type="number"
+                slotProps={{ htmlInput: { step: '0.5', min: '0' } }}
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
+          <Controller
+            name="BudgetedAmount"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Budgeted Amount"
+                type="number"
+                slotProps={{
+                  htmlInput: { step: '0.01', min: '0' },
+                  input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                }}
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="BudgetedHours" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Budgeted Hours</label>
-            <input
-              id="BudgetedHours"
-              type="number"
-              step="0.5"
-              min="0"
-              {...register('BudgetedHours')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.BudgetedHours && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BudgetedHours.message}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="BudgetedAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Budgeted Amount ($)</label>
-            <input
-              id="BudgetedAmount"
-              type="number"
-              step="0.01"
-              min="0"
-              {...register('BudgetedAmount')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.BudgetedAmount && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BudgetedAmount.message}</p>}
-          </div>
-        </div>
-
-        <div className="flex justify-end items-center border-t pt-4">
-          <button
-            type="button"
-            onClick={() => navigate('/projects')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-          >
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <Button variant="outlined" onClick={() => navigate('/projects')} sx={{ mr: 1.5 }}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

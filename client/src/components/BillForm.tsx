@@ -1,4 +1,4 @@
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,10 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 
 export const billSchema = z.object({
   VendorId: z.string().uuid('Please select a vendor'),
@@ -76,9 +80,13 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
   const { register, control, handleSubmit, setValue, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<BillFormData>({
     resolver: zodResolver(billSchema),
     defaultValues: {
+      VendorId: '',
+      BillNumber: '',
       Status: 'Open',
       BillDate: new Date().toISOString().split('T')[0],
       DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      Terms: '',
+      Memo: '',
       Lines: [{ AccountId: '', Description: '', Amount: 0 }],
       TotalAmount: 0,
       AmountPaid: 0,
@@ -131,7 +139,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/bills')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/bills')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -139,97 +147,145 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
 
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label htmlFor="VendorId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Vendor</label>
-            <select
-              id="VendorId"
-              {...register('VendorId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select a vendor...</option>
-              {vendors?.map((vendor) => (
-                <option key={vendor.Id} value={vendor.Id}>
-                  {vendor.Name}
-                </option>
-              ))}
-            </select>
-            {errors.VendorId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.VendorId.message}</p>}
-          </div>
+          <Controller
+            name="VendorId"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Vendor"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select a vendor...</MenuItem>
+                {vendors?.map((vendor) => (
+                  <MenuItem key={vendor.Id} value={vendor.Id}>
+                    {vendor.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
-          <div>
-            <label htmlFor="BillNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bill Number</label>
-            <input
-              id="BillNumber"
-              type="text"
-              {...register('BillNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              placeholder="BILL-001"
-            />
-            {errors.BillNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BillNumber.message}</p>}
-          </div>
+          <Controller
+            name="BillNumber"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Bill Number"
+                placeholder="BILL-001"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="BillDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bill Date</label>
-            <input
-              id="BillDate"
-              type="date"
-              {...register('BillDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.BillDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.BillDate.message}</p>}
-          </div>
+          <Controller
+            name="BillDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Bill Date"
+                type="date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="DueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
-            <input
-              id="DueDate"
-              type="date"
-              {...register('DueDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.DueDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.DueDate.message}</p>}
-          </div>
+          <Controller
+            name="DueDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Due Date"
+                type="date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="Terms" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Terms</label>
-            <select
-              id="Terms"
-              {...register('Terms')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select terms...</option>
-              <option value="Due on Receipt">Due on Receipt</option>
-              <option value="Net 15">Net 15</option>
-              <option value="Net 30">Net 30</option>
-              <option value="Net 45">Net 45</option>
-              <option value="Net 60">Net 60</option>
-            </select>
-          </div>
+          <Controller
+            name="Terms"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Payment Terms"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select terms...</MenuItem>
+                <MenuItem value="Due on Receipt">Due on Receipt</MenuItem>
+                <MenuItem value="Net 15">Net 15</MenuItem>
+                <MenuItem value="Net 30">Net 30</MenuItem>
+                <MenuItem value="Net 45">Net 45</MenuItem>
+                <MenuItem value="Net 60">Net 60</MenuItem>
+              </TextField>
+            )}
+          />
 
-          <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-            <select
-              id="Status"
-              {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="Draft">Draft</option>
-              <option value="Open">Open</option>
-              <option value="Partial">Partial</option>
-              <option value="Paid">Paid</option>
-              <option value="Overdue">Overdue</option>
-            </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
-          </div>
+          <Controller
+            name="Status"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Status"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="Draft">Draft</MenuItem>
+                <MenuItem value="Open">Open</MenuItem>
+                <MenuItem value="Partial">Partial</MenuItem>
+                <MenuItem value="Paid">Paid</MenuItem>
+                <MenuItem value="Overdue">Overdue</MenuItem>
+              </TextField>
+            )}
+          />
 
           <div className="sm:col-span-2">
-            <label htmlFor="Memo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Memo</label>
-            <textarea
-              id="Memo"
-              {...register('Memo')}
-              rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              placeholder="Add notes about this bill..."
+            <Controller
+              name="Memo"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Memo"
+                  multiline
+                  rows={2}
+                  placeholder="Add notes about this bill..."
+                  size="small"
+                  fullWidth
+                />
+              )}
             />
           </div>
         </div>
@@ -238,64 +294,87 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Line Items</h3>
-            <button
+            <Button
               type="button"
+              variant="outlined"
+              size="small"
+              startIcon={<Plus className="w-4 h-4" />}
               onClick={() => append({ AccountId: '', Description: '', Amount: 0 })}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
             >
-              <Plus className="w-4 h-4 mr-1" />
               Add Item
-            </button>
+            </Button>
           </div>
 
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex gap-4 items-start bg-gray-50 p-4 rounded-md">
+              <div key={field.id} className="flex gap-4 items-start bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
                 <div className="w-48">
-                  <label className="block text-xs font-medium text-gray-500">Account</label>
-                  <select
-                    {...register(`Lines.${index}.AccountId`)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                  >
-                    <option value="">Select account...</option>
-                    {expenseAccounts.map((account) => (
-                      <option key={account.Id} value={account.Id}>
-                        {account.Name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.Lines?.[index]?.AccountId && (
-                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.AccountId?.message}</p>
-                  )}
+                  <Controller
+                    name={`Lines.${index}.AccountId`}
+                    control={control}
+                    render={({ field: f, fieldState }) => (
+                      <TextField
+                        {...f}
+                        value={f.value ?? ''}
+                        select
+                        label="Account"
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                        size="small"
+                        fullWidth
+                      >
+                        <MenuItem value="">Select account...</MenuItem>
+                        {expenseAccounts.map((account) => (
+                          <MenuItem key={account.Id} value={account.Id}>
+                            {account.Name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
                 </div>
                 <div className="flex-grow">
-                  <label className="block text-xs font-medium text-gray-500">Description</label>
-                  <input
-                    {...register(`Lines.${index}.Description`)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                    placeholder="Item description"
+                  <Controller
+                    name={`Lines.${index}.Description`}
+                    control={control}
+                    render={({ field: f }) => (
+                      <TextField
+                        {...f}
+                        value={f.value ?? ''}
+                        label="Description"
+                        placeholder="Item description"
+                        size="small"
+                        fullWidth
+                      />
+                    )}
                   />
                 </div>
                 <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-500">Amount</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.Amount`, { valueAsNumber: true })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                  />
-                  {errors.Lines?.[index]?.Amount && (
-                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Amount?.message}</p>
-                  )}
+                  {(() => {
+                    const { ref, ...rest } = register(`Lines.${index}.Amount`, { valueAsNumber: true });
+                    return (
+                      <TextField
+                        {...rest}
+                        inputRef={ref}
+                        type="number"
+                        label="Amount"
+                        slotProps={{ htmlInput: { step: '0.01' } }}
+                        error={!!errors.Lines?.[index]?.Amount}
+                        helperText={errors.Lines?.[index]?.Amount?.message}
+                        size="small"
+                        fullWidth
+                      />
+                    );
+                  })()}
                 </div>
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => remove(index)}
-                  className="mt-6 text-red-600 hover:text-red-800"
                   disabled={fields.length === 1}
+                  color="error"
+                  sx={{ mt: 0.5 }}
                 >
                   <Trash2 className="w-5 h-5" />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>
@@ -308,20 +387,20 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
         {settings.invoicePostingMode === 'simple' && (
           <div className={`flex items-center gap-2 p-3 rounded-lg ${
             willAutoPost
-              ? 'bg-amber-50 border border-amber-200'
-              : 'bg-gray-50 border border-gray-200'
+              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-700'
+              : 'bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600'
           }`}>
             {willAutoPost ? (
               <>
                 <Zap className="h-4 w-4 text-amber-500" />
-                <span className="text-sm text-amber-700">
+                <span className="text-sm text-amber-700 dark:text-amber-400">
                   This bill will <strong>post to your books</strong> when saved (AP + Expense entries).
                 </span>
               </>
             ) : (
               <>
-                <Info className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
+                <Info className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   Draft bills don't affect your books until the status is changed.
                 </span>
               </>
@@ -329,24 +408,24 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
           </div>
         )}
 
-        <div className="flex justify-end items-center border-t pt-4">
-          <div className="text-xl font-bold text-gray-900 mr-6">
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
             Total: ${lines.reduce((sum, line) => sum + (line.Amount || 0), 0).toFixed(2)}
           </div>
-          <button
-            type="button"
+          <Button
+            variant="outlined"
             onClick={() => navigate('/bills')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

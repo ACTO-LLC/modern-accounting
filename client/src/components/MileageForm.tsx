@@ -1,4 +1,4 @@
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,11 @@ import { ArrowLeft } from 'lucide-react';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 const mileageSchemaBase = z.object({
   VehicleId: z.string().uuid().nullish(),
@@ -137,6 +142,11 @@ export default function MileageForm({
   const endOdometer = useWatch({ control, name: 'EndOdometer' });
   const isSubmitting = externalIsSubmitting || formIsSubmitting;
 
+  // Destructure register refs for valueAsNumber fields
+  const { ref: distanceRef, ...distanceRest } = register('Distance', { valueAsNumber: true });
+  const { ref: startOdometerRef, ...startOdometerRest } = register('StartOdometer', { valueAsNumber: true });
+  const { ref: endOdometerRef, ...endOdometerRest } = register('EndOdometer', { valueAsNumber: true });
+
   // Get the applicable rate for the selected category and date
   const getApplicableRate = () => {
     if (!mileageRates || !category || category === 'Personal' || !tripDate) return null;
@@ -199,204 +209,204 @@ export default function MileageForm({
       <div className="mb-6 flex items-center">
         <button
           onClick={() => navigate('/mileage')}
-          className="mr-4 text-gray-500 hover:text-gray-700"
+          className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6 dark:bg-gray-800">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {/* Date and Vehicle */}
-          <div>
-            <label htmlFor="TripDate" className="block text-sm font-medium text-gray-700">
-              Trip Date
-            </label>
-            <input
-              id="TripDate"
-              type="date"
-              {...register('TripDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            />
-            {errors.TripDate && (
-              <p className="mt-1 text-sm text-red-600">{errors.TripDate.message}</p>
+          <Controller
+            name="TripDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                type="date"
+                label="Trip Date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
             )}
-          </div>
+          />
 
-          <div>
-            <label htmlFor="VehicleId" className="block text-sm font-medium text-gray-700">
-              Vehicle
-            </label>
-            <select
-              id="VehicleId"
-              {...register('VehicleId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="">Select vehicle (optional)...</option>
-              {vehicles?.map((vehicle) => (
-                <option key={vehicle.Id} value={vehicle.Id}>
-                  {vehicle.Name}
-                  {vehicle.Year ? ` (${vehicle.Year} ${vehicle.Make} ${vehicle.Model})` : ''}
-                  {vehicle.IsDefault ? ' - Default' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="VehicleId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Vehicle"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select vehicle (optional)...</MenuItem>
+                {vehicles?.map((vehicle) => (
+                  <MenuItem key={vehicle.Id} value={vehicle.Id}>
+                    {vehicle.Name}
+                    {vehicle.Year ? ` (${vehicle.Year} ${vehicle.Make} ${vehicle.Model})` : ''}
+                    {vehicle.IsDefault ? ' - Default' : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
           {/* Category and Purpose */}
-          <div>
-            <label htmlFor="Category" className="block text-sm font-medium text-gray-700">
-              Category
-            </label>
-            <select
-              id="Category"
-              {...register('Category')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="Business">Business</option>
-              <option value="Personal">Personal</option>
-              <option value="Medical">Medical</option>
-              <option value="Charity">Charity</option>
-            </select>
-            {applicableRate && (
-              <p className="mt-1 text-xs text-gray-500">
-                Rate: ${applicableRate.RatePerMile.toFixed(4)}/mile
-              </p>
+          <Controller
+            name="Category"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Category"
+                required
+                size="small"
+                fullWidth
+                helperText={applicableRate ? `Rate: $${applicableRate.RatePerMile.toFixed(4)}/mile` : undefined}
+              >
+                <MenuItem value="Business">Business</MenuItem>
+                <MenuItem value="Personal">Personal</MenuItem>
+                <MenuItem value="Medical">Medical</MenuItem>
+                <MenuItem value="Charity">Charity</MenuItem>
+              </TextField>
             )}
-          </div>
+          />
 
-          <div>
-            <label htmlFor="Purpose" className="block text-sm font-medium text-gray-700">
-              Purpose / Business Reason
-            </label>
-            <input
-              id="Purpose"
-              type="text"
-              {...register('Purpose')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="e.g., Client meeting, Site visit"
-            />
-            {errors.Purpose && (
-              <p className="mt-1 text-sm text-red-600">{errors.Purpose.message}</p>
+          <Controller
+            name="Purpose"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Purpose / Business Reason"
+                required
+                placeholder="e.g., Client meeting, Site visit"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
             )}
-          </div>
+          />
 
           {/* Locations */}
-          <div>
-            <label htmlFor="StartLocation" className="block text-sm font-medium text-gray-700">
-              Start Location
-            </label>
-            <input
-              id="StartLocation"
-              type="text"
-              {...register('StartLocation')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="e.g., Office, Home"
-            />
-            {errors.StartLocation && (
-              <p className="mt-1 text-sm text-red-600">{errors.StartLocation.message}</p>
+          <Controller
+            name="StartLocation"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Start Location"
+                required
+                placeholder="e.g., Office, Home"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
             )}
-          </div>
+          />
 
-          <div>
-            <label htmlFor="EndLocation" className="block text-sm font-medium text-gray-700">
-              End Location
-            </label>
-            <input
-              id="EndLocation"
-              type="text"
-              {...register('EndLocation')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="e.g., Client site, Airport"
-            />
-            {errors.EndLocation && (
-              <p className="mt-1 text-sm text-red-600">{errors.EndLocation.message}</p>
+          <Controller
+            name="EndLocation"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="End Location"
+                required
+                placeholder="e.g., Client site, Airport"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
             )}
-          </div>
+          />
 
           {/* Odometer Readings (optional) */}
-          <div>
-            <label htmlFor="StartOdometer" className="block text-sm font-medium text-gray-700">
-              Start Odometer (optional)
-            </label>
-            <input
-              id="StartOdometer"
-              type="number"
-              {...register('StartOdometer', { valueAsNumber: true })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="e.g., 45230"
-            />
-          </div>
+          <TextField
+            {...startOdometerRest}
+            inputRef={startOdometerRef}
+            type="number"
+            label="Start Odometer (optional)"
+            placeholder="e.g., 45230"
+            size="small"
+            fullWidth
+          />
 
-          <div>
-            <label htmlFor="EndOdometer" className="block text-sm font-medium text-gray-700">
-              End Odometer (optional)
-            </label>
-            <input
-              id="EndOdometer"
-              type="number"
-              {...register('EndOdometer', { valueAsNumber: true })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="e.g., 45255"
-            />
-          </div>
+          <TextField
+            {...endOdometerRest}
+            inputRef={endOdometerRef}
+            type="number"
+            label="End Odometer (optional)"
+            placeholder="e.g., 45255"
+            size="small"
+            fullWidth
+          />
 
           {/* Distance and Round Trip */}
-          <div>
-            <label htmlFor="Distance" className="block text-sm font-medium text-gray-700">
-              One-Way Distance (miles)
-            </label>
-            <input
-              id="Distance"
-              type="number"
-              step="0.1"
-              {...register('Distance', { valueAsNumber: true })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="e.g., 25.5"
-            />
-            {errors.Distance && (
-              <p className="mt-1 text-sm text-red-600">{errors.Distance.message}</p>
-            )}
-          </div>
+          <TextField
+            {...distanceRest}
+            inputRef={distanceRef}
+            type="number"
+            label="One-Way Distance (miles)"
+            required
+            placeholder="e.g., 25.5"
+            error={!!errors.Distance}
+            helperText={errors.Distance?.message}
+            size="small"
+            fullWidth
+            slotProps={{ htmlInput: { step: '0.1' } }}
+          />
 
           <div className="flex items-end pb-2 space-x-6">
-            <div className="flex items-center">
-              <input
-                id="IsRoundTrip"
-                type="checkbox"
-                {...register('IsRoundTrip')}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label htmlFor="IsRoundTrip" className="ml-2 block text-sm text-gray-900">
-                Round Trip (distance x 2)
-              </label>
-            </div>
-            <div className="flex items-center">
-              <input
-                id="IsPersonal"
-                type="checkbox"
-                {...register('IsPersonal')}
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-              />
-              <label htmlFor="IsPersonal" className="ml-2 block text-sm text-gray-900">
-                Personal Trip
-              </label>
-            </div>
+            <Controller
+              name="IsRoundTrip"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox {...field} checked={field.value ?? false} />}
+                  label="Round Trip (distance x 2)"
+                />
+              )}
+            />
+            <Controller
+              name="IsPersonal"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox {...field} checked={field.value ?? false} />}
+                  label="Personal Trip"
+                />
+              )}
+            />
           </div>
 
           {/* Deductible Amount (calculated) */}
           {category !== 'Personal' && (
-            <div className="sm:col-span-2 bg-green-50 rounded-lg p-4">
+            <div className="sm:col-span-2 bg-green-50 rounded-lg p-4 dark:bg-green-950">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-800">Estimated Tax Deduction</p>
-                  <p className="text-xs text-green-600">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-300">Estimated Tax Deduction</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
                     {isRoundTrip ? `${distance || 0} x 2 = ${(distance || 0) * 2} miles` : `${distance || 0} miles`}
                     {applicableRate && ` @ $${applicableRate.RatePerMile.toFixed(4)}/mile`}
                   </p>
                 </div>
-                <div className="text-2xl font-bold text-green-700">
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   ${((isRoundTrip ? (distance || 0) * 2 : distance || 0) * (applicableRate?.RatePerMile || 0)).toFixed(2)}
                 </div>
               </div>
@@ -404,73 +414,87 @@ export default function MileageForm({
           )}
 
           {/* Customer and Project (optional) */}
-          <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">
-              Customer (optional)
-            </label>
-            <select
-              id="CustomerId"
-              {...register('CustomerId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="">Select customer...</option>
-              {customers?.map((customer) => (
-                <option key={customer.Id} value={customer.Id}>
-                  {customer.Name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="CustomerId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Customer (optional)"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select customer...</MenuItem>
+                {customers?.map((customer) => (
+                  <MenuItem key={customer.Id} value={customer.Id}>
+                    {customer.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
-          <div>
-            <label htmlFor="ProjectId" className="block text-sm font-medium text-gray-700">
-              Project (optional)
-            </label>
-            <select
-              id="ProjectId"
-              {...register('ProjectId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="">Select project...</option>
-              {projects?.map((project) => (
-                <option key={project.Id} value={project.Id}>
-                  {project.Name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Project (optional)"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select project...</MenuItem>
+                {projects?.map((project) => (
+                  <MenuItem key={project.Id} value={project.Id}>
+                    {project.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
           {/* Notes */}
           <div className="sm:col-span-2">
-            <label htmlFor="Notes" className="block text-sm font-medium text-gray-700">
-              Notes (optional)
-            </label>
-            <textarea
-              id="Notes"
-              {...register('Notes')}
-              rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="Additional details about this trip..."
+            <Controller
+              name="Notes"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Notes (optional)"
+                  multiline
+                  rows={2}
+                  placeholder="Additional details about this trip..."
+                  size="small"
+                  fullWidth
+                />
+              )}
             />
           </div>
         </div>
 
         {/* Submit Buttons */}
-        <div className="flex justify-end items-center border-t pt-4">
-          <button
-            type="button"
+        <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
+          <Button
+            variant="outlined"
             onClick={() => navigate('/mileage')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

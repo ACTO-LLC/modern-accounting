@@ -1,4 +1,4 @@
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,12 @@ import { ArrowLeft, X, Receipt } from 'lucide-react';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import InputAdornment from '@mui/material/InputAdornment';
 
 const expenseSchemaBase = z.object({
   ExpenseNumber: z.string().nullish(),
@@ -151,6 +157,9 @@ export default function ExpenseForm({
   const isReimbursable = useWatch({ control, name: 'IsReimbursable' });
   const isSubmitting = externalIsSubmitting || formIsSubmitting;
 
+  // Amount uses register with valueAsNumber — destructure ref for inputRef pattern
+  const { ref: amountRef, ...amountRest } = register('Amount', { valueAsNumber: true });
+
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -220,7 +229,7 @@ export default function ExpenseForm({
       <div className="mb-6 flex items-center">
         <button
           onClick={() => navigate('/expenses')}
-          className="mr-4 text-gray-500 hover:text-gray-700"
+          className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
@@ -236,14 +245,14 @@ export default function ExpenseForm({
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer"
+            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Receipt className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-600">
+            <Receipt className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Drag and drop receipt images or PDFs here, or click to browse
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Supports JPG, PNG, and PDF files
             </p>
             <input
@@ -271,8 +280,8 @@ export default function ExpenseForm({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <span className="text-xs text-gray-600 text-center px-1 truncate">
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-600">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 text-center px-1 truncate">
                         {receipt.file.name}
                       </span>
                     </div>
@@ -295,49 +304,49 @@ export default function ExpenseForm({
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {/* Date and Amount */}
-          <div>
-            <label htmlFor="ExpenseDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Date
-            </label>
-            <input
-              id="ExpenseDate"
-              type="date"
-              {...register('ExpenseDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.ExpenseDate && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ExpenseDate.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="Amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Amount
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <span className="text-gray-500 sm:text-sm">$</span>
-              </div>
-              <input
-                id="Amount"
-                type="number"
-                step="0.01"
-                {...register('Amount', { valueAsNumber: true })}
-                className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                placeholder="0.00"
+          <Controller
+            name="ExpenseDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                type="date"
+                label="Date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
               />
-            </div>
-            {errors.Amount && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Amount.message}</p>
             )}
-          </div>
+          />
+
+          <TextField
+            {...amountRest}
+            inputRef={amountRef}
+            type="number"
+            label="Amount"
+            required
+            placeholder="0.00"
+            error={!!errors.Amount}
+            helperText={errors.Amount?.message}
+            size="small"
+            fullWidth
+            slotProps={{
+              htmlInput: { step: '0.01' },
+              input: {
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              },
+            }}
+          />
 
           {/* Vendor Selection */}
           <div className="sm:col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Vendor / Payee
-              </label>
+              </span>
               <button
                 type="button"
                 onClick={() => {
@@ -348,224 +357,272 @@ export default function ExpenseForm({
                     setValue('VendorName', null);
                   }
                 }}
-                className="text-xs text-indigo-600 hover:text-indigo-800"
+                className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
               >
                 {useQuickVendor ? 'Select from list' : 'Enter name manually'}
               </button>
             </div>
             {useQuickVendor ? (
-              <input
-                type="text"
-                {...register('VendorName')}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                placeholder="Enter vendor name..."
+              <Controller
+                name="VendorName"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    label="Vendor Name"
+                    placeholder="Enter vendor name..."
+                    size="small"
+                    fullWidth
+                  />
+                )}
               />
             ) : (
-              <select
-                {...register('VendorId')}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              >
-                <option value="">Select a vendor (optional)...</option>
-                {vendors?.map((vendor) => (
-                  <option key={vendor.Id} value={vendor.Id}>
-                    {vendor.Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="VendorId"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    select
+                    label="Vendor"
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Select a vendor (optional)...</MenuItem>
+                    {vendors?.map((vendor) => (
+                      <MenuItem key={vendor.Id} value={vendor.Id}>
+                        {vendor.Name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
             )}
           </div>
 
           {/* Expense Category */}
-          <div>
-            <label htmlFor="AccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Category / Account
-            </label>
-            <select
-              id="AccountId"
-              {...register('AccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select a category...</option>
-              {expenseAccounts.map((account) => (
-                <option key={account.Id} value={account.Id}>
-                  {account.Name}
-                </option>
-              ))}
-            </select>
-            {errors.AccountId && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.AccountId.message}</p>
+          <Controller
+            name="AccountId"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Category / Account"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select a category...</MenuItem>
+                {expenseAccounts.map((account) => (
+                  <MenuItem key={account.Id} value={account.Id}>
+                    {account.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
             )}
-          </div>
+          />
 
           {/* Payment Method */}
-          <div>
-            <label htmlFor="PaymentMethod" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Payment Method
-            </label>
-            <select
-              id="PaymentMethod"
-              {...register('PaymentMethod')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select method...</option>
-              <option value="Cash">Cash</option>
-              <option value="Credit Card">Credit Card</option>
-              <option value="Debit Card">Debit Card</option>
-              <option value="Check">Check</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+          <Controller
+            name="PaymentMethod"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Payment Method"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select method...</MenuItem>
+                <MenuItem value="Cash">Cash</MenuItem>
+                <MenuItem value="Credit Card">Credit Card</MenuItem>
+                <MenuItem value="Debit Card">Debit Card</MenuItem>
+                <MenuItem value="Check">Check</MenuItem>
+                <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </TextField>
+            )}
+          />
 
           {/* Payment Account */}
-          <div>
-            <label htmlFor="PaymentAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Paid From Account
-            </label>
-            <select
-              id="PaymentAccountId"
-              {...register('PaymentAccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select account...</option>
-              {paymentAccounts.map((account) => (
-                <option key={account.Id} value={account.Id}>
-                  {account.Name} ({account.Type})
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="PaymentAccountId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Paid From Account"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select account...</MenuItem>
+                {paymentAccounts.map((account) => (
+                  <MenuItem key={account.Id} value={account.Id}>
+                    {account.Name} ({account.Type})
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
           {/* Reference */}
-          <div>
-            <label htmlFor="Reference" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Reference / Check #
-            </label>
-            <input
-              id="Reference"
-              type="text"
-              {...register('Reference')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              placeholder="Check # or transaction ID"
-            />
-          </div>
+          <Controller
+            name="Reference"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Reference / Check #"
+                placeholder="Check # or transaction ID"
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
           {/* Description */}
           <div className="sm:col-span-2">
-            <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
-            </label>
-            <textarea
-              id="Description"
-              {...register('Description')}
-              rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              placeholder="What was this expense for?"
+            <Controller
+              name="Description"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Description"
+                  multiline
+                  rows={2}
+                  placeholder="What was this expense for?"
+                  size="small"
+                  fullWidth
+                />
+              )}
             />
           </div>
 
           {/* Personal and Reimbursable Checkboxes */}
-          <div className="sm:col-span-2 space-y-3">
-            <div className="flex items-center">
-              <input
-                id="IsPersonal"
-                type="checkbox"
-                {...register('IsPersonal')}
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-              />
-              <label htmlFor="IsPersonal" className="ml-2 block text-sm text-gray-900">
-                This is a personal expense (not business-related)
-              </label>
-            </div>
-            <div className="flex items-center">
-              <input
-                id="IsReimbursable"
-                type="checkbox"
-                {...register('IsReimbursable')}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label htmlFor="IsReimbursable" className="ml-2 block text-sm text-gray-900">
-                This is a reimbursable expense
-              </label>
-            </div>
+          <div className="sm:col-span-2 space-y-1">
+            <Controller
+              name="IsPersonal"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox {...field} checked={field.value ?? false} />}
+                  label="This is a personal expense (not business-related)"
+                />
+              )}
+            />
+            <Controller
+              name="IsReimbursable"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox {...field} checked={field.value ?? false} />}
+                  label="This is a reimbursable expense"
+                />
+              )}
+            />
           </div>
 
           {/* Customer (for billable expenses) */}
           {isReimbursable && (
-            <div>
-              <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Bill to Customer (optional)
-              </label>
-              <select
-                id="CustomerId"
-                {...register('CustomerId')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              >
-                <option value="">Select customer...</option>
-                {customers?.map((customer) => (
-                  <option key={customer.Id} value={customer.Id}>
-                    {customer.Name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Controller
+              name="CustomerId"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Bill to Customer (optional)"
+                  size="small"
+                  fullWidth
+                >
+                  <MenuItem value="">Select customer...</MenuItem>
+                  {customers?.map((customer) => (
+                    <MenuItem key={customer.Id} value={customer.Id}>
+                      {customer.Name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
           )}
 
           {/* Project */}
-          <div>
-            <label htmlFor="ProjectId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Project (optional)
-            </label>
-            <select
-              id="ProjectId"
-              {...register('ProjectId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select project...</option>
-              {projects?.map((project) => (
-                <option key={project.Id} value={project.Id}>
-                  {project.Name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Project (optional)"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select project...</MenuItem>
+                {projects?.map((project) => (
+                  <MenuItem key={project.Id} value={project.Id}>
+                    {project.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
           {/* Class */}
-          <div>
-            <label htmlFor="ClassId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Class (optional)
-            </label>
-            <select
-              id="ClassId"
-              {...register('ClassId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select class...</option>
-              {classes?.map((cls) => (
-                <option key={cls.Id} value={cls.Id}>
-                  {cls.Name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="ClassId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Class (optional)"
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select class...</MenuItem>
+                {classes?.map((cls) => (
+                  <MenuItem key={cls.Id} value={cls.Id}>
+                    {cls.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
         </div>
 
         {/* Submit Buttons */}
-        <div className="flex justify-end items-center border-t pt-4">
-          <button
-            type="button"
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <Button
+            variant="outlined"
             onClick={() => navigate('/expenses')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

@@ -40,9 +40,9 @@ export default function Projects() {
       filterable: true,
       renderCell: (params) => (
         <div>
-          <div className="text-sm font-medium text-gray-900">{params.value}</div>
+          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{params.value}</div>
           {params.row.Description && (
-            <div className="text-sm text-gray-500 truncate max-w-xs">{params.row.Description}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{params.row.Description}</div>
           )}
         </div>
       )
@@ -66,7 +66,7 @@ export default function Projects() {
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
           {params.row.StartDate && <div>Start: {formatDate(params.row.StartDate)}</div>}
           {params.row.EndDate && <div>End: {formatDate(params.row.EndDate)}</div>}
           {!params.row.StartDate && !params.row.EndDate && '-'}
@@ -80,7 +80,7 @@ export default function Projects() {
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
           {params.row.BudgetedHours && <div>{params.row.BudgetedHours} hrs</div>}
           {params.row.BudgetedAmount && <div>{formatCurrency(params.row.BudgetedAmount)}</div>}
           {!params.row.BudgetedHours && !params.row.BudgetedAmount && '-'}
@@ -92,7 +92,7 @@ export default function Projects() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Projects</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Projects</h1>
         <Link
           to="/projects/new"
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"

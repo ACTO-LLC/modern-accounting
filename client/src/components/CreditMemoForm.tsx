@@ -1,4 +1,4 @@
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,10 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 
 export const creditMemoSchema = z.object({
   CustomerId: z.string().uuid('Please select a customer'),
@@ -92,9 +96,12 @@ export default function CreditMemoForm({ initialValues, onSubmit, title, isSubmi
   const { register, control, handleSubmit, setValue, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<CreditMemoFormData>({
     resolver: zodResolver(creditMemoSchema),
     defaultValues: {
+      CustomerId: '',
+      CreditMemoNumber: '',
       Status: 'Open',
       CreditDate: new Date().toISOString().split('T')[0],
-      Lines: [{ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0 }],
+      Reason: '',
+      Lines: [{ AccountId: '', ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0 }],
       Subtotal: 0,
       TaxAmount: 0,
       TotalAmount: 0,
@@ -151,78 +158,113 @@ export default function CreditMemoForm({ initialValues, onSubmit, title, isSubmi
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/credit-memos')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/credit-memos')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6 dark:bg-gray-800">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700">Customer</label>
-            <select
-              id="CustomerId"
-              {...register('CustomerId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="">Select a customer...</option>
-              {customers?.map((customer) => (
-                <option key={customer.Id} value={customer.Id}>
-                  {customer.Name}
-                </option>
-              ))}
-            </select>
-            {errors.CustomerId && <p className="mt-1 text-sm text-red-600">{errors.CustomerId.message}</p>}
-          </div>
+          <Controller
+            name="CustomerId"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Customer"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select a customer...</MenuItem>
+                {customers?.map((customer) => (
+                  <MenuItem key={customer.Id} value={customer.Id}>
+                    {customer.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
-          <div>
-            <label htmlFor="CreditMemoNumber" className="block text-sm font-medium text-gray-700">Credit Memo Number</label>
-            <input
-              id="CreditMemoNumber"
-              type="text"
-              {...register('CreditMemoNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="CM-001"
-            />
-            {errors.CreditMemoNumber && <p className="mt-1 text-sm text-red-600">{errors.CreditMemoNumber.message}</p>}
-          </div>
+          <Controller
+            name="CreditMemoNumber"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Credit Memo Number"
+                required
+                placeholder="CM-001"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="CreditDate" className="block text-sm font-medium text-gray-700">Credit Date</label>
-            <input
-              id="CreditDate"
-              type="date"
-              {...register('CreditDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            />
-            {errors.CreditDate && <p className="mt-1 text-sm text-red-600">{errors.CreditDate.message}</p>}
-          </div>
+          <Controller
+            name="CreditDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Credit Date"
+                type="date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700">Status</label>
-            <select
-              id="Status"
-              {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="Open">Open</option>
-              <option value="Applied">Applied</option>
-              <option value="PartiallyApplied">Partially Applied</option>
-              <option value="Refunded">Refunded</option>
-              <option value="Voided">Voided</option>
-            </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>}
-          </div>
+          <Controller
+            name="Status"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Status"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="Open">Open</MenuItem>
+                <MenuItem value="Applied">Applied</MenuItem>
+                <MenuItem value="PartiallyApplied">Partially Applied</MenuItem>
+                <MenuItem value="Refunded">Refunded</MenuItem>
+                <MenuItem value="Voided">Voided</MenuItem>
+              </TextField>
+            )}
+          />
 
           <div className="sm:col-span-2">
-            <label htmlFor="Reason" className="block text-sm font-medium text-gray-700">Reason / Notes</label>
-            <textarea
-              id="Reason"
-              {...register('Reason')}
-              rows={2}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              placeholder="Reason for credit memo (e.g., returned goods, price adjustment, billing error)..."
+            <Controller
+              name="Reason"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Reason / Notes"
+                  multiline
+                  rows={2}
+                  placeholder="Reason for credit memo (e.g., returned goods, price adjustment, billing error)..."
+                  size="small"
+                  fullWidth
+                />
+              )}
             />
           </div>
         </div>
@@ -230,139 +272,187 @@ export default function CreditMemoForm({ initialValues, onSubmit, title, isSubmi
         {/* Line Items */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Line Items</h3>
-            <button
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Line Items</h3>
+            <Button
               type="button"
-              onClick={() => append({ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0 })}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
+              variant="outlined"
+              size="small"
+              startIcon={<Plus className="w-4 h-4" />}
+              onClick={() => append({ AccountId: '', ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0 })}
             >
-              <Plus className="w-4 h-4 mr-1" />
               Add Item
-            </button>
+            </Button>
           </div>
 
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex gap-4 items-start bg-gray-50 p-4 rounded-md flex-wrap">
+              <div key={field.id} className="flex gap-4 items-start bg-gray-50 p-4 rounded-md flex-wrap dark:bg-gray-700">
                 <div className="w-40">
-                  <label className="block text-xs font-medium text-gray-500">Product/Service</label>
-                  <select
-                    {...register(`Lines.${index}.ProductServiceId`)}
-                    onChange={(e) => handleProductChange(index, e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  >
-                    <option value="">Optional...</option>
-                    {productsServices?.map((ps) => (
-                      <option key={ps.Id} value={ps.Id}>
-                        {ps.Name}
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    name={`Lines.${index}.ProductServiceId`}
+                    control={control}
+                    render={({ field: f }) => (
+                      <TextField
+                        {...f}
+                        value={f.value ?? ''}
+                        select
+                        label="Product/Service"
+                        size="small"
+                        fullWidth
+                        onChange={(e) => {
+                          f.onChange(e);
+                          handleProductChange(index, e.target.value);
+                        }}
+                      >
+                        <MenuItem value="">Optional...</MenuItem>
+                        {productsServices?.map((ps) => (
+                          <MenuItem key={ps.Id} value={ps.Id}>
+                            {ps.Name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
                 </div>
                 <div className="w-40">
-                  <label className="block text-xs font-medium text-gray-500">Account</label>
-                  <select
-                    {...register(`Lines.${index}.AccountId`)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  >
-                    <option value="">Select account...</option>
-                    {revenueAccounts.map((account) => (
-                      <option key={account.Id} value={account.Id}>
-                        {account.Name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.Lines?.[index]?.AccountId && (
-                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.AccountId?.message}</p>
-                  )}
+                  <Controller
+                    name={`Lines.${index}.AccountId`}
+                    control={control}
+                    render={({ field: f, fieldState }) => (
+                      <TextField
+                        {...f}
+                        value={f.value ?? ''}
+                        select
+                        label="Account"
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                        size="small"
+                        fullWidth
+                      >
+                        <MenuItem value="">Select account...</MenuItem>
+                        {revenueAccounts.map((account) => (
+                          <MenuItem key={account.Id} value={account.Id}>
+                            {account.Name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
                 </div>
                 <div className="flex-grow min-w-32">
-                  <label className="block text-xs font-medium text-gray-500">Description</label>
-                  <input
-                    {...register(`Lines.${index}.Description`)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                    placeholder="Item description"
+                  <Controller
+                    name={`Lines.${index}.Description`}
+                    control={control}
+                    render={({ field: f }) => (
+                      <TextField
+                        {...f}
+                        value={f.value ?? ''}
+                        label="Description"
+                        placeholder="Item description"
+                        size="small"
+                        fullWidth
+                      />
+                    )}
                   />
                 </div>
                 <div className="w-20">
-                  <label className="block text-xs font-medium text-gray-500">Qty</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.Quantity`, {
+                  {(() => {
+                    const { ref, ...rest } = register(`Lines.${index}.Quantity`, {
                       valueAsNumber: true,
                       onChange: (e) => {
                         const qty = parseFloat(e.target.value) || 0;
                         const price = lines[index]?.UnitPrice || 0;
                         updateLineAmount(index, qty, price);
                       }
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
+                    });
+                    return (
+                      <TextField
+                        {...rest}
+                        inputRef={ref}
+                        type="number"
+                        label="Qty"
+                        slotProps={{ htmlInput: { step: '0.01' } }}
+                        size="small"
+                        fullWidth
+                      />
+                    );
+                  })()}
                 </div>
                 <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-500">Unit Price</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.UnitPrice`, {
+                  {(() => {
+                    const { ref, ...rest } = register(`Lines.${index}.UnitPrice`, {
                       valueAsNumber: true,
                       onChange: (e) => {
                         const price = parseFloat(e.target.value) || 0;
                         const qty = lines[index]?.Quantity || 0;
                         updateLineAmount(index, qty, price);
                       }
-                    })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                  />
+                    });
+                    return (
+                      <TextField
+                        {...rest}
+                        inputRef={ref}
+                        type="number"
+                        label="Unit Price"
+                        slotProps={{ htmlInput: { step: '0.01' } }}
+                        size="small"
+                        fullWidth
+                      />
+                    );
+                  })()}
                 </div>
                 <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-500">Amount</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register(`Lines.${index}.Amount`, { valueAsNumber: true })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 bg-gray-100"
-                    readOnly
-                  />
-                  {errors.Lines?.[index]?.Amount && (
-                    <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Amount?.message}</p>
-                  )}
+                  {(() => {
+                    const { ref, ...rest } = register(`Lines.${index}.Amount`, { valueAsNumber: true });
+                    return (
+                      <TextField
+                        {...rest}
+                        inputRef={ref}
+                        type="number"
+                        label="Amount"
+                        slotProps={{ htmlInput: { step: '0.01', readOnly: true } }}
+                        error={!!errors.Lines?.[index]?.Amount}
+                        helperText={errors.Lines?.[index]?.Amount?.message}
+                        size="small"
+                        fullWidth
+                      />
+                    );
+                  })()}
                 </div>
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => remove(index)}
-                  className="mt-6 text-red-600 hover:text-red-800"
                   disabled={fields.length === 1}
+                  color="error"
+                  sx={{ mt: 0.5 }}
                 >
                   <Trash2 className="w-5 h-5" />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>
           {errors.Lines && typeof errors.Lines === 'object' && 'message' in errors.Lines && (
-            <p className="mt-2 text-sm text-red-600">{errors.Lines.message}</p>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.Lines.message}</p>
           )}
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
-          <div className="text-xl font-bold text-gray-900 mr-6">
+        <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
             Total Credit: ${lines.reduce((sum, line) => sum + (line.Amount || 0), 0).toFixed(2)}
           </div>
-          <button
-            type="button"
+          <Button
+            variant="outlined"
             onClick={() => navigate('/credit-memos')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

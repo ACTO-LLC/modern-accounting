@@ -1,9 +1,14 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Button from '@mui/material/Button';
 import api from '../lib/api';
 import AddressFields, { AddressFieldValues } from './AddressFields';
 
@@ -47,12 +52,26 @@ export default function VendorForm({
   const navigate = useNavigate();
   const {
     register,
+    control,
     handleSubmit,
     setValue,
     formState: { errors },
   } = useForm<VendorFormData>({
     resolver: zodResolver(vendorSchema),
     defaultValues: {
+      Name: '',
+      Email: '',
+      Phone: '',
+      AddressLine1: '',
+      AddressLine2: '',
+      City: '',
+      State: '',
+      PostalCode: '',
+      Country: '',
+      Address: '',
+      PaymentTerms: '',
+      TaxId: '',
+      DefaultExpenseAccountId: '',
       ...initialValues,
       Is1099Vendor: initialValues?.Is1099Vendor ?? false,
       Status: initialValues?.Status ?? 'Active',
@@ -75,76 +94,71 @@ export default function VendorForm({
       <div className="mb-6 flex items-center">
         <button
           onClick={() => navigate('/vendors')}
-          className="mr-4 text-gray-500 hover:text-gray-700"
+          className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-white shadow rounded-lg p-6 space-y-6"
+        className="bg-white shadow rounded-lg p-6 space-y-6 dark:bg-gray-800"
       >
-        <div>
-          <label
-            htmlFor="Name"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Name
-          </label>
-          <input
-            id="Name"
-            type="text"
-            {...register('Name')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-          />
-          {errors.Name && (
-            <p className="mt-1 text-sm text-red-600">{errors.Name.message}</p>
+        <Controller
+          name="Name"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Name"
+              required
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
           )}
-        </div>
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label
-              htmlFor="Email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email
-            </label>
-            <input
-              id="Email"
-              type="email"
-              {...register('Email')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            />
-            {errors.Email && (
-              <p className="mt-1 text-sm text-red-600">{errors.Email.message}</p>
+          <Controller
+            name="Email"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Email"
+                type="email"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
             )}
-          </div>
+          />
 
-          <div>
-            <label
-              htmlFor="Phone"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Phone
-            </label>
-            <input
-              id="Phone"
-              type="text"
-              {...register('Phone')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            />
-            {errors.Phone && (
-              <p className="mt-1 text-sm text-red-600">{errors.Phone.message}</p>
+          <Controller
+            name="Phone"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Phone"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
             )}
-          </div>
+          />
         </div>
 
         {/* Address Section */}
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
+        <div className="border-t pt-4 dark:border-gray-600">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Address</h3>
           <AddressFields<VendorFormData>
             register={register}
             errors={errors}
@@ -155,130 +169,120 @@ export default function VendorForm({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label
-              htmlFor="PaymentTerms"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Payment Terms
-            </label>
-            <select
-              id="PaymentTerms"
-              {...register('PaymentTerms')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="">Select payment terms</option>
-              <option value="Net 15">Net 15</option>
-              <option value="Net 30">Net 30</option>
-              <option value="Net 45">Net 45</option>
-              <option value="Net 60">Net 60</option>
-              <option value="Due on Receipt">Due on Receipt</option>
-            </select>
-            {errors.PaymentTerms && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.PaymentTerms.message}
-              </p>
+          <Controller
+            name="PaymentTerms"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Payment Terms"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select payment terms</MenuItem>
+                <MenuItem value="Net 15">Net 15</MenuItem>
+                <MenuItem value="Net 30">Net 30</MenuItem>
+                <MenuItem value="Net 45">Net 45</MenuItem>
+                <MenuItem value="Net 60">Net 60</MenuItem>
+                <MenuItem value="Due on Receipt">Due on Receipt</MenuItem>
+              </TextField>
             )}
-          </div>
+          />
 
-          <div>
-            <label
-              htmlFor="Status"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Status
-            </label>
-            <select
-              id="Status"
-              {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-            {errors.Status && (
-              <p className="mt-1 text-sm text-red-600">{errors.Status.message}</p>
+          <Controller
+            name="Status"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Status"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="Active">Active</MenuItem>
+                <MenuItem value="Inactive">Inactive</MenuItem>
+              </TextField>
             )}
-          </div>
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label
-              htmlFor="TaxId"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Tax ID (EIN/SSN)
-            </label>
-            <input
-              id="TaxId"
-              type="text"
-              {...register('TaxId')}
-              placeholder="XX-XXXXXXX"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            />
-            {errors.TaxId && (
-              <p className="mt-1 text-sm text-red-600">{errors.TaxId.message}</p>
+          <Controller
+            name="TaxId"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Tax ID (EIN/SSN)"
+                placeholder="XX-XXXXXXX"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
             )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="DefaultExpenseAccountId"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Default Expense Account
-            </label>
-            <select
-              id="DefaultExpenseAccountId"
-              {...register('DefaultExpenseAccountId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="">Select an account</option>
-              {accounts?.map((account: any) => (
-                <option key={account.Id} value={account.Id}>
-                  {account.AccountNumber} - {account.Name}
-                </option>
-              ))}
-            </select>
-            {errors.DefaultExpenseAccountId && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.DefaultExpenseAccountId.message}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center">
-          <input
-            id="Is1099Vendor"
-            type="checkbox"
-            {...register('Is1099Vendor')}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
           />
-          <label
-            htmlFor="Is1099Vendor"
-            className="ml-2 block text-sm text-gray-700"
-          >
-            1099 Vendor (requires tax reporting)
-          </label>
+
+          <Controller
+            name="DefaultExpenseAccountId"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Default Expense Account"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select an account</MenuItem>
+                {accounts?.map((account: any) => (
+                  <MenuItem key={account.Id} value={account.Id}>
+                    {account.AccountNumber} - {account.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
-          <button
-            type="button"
+        <Controller
+          name="Is1099Vendor"
+          control={control}
+          render={({ field }) => (
+            <FormControlLabel
+              control={<Checkbox {...field} checked={field.value ?? false} />}
+              label="1099 Vendor (requires tax reporting)"
+            />
+          )}
+        />
+
+        <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
+          <Button
+            variant="outlined"
             onClick={() => navigate('/vendors')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
