@@ -228,12 +228,12 @@ export default function Inventory() {
     const reorderPoint = item.ReorderPoint || 0;
 
     if (qty <= 0) {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Out of Stock</span>;
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Out of Stock</span>;
     }
     if (qty <= reorderPoint) {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Low Stock</span>;
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Low Stock</span>;
     }
-    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">In Stock</span>;
+    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">In Stock</span>;
   };
 
   const getTransactionTypeIcon = (type: string) => {
@@ -327,7 +327,7 @@ export default function Inventory() {
           <div className="flex items-center">
             <Box className="w-8 h-8 text-indigo-500 mr-3" />
             <div>
-              <p className="text-sm text-gray-500">Total Items</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
               <p className="text-2xl font-semibold">{stats.totalItems}</p>
             </div>
           </div>
@@ -336,7 +336,7 @@ export default function Inventory() {
           <div className="flex items-center">
             <TrendingDown className="w-8 h-8 text-yellow-500 mr-3" />
             <div>
-              <p className="text-sm text-gray-500">Low Stock</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
               <p className="text-2xl font-semibold">{stats.lowStockItems}</p>
             </div>
           </div>
@@ -345,7 +345,7 @@ export default function Inventory() {
           <div className="flex items-center">
             <AlertTriangle className="w-8 h-8 text-red-500 mr-3" />
             <div>
-              <p className="text-sm text-gray-500">Out of Stock</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
               <p className="text-2xl font-semibold">{stats.outOfStockItems}</p>
             </div>
           </div>
@@ -354,7 +354,7 @@ export default function Inventory() {
           <div className="flex items-center">
             <Box className="w-8 h-8 text-green-500 mr-3" />
             <div>
-              <p className="text-sm text-gray-500">Total Value</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Value</p>
               <p className="text-2xl font-semibold">{formatCurrency(stats.totalValue)}</p>
             </div>
           </div>
@@ -363,14 +363,14 @@ export default function Inventory() {
 
       {/* View Mode Tabs */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-4">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex" aria-label="Tabs">
             <button
               onClick={() => setViewMode('inventory')}
               className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                 viewMode === 'inventory'
                   ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
               Inventory Items
@@ -380,7 +380,7 @@ export default function Inventory() {
               className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                 viewMode === 'transactions'
                   ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
               Transactions
@@ -390,7 +390,7 @@ export default function Inventory() {
               className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                 viewMode === 'locations'
                   ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
               Locations
@@ -422,7 +422,7 @@ export default function Inventory() {
                 </select>
               </div>
               <div className="flex items-end">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   Showing {filteredItems?.length || 0} of {inventoryItems?.length || 0} items
                 </span>
               </div>
@@ -431,28 +431,28 @@ export default function Inventory() {
 
           {/* Inventory Table */}
           <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     SKU
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     On Hand
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Reorder Point
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Unit Cost
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Value
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="relative px-6 py-3">
@@ -460,12 +460,12 @@ export default function Inventory() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredItems?.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                       No inventory items found.{' '}
-                      <Link to="/products-services/new" className="text-indigo-600 hover:text-indigo-900 ml-1">
+                      <Link to="/products-services/new" className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 ml-1">
                         Add your first inventory item.
                       </Link>
                     </td>
@@ -478,22 +478,22 @@ export default function Inventory() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <Box className="w-4 h-4 text-green-500 mr-2" />
-                            <span className="text-sm font-medium text-gray-900">{item.Name}</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.Name}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {item.SKU || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
                           {formatNumber(item.QuantityOnHand)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">
                           {formatNumber(item.ReorderPoint)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
                           {formatCurrency(item.PurchaseCost)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
                           {formatCurrency(value)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -502,13 +502,13 @@ export default function Inventory() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
                             onClick={() => openAdjustmentModal(item)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
                           >
                             Adjust
                           </button>
                           <Link
                             to={`/products-services/${item.Id}/edit`}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                           >
                             Edit
                           </Link>
@@ -529,64 +529,64 @@ export default function Inventory() {
           {loadingTransactions ? (
             <div className="p-4">Loading transactions...</div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Unit Cost
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Total
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Reference
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Notes
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {transactions?.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                       No inventory transactions found.
                     </td>
                   </tr>
                 ) : (
                   transactions?.map((tx) => (
                     <tr key={tx.Id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(tx.TransactionDate)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {getTransactionTypeIcon(tx.TransactionType)}
-                          <span className="ml-2 text-sm text-gray-900">{tx.TransactionType}</span>
+                          <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{tx.TransactionType}</span>
                         </div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${tx.Quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {tx.Quantity >= 0 ? '+' : ''}{formatNumber(tx.Quantity)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
                         {formatCurrency(tx.UnitCost)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
                         {formatCurrency(tx.TotalCost)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {tx.ReferenceType || '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
                         {tx.Notes || '-'}
                       </td>
                     </tr>
@@ -604,55 +604,55 @@ export default function Inventory() {
           {loadingLocations ? (
             <div className="p-4">Loading locations...</div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Code
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Address
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Default
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {locations?.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                       No inventory locations found. Locations can be used to track inventory across multiple warehouses or stores.
                     </td>
                   </tr>
                 ) : (
                   locations?.map((loc) => (
                     <tr key={loc.Id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {loc.Name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {loc.Code || '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
                         {loc.Address || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         {loc.IsDefault && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
                             Default
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          loc.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          loc.Status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                         }`}>
                           {loc.Status}
                         </span>
@@ -673,14 +673,14 @@ export default function Inventory() {
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
               Adjust Inventory: {selectedProduct.Name}
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Current quantity on hand: {formatNumber(selectedProduct.QuantityOnHand)}
             </p>
 
             {/* Error Messages */}
             {(validationError || adjustmentError) && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-700 dark:text-red-400">
                   {validationError || adjustmentError}
                 </p>
               </div>
@@ -708,7 +708,7 @@ export default function Inventory() {
                   min={MIN_ADJUSTMENT_QUANTITY}
                   max={MAX_ADJUSTMENT_QUANTITY}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Use positive numbers to add, negative to subtract
                 </p>
               </div>
@@ -729,8 +729,8 @@ export default function Inventory() {
               {adjustmentQuantity !== 0 && (
                 <p className={`text-sm mb-4 ${
                   (selectedProduct.QuantityOnHand || 0) + adjustmentQuantity < 0
-                    ? 'text-red-600 font-medium'
-                    : 'text-gray-600'
+                    ? 'text-red-600 dark:text-red-400 font-medium'
+                    : 'text-gray-600 dark:text-gray-400'
                 }`}>
                   New quantity will be: {formatNumber((selectedProduct.QuantityOnHand || 0) + adjustmentQuantity)}
                   {(selectedProduct.QuantityOnHand || 0) + adjustmentQuantity < 0 && ' (invalid - cannot be negative)'}
@@ -740,7 +740,7 @@ export default function Inventory() {
                 <button
                   type="button"
                   onClick={() => setShowAdjustmentModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   Cancel
                 </button>

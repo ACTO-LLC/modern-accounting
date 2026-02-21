@@ -94,7 +94,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/estimates')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/estimates')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -199,7 +199,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
             <button
               type="button"
               onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 })}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
+              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/50"
             >
               <Plus className="w-4 h-4 mr-1" />
               Add Item
@@ -220,10 +220,10 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
               };
 
               return (
-                <div key={field.id} className="bg-gray-50 p-4 rounded-md">
+                <div key={field.id} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
                   <div className="flex gap-4 items-start mb-3">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">Product/Service</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Product/Service</label>
                       <Controller
                         name={`Lines.${index}.ProductServiceId`}
                         control={control}
@@ -240,7 +240,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                   </div>
                   <div className="flex gap-4 items-start">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Description <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -249,11 +249,11 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                         placeholder="Item description"
                       />
                       {errors.Lines?.[index]?.Description && (
-                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Description?.message}</p>
+                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.Lines[index]?.Description?.message}</p>
                       )}
                     </div>
                     <div className="w-24">
-                      <label className="block text-xs font-medium text-gray-500">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Qty <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -264,11 +264,11 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                       {errors.Lines?.[index]?.Quantity && (
-                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Quantity?.message}</p>
+                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.Lines[index]?.Quantity?.message}</p>
                       )}
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Unit Price <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -279,12 +279,12 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                       {errors.Lines?.[index]?.UnitPrice && (
-                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.UnitPrice?.message}</p>
+                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.Lines[index]?.UnitPrice?.message}</p>
                       )}
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">Amount</label>
-                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Amount</label>
+                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 dark:text-gray-300 font-medium">
                         ${((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0)).toFixed(2)}
                       </div>
                     </div>
@@ -292,7 +292,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                       type="button"
                       onClick={() => remove(index)}
                       disabled={fields.length === 1}
-                      className="mt-6 text-red-600 hover:text-red-800 disabled:text-gray-300 disabled:cursor-not-allowed"
+                      className="mt-6 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 disabled:text-gray-300 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
                       title={fields.length === 1 ? 'At least one line item is required' : 'Remove item'}
                     >
                       <Trash2 className="w-5 h-5" />
@@ -308,7 +308,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
         </div>
 
         <div className="flex justify-end items-center border-t pt-4">
-          <div className="text-xl font-bold text-gray-900 mr-6">
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
             Total: ${lines.reduce((sum, line) => sum + (line.Quantity || 0) * (line.UnitPrice || 0), 0).toFixed(2)}
           </div>
           <button
