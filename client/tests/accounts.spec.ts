@@ -93,7 +93,7 @@ test.describe('Chart of Accounts', () => {
     const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 5000 }).catch(() => false);
     test.skip(!hasRows, 'No account data to filter');
 
-    const typeHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Type' });
+    const typeHeader = page.locator('.MuiDataGrid-columnHeader[data-field="Type"]');
     await typeHeader.hover();
     const menuButton = typeHeader.locator('.MuiDataGrid-menuIcon button');
     await expect(menuButton).toBeVisible({ timeout: 5000 });
