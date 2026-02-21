@@ -5,6 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import api from '../lib/api';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
 
@@ -113,7 +117,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/purchase-orders')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/purchase-orders')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -121,93 +125,127 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
 
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label htmlFor="PONumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              PO Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="PONumber"
-              type="text"
-              {...register('PONumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              placeholder="PO-001"
-            />
-            {errors.PONumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PONumber.message}</p>}
-          </div>
+          <Controller
+            name="PONumber"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="PO Number"
+                required
+                placeholder="PO-001"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="VendorId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Vendor <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="VendorId"
-              {...register('VendorId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Select a vendor...</option>
-              {vendors?.map((vendor) => (
-                <option key={vendor.Id} value={vendor.Id}>
-                  {vendor.Name}
-                </option>
-              ))}
-            </select>
-            {errors.VendorId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.VendorId.message}</p>}
-          </div>
+          <Controller
+            name="VendorId"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Vendor"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="">Select a vendor...</MenuItem>
+                {vendors?.map((vendor) => (
+                  <MenuItem key={vendor.Id} value={vendor.Id}>
+                    {vendor.Name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
-          <div>
-            <label htmlFor="PODate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              PO Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="PODate"
-              type="date"
-              {...register('PODate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.PODate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PODate.message}</p>}
-          </div>
+          <Controller
+            name="PODate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="PO Date"
+                type="date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="ExpectedDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Expected Delivery Date
-            </label>
-            <input
-              id="ExpectedDate"
-              type="date"
-              {...register('ExpectedDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.ExpectedDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ExpectedDate.message}</p>}
-          </div>
+          <Controller
+            name="ExpectedDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Expected Delivery Date"
+                type="date"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-            <select
-              id="Status"
-              {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
-              <option value="Received">Received</option>
-              <option value="Partial">Partial</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
-          </div>
+          <Controller
+            name="Status"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Status"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="Draft">Draft</MenuItem>
+                <MenuItem value="Sent">Sent</MenuItem>
+                <MenuItem value="Received">Received</MenuItem>
+                <MenuItem value="Partial">Partial</MenuItem>
+                <MenuItem value="Cancelled">Cancelled</MenuItem>
+              </TextField>
+            )}
+          />
         </div>
 
         {/* Notes */}
-        <div>
-          <label htmlFor="Notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
-          <textarea
-            id="Notes"
-            rows={3}
-            {...register('Notes')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            placeholder="Additional notes for this purchase order..."
-          />
-        </div>
+        <Controller
+          name="Notes"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              label="Notes"
+              multiline
+              rows={3}
+              placeholder="Additional notes for this purchase order..."
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
 
         {/* Line Items */}
         <div className="mt-8">
@@ -215,14 +253,15 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Line Items <span className="text-red-500">*</span>
             </h3>
-            <button
+            <Button
               type="button"
+              variant="outlined"
+              size="small"
+              startIcon={<Plus className="w-4 h-4" />}
               onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 })}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
             >
-              <Plus className="w-4 h-4 mr-1" />
               Add Item
-            </button>
+            </Button>
           </div>
 
           <div className="space-y-4">
@@ -242,11 +281,13 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                 }
               };
 
+              const qtyReg = register(`Lines.${index}.Quantity`, { valueAsNumber: true });
+              const priceReg = register(`Lines.${index}.UnitPrice`, { valueAsNumber: true });
+
               return (
-                <div key={field.id} className="bg-gray-50 p-4 rounded-md">
+                <div key={field.id} className="bg-gray-50 p-4 rounded-md dark:bg-gray-700">
                   <div className="flex gap-4 items-start mb-3">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">Product/Service</label>
                       <Controller
                         name={`Lines.${index}.ProductServiceId`}
                         control={control}
@@ -263,63 +304,66 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                   </div>
                   <div className="flex gap-4 items-start">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Description <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        {...register(`Lines.${index}.Description`)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                        placeholder="Item description"
+                      <Controller
+                        name={`Lines.${index}.Description`}
+                        control={control}
+                        render={({ field: descField, fieldState }) => (
+                          <TextField
+                            {...descField}
+                            value={descField.value ?? ''}
+                            label="Description"
+                            required
+                            placeholder="Item description"
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                            size="small"
+                            fullWidth
+                          />
+                        )}
                       />
-                      {errors.Lines?.[index]?.Description && (
-                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Description?.message}</p>
-                      )}
                     </div>
                     <div className="w-24">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Qty <span className="text-red-500">*</span>
-                      </label>
-                      <input
+                      <TextField
+                        {...qtyReg}
+                        inputRef={qtyReg.ref}
                         type="number"
-                        step="0.0001"
-                        min="0.0001"
-                        {...register(`Lines.${index}.Quantity`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        label="Qty"
+                        required
+                        slotProps={{ htmlInput: { step: '0.0001', min: '0.0001' } }}
+                        error={!!errors.Lines?.[index]?.Quantity}
+                        helperText={errors.Lines?.[index]?.Quantity?.message}
+                        size="small"
+                        fullWidth
                       />
-                      {errors.Lines?.[index]?.Quantity && (
-                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Quantity?.message}</p>
-                      )}
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Unit Price <span className="text-red-500">*</span>
-                      </label>
-                      <input
+                      <TextField
+                        {...priceReg}
+                        inputRef={priceReg.ref}
                         type="number"
-                        step="0.01"
-                        min="0"
-                        {...register(`Lines.${index}.UnitPrice`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        label="Unit Price"
+                        required
+                        slotProps={{ htmlInput: { step: '0.01', min: '0' } }}
+                        error={!!errors.Lines?.[index]?.UnitPrice}
+                        helperText={errors.Lines?.[index]?.UnitPrice?.message}
+                        size="small"
+                        fullWidth
                       />
-                      {errors.Lines?.[index]?.UnitPrice && (
-                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.UnitPrice?.message}</p>
-                      )}
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">Amount</label>
-                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium">
+                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium dark:text-gray-300">
                         ${((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0)).toFixed(2)}
                       </div>
                     </div>
-                    <button
-                      type="button"
+                    <IconButton
                       onClick={() => remove(index)}
                       disabled={fields.length === 1}
-                      className="mt-6 text-red-600 hover:text-red-800 disabled:text-gray-300 disabled:cursor-not-allowed"
+                      color="error"
                       title={fields.length === 1 ? 'At least one line item is required' : 'Remove item'}
+                      sx={{ mt: 0.5 }}
                     >
                       <Trash2 className="w-5 h-5" />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               );
@@ -330,24 +374,24 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
           )}
         </div>
 
-        <div className="flex justify-end items-center border-t pt-4">
-          <div className="text-xl font-bold text-gray-900 mr-6">
+        <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
             Total: ${lines.reduce((sum, line) => sum + (line.Quantity || 0) * (line.UnitPrice || 0), 0).toFixed(2)}
           </div>
-          <button
-            type="button"
+          <Button
+            variant="outlined"
             onClick={() => navigate('/purchase-orders')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

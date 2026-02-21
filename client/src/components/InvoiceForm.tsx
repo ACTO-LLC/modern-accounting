@@ -5,6 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Zap, Info, MapPin } from 'lucide-react';
 import { useEffect, ReactNode, useMemo, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import IconButton from '@mui/material/IconButton';
 import CustomerSelector from './CustomerSelector';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
 import api from '../lib/api';
@@ -247,7 +253,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center">
-          <button onClick={() => navigate('/invoices')} className="mr-4 text-gray-500 hover:text-gray-700">
+          <button onClick={() => navigate('/invoices')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
@@ -257,20 +263,24 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
 
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label htmlFor="InvoiceNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Invoice Number</label>
-            <input
-              id="InvoiceNumber"
-              type="text"
-              {...register('InvoiceNumber')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              placeholder="INV-002"
-            />
-            {errors.InvoiceNumber && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.InvoiceNumber.message}</p>}
-          </div>
+          <Controller
+            name="InvoiceNumber"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Invoice Number"
+                required
+                placeholder="INV-002"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
           <div>
-            <label htmlFor="CustomerId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Customer</label>
             <Controller
               name="CustomerId"
               control={control}
@@ -302,79 +312,106 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             )}
           </div>
 
-          <div>
-            <label htmlFor="IssueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Issue Date</label>
-            <input
-              id="IssueDate"
-              type="date"
-              {...register('IssueDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.IssueDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.IssueDate.message}</p>}
-          </div>
+          <Controller
+            name="IssueDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                type="date"
+                label="Issue Date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="DueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
-            <input
-              id="DueDate"
-              type="date"
-              {...register('DueDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
-            {errors.DueDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.DueDate.message}</p>}
-          </div>
+          <Controller
+            name="DueDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                type="date"
+                label="Due Date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-            <select
-              id="Status"
-              {...register('Status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
-              <option value="Paid">Paid</option>
-              <option value="Overdue">Overdue</option>
-            </select>
-            {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
-          </div>
+          <Controller
+            name="Status"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Status"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="Draft">Draft</MenuItem>
+                <MenuItem value="Sent">Sent</MenuItem>
+                <MenuItem value="Paid">Paid</MenuItem>
+                <MenuItem value="Overdue">Overdue</MenuItem>
+              </TextField>
+            )}
+          />
 
-          <div>
-            <label htmlFor="TaxRateId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tax Rate</label>
-            <select
-              id="TaxRateId"
-              {...register('TaxRateId')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">No Tax</option>
-              {taxRates?.map((taxRate) => (
-                <option key={taxRate.Id} value={taxRate.Id}>
-                  {taxRate.Name} ({formatTaxRate(taxRate.Rate)})
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Tax will be applied to taxable line items only
-            </p>
-          </div>
+          <Controller
+            name="TaxRateId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Tax Rate"
+                size="small"
+                fullWidth
+                helperText="Tax will be applied to taxable line items only"
+              >
+                <MenuItem value="">No Tax</MenuItem>
+                {taxRates?.map((taxRate) => (
+                  <MenuItem key={taxRate.Id} value={taxRate.Id}>
+                    {taxRate.Name} ({formatTaxRate(taxRate.Rate)})
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
         </div>
 
         {/* Line Items */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Line Items</h3>
-            <button
+            <Button
               type="button"
+              variant="outlined"
+              size="small"
+              startIcon={<Plus className="w-4 h-4" />}
               onClick={() => {
                 append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true });
                 // Set new line as taxable by default
                 setLineTaxableStatus(prev => ({ ...prev, [fields.length]: true }));
               }}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
             >
-              <Plus className="w-4 h-4 mr-1" />
               Add Item
-            </button>
+            </Button>
           </div>
 
           <div className="space-y-4">
@@ -398,11 +435,14 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
               const lineAmount = (lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0);
               const isTaxable = lineTaxableStatus[index] ?? true;
 
+              const { ref: descRef, ...descRest } = register(`Lines.${index}.Description`);
+              const { ref: qtyRef, ...qtyRest } = register(`Lines.${index}.Quantity`, { valueAsNumber: true });
+              const { ref: priceRef, ...priceRest } = register(`Lines.${index}.UnitPrice`, { valueAsNumber: true });
+
               return (
-                <div key={field.id} className="bg-gray-50 p-4 rounded-md">
+                <div key={field.id} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
                   <div className="flex gap-4 items-start mb-3">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">Product/Service</label>
                       <Controller
                         name={`Lines.${index}.ProductServiceId`}
                         control={control}
@@ -416,62 +456,66 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                         )}
                       />
                     </div>
-                    <div className="flex items-center pt-5">
-                      <input
-                        type="checkbox"
-                        id={`taxable-${index}`}
-                        checked={isTaxable}
-                        onChange={(e) => {
-                          setLineTaxableStatus(prev => ({ ...prev, [index]: e.target.checked }));
-                        }}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    <div className="flex items-center pt-1">
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={isTaxable}
+                            onChange={(e) => {
+                              setLineTaxableStatus(prev => ({ ...prev, [index]: e.target.checked }));
+                            }}
+                            size="small"
+                          />
+                        }
+                        label="Taxable"
+                        slotProps={{ typography: { variant: 'caption' } }}
                       />
-                      <label htmlFor={`taxable-${index}`} className="ml-2 text-xs text-gray-600">
-                        Taxable
-                      </label>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">
                     <div className="flex-grow">
-                      <label className="block text-xs font-medium text-gray-500">Description</label>
-                      <input
-                        {...register(`Lines.${index}.Description`)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                      <TextField
+                        {...descRest}
+                        inputRef={descRef}
+                        label="Description"
                         placeholder="Item description"
+                        error={!!errors.Lines?.[index]?.Description}
+                        helperText={errors.Lines?.[index]?.Description?.message}
+                        size="small"
+                        fullWidth
                       />
-                      {errors.Lines?.[index]?.Description && (
-                        <p className="mt-1 text-xs text-red-600">{errors.Lines[index]?.Description?.message}</p>
-                      )}
                     </div>
                     <div className="w-24">
-                      <label className="block text-xs font-medium text-gray-500">Qty</label>
-                      <input
+                      <TextField
+                        {...qtyRest}
+                        inputRef={qtyRef}
                         type="number"
-                        step="0.01"
-                        {...register(`Lines.${index}.Quantity`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        label="Qty"
+                        size="small"
+                        fullWidth
+                        slotProps={{ htmlInput: { step: '0.01' } }}
                       />
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">Unit Price</label>
-                      <input
+                      <TextField
+                        {...priceRest}
+                        inputRef={priceRef}
                         type="number"
-                        step="0.01"
-                        {...register(`Lines.${index}.UnitPrice`, { valueAsNumber: true })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        label="Unit Price"
+                        size="small"
+                        fullWidth
+                        slotProps={{ htmlInput: { step: '0.01' } }}
                       />
                     </div>
                     <div className="w-32">
-                      <label className="block text-xs font-medium text-gray-500">Amount</label>
-                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium">
+                      <div className="mt-1 py-2 px-3 text-sm text-gray-700 dark:text-gray-300 font-medium">
                         ${lineAmount.toFixed(2)}
                         {!isTaxable && selectedTaxRate && (
-                          <span className="ml-1 text-xs text-gray-400">(no tax)</span>
+                          <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">(no tax)</span>
                         )}
                       </div>
                     </div>
-                    <button
-                      type="button"
+                    <IconButton
                       onClick={() => {
                         remove(index);
                         // Update taxable status indices
@@ -488,10 +532,12 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                           return newStatus;
                         });
                       }}
-                      className="mt-6 text-red-600 hover:text-red-800"
+                      color="error"
+                      size="small"
+                      sx={{ mt: 1 }}
                     >
                       <Trash2 className="w-5 h-5" />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               );
@@ -501,32 +547,32 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
         </div>
 
         {/* Totals Section */}
-        <div className="border-t pt-4">
+        <div className="border-t dark:border-gray-600 pt-4">
           <div className="flex justify-end">
             <div className="w-72 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal:</span>
-                <span className="font-medium text-gray-900">${calculations.subtotal.toFixed(2)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">${calculations.subtotal.toFixed(2)}</span>
               </div>
               {selectedTaxRate && (
                 <>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-400">
                       Tax ({selectedTaxRate.Name} - {formatTaxRate(selectedTaxRate.Rate)}):
                     </span>
-                    <span className="font-medium text-gray-900">${calculations.taxAmount.toFixed(2)}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">${calculations.taxAmount.toFixed(2)}</span>
                   </div>
                   {calculations.taxableAmount !== calculations.subtotal && (
-                    <div className="flex justify-between text-xs text-gray-500">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                       <span>Taxable amount:</span>
                       <span>${calculations.taxableAmount.toFixed(2)}</span>
                     </div>
                   )}
                 </>
               )}
-              <div className="flex justify-between text-lg font-bold border-t pt-2">
-                <span className="text-gray-900">Total:</span>
-                <span className="text-gray-900">${calculations.total.toFixed(2)}</span>
+              <div className="flex justify-between text-lg font-bold border-t dark:border-gray-600 pt-2">
+                <span className="text-gray-900 dark:text-gray-100">Total:</span>
+                <span className="text-gray-900 dark:text-gray-100">${calculations.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -536,20 +582,20 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
         {settings.invoicePostingMode === 'simple' && (
           <div className={`flex items-center gap-2 p-3 rounded-lg ${
             willAutoPost
-              ? 'bg-amber-50 border border-amber-200'
-              : 'bg-gray-50 border border-gray-200'
+              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-700'
+              : 'bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-600'
           }`}>
             {willAutoPost ? (
               <>
                 <Zap className="h-4 w-4 text-amber-500" />
-                <span className="text-sm text-amber-700">
+                <span className="text-sm text-amber-700 dark:text-amber-400">
                   This invoice will <strong>post to your books</strong> when saved (AR + Revenue entries).
                 </span>
               </>
             ) : (
               <>
-                <Info className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
+                <Info className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   Draft invoices don't affect your books until the status is changed.
                 </span>
               </>
@@ -557,21 +603,21 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
           </div>
         )}
 
-        <div className="flex justify-end items-center border-t pt-4">
-          <button
-            type="button"
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <Button
+            variant="outlined"
             onClick={() => navigate('/invoices')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

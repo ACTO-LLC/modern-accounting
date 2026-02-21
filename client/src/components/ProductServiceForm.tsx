@@ -1,10 +1,16 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import InputAdornment from '@mui/material/InputAdornment';
+import Button from '@mui/material/Button';
 
 export const productServiceSchema = z.object({
   Name: z.string().min(1, 'Name is required'),
@@ -44,9 +50,21 @@ export default function ProductServiceForm({ initialValues, onSubmit, title, isS
   const expenseAccounts = accounts?.filter(a => a.Type === 'Expense') || [];
   const assetAccounts = accounts?.filter(a => a.Type === 'Asset') || [];
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<ProductServiceFormData>({
+  const { control, handleSubmit, watch } = useForm<ProductServiceFormData>({
     resolver: zodResolver(productServiceSchema),
-    defaultValues: { ...initialValues, Type: initialValues?.Type || 'Service', Taxable: initialValues?.Taxable ?? true, Status: initialValues?.Status || 'Active' }
+    defaultValues: {
+      Name: '',
+      SKU: '',
+      Description: '',
+      Category: '',
+      IncomeAccountId: '',
+      ExpenseAccountId: '',
+      InventoryAssetAccountId: '',
+      ...initialValues,
+      Type: initialValues?.Type || 'Service',
+      Taxable: initialValues?.Taxable ?? true,
+      Status: initialValues?.Status || 'Active',
+    }
   });
 
   const selectedType = watch('Type');
@@ -54,109 +72,262 @@ export default function ProductServiceForm({ initialValues, onSubmit, title, isS
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/products-services')} className="mr-4 text-gray-500 hover:text-gray-700" aria-label="Back to products and services"><ArrowLeft className="w-6 h-6" /></button>
+        <button onClick={() => navigate('/products-services')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" aria-label="Back to products and services">
+          <ArrowLeft className="w-6 h-6" />
+        </button>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
+
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
-        <div>
-          <label htmlFor="Name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name *</label>
-          <input id="Name" type="text" {...register('Name')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-          {errors.Name && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Name.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="Type" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type *</label>
-          <select id="Type" {...register('Type')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-            <option value="Service">Service</option>
-            <option value="NonInventory">Non-Inventory Product</option>
-            <option value="Inventory">Inventory Product</option>
-          </select>
-          {errors.Type && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Type.message}</p>}
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {selectedType === 'Service' && 'Services you provide to customers (e.g., consulting, labor)'}
-            {selectedType === 'NonInventory' && 'Products you sell but do not track inventory for'}
-            {selectedType === 'Inventory' && 'Products you buy and sell with inventory tracking'}
-          </p>
-        </div>
-        <div>
-          <label htmlFor="SKU" className="block text-sm font-medium text-gray-700 dark:text-gray-300">SKU / Item Code</label>
-          <input id="SKU" type="text" {...register('SKU')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-        </div>
-        <div>
-          <label htmlFor="Category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-          <input id="Category" type="text" {...register('Category')} placeholder="e.g., Professional Services, Hardware" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-        </div>
-        <div>
-          <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-          <textarea id="Description" rows={3} {...register('Description')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-        </div>
-        <div className="border-t pt-6">
+        <Controller
+          name="Name"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Name"
+              required
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
+
+        <Controller
+          name="Type"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              select
+              label="Type"
+              required
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message || (
+                field.value === 'Service' ? 'Services you provide to customers (e.g., consulting, labor)' :
+                field.value === 'NonInventory' ? 'Products you sell but do not track inventory for' :
+                field.value === 'Inventory' ? 'Products you buy and sell with inventory tracking' : undefined
+              )}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="Service">Service</MenuItem>
+              <MenuItem value="NonInventory">Non-Inventory Product</MenuItem>
+              <MenuItem value="Inventory">Inventory Product</MenuItem>
+            </TextField>
+          )}
+        />
+
+        <Controller
+          name="SKU"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              label="SKU / Item Code"
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
+
+        <Controller
+          name="Category"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              label="Category"
+              placeholder="e.g., Professional Services, Hardware"
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
+
+        <Controller
+          name="Description"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              label="Description"
+              multiline
+              rows={3}
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
+
+        {/* Pricing Section */}
+        <div className="border-t pt-6 dark:border-gray-600">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Pricing</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="SalesPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sales Price</label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-gray-500 dark:text-gray-400 sm:text-sm">$</span></div>
-                <input id="SalesPrice" type="number" step="0.01" {...register('SalesPrice')} className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-              </div>
-              {errors.SalesPrice && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.SalesPrice.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="PurchaseCost" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Purchase Cost</label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-gray-500 dark:text-gray-400 sm:text-sm">$</span></div>
-                <input id="PurchaseCost" type="number" step="0.01" {...register('PurchaseCost')} className="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-              </div>
-              {errors.PurchaseCost && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.PurchaseCost.message}</p>}
-            </div>
+            <Controller
+              name="SalesPrice"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Sales Price"
+                  type="number"
+                  slotProps={{
+                    htmlInput: { step: '0.01', min: '0' },
+                    input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                  }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="PurchaseCost"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Purchase Cost"
+                  type="number"
+                  slotProps={{
+                    htmlInput: { step: '0.01', min: '0' },
+                    input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                  }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
           </div>
         </div>
-        <div className="border-t pt-6">
+
+        {/* Accounting Section */}
+        <div className="border-t pt-6 dark:border-gray-600">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Accounting</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="IncomeAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Income Account</label>
-              <select id="IncomeAccountId" {...register('IncomeAccountId')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                <option value="">Select an account...</option>
-                {incomeAccounts.map((account) => (<option key={account.Id} value={account.Id}>{account.Code} - {account.Name}</option>))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="ExpenseAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Expense Account</label>
-              <select id="ExpenseAccountId" {...register('ExpenseAccountId')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                <option value="">Select an account...</option>
-                {expenseAccounts.map((account) => (<option key={account.Id} value={account.Id}>{account.Code} - {account.Name}</option>))}
-              </select>
-            </div>
+            <Controller
+              name="IncomeAccountId"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Income Account"
+                  size="small"
+                  fullWidth
+                >
+                  <MenuItem value="">Select an account...</MenuItem>
+                  {incomeAccounts.map((account) => (
+                    <MenuItem key={account.Id} value={account.Id}>{account.Code} - {account.Name}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+            <Controller
+              name="ExpenseAccountId"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Expense Account"
+                  size="small"
+                  fullWidth
+                >
+                  <MenuItem value="">Select an account...</MenuItem>
+                  {expenseAccounts.map((account) => (
+                    <MenuItem key={account.Id} value={account.Id}>{account.Code} - {account.Name}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
             {selectedType === 'Inventory' && (
-              <div className="col-span-2">
-                <label htmlFor="InventoryAssetAccountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Inventory Asset Account</label>
-                <select id="InventoryAssetAccountId" {...register('InventoryAssetAccountId')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                  <option value="">Select an account...</option>
-                  {assetAccounts.map((account) => (<option key={account.Id} value={account.Id}>{account.Code} - {account.Name}</option>))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Account used to track inventory value on the balance sheet</p>
-              </div>
+              <Controller
+                name="InventoryAssetAccountId"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    select
+                    label="Inventory Asset Account"
+                    helperText="Account used to track inventory value on the balance sheet"
+                    size="small"
+                    fullWidth
+                    className="col-span-2"
+                  >
+                    <MenuItem value="">Select an account...</MenuItem>
+                    {assetAccounts.map((account) => (
+                      <MenuItem key={account.Id} value={account.Id}>{account.Code} - {account.Name}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
             )}
           </div>
         </div>
-        <div className="border-t pt-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center">
-              <input id="Taxable" type="checkbox" {...register('Taxable')} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-              <label htmlFor="Taxable" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">Taxable</label>
-            </div>
-            <div>
-              <label htmlFor="Status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-              <select id="Status" {...register('Status')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
+
+        {/* Status & Taxable */}
+        <div className="border-t pt-6 dark:border-gray-600">
+          <div className="grid grid-cols-2 gap-4 items-center">
+            <Controller
+              name="Taxable"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox {...field} checked={field.value ?? false} />}
+                  label="Taxable"
+                />
+              )}
+            />
+            <Controller
+              name="Status"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Status"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                >
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
+                </TextField>
+              )}
+            />
           </div>
         </div>
-        <div className="flex justify-end items-center border-t pt-4">
-          <button type="button" onClick={() => navigate('/products-services')} className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
-          <button type="submit" disabled={isSubmitting} className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50">{isSubmitting ? 'Saving...' : submitButtonText}</button>
+
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <Button variant="outlined" onClick={() => navigate('/products-services')} sx={{ mr: 1.5 }}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : submitButtonText}
+          </Button>
         </div>
       </form>
     </div>
