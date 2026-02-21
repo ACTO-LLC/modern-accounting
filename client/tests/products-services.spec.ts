@@ -46,6 +46,15 @@ test.describe('Products & Services Management', () => {
     await expect(page.locator('#Name')).toHaveValue(updatedName);
   });
 
+  test('should sort products/services by clicking column header', async ({ page }) => {
+    await page.goto('/products-services');
+    await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    const nameHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Name' });
+    await nameHeader.click();
+    await expect(nameHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
+  });
+
   test('should filter by type using DataGrid column filter', async ({ page }) => {
     await page.goto('/products-services');
 

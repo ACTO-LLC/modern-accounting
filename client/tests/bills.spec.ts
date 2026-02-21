@@ -162,6 +162,19 @@ test.describe('Bills Management', () => {
     await expect(page).toHaveURL('/bills');
   });
 
+  test('should sort bills by clicking column header', async ({ page }) => {
+    await page.goto('/bills');
+    await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    const billHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Bill #' });
+    await billHeader.click();
+    await expect(billHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
+
+    // Click again to reverse sort
+    await billHeader.click();
+    await expect(billHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible();
+  });
+
   test('should filter bills using DataGrid column filter', async ({ page }) => {
     await page.goto('/bills');
 
