@@ -3,6 +3,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import InputAdornment from '@mui/material/InputAdornment';
 import AddressAutocomplete, { AddressSuggestion } from './AddressAutocomplete';
 import { US_STATES } from './AddressFields';
 import PlaidBankVerification from './PlaidBankVerification';
@@ -93,17 +97,36 @@ export default function EmployeeForm({
   bankVerifiedAt,
 }: EmployeeFormProps) {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors }, watch, control, setValue } = useForm<EmployeeFormData>({
+  const { handleSubmit, watch, control, setValue } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
+      EmployeeNumber: '',
+      FirstName: '',
+      LastName: '',
+      Email: '',
+      Phone: '',
+      SSNLast4: '',
+      DateOfBirth: '',
+      HireDate: '',
+      TerminationDate: '',
       PayType: 'Hourly',
+      PayRate: 0,
       PayFrequency: 'Biweekly',
       FederalFilingStatus: 'Single',
       FederalAllowances: 0,
+      StateCode: '',
+      StateFilingStatus: '',
       StateAllowances: 0,
+      BankRoutingNumber: '',
+      BankAccountNumber: '',
+      BankAccountType: '',
+      Address: '',
+      City: '',
+      State: '',
+      ZipCode: '',
       Status: 'Active',
-      ...initialValues
-    }
+      ...initialValues,
+    },
   });
 
   // Handle address selection from autocomplete
@@ -115,8 +138,6 @@ export default function EmployeeForm({
 
   const payType = watch('PayType');
 
-  const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white";
-  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300";
   const sectionClass = "bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-4";
   const sectionTitleClass = "text-lg font-medium text-gray-900 dark:text-white border-b pb-2 mb-4 dark:border-gray-600";
 
@@ -134,34 +155,102 @@ export default function EmployeeForm({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Personal Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="FirstName" className={labelClass}>First Name *</label>
-              <input id="FirstName" type="text" {...register('FirstName')} className={inputClass} />
-              {errors.FirstName && <p className="mt-1 text-sm text-red-600">{errors.FirstName.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="LastName" className={labelClass}>Last Name *</label>
-              <input id="LastName" type="text" {...register('LastName')} className={inputClass} />
-              {errors.LastName && <p className="mt-1 text-sm text-red-600">{errors.LastName.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="Email" className={labelClass}>Email</label>
-              <input id="Email" type="email" {...register('Email')} className={inputClass} />
-              {errors.Email && <p className="mt-1 text-sm text-red-600">{errors.Email.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="Phone" className={labelClass}>Phone</label>
-              <input id="Phone" type="text" {...register('Phone')} className={inputClass} placeholder="(555) 123-4567" />
-            </div>
-            <div>
-              <label htmlFor="SSNLast4" className={labelClass}>SSN (Last 4 Digits)</label>
-              <input id="SSNLast4" type="text" maxLength={4} {...register('SSNLast4')} className={inputClass} placeholder="1234" />
-              {errors.SSNLast4 && <p className="mt-1 text-sm text-red-600">{errors.SSNLast4.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="DateOfBirth" className={labelClass}>Date of Birth</label>
-              <input id="DateOfBirth" type="date" {...register('DateOfBirth')} className={inputClass} />
-            </div>
+            <Controller
+              name="FirstName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="First Name"
+                  required
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="LastName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="Last Name"
+                  required
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="Email"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Email"
+                  type="email"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="Phone"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Phone"
+                  placeholder="(555) 123-4567"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="SSNLast4"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="SSN (Last 4 Digits)"
+                  placeholder="1234"
+                  slotProps={{ htmlInput: { maxLength: 4 } }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="DateOfBirth"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Date of Birth"
+                  type="date"
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
           </div>
         </div>
 
@@ -169,28 +258,76 @@ export default function EmployeeForm({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Employment Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="EmployeeNumber" className={labelClass}>Employee Number *</label>
-              <input id="EmployeeNumber" type="text" {...register('EmployeeNumber')} className={inputClass} placeholder="EMP001" />
-              {errors.EmployeeNumber && <p className="mt-1 text-sm text-red-600">{errors.EmployeeNumber.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="Status" className={labelClass}>Status</label>
-              <select id="Status" {...register('Status')} className={inputClass}>
-                {EMPLOYEE_STATUSES.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="HireDate" className={labelClass}>Hire Date *</label>
-              <input id="HireDate" type="date" {...register('HireDate')} className={inputClass} />
-              {errors.HireDate && <p className="mt-1 text-sm text-red-600">{errors.HireDate.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="TerminationDate" className={labelClass}>Termination Date</label>
-              <input id="TerminationDate" type="date" {...register('TerminationDate')} className={inputClass} />
-            </div>
+            <Controller
+              name="EmployeeNumber"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="Employee Number"
+                  required
+                  placeholder="EMP001"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="Status"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Status"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                >
+                  {EMPLOYEE_STATUSES.map(s => (
+                    <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+            <Controller
+              name="HireDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="Hire Date"
+                  required
+                  type="date"
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="TerminationDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Termination Date"
+                  type="date"
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
           </div>
         </div>
 
@@ -198,39 +335,71 @@ export default function EmployeeForm({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Compensation</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="PayType" className={labelClass}>Pay Type *</label>
-              <select id="PayType" {...register('PayType')} className={inputClass}>
-                {PAY_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="PayRate" className={labelClass}>
-                {payType === 'Hourly' ? 'Hourly Rate *' : 'Annual Salary *'}
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">$</span>
-                <input
-                  id="PayRate"
+            <Controller
+              name="PayType"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Pay Type"
+                  required
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                >
+                  {PAY_TYPES.map(t => (
+                    <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+            <Controller
+              name="PayRate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label={payType === 'Hourly' ? 'Hourly Rate' : 'Annual Salary'}
+                  required
                   type="number"
-                  step="0.01"
-                  {...register('PayRate')}
-                  className={`${inputClass} pl-7`}
                   placeholder={payType === 'Hourly' ? '25.00' : '52000.00'}
+                  slotProps={{
+                    input: {
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    },
+                    htmlInput: { step: '0.01', min: '0' },
+                  }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
                 />
-              </div>
-              {errors.PayRate && <p className="mt-1 text-sm text-red-600">{errors.PayRate.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="PayFrequency" className={labelClass}>Pay Frequency *</label>
-              <select id="PayFrequency" {...register('PayFrequency')} className={inputClass}>
-                {PAY_FREQUENCIES.map(f => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            </div>
+              )}
+            />
+            <Controller
+              name="PayFrequency"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Pay Frequency"
+                  required
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                >
+                  {PAY_FREQUENCIES.map(f => (
+                    <MenuItem key={f.value} value={f.value}>{f.label}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
           </div>
         </div>
 
@@ -241,44 +410,107 @@ export default function EmployeeForm({
             {/* Federal Tax */}
             <div className="space-y-4">
               <h3 className="text-md font-medium text-gray-800 dark:text-gray-200">Federal Tax</h3>
-              <div>
-                <label htmlFor="FederalFilingStatus" className={labelClass}>Filing Status *</label>
-                <select id="FederalFilingStatus" {...register('FederalFilingStatus')} className={inputClass}>
-                  {FILING_STATUSES.map(s => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="FederalAllowances" className={labelClass}>Allowances</label>
-                <input id="FederalAllowances" type="number" min="0" {...register('FederalAllowances')} className={inputClass} />
-              </div>
+              <Controller
+                name="FederalFilingStatus"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    select
+                    label="Filing Status"
+                    required
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  >
+                    {FILING_STATUSES.map(s => (
+                      <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="FederalAllowances"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    label="Allowances"
+                    type="number"
+                    slotProps={{ htmlInput: { min: '0' } }}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  />
+                )}
+              />
             </div>
 
             {/* State Tax */}
             <div className="space-y-4">
               <h3 className="text-md font-medium text-gray-800 dark:text-gray-200">State Tax</h3>
-              <div>
-                <label htmlFor="StateCode" className={labelClass}>Work State</label>
-                <select id="StateCode" {...register('StateCode')} className={inputClass}>
-                  {US_STATES.map(s => (
-                    <option key={s.code} value={s.code}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="StateFilingStatus" className={labelClass}>State Filing Status</label>
-                <select id="StateFilingStatus" {...register('StateFilingStatus')} className={inputClass}>
-                  <option value="">Use Federal Status</option>
-                  {FILING_STATUSES.map(s => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="StateAllowances" className={labelClass}>State Allowances</label>
-                <input id="StateAllowances" type="number" min="0" {...register('StateAllowances')} className={inputClass} />
-              </div>
+              <Controller
+                name="StateCode"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    select
+                    label="Work State"
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  >
+                    {US_STATES.map(s => (
+                      <MenuItem key={s.code} value={s.code}>{s.name}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="StateFilingStatus"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    select
+                    label="State Filing Status"
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Use Federal Status</MenuItem>
+                    {FILING_STATUSES.map(s => (
+                      <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="StateAllowances"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    label="State Allowances"
+                    type="number"
+                    slotProps={{ htmlInput: { min: '0' } }}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  />
+                )}
+              />
             </div>
           </div>
         </div>
@@ -303,22 +535,59 @@ export default function EmployeeForm({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="BankRoutingNumber" className={labelClass}>Routing Number</label>
-              <input id="BankRoutingNumber" type="text" maxLength={9} {...register('BankRoutingNumber')} className={inputClass} placeholder="123456789" />
-            </div>
-            <div>
-              <label htmlFor="BankAccountNumber" className={labelClass}>Account Number</label>
-              <input id="BankAccountNumber" type="text" {...register('BankAccountNumber')} className={inputClass} placeholder="************1234" />
-            </div>
-            <div>
-              <label htmlFor="BankAccountType" className={labelClass}>Account Type</label>
-              <select id="BankAccountType" {...register('BankAccountType')} className={inputClass}>
-                {BANK_ACCOUNT_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
+            <Controller
+              name="BankRoutingNumber"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Routing Number"
+                  placeholder="123456789"
+                  slotProps={{ htmlInput: { maxLength: 9 } }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="BankAccountNumber"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Account Number"
+                  placeholder="************1234"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="BankAccountType"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  select
+                  label="Account Type"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                >
+                  {BANK_ACCOUNT_TYPES.map(t => (
+                    <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
           </div>
 
           {!employeeId && (
@@ -335,56 +604,90 @@ export default function EmployeeForm({
             <Controller
               name="Address"
               control={control}
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <AddressAutocomplete
                   id="Address"
                   label="Street Address"
-                  labelClassName={labelClass}
-                  className={inputClass}
                   value={field.value || ''}
                   onChange={field.onChange}
                   onAddressSelect={handleAddressSelect}
-                  error={errors.Address?.message}
+                  error={fieldState.error?.message}
                 />
               )}
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="City" className={labelClass}>City</label>
-                <input id="City" type="text" {...register('City')} className={inputClass} />
-              </div>
-              <div>
-                <label htmlFor="State" className={labelClass}>State</label>
-                <select id="State" {...register('State')} className={inputClass}>
-                  {US_STATES.map(s => (
-                    <option key={s.code} value={s.code}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="ZipCode" className={labelClass}>ZIP Code</label>
-                <input id="ZipCode" type="text" maxLength={10} {...register('ZipCode')} className={inputClass} placeholder="12345" />
-              </div>
+              <Controller
+                name="City"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    label="City"
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="State"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    select
+                    label="State"
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  >
+                    {US_STATES.map(s => (
+                      <MenuItem key={s.code} value={s.code}>{s.name}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="ZipCode"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    label="ZIP Code"
+                    placeholder="12345"
+                    slotProps={{ htmlInput: { maxLength: 10 } }}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  />
+                )}
+              />
             </div>
           </div>
         </div>
 
         {/* Form Actions */}
         <div className="flex justify-end items-center pt-4">
-          <button
-            type="button"
+          <Button
+            variant="outlined"
             onClick={() => navigate('/employees')}
-            className="mr-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={isSubmitting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : submitButtonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

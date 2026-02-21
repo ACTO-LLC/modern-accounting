@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Save, TestTube, Loader2, CheckCircle, XCircle, Eye, EyeOff, Info } from 'lucide-react';
+import TextField from '@mui/material/TextField';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Button from '@mui/material/Button';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
 import { emailSettingsApi, EmailSettings } from '../lib/emailApi';
 
 const emailSettingsSchema = z.object({
@@ -56,7 +62,7 @@ export default function EmailSettingsForm() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<EmailSettingsFormData>({
+  const { control, handleSubmit, reset } = useForm<EmailSettingsFormData>({
     resolver: zodResolver(emailSettingsSchema),
     defaultValues: {
       SmtpHost: '',
@@ -168,125 +174,163 @@ export default function EmailSettingsForm() {
       {/* SMTP Server Settings */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label htmlFor="SmtpHost" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-            SMTP Host *
-          </label>
-          <input
-            type="text"
-            id="SmtpHost"
-            placeholder="smtp.example.com"
-            {...register('SmtpHost')}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          <Controller
+            name="SmtpHost"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="SMTP Host"
+                required
+                placeholder="smtp.example.com"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
           />
-          {errors.SmtpHost && <p className="mt-1 text-sm text-red-600">{errors.SmtpHost.message}</p>}
         </div>
 
-        <div>
-          <label htmlFor="SmtpPort" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-            SMTP Port *
-          </label>
-          <input
-            type="number"
-            id="SmtpPort"
-            {...register('SmtpPort')}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          {errors.SmtpPort && <p className="mt-1 text-sm text-red-600">{errors.SmtpPort.message}</p>}
-        </div>
+        <Controller
+          name="SmtpPort"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+              label="SMTP Port"
+              type="number"
+              required
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
 
         <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="SmtpSecure"
-            {...register('SmtpSecure')}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          <Controller
+            name="SmtpSecure"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={<Checkbox {...field} checked={field.value ?? false} />}
+                label="Use TLS/SSL (recommended)"
+              />
+            )}
           />
-          <label htmlFor="SmtpSecure" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-            Use TLS/SSL (recommended)
-          </label>
         </div>
 
-        <div>
-          <label htmlFor="SmtpUsername" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-            Username *
-          </label>
-          <input
-            type="text"
-            id="SmtpUsername"
-            placeholder="your-email@example.com"
-            {...register('SmtpUsername')}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          {errors.SmtpUsername && <p className="mt-1 text-sm text-red-600">{errors.SmtpUsername.message}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="SmtpPassword" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-            Password {hasExistingPassword ? '(leave blank to keep current)' : '*'}
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              id="SmtpPassword"
-              placeholder={hasExistingPassword ? '••••••••' : 'Enter password'}
-              {...register('SmtpPassword')}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        <Controller
+          name="SmtpUsername"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Username"
+              required
+              placeholder="your-email@example.com"
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
+          )}
+        />
+
+        <Controller
+          name="SmtpPassword"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              label={hasExistingPassword ? 'Password (leave blank to keep current)' : 'Password'}
+              type={showPassword ? 'text' : 'password'}
+              placeholder={hasExistingPassword ? '........' : 'Enter password'}
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          )}
+        />
       </div>
 
       {/* Sender Settings */}
       <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
         <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200 mb-4">Sender Information</h3>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label htmlFor="FromName" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-              From Name *
-            </label>
-            <input
-              type="text"
-              id="FromName"
-              placeholder="Your Company Name"
-              {...register('FromName')}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            {errors.FromName && <p className="mt-1 text-sm text-red-600">{errors.FromName.message}</p>}
-          </div>
+          <Controller
+            name="FromName"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="From Name"
+                required
+                placeholder="Your Company Name"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="FromEmail" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-              From Email *
-            </label>
-            <input
-              type="email"
-              id="FromEmail"
-              placeholder="billing@example.com"
-              {...register('FromEmail')}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            {errors.FromEmail && <p className="mt-1 text-sm text-red-600">{errors.FromEmail.message}</p>}
-          </div>
+          <Controller
+            name="FromEmail"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="From Email"
+                type="email"
+                required
+                placeholder="billing@example.com"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
           <div className="sm:col-span-2">
-            <label htmlFor="ReplyToEmail" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-              Reply-To Email (optional)
-            </label>
-            <input
-              type="email"
-              id="ReplyToEmail"
-              placeholder="support@example.com"
-              {...register('ReplyToEmail')}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            <Controller
+              name="ReplyToEmail"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Reply-To Email (optional)"
+                  type="email"
+                  placeholder="support@example.com"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
             />
-            {errors.ReplyToEmail && <p className="mt-1 text-sm text-red-600">{errors.ReplyToEmail.message}</p>}
           </div>
         </div>
       </div>
@@ -296,7 +340,7 @@ export default function EmailSettingsForm() {
         <div className="flex items-start justify-between mb-4">
           <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200">Email Template</h3>
           <div className="relative group">
-            <button type="button" className="text-gray-400 hover:text-gray-600">
+            <button type="button" className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400">
               <Info className="h-5 w-5" />
             </button>
             <div className="absolute right-0 w-64 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
@@ -313,31 +357,44 @@ export default function EmailSettingsForm() {
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label htmlFor="EmailSubjectTemplate" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-              Subject Template *
-            </label>
-            <input
-              type="text"
-              id="EmailSubjectTemplate"
-              {...register('EmailSubjectTemplate')}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            {errors.EmailSubjectTemplate && <p className="mt-1 text-sm text-red-600">{errors.EmailSubjectTemplate.message}</p>}
-          </div>
+          <Controller
+            name="EmailSubjectTemplate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Subject Template"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="EmailBodyTemplate" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-              Body Template *
-            </label>
-            <textarea
-              id="EmailBodyTemplate"
-              rows={10}
-              {...register('EmailBodyTemplate')}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            {errors.EmailBodyTemplate && <p className="mt-1 text-sm text-red-600">{errors.EmailBodyTemplate.message}</p>}
-          </div>
+          <Controller
+            name="EmailBodyTemplate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Body Template"
+                required
+                multiline
+                rows={10}
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{
+                  input: {
+                    sx: { fontFamily: 'monospace' },
+                  },
+                }}
+              />
+            )}
+          />
         </div>
       </div>
 
@@ -368,31 +425,23 @@ export default function EmailSettingsForm() {
 
       {/* Actions */}
       <div className="flex justify-end gap-3">
-        <button
+        <Button
           type="button"
+          variant="outlined"
           onClick={handleTestConnection}
           disabled={isTesting}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          startIcon={isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <TestTube className="h-4 w-4" />}
         >
-          {isTesting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <TestTube className="h-4 w-4" />
-          )}
           {isTesting ? 'Testing...' : 'Test Connection'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
+          variant="contained"
           disabled={isSaving}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          startIcon={isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         >
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
           {isSaving ? 'Saving...' : 'Save Settings'}
-        </button>
+        </Button>
       </div>
     </form>
   );
