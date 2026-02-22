@@ -48,8 +48,6 @@ test.describe('Expenses', () => {
   });
 
   test('should edit an existing expense', async ({ page }) => {
-    const timestamp = Date.now();
-
     // Create first
     await page.goto('/expenses/new');
     await page.getByLabel('Amount').fill('50.00');

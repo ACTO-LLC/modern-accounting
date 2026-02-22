@@ -48,7 +48,7 @@ test.describe('Invoice Posting Mode Settings', () => {
 
     // Check that warning message appears (only when mode differs from saved)
     // The warning shows when changed from the saved value
-    const hasWarning = await page.getByText('Changing this setting only affects new transactions').isVisible({ timeout: 3000 }).catch(() => false);
+    await page.getByText('Changing this setting only affects new transactions').isVisible({ timeout: 3000 }).catch(() => false);
     // Warning may or may not show depending on what was already saved in DB
 
     // Save settings

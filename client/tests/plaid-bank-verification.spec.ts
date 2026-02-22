@@ -232,7 +232,7 @@ test.describe('Plaid Bank Verification', () => {
         { timeout: 15000 }
       );
       await page.getByRole('button', { name: /Create Pay Run|Run Payroll|Save/i }).click();
-      const payRunResp = await createPayRunPromise;
+      await createPayRunPromise;
 
       // Navigate to pay run detail if not already there
       if (!page.url().match(/\/payruns\/.+/)) {

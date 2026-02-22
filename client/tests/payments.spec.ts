@@ -4,8 +4,6 @@ test.describe('Receive Payments', () => {
   // --- FORM TESTS ---
 
   test('should create a new payment applied to an invoice', async ({ page }) => {
-    const timestamp = Date.now();
-
     await page.goto('/payments/new');
     await expect(page.getByRole('heading', { name: /Receive Payment/i })).toBeVisible();
 

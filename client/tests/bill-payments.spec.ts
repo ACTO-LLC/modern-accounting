@@ -4,8 +4,6 @@ test.describe('Bill Payments', () => {
   // --- FORM TESTS ---
 
   test('should create a new bill payment', async ({ page }) => {
-    const timestamp = Date.now();
-
     await page.goto('/bill-payments/new');
     await expect(page.getByRole('heading', { name: /Pay Bills/i })).toBeVisible();
 
