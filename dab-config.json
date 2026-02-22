@@ -1015,6 +1015,47 @@
                 "UpdatedAt": "UpdatedAt"
             }
         },
+        "timeentries_write": {
+            "source": "dbo.TimeEntries",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProjectId": "ProjectId",
+                "CustomerId": "CustomerId",
+                "EmployeeName": "EmployeeName",
+                "EntryDate": "EntryDate",
+                "Hours": "Hours",
+                "HourlyRate": "HourlyRate",
+                "Description": "Description",
+                "IsBillable": "IsBillable",
+                "Status": "Status",
+                "InvoiceLineId": "InvoiceLineId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
         "classes": {
             "source": "dbo.Classes",
             "permissions": [

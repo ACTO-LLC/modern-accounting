@@ -219,10 +219,10 @@ export interface TimeEntryInput {
   EmployeeName: string;
   EntryDate: string;
   Hours: number;
-  HourlyRate?: number;
-  Description?: string;
-  IsBillable?: boolean;
-  Status?: 'Pending' | 'Approved' | 'Invoiced';
+  HourlyRate?: number | null;
+  Description?: string | null;
+  IsBillable?: boolean | null;
+  Status?: 'Pending' | 'Approved' | 'Invoiced' | null;
 }
 
 // Customer Type (for reference)
@@ -290,17 +290,17 @@ export const timeEntriesApi = {
   },
 
   create: async (entry: TimeEntryInput): Promise<TimeEntry> => {
-    const response = await api.post('/timeentries', entry);
+    const response = await api.post('/timeentries_write', entry);
     return response.data;
   },
 
   update: async (id: string, entry: Partial<TimeEntryInput>): Promise<TimeEntry> => {
-    const response = await api.patch(`/timeentries/Id/${id}`, entry);
+    const response = await api.patch(`/timeentries_write/Id/${id}`, entry);
     return response.data;
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/timeentries/Id/${id}`);
+    await api.delete(`/timeentries_write/Id/${id}`);
   },
 };
 
@@ -313,6 +313,34 @@ export const customersApi = {
 
   getById: async (id: string): Promise<Customer> => {
     const response = await api.get(`/customers/Id/${id}`);
+    return response.data;
+  },
+};
+
+// Employee Type
+export interface Employee {
+  Id: string;
+  EmployeeNumber: string;
+  FirstName: string;
+  LastName: string;
+  FullName: string;
+  Email?: string;
+  Phone?: string;
+  Status: string;
+  HireDate: string;
+  PayType: string;
+  PayRate: number;
+}
+
+// Employees API
+export const employeesApi = {
+  getAll: async (): Promise<Employee[]> => {
+    const response = await api.get('/employees');
+    return response.data.value;
+  },
+
+  getById: async (id: string): Promise<Employee> => {
+    const response = await api.get(`/employees/Id/${id}`);
     return response.data;
   },
 };

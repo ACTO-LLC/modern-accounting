@@ -1,19 +1,22 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ArrowLeft } from 'lucide-react';
-import { timeEntriesApi, projectsApi, customersApi, Project, Customer, TimeEntryInput } from '../lib/api';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import { timeEntriesApi, projectsApi, customersApi, employeesApi, Project, Customer, Employee, TimeEntryInput } from '../lib/api';
 
 const timeEntrySchema = z.object({
   ProjectId: z.string().min(1, 'Project is required'),
-  EmployeeName: z.string().min(1, 'Employee name is required'),
+  EmployeeName: z.string().min(1, 'Employee is required'),
   EntryDate: z.string().min(1, 'Date is required'),
   Hours: z.coerce.number().min(0.25, 'Minimum 0.25 hours').max(24, 'Maximum 24 hours'),
-  HourlyRate: z.coerce.number().min(0).optional(),
-  Description: z.string().optional(),
-  IsBillable: z.boolean().optional(),
+  HourlyRate: z.coerce.number().min(0).nullish(),
+  Description: z.string().nullish(),
+  IsBillable: z.boolean().nullish(),
 });
 
 type TimeEntryFormData = z.infer<typeof timeEntrySchema>;
@@ -32,10 +35,16 @@ export default function NewTimeEntry() {
     queryFn: customersApi.getAll,
   });
 
+  const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
+    queryKey: ['employees'],
+    queryFn: employeesApi.getAll,
+  });
+
   const activeProjects = projects.filter(p => p.Status === 'Active');
+  const activeEmployees = employees.filter(e => e.Status === 'Active');
   const projectsMap = new Map(projects.map(p => [p.Id, p]));
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<TimeEntryFormData>({
+  const { register, handleSubmit, watch, control, formState: { errors } } = useForm<TimeEntryFormData>({
     resolver: zodResolver(timeEntrySchema),
     defaultValues: {
       EntryDate: new Date().toISOString().split('T')[0],
@@ -53,15 +62,16 @@ export default function NewTimeEntry() {
       const project = projectsMap.get(data.ProjectId);
       if (!project) throw new Error('Project not found');
 
+      // Convert empty strings to null for DAB nullable columns
       const entry: TimeEntryInput = {
         ProjectId: data.ProjectId,
         CustomerId: project.CustomerId,
         EmployeeName: data.EmployeeName,
         EntryDate: data.EntryDate,
         Hours: data.Hours,
-        HourlyRate: data.HourlyRate || 0,
-        Description: data.Description || undefined,
-        IsBillable: data.IsBillable,
+        HourlyRate: data.HourlyRate ?? 0,
+        Description: data.Description || null,
+        IsBillable: data.IsBillable ?? true,
         Status: 'Pending',
       };
       await timeEntriesApi.create(entry);
@@ -110,15 +120,55 @@ export default function NewTimeEntry() {
         </div>
 
         <div>
-          <label htmlFor="EmployeeName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Employee Name</label>
-          <input
-            id="EmployeeName"
-            type="text"
-            {...register('EmployeeName')}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            placeholder="Your name"
+          <Controller
+            name="EmployeeName"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                options={activeEmployees}
+                getOptionLabel={(option: Employee) => option.FullName}
+                value={activeEmployees.find(e => e.FullName === field.value) ?? null}
+                onChange={(_event, newValue: Employee | null) => {
+                  field.onChange(newValue?.FullName ?? '');
+                }}
+                isOptionEqualToValue={(option: Employee, val: Employee) => option.Id === val.Id}
+                loading={employeesLoading}
+                size="small"
+                renderOption={(props, option: Employee) => {
+                  const { key, ...rest } = props;
+                  return (
+                    <li key={key} {...rest}>
+                      <div>
+                        <div className="font-medium">{option.FullName}</div>
+                        <div className="text-xs opacity-60">{option.EmployeeNumber}</div>
+                      </div>
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Employee"
+                    placeholder="Select an employee..."
+                    required
+                    error={!!errors.EmployeeName}
+                    helperText={errors.EmployeeName?.message}
+                    slotProps={{
+                      input: {
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {employeesLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      },
+                    }}
+                  />
+                )}
+              />
+            )}
           />
-          {errors.EmployeeName && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EmployeeName.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
