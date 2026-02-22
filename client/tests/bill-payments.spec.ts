@@ -28,10 +28,10 @@ test.describe('Bill Payments', () => {
     await page.getByLabel('Payment Method').click();
     await page.getByRole('option', { name: 'Check' }).click();
 
-    // Select payment account (MUI select)
+    // Select payment account (MUI select - wait for account options to load)
     await page.getByLabel('Pay From Account').click();
-    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
-    await page.getByRole('option').nth(1).click();
+    await expect(page.getByRole('option', { name: /Checking|Savings|Cash|Bank/i }).first()).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option', { name: /Checking|Savings|Cash|Bank/i }).first().click();
 
     // Wait for bills to load
     await page.waitForTimeout(2000);

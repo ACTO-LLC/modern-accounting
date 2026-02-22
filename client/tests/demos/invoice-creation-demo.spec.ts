@@ -21,8 +21,9 @@ test.describe('Invoice Creation Demo', () => {
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await demoPause(2000); // Let viewers see the dashboard
 
-    // Scene 2: Navigate to Invoices
-    await page.getByRole('link', { name: /Invoices/i }).click();
+    // Scene 2: Navigate to Invoices (expand Sales group first)
+    await page.getByRole('button', { name: /Sales/i }).click();
+    await page.getByRole('link', { name: 'Invoices' }).click();
     await expect(page.getByRole('heading', { name: /Invoices/i })).toBeVisible();
     await demoPause(1500);
 

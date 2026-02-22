@@ -37,34 +37,37 @@ test.describe('Customer Deposits', () => {
 
     // Select deposit account (MUI select - wait for accounts to load)
     await page.getByLabel('Deposit To Account').click();
-    const hasDepositAccounts = await page.getByRole('option').nth(1).isVisible({ timeout: 10000 }).catch(() => false);
+    // Skip placeholder "Select bank account" - look for actual accounts, or select second option
+    const depositOptions = page.getByRole('option').filter({ hasNotText: /^Select/ });
+    const hasDepositAccounts = await depositOptions.first().isVisible({ timeout: 10000 }).catch(() => false);
     if (!hasDepositAccounts) {
-      // Close dropdown and skip
       await page.keyboard.press('Escape');
       test.skip(true, 'No deposit (Asset) accounts available');
       return;
     }
-    await page.getByRole('option').nth(1).click();
+    await depositOptions.first().click();
 
-    // Select liability account (MUI select - wait for accounts to load)
+    // Select liability account (MUI select - wait for accounts to load, skip placeholder)
     await page.getByLabel('Liability Account (Unearned Revenue)').click();
-    const hasLiabilityAccounts = await page.getByRole('option').nth(1).isVisible({ timeout: 10000 }).catch(() => false);
+    const liabilityOptions = page.getByRole('option').filter({ hasNotText: /^Select/ });
+    const hasLiabilityAccounts = await liabilityOptions.first().isVisible({ timeout: 10000 }).catch(() => false);
     if (!hasLiabilityAccounts) {
       await page.keyboard.press('Escape');
       test.skip(true, 'No liability accounts available');
       return;
     }
-    await page.getByRole('option').nth(1).click();
+    await liabilityOptions.first().click();
 
     await page.getByLabel('Memo').fill('Test deposit via E2E');
 
     // Save
     const responsePromise = page.waitForResponse(
-      resp => resp.url().includes('/customerdeposits') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/customerdeposits_write') && resp.request().method() === 'POST',
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /Receive Deposit/i }).click();
-    await responsePromise;
+    const resp = await responsePromise;
+    expect(resp.status()).toBeLessThan(300);
 
     await expect(page).toHaveURL(/\/customer-deposits$/);
   });

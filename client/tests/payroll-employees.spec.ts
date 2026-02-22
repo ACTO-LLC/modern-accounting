@@ -98,11 +98,11 @@ test.describe('Employee Management', () => {
     // The label changes to "Annual Salary" when Salary is selected
     await page.getByLabel(/Annual Salary/).fill('75000.00');
     await page.getByLabel('Pay Frequency *').click();
-    await page.getByRole('option', { name: 'Monthly' }).click();
+    await page.getByRole('option', { name: 'Monthly', exact: true }).click();
 
     // 5. Fill Tax Information
     await page.getByLabel('Filing Status *').click();
-    await page.getByRole('option', { name: 'MarriedFilingJointly' }).click();
+    await page.getByRole('option', { name: 'Married Filing Jointly' }).click();
 
     // 6. Save
     await page.getByRole('button', { name: 'Save Employee' }).click();

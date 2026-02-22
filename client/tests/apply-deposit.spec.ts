@@ -43,22 +43,25 @@ test.describe('Apply Customer Deposit', () => {
     await page.getByLabel('Payment Method').click();
     await page.getByRole('option', { name: 'Check' }).click();
 
-    // Select Deposit To Account (MUI select)
+    // Select Deposit To Account (MUI select - wait for account options to load, skip placeholder)
     await page.getByLabel('Deposit To Account').click();
-    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
-    await page.getByRole('option').nth(1).click();
+    const depositOptions = page.getByRole('option').filter({ hasNotText: /^Select/ });
+    await expect(depositOptions.first()).toBeVisible({ timeout: 10000 });
+    await depositOptions.first().click();
 
-    // Select Liability Account (MUI select)
+    // Select Liability Account (MUI select - skip placeholder)
     await page.getByLabel('Liability Account (Unearned Revenue)').click();
-    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
-    await page.getByRole('option').nth(1).click();
+    const liabilityOptions = page.getByRole('option').filter({ hasNotText: /^Select/ });
+    await expect(liabilityOptions.first()).toBeVisible({ timeout: 10000 });
+    await liabilityOptions.first().click();
 
     const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/customerdeposits') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/customerdeposits_write') && resp.request().method() === 'POST',
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /Receive Deposit/i }).click();
     const createResp = await createPromise;
+    expect(createResp.status()).toBeLessThan(300);
     const createBody = await createResp.json();
     const createdId = createBody.value?.[0]?.Id || createBody.Id;
 
@@ -66,7 +69,7 @@ test.describe('Apply Customer Deposit', () => {
       await page.goto(`/customer-deposits/${createdId}/apply`);
 
       // Verify apply page loads with deposit details
-      await expect(page.getByText(/Apply.*Deposit/i)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByRole('heading', { name: /Apply Deposit/i })).toBeVisible({ timeout: 10000 });
       await expect(page.getByText(depositNumber)).toBeVisible();
     }
   });

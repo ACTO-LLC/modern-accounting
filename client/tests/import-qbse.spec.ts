@@ -3,8 +3,20 @@ import path from 'path';
 
 test.describe('Import Historical Data', () => {
   test('should reset database, import QBSE data, and verify IsPersonal flag', async ({ page }) => {
+    // Import requires chat-api for AI categorization
+    const healthCheck = await page.request.get('http://localhost:8080/api/health', {
+      timeout: 3000, failOnStatusCode: false
+    }).catch(() => null);
+    test.skip(!healthCheck || !healthCheck.ok(), 'chat-api server not running (needed for AI categorization)');
+
+    // Import also requires the import service at port 7072
+    const importCheck = await page.request.get('http://localhost:7072/', {
+      timeout: 3000, failOnStatusCode: false
+    }).catch(() => null);
+    test.skip(!importCheck, 'Import service not running at port 7072');
+
     // 1. Reset Database
-    await page.goto('/import');
+    await page.goto('/import?tab=csv-import');
     
     // Handle dialog
     page.on('dialog', dialog => dialog.accept());
@@ -32,7 +44,7 @@ test.describe('Import Historical Data', () => {
     await fileInput.setInputFiles(path.join(__dirname, '../../data/test-qbse-small.csv'));
 
     // Click Import
-    await page.getByRole('button', { name: 'Import & Categorize' }).click();
+    await page.getByRole('button', { name: 'Import & Categorize with AI' }).click();
 
     // Wait for navigation to review page
     await expect(page).toHaveURL(/\/review/);

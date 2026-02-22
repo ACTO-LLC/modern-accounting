@@ -2,6 +2,18 @@ import { test, expect } from './coverage.fixture';
 
 test.describe('Import Capital One CSV', () => {
   test.beforeEach(async ({ page }) => {
+    // Import with AI categorization requires chat-api
+    const healthCheck = await page.request.get('http://localhost:8080/api/health', {
+      timeout: 3000, failOnStatusCode: false
+    }).catch(() => null);
+    test.skip(!healthCheck || !healthCheck.ok(), 'chat-api server not running (needed for AI categorization)');
+
+    // Import also requires the import service at port 7072
+    const importCheck = await page.request.get('http://localhost:7072/', {
+      timeout: 3000, failOnStatusCode: false
+    }).catch(() => null);
+    test.skip(!importCheck, 'Import service not running at port 7072');
+
     // Handle alert dialogs
     page.on('dialog', async dialog => {
       console.log(`Dialog message: ${dialog.message()}`);
@@ -11,8 +23,8 @@ test.describe('Import Capital One CSV', () => {
 
   test('should auto-detect source account and import transactions from Capital One CSV', async ({ page }) => {
     // 1. Navigate to import page
-    await page.goto('/import');
-    await expect(page.getByRole('heading', { name: 'Import Transactions' })).toBeVisible();
+    await page.goto('/import?tab=csv-import');
+    await expect(page.getByRole('heading', { name: 'Import', exact: true })).toBeVisible();
 
     // 2. Reset Database first to ensure clean state
     await page.getByRole('button', { name: 'Reset Database' }).click();
@@ -27,7 +39,7 @@ test.describe('Import Capital One CSV', () => {
 
     // 5. Upload Capital One CSV file
     const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles('c:/source/modern-accounting/data/capital-one-spark.csv');
+    await fileInput.setInputFiles('c:/source/modern-accounting-417/data/capital-one-spark.csv');
 
     // Verify file is selected
     await expect(page.getByText('capital-one-spark.csv')).toBeVisible();
@@ -62,14 +74,14 @@ test.describe('Import Capital One CSV', () => {
 
   test('should correctly parse transaction amounts (debits and credits)', async ({ page }) => {
     // Navigate to review page
-    await page.goto('/import');
+    await page.goto('/import?tab=csv-import');
 
     // Upload and import (dialogs handled by beforeEach)
     await page.getByRole('button', { name: 'Reset Database' }).click();
     await page.waitForTimeout(1000);
 
     const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles('c:/source/modern-accounting/data/capital-one-spark.csv');
+    await fileInput.setInputFiles('c:/source/modern-accounting-417/data/capital-one-spark.csv');
     await page.getByRole('button', { name: 'Import & Categorize with AI' }).click();
 
     await expect(page).toHaveURL(/.*\/review/, { timeout: 60000 });
@@ -88,14 +100,14 @@ test.describe('Import Capital One CSV', () => {
   });
 
   test('should handle multiple card numbers creating separate source accounts', async ({ page }) => {
-    await page.goto('/import');
+    await page.goto('/import?tab=csv-import');
 
     // Upload and import (dialogs handled by beforeEach)
     await page.getByRole('button', { name: 'Reset Database' }).click();
     await page.waitForTimeout(1000);
 
     const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles('c:/source/modern-accounting/data/capital-one-spark.csv');
+    await fileInput.setInputFiles('c:/source/modern-accounting-417/data/capital-one-spark.csv');
     await page.getByRole('button', { name: 'Import & Categorize with AI' }).click();
 
     await expect(page).toHaveURL(/.*\/review/, { timeout: 60000 });

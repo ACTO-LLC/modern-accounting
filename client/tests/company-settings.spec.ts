@@ -6,7 +6,7 @@ test.describe('Company Settings', () => {
     await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
 
     // Verify key sections are present
-    await expect(page.getByText(/Company.*Name/i)).toBeVisible();
+    await expect(page.getByText('Company Name *')).toBeVisible();
   });
 
   test('should update company information', async ({ page }) => {
@@ -32,8 +32,8 @@ test.describe('Company Settings', () => {
         await addressInput.fill('456 Test Blvd');
       }
 
-      // Save
-      await page.getByRole('button', { name: /Save Settings/i }).click();
+      // Save (first button is the company info section save)
+      await page.getByRole('button', { name: /Save Settings/i }).first().click();
 
       // Verify save success message
       await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
@@ -41,7 +41,7 @@ test.describe('Company Settings', () => {
       // Restore original name
       await nameInput.clear();
       await nameInput.fill(currentName || 'Modern Accounting');
-      await page.getByRole('button', { name: /Save Settings/i }).click();
+      await page.getByRole('button', { name: /Save Settings/i }).first().click();
       await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
     }
   });
@@ -58,7 +58,7 @@ test.describe('Company Settings', () => {
       await taxIdInput.clear();
       await taxIdInput.fill('12-3456789');
 
-      await page.getByRole('button', { name: /Save Settings/i }).click();
+      await page.getByRole('button', { name: /Save Settings/i }).first().click();
       await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
     }
   });

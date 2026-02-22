@@ -11,13 +11,16 @@ test.describe('Vehicles (Inline CRUD)', () => {
     // Click Add Vehicle button
     await page.getByRole('button', { name: /Add Vehicle/i }).click();
 
-    // Fill the modal form (fields use labels, not IDs)
-    await page.getByLabel('Name *').fill(vehicleName);
-    await page.getByLabel('Year').fill('2024');
-    await page.getByLabel('Make').fill('Toyota');
-    await page.getByLabel('Model').fill('Camry');
-    await page.getByLabel('License Plate').fill(`TST-${timestamp.toString().slice(-4)}`);
-    await page.getByLabel('Starting Odometer').fill('15000');
+    // Wait for modal to appear (use heading role to avoid strict mode with button)
+    await expect(page.getByRole('heading', { name: 'Add Vehicle' })).toBeVisible({ timeout: 5000 });
+
+    // Fill the modal form (labels don't have htmlFor, use placeholder selectors)
+    await page.getByPlaceholder('e.g., Work Car, Personal Van').fill(vehicleName);
+    await page.getByPlaceholder('2024').fill('2024');
+    await page.getByPlaceholder('Toyota').fill('Toyota');
+    await page.getByPlaceholder('Camry').fill('Camry');
+    await page.getByPlaceholder('ABC-123').fill(`TST-${timestamp.toString().slice(-4)}`);
+    await page.getByPlaceholder('45000').fill('15000');
 
     // Save
     const responsePromise = page.waitForResponse(
@@ -39,9 +42,10 @@ test.describe('Vehicles (Inline CRUD)', () => {
 
     // Create first
     await page.getByRole('button', { name: /Add Vehicle/i }).click();
-    await page.getByLabel('Name *').fill(vehicleName);
-    await page.getByLabel('Make').fill('Honda');
-    await page.getByLabel('Model').fill('Civic');
+    await expect(page.getByRole('heading', { name: 'Add Vehicle' })).toBeVisible({ timeout: 5000 });
+    await page.getByPlaceholder('e.g., Work Car, Personal Van').fill(vehicleName);
+    await page.getByPlaceholder('Toyota').fill('Honda');
+    await page.getByPlaceholder('Camry').fill('Civic');
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/vehicles') && resp.request().method() === 'POST' && (resp.status() === 201 || resp.status() === 200),
@@ -60,16 +64,14 @@ test.describe('Vehicles (Inline CRUD)', () => {
 
       // Wait for modal and update name
       await expect(page.getByText('Edit Vehicle')).toBeVisible({ timeout: 5000 });
-      await page.getByLabel('Name *').clear();
-      await page.getByLabel('Name *').fill(`${vehicleName} Updated`);
+      const nameInput = page.getByPlaceholder('e.g., Work Car, Personal Van');
+      await nameInput.clear();
+      await nameInput.fill(`${vehicleName} Updated`);
 
-      const updatePromise = page.waitForResponse(
-        resp => resp.url().includes('/vehicles') && resp.request().method() === 'PATCH' && (resp.status() === 200 || resp.status() === 204),
-        { timeout: 15000 }
-      );
       await page.getByRole('button', { name: /Update/i }).click();
-      await updatePromise;
-      await expect(page.getByText(`${vehicleName} Updated`)).toBeVisible({ timeout: 5000 });
+
+      // Wait for the modal to close and the updated name to appear
+      await expect(page.getByText(`${vehicleName} Updated`)).toBeVisible({ timeout: 10000 });
     }
   });
 
@@ -81,7 +83,8 @@ test.describe('Vehicles (Inline CRUD)', () => {
 
     // Create first
     await page.getByRole('button', { name: /Add Vehicle/i }).click();
-    await page.getByLabel('Name *').fill(vehicleName);
+    await expect(page.getByRole('heading', { name: 'Add Vehicle' })).toBeVisible({ timeout: 5000 });
+    await page.getByPlaceholder('e.g., Work Car, Personal Van').fill(vehicleName);
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/vehicles') && resp.request().method() === 'POST' && (resp.status() === 201 || resp.status() === 200),

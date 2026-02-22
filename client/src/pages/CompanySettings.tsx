@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail, AlertCircle, Zap, ClipboardCheck, HelpCircle } from 'lucide-react';
 import { useCompanySettings, InvoicePostingMode } from '../contexts/CompanySettingsContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
@@ -8,10 +8,18 @@ import FeatureVisibilitySettings from '../components/FeatureVisibilitySettings';
 import { validateEIN } from '../lib/taxForms';
 
 export default function CompanySettings() {
-  const { settings, updateSettings } = useCompanySettings();
+  const { settings, updateSettings, isLoaded } = useCompanySettings();
   const { theme, setTheme } = useTheme();
   const [formData, setFormData] = useState(settings);
   const [logoPreview, setLogoPreview] = useState(settings.logoUrl);
+
+  // Sync formData when settings load from DB (initial load is async)
+  useEffect(() => {
+    if (isLoaded) {
+      setFormData(settings);
+      setLogoPreview(settings.logoUrl);
+    }
+  }, [isLoaded, settings]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

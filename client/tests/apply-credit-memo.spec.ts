@@ -24,17 +24,17 @@ test.describe('Apply Credit Memo', () => {
 
     await page.goto('/credit-memos/new');
 
-    // Select customer (MUI select)
+    // Select customer (MUI select - skip placeholder, use second option which is first real customer)
     await page.getByLabel('Customer').click();
-    await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
-    await page.getByRole('option').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     await page.getByLabel('Credit Memo Number').fill(creditMemoNumber);
 
-    // Select account for line item (MUI select)
+    // Select account for line item (MUI select - skip placeholder)
     await page.getByLabel('Account').first().click();
-    await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
-    await page.getByRole('option').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
     await page.locator('input[name="Lines.0.Description"]').fill('Apply test credit');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
     await page.locator('input[name="Lines.0.UnitPrice"]').fill('100.00');
