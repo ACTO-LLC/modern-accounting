@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { PublicClientApplication, SilentRequest } from '@azure/msal-browser';
-import { apiRequest } from './authConfig';
+import { PublicClientApplication, SilentRequest, AccountInfo } from '@azure/msal-browser';
+import { apiRequest, roleHierarchy, type UserRole } from './authConfig';
 import { formatDateForOData } from './dateUtils';
 
 const api = axios.create({
@@ -9,6 +9,18 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Resolve the highest DAB role from Azure AD token claims
+function resolveDabRole(account: AccountInfo): string {
+  const roles = (account.idTokenClaims as any)?.roles as string[] | undefined;
+  if (roles?.length) {
+    // Return the highest role per the hierarchy
+    for (let i = roleHierarchy.length - 1; i >= 0; i--) {
+      if (roles.includes(roleHierarchy[i])) return roleHierarchy[i];
+    }
+  }
+  return 'authenticated';
+}
 
 // Store the MSAL instance for use in interceptors
 let msalInstance: PublicClientApplication | null = null;
@@ -69,7 +81,9 @@ api.interceptors.request.use(
       const response = await msalInstance.acquireTokenSilent(silentRequest);
       console.log('[API Auth] Token acquired, expires:', response.expiresOn, 'aud:', response.account?.idTokenClaims?.aud);
       config.headers.Authorization = `Bearer ${response.accessToken}`;
-      console.log('[API Auth] Token attached to request, length:', response.accessToken.length);
+      // DAB Simulator needs X-MS-API-ROLE to resolve permissions (production AzureAD provider ignores it)
+      config.headers['X-MS-API-ROLE'] = resolveDabRole(accounts[0]);
+      console.log('[API Auth] Token attached to request, length:', response.accessToken.length, 'role:', config.headers['X-MS-API-ROLE']);
     } catch (error: any) {
       console.error('[API Auth] acquireTokenSilent failed:', error?.name, error?.message, error);
 
@@ -143,6 +157,7 @@ graphqlClient.interceptors.request.use(
     try {
       const response = await msalInstance.acquireTokenSilent(silentRequest);
       config.headers.Authorization = `Bearer ${response.accessToken}`;
+      config.headers['X-MS-API-ROLE'] = resolveDabRole(accounts[0]);
     } catch (error: any) {
       console.error('[GraphQL Auth] acquireTokenSilent failed:', error?.name, error?.message);
 
