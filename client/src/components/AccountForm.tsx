@@ -23,9 +23,10 @@ export const accountSchema = z.object({
   Code: z.string().min(1, 'Code is required').max(50, 'Code must be 50 characters or less'),
   Name: z.string().min(1, 'Name is required').max(200, 'Name must be 200 characters or less'),
   Type: z.enum(accountTypes, { required_error: 'Type is required' }),
-  Subtype: z.string().optional(),
-  AccountNumber: z.string().max(50, 'Account number must be 50 characters or less').optional(),
-  Description: z.string().optional(),
+  // Use .nullish() for API compatibility - accepts both null (from DB) and undefined (see CLAUDE.md)
+  Subtype: z.string().nullish(),
+  AccountNumber: z.string().max(50, 'Account number must be 50 characters or less').nullish(),
+  Description: z.string().nullish(),
   IsActive: z.boolean().optional(),
 });
 
