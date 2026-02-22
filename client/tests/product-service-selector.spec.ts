@@ -6,50 +6,49 @@ test.describe('Product/Service Selector', () => {
     test('should show product/service selector in line items', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Verify the Product/Service label exists
-      await expect(page.getByText('Product/Service').first()).toBeVisible();
+      // Wait for form to load
+      await expect(page.getByRole('heading', { name: /New Invoice|Create Invoice/i })).toBeVisible();
 
-      // Verify the selector button exists with placeholder
-      await expect(page.getByRole('button', { name: /Select or type description below/i }).first()).toBeVisible();
+      // Verify the selector input exists with placeholder (MUI Autocomplete)
+      await expect(page.getByPlaceholder('Select or type description below').first()).toBeVisible();
     });
 
-    test('should open product/service dropdown and show search', async ({ page }) => {
+    test('should open product/service dropdown and show options', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      await page.getByPlaceholder('Select or type description below').first().click();
 
-      // Verify search input is visible
-      await expect(page.getByPlaceholder('Search by name, SKU, or category...')).toBeVisible();
+      // Verify dropdown listbox is visible
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
     });
 
     test('should filter products/services by search term', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      const psInput = page.getByPlaceholder('Select or type description below').first();
+      await psInput.click();
 
-      // Type a search term
-      const searchInput = page.getByPlaceholder('Search by name, SKU, or category...');
-      await searchInput.fill('service');
+      // Type a search term directly in the Autocomplete input
+      await psInput.fill('service');
 
       // Verify dropdown is still visible after search (listbox auto-updates)
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
     });
 
     test('should auto-populate description and price when product/service is selected', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      await page.getByPlaceholder('Select or type description below').first().click();
 
       // Wait for dropdown options to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
       // Select the first option (if available)
-      const firstOption = page.locator('[role="option"]').first();
+      const firstOption = page.locator('.MuiAutocomplete-listbox [role="option"]').first();
       if (await firstOption.isVisible()) {
-        const optionText = await firstOption.textContent();
         await firstOption.click();
 
         // Verify description field was populated
@@ -61,27 +60,28 @@ test.describe('Product/Service Selector', () => {
     test('should allow clearing selected product/service', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      const psInput = page.getByPlaceholder('Select or type description below').first();
+      await psInput.click();
 
       // Wait for dropdown options to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
       // Select the first option (if available)
-      const firstOption = page.locator('[role="option"]').first();
+      const firstOption = page.locator('.MuiAutocomplete-listbox [role="option"]').first();
       if (await firstOption.isVisible()) {
         await firstOption.click();
 
-        // Verify selection is made (button text changes)
-        const selectorButton = page.locator('button[aria-controls="product-service-listbox"]').first();
+        // Verify selection is made (input value changes from placeholder)
+        await expect(psInput).not.toHaveValue('');
 
-        // Look for clear button and click it
-        const clearButton = selectorButton.locator('button[aria-label="Clear selection"]');
-        if (await clearButton.isVisible()) {
+        // Look for MUI Autocomplete clear button and click it
+        const clearButton = page.getByRole('button', { name: 'Clear' }).first();
+        if (await clearButton.isVisible({ timeout: 3000 }).catch(() => false)) {
           await clearButton.click();
 
-          // Verify placeholder is back
-          await expect(selectorButton).toContainText('Select or type description below');
+          // Verify input is cleared (placeholder reappears)
+          await expect(psInput).toHaveValue('');
         }
       }
     });
@@ -92,9 +92,10 @@ test.describe('Product/Service Selector', () => {
       // Fill invoice form without selecting a product
       await page.getByLabel('Invoice Number').fill(`INV-MANUAL-${Date.now()}`);
 
-      // Select customer from dropdown
-      await page.getByRole('button', { name: /Select a customer/i }).click();
-      await page.getByRole('option').first().click();
+      // Select customer from dropdown (MUI Autocomplete)
+      await page.getByPlaceholder('Select a customer...').click();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+      await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
       await page.getByLabel('Issue Date').fill('2025-01-15');
       await page.getByLabel('Due Date').fill('2025-02-15');
@@ -104,8 +105,8 @@ test.describe('Product/Service Selector', () => {
       await page.locator('input[name="Lines.0.Quantity"]').fill('2');
       await page.locator('input[name="Lines.0.UnitPrice"]').fill('75.50');
 
-      // Verify total calculation works (main test goal)
-      await expect(page.getByText('Total: $151.00')).toBeVisible();
+      // Verify total calculation works (main test goal) - Total is in a font-bold div
+      await expect(page.locator('div.font-bold > span').last()).toContainText('151.00');
 
       // Verify Create Invoice button is enabled (form is valid)
       await expect(page.getByRole('button', { name: /Create Invoice/i })).toBeEnabled();
@@ -116,21 +117,22 @@ test.describe('Product/Service Selector', () => {
 
       await page.getByLabel('Invoice Number').fill(`INV-PS-${Date.now()}`);
 
-      // Select customer from dropdown
-      await page.getByRole('button', { name: /Select a customer/i }).click();
-      await page.getByRole('option').first().click();
+      // Select customer from dropdown (MUI Autocomplete)
+      await page.getByPlaceholder('Select a customer...').click();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+      await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
       await page.getByLabel('Issue Date').fill('2025-01-15');
       await page.getByLabel('Due Date').fill('2025-02-15');
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      await page.getByPlaceholder('Select or type description below').first().click();
 
       // Wait for dropdown to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
       // If products exist, select one; otherwise use manual entry
-      const firstOption = page.locator('[role="option"]').first();
+      const firstOption = page.locator('.MuiAutocomplete-listbox [role="option"]').first();
       if (await firstOption.isVisible()) {
         await firstOption.click();
         // Adjust quantity
@@ -155,24 +157,27 @@ test.describe('Product/Service Selector', () => {
     test('should show product/service selector in estimate line items', async ({ page }) => {
       await page.goto(`/estimates/new`);
 
+      // Wait for form to load
+      await expect(page.getByRole('heading', { name: /New Estimate/i })).toBeVisible();
+
       // Verify the Product/Service label exists
       await expect(page.getByText('Product/Service').first()).toBeVisible();
 
-      // Verify the selector button exists with placeholder
-      await expect(page.getByRole('button', { name: /Select or type description below/i }).first()).toBeVisible();
+      // Verify the selector input exists with placeholder (MUI Autocomplete)
+      await expect(page.getByPlaceholder('Select or type description below').first()).toBeVisible();
     });
 
     test('should auto-populate description and price when product/service is selected in estimate', async ({ page }) => {
       await page.goto(`/estimates/new`);
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      await page.getByPlaceholder('Select or type description below').first().click();
 
       // Wait for dropdown to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
       // Select the first option (if available)
-      const firstOption = page.locator('[role="option"]').first();
+      const firstOption = page.locator('.MuiAutocomplete-listbox [role="option"]').first();
       if (await firstOption.isVisible()) {
         await firstOption.click();
 
@@ -187,20 +192,21 @@ test.describe('Product/Service Selector', () => {
 
       await page.getByLabel('Estimate Number').fill(`EST-PS-${Date.now()}`);
 
-      // Select customer from dropdown
-      await page.getByRole('button', { name: /Select a customer/i }).click();
-      await page.getByRole('option').first().click();
+      // Select customer from dropdown (MUI Autocomplete)
+      await page.getByPlaceholder('Select a customer...').click();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+      await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
       await page.getByLabel('Issue Date').fill('2025-01-15');
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      await page.getByPlaceholder('Select or type description below').first().click();
 
       // Wait for dropdown to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
       // If products exist, select one; otherwise use manual entry
-      const firstOption = page.locator('[role="option"]').first();
+      const firstOption = page.locator('.MuiAutocomplete-listbox [role="option"]').first();
       if (await firstOption.isVisible()) {
         await firstOption.click();
         // Adjust quantity
@@ -225,9 +231,10 @@ test.describe('Product/Service Selector', () => {
 
       await page.getByLabel('Estimate Number').fill(`EST-MULTI-${Date.now()}`);
 
-      // Select customer from dropdown
-      await page.getByRole('button', { name: /Select a customer/i }).click();
-      await page.getByRole('option').first().click();
+      // Select customer from dropdown (MUI Autocomplete)
+      await page.getByPlaceholder('Select a customer...').click();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+      await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
       await page.getByLabel('Issue Date').fill('2025-01-15');
 
@@ -256,33 +263,33 @@ test.describe('Product/Service Selector', () => {
     test('should find products with typos using fuzzy search', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      const psInput = page.getByPlaceholder('Select or type description below').first();
+      await psInput.click();
 
       // Wait for dropdown to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
       // Check if there are any products available
-      const hasProducts = await page.locator('[role="option"]').first().isVisible();
+      const hasProducts = await page.locator('.MuiAutocomplete-listbox [role="option"]').first().isVisible();
 
       if (hasProducts) {
         // Get text of first product for reference
-        const firstProductText = await page.locator('[role="option"]').first().textContent();
+        const firstProductText = await page.locator('.MuiAutocomplete-listbox [role="option"]').first().textContent();
 
         // Close dropdown
         await page.keyboard.press('Escape');
 
-        // Reopen and search with partial/misspelled term
-        await page.getByRole('button', { name: /Select or type description below/i }).first().click();
-        const searchInput = page.getByPlaceholder('Search by name, SKU, or category...');
+        // Reopen and search with partial term directly in the Autocomplete input
+        await psInput.click();
 
         // Type a partial search (first 3 chars should match with fuzzy)
         if (firstProductText && firstProductText.length > 3) {
           const partialTerm = firstProductText.substring(0, 3);
-          await searchInput.fill(partialTerm);
+          await psInput.fill(partialTerm);
 
           // Should still find results
-          await expect(page.locator('[role="option"]').first()).toBeVisible();
+          await expect(page.locator('.MuiAutocomplete-listbox [role="option"]').first()).toBeVisible();
         }
       }
     });
@@ -290,18 +297,18 @@ test.describe('Product/Service Selector', () => {
     test('should rank name matches higher than SKU matches', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector (MUI Autocomplete)
+      const psInput = page.getByPlaceholder('Select or type description below').first();
+      await psInput.click();
 
       // Wait for dropdown to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
-      // Type a search term
-      const searchInput = page.getByPlaceholder('Search by name, SKU, or category...');
-      await searchInput.fill('test');
+      // Type a search term directly in the Autocomplete input
+      await psInput.fill('test');
 
       // Verify dropdown is visible (results may vary based on data)
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
     });
   });
 
@@ -309,36 +316,37 @@ test.describe('Product/Service Selector', () => {
     test('should close dropdown on Escape key', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector to open dropdown
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector to open dropdown (MUI Autocomplete)
+      await page.getByPlaceholder('Select or type description below').first().click();
 
       // Wait for dropdown to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
       // Press Escape
       await page.keyboard.press('Escape');
 
       // Dropdown should close
-      await expect(page.locator('[role="listbox"]')).not.toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).not.toBeVisible();
     });
 
     test('should navigate options with arrow keys', async ({ page }) => {
       await page.goto(`/invoices/new`);
 
-      // Click the product/service selector to open dropdown
-      await page.getByRole('button', { name: /Select or type description below/i }).first().click();
+      // Click the product/service selector to open dropdown (MUI Autocomplete)
+      await page.getByPlaceholder('Select or type description below').first().click();
 
       // Wait for dropdown to appear
-      await expect(page.locator('[role="listbox"]')).toBeVisible();
+      await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible();
 
-      // Press ArrowDown to focus first option
+      // Check if there are options to navigate
+      const hasOptions = await page.locator('.MuiAutocomplete-listbox [role="option"]').first().isVisible({ timeout: 3000 }).catch(() => false);
+      test.skip(!hasOptions, 'No products available for keyboard navigation');
+
+      // Press ArrowDown to highlight first option
       await page.keyboard.press('ArrowDown');
 
-      // The first option should be focused (highlighted)
-      const firstOption = page.locator('[role="option"]').first();
-      if (await firstOption.isVisible()) {
-        await expect(firstOption).toHaveClass(/bg-indigo-50/);
-      }
+      // The highlighted option should have Mui-focused class (MUI Autocomplete keyboard navigation)
+      await expect(page.locator('.MuiAutocomplete-listbox [role="option"].Mui-focused')).toBeVisible({ timeout: 5000 });
     });
   });
 });

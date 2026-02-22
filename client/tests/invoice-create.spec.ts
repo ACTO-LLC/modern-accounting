@@ -6,8 +6,9 @@ test('can create invoice with line items', async ({ page }) => {
   await page.getByLabel('Invoice Number').fill('INV-TEST-CREATE-' + Date.now());
 
   // Select customer from dropdown
-  await page.getByRole('button', { name: /Select a customer/i }).click();
-  await page.getByRole('option').first().click();
+  await page.getByPlaceholder('Select a customer...').click();
+  await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+  await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
   await page.getByLabel('Issue Date').fill('2026-01-20');
   await page.getByLabel('Due Date').fill('2026-02-20');

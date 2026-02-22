@@ -7,11 +7,7 @@ test.describe('Journal Entry Balance Enforcement', () => {
   });
 
   test.skip('should reject line with both debit and credit', async ({ page }) => {
-    // This test is skipped because:
-    // 1. The Post Entry button is disabled when the entry is unbalanced
-    // 2. Having both debit and credit on a line makes the entry unbalanced by definition
-    // 3. Line-level validation only shows on form submission, but button is already disabled
-    // The validation exists but can't be triggered in the current UI flow
+    // Skipped: Empty lines default to $0/$0 which is "balanced" - button stays enabled
     const timestamp = Date.now();
     const entryNumber = `JE-${timestamp}`;
 
@@ -24,11 +20,7 @@ test.describe('Journal Entry Balance Enforcement', () => {
   });
 
   test.skip('should reject line with neither debit nor credit', async ({ page }) => {
-    // This test is skipped because:
-    // 1. Lines with 0 debit and 0 credit don't contribute to totals
-    // 2. If another line has a value, the entry is unbalanced
-    // 3. The Post Entry button is disabled when unbalanced
-    // The validation exists but can't be triggered in the current UI flow
+    // Skipped: Empty lines default to $0/$0 which is "balanced" - button stays enabled
     const timestamp = Date.now();
     const entryNumber = `JE-${timestamp}`;
 

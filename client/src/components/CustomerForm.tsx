@@ -9,8 +9,8 @@ import AddressFields, { AddressFieldValues } from './AddressFields';
 
 export const customerSchema = z.object({
   Name: z.string().min(1, 'Name is required'),
-  Email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  Phone: z.string().optional(),
+  Email: z.string().email('Invalid email address').nullish().or(z.literal('')),
+  Phone: z.string().nullish(),
   // Separate address fields (use .nullish() for API compatibility - see CLAUDE.md)
   AddressLine1: z.string().nullish(),
   AddressLine2: z.string().nullish(),
@@ -19,7 +19,7 @@ export const customerSchema = z.object({
   PostalCode: z.string().nullish(),
   Country: z.string().nullish(),
   // Legacy field for backward compatibility
-  Address: z.string().optional(),
+  Address: z.string().nullish(),
 });
 
 export type CustomerFormData = z.infer<typeof customerSchema> & AddressFieldValues;
@@ -53,7 +53,7 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <Controller
           name="Name"
           control={control}

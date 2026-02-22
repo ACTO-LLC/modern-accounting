@@ -129,7 +129,7 @@ export default function NewJournalEntry() {
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">New Journal Entry</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         {/* Header Fields */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
@@ -210,7 +210,7 @@ export default function NewJournalEntry() {
                     <input
                       type="number"
                       step="0.01"
-                      {...register(`Lines.${index}.Debit`, { valueAsNumber: true })}
+                      {...register(`Lines.${index}.Debit`, { setValueAs: (v: string) => v === '' || v === undefined ? 0 : Number(v) })}
                       placeholder="Debit"
                       className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
                     />
@@ -219,7 +219,7 @@ export default function NewJournalEntry() {
                     <input
                       type="number"
                       step="0.01"
-                      {...register(`Lines.${index}.Credit`, { valueAsNumber: true })}
+                      {...register(`Lines.${index}.Credit`, { setValueAs: (v: string) => v === '' || v === undefined ? 0 : Number(v) })}
                       placeholder="Credit"
                       className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
                     />

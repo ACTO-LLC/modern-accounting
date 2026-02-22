@@ -148,3 +148,53 @@ const queryResponse = await queryPromise;
 const body = await queryResponse.json();
 const createdId = body.value?.[0]?.Id;
 ```
+
+---
+
+## Code Coverage with Istanbul (Feb 2026)
+
+**Overview:**
+The project uses [vite-plugin-istanbul](https://github.com/nicolo-ribaudo/vite-plugin-istanbul) to instrument source code and collect coverage data from Playwright E2E tests. Coverage is written to `.nyc_output/` and reported via `nyc`.
+
+**How it works:**
+1. `vite-plugin-istanbul` in `vite.config.ts` instruments `src/*` files when `VITE_COVERAGE=true`
+2. Each test file imports `test` from `./coverage.fixture` (not `@playwright/test`)
+3. The fixture's `coverageAutoCollect` hook reads `window.__coverage__` from the browser after each test and writes it to `.nyc_output/`
+4. `coverage.global-teardown.ts` merges all coverage JSON files and generates reports via `nyc`
+
+**Running coverage:**
+```bash
+cd client
+
+# IMPORTANT: Stop any existing dev server first!
+# The coverage config has reuseExistingServer: true, so if a dev server
+# is already running without VITE_COVERAGE=true, it will be reused
+# and no instrumentation will occur.
+
+npm run test:coverage          # Run tests + collect coverage
+npm run coverage:report        # Generate text + HTML report from collected data
+npm run coverage:open          # Open HTML report in browser
+```
+
+**Key files:**
+| File | Purpose |
+|------|---------|
+| `vite.config.ts` (lines 85-93) | Istanbul plugin config, activated by `VITE_COVERAGE=true` |
+| `playwright.coverage.config.ts` | Playwright config for coverage runs (starts server with `VITE_COVERAGE=true`) |
+| `tests/coverage.fixture.ts` | Auto-collects `window.__coverage__` after each test |
+| `tests/coverage.global-setup.ts` | Cleans `.nyc_output/` before test run |
+| `tests/coverage.global-teardown.ts` | Merges coverage files and generates nyc report |
+
+**Adding coverage to new test files:**
+```typescript
+// CORRECT - imports from coverage fixture (enables collection)
+import { test, expect } from './coverage.fixture';
+
+// WRONG - coverage won't be collected for this file
+import { test, expect } from '@playwright/test';
+```
+
+**Troubleshooting:**
+- **"No coverage data collected"** → A dev server was already running without `VITE_COVERAGE=true`. Stop it and re-run.
+- **Coverage numbers seem low** → Check that all spec files import from `./coverage.fixture`, not `@playwright/test`.
+- **`include: 'src/*'`** → Only files directly in `src/` and its subdirectories are instrumented. `node_modules` and `tests/` are excluded.

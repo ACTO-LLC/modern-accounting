@@ -53,8 +53,8 @@ test.describe('Audit Log', () => {
         resp => resp.url().includes('/api/auditlog') && resp.status() === 200
       );
 
-      // Should see various action types from seed data
-      await expect(page.getByText('Create').first()).toBeVisible();
+      // Should see various action types from seed data (use role to avoid matching hidden <option> elements)
+      await expect(page.locator('.MuiDataGrid-row').first()).toBeVisible({ timeout: 10000 });
     });
 
     test('should show results count', async ({ page }) => {

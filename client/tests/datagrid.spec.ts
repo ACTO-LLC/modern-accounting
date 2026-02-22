@@ -126,6 +126,36 @@ test.describe('MUI DataGrid - Server-side Features', () => {
     });
   });
 
+  test.describe('Customers Page - Filtering', () => {
+    test('should filter customers using column filter', async ({ page }) => {
+      await page.goto('/customers');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 5000 }).catch(() => false);
+      test.skip(!hasRows, 'No customer data to filter');
+
+      const nameHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Name' });
+      await nameHeader.hover();
+      const menuButton = nameHeader.locator('.MuiDataGrid-menuIcon button');
+      await expect(menuButton).toBeVisible({ timeout: 5000 });
+      await menuButton.click();
+
+      await page.getByRole('menuitem', { name: /filter/i }).click();
+      await expect(page.locator('.MuiDataGrid-filterForm')).toBeVisible({ timeout: 5000 });
+
+      // Get first row's name to filter by
+      const firstRowName = await page.locator('.MuiDataGrid-row').first().locator('.MuiDataGrid-cell').first().textContent();
+      if (firstRowName) {
+        const filterInput = page.locator('.MuiDataGrid-filterForm input[type="text"]');
+        await filterInput.fill(firstRowName.substring(0, 5));
+        await page.keyboard.press('Enter');
+
+        const rows = page.locator('.MuiDataGrid-row');
+        await expect(rows.first()).toBeVisible({ timeout: 10000 });
+      }
+    });
+  });
+
   test.describe('Estimates Page', () => {
     test('should display estimates in DataGrid', async ({ page }) => {
       await page.goto('/estimates');
@@ -149,6 +179,30 @@ test.describe('MUI DataGrid - Server-side Features', () => {
       await amountHeader.click();
 
       await expect(amountHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
+    });
+
+    test('should filter estimates using column filter', async ({ page }) => {
+      await page.goto('/estimates');
+      await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+      const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 5000 }).catch(() => false);
+      test.skip(!hasRows, 'No estimate data to filter');
+
+      const statusHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: 'Status' });
+      await statusHeader.hover();
+      const menuButton = statusHeader.locator('.MuiDataGrid-menuIcon button');
+      await expect(menuButton).toBeVisible({ timeout: 5000 });
+      await menuButton.click();
+
+      await page.getByRole('menuitem', { name: /filter/i }).click();
+      await expect(page.locator('.MuiDataGrid-filterForm')).toBeVisible({ timeout: 5000 });
+
+      const filterInput = page.locator('.MuiDataGrid-filterForm input[type="text"]');
+      await filterInput.fill('Draft');
+      await page.keyboard.press('Enter');
+
+      const rows = page.locator('.MuiDataGrid-row');
+      await expect(rows.first().getByText('Draft')).toBeVisible({ timeout: 10000 });
     });
   });
 

@@ -1,81 +1,90 @@
 import { test, expect } from './coverage.fixture';
 
 test.describe('Invoice Edit and Save', () => {
-  // TODO: Known issue - form save not triggering in test environment (works in browser)
-  test.skip('should edit and save an invoice', async ({ page }) => {
-    // 1. Create a test invoice via API
-    const invoiceData = {
-      InvoiceNumber: `TEST-SAVE-${Date.now()}`,
-      CustomerId: '83133C08-C910-4660-8A29-F11BCF8532F4', // Acme Corporation
-      IssueDate: '2026-11-28',
-      DueDate: '2026-12-28',
-      Status: 'Draft',
-      TotalAmount: 100.00,
-    };
-
-    // Create invoice (without Lines - they're created separately)
-    await page.request.post('http://localhost:5000/api/invoices_write', {
-      data: invoiceData
+  test('should edit and save an invoice', async ({ page }) => {
+    // 1. Get a valid customer ID from the API
+    const customersResp = await page.request.get('http://localhost:5000/api/customers?$first=1', {
+      headers: { 'X-MS-API-ROLE': 'Admin' }
     });
+    const customers = await customersResp.json();
+    const customerId = customers.value[0]?.Id;
+    expect(customerId).toBeTruthy();
 
-    // Query for the created invoice since DAB doesn't return it
-    const escapedInvoiceNumber = String(invoiceData.InvoiceNumber).replace(/'/g, "''");
-    const queryResponse = await page.request.get(
-      `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${escapedInvoiceNumber}'`
-    );
-    const queryResult = await queryResponse.json();
-    const invoice = queryResult.value[0];
-    const invoiceId = invoice.Id;
-    console.log(`Created test invoice: ${invoiceId}`);
+    // 2. Create a test invoice via API
+    const invoiceNumber = `TEST-SAVE-${Date.now()}`;
+    const createResponse = await page.request.post('http://localhost:5000/api/invoices_write', {
+      data: {
+        InvoiceNumber: invoiceNumber,
+        CustomerId: customerId,
+        IssueDate: '2026-11-28',
+        DueDate: '2026-12-28',
+        Status: 'Draft',
+        TotalAmount: 100.00,
+      },
+      headers: { 'X-MS-API-ROLE': 'Admin' }
+    });
+    expect(createResponse.status()).toBe(201);
+    const createResult = await createResponse.json();
+    const invoiceId = createResult.value?.[0]?.Id;
+    expect(invoiceId).toBeTruthy();
 
-    // Create the line item
-    await page.request.post('http://localhost:5000/api/invoicelines', {
+    // 3. Create the line item
+    const lineResponse = await page.request.post('http://localhost:5000/api/invoicelines', {
       data: {
         InvoiceId: invoiceId,
         Description: 'Original Item',
         Quantity: 1,
-        UnitPrice: 100.00
-      }
+        UnitPrice: 100.00,
+        Amount: 100.00,
+      },
+      headers: { 'X-MS-API-ROLE': 'Admin' }
     });
+    expect(lineResponse.status()).toBe(201);
 
-    // 2. Navigate to edit page
+    // 4. Navigate to edit page
     await page.goto(`/invoices/${invoiceId}/edit`);
 
-    // 3. Modify Invoice Number
-    const newInvoiceNumber = `${invoiceData.InvoiceNumber}-UPDATED`;
-    await page.getByLabel('Invoice Number').fill(newInvoiceNumber);
+    // Wait for form to load with data
+    await expect(page.getByLabel('Invoice Number')).toHaveValue(invoiceNumber, { timeout: 10000 });
+    await expect(page.locator('input[name="Lines.0.Description"]')).toHaveValue('Original Item', { timeout: 10000 });
 
-    // 4. Wait for form to fully load
-    await page.waitForTimeout(1000);
+    // 5. Modify Invoice Number
+    const newInvoiceNumber = `${invoiceNumber}-UPDATED`;
+    const invoiceNumInput = page.getByLabel('Invoice Number');
+    await invoiceNumInput.click();
+    await invoiceNumInput.press('Control+a');
+    await invoiceNumInput.pressSequentially(newInvoiceNumber);
 
-    // 4b. Modify Line Item - clear and type for better React Hook Form compatibility
+    // 6. Modify Line Item Description
     const descInput = page.locator('input[name="Lines.0.Description"]');
-    await descInput.clear();
-    await descInput.type('Updated Item');
+    await descInput.click();
+    await descInput.press('Control+a');
+    await descInput.pressSequentially('Updated Item');
 
+    // 7. Modify Line Item Quantity
     const qtyInput = page.locator('input[name="Lines.0.Quantity"]');
-    await qtyInput.clear();
-    await qtyInput.type('2');
+    await qtyInput.click();
+    await qtyInput.press('Control+a');
+    await qtyInput.pressSequentially('2');
+    await qtyInput.press('Tab');
 
-    // 5. Save
-    await page.getByRole('button', { name: 'Save Invoice' }).click();
+    // 8. Save and wait for navigation
+    await page.getByRole('button', { name: /Save Invoice/i }).click();
+    await expect(page).toHaveURL(/\/invoices$/, { timeout: 30000 });
 
-    // 6. Wait for save to complete
-    await page.waitForTimeout(2000);
-
-    // 7. Verify changes in DB via API
-    const escapedNewInvoiceNumber = String(newInvoiceNumber).replace(/'/g, "''");
+    // 9. Verify changes in DB via API
     const verifyResponse = await page.request.get(
-      `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${escapedNewInvoiceNumber}'`
+      `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${newInvoiceNumber.replace(/'/g, "''")}'`,
+      { headers: { 'X-MS-API-ROLE': 'Admin' } }
     );
     const verifyJson = await verifyResponse.json();
-    const updatedInvoice = verifyJson.value[0];
+    expect(verifyJson.value).toHaveLength(1);
+    expect(verifyJson.value[0].InvoiceNumber).toBe(newInvoiceNumber);
 
-    expect(updatedInvoice.InvoiceNumber).toBe(newInvoiceNumber);
-
-    // Verify lines - need to fetch lines separately
+    // 10. Verify line items
     const verifyLinesResponse = await page.request.get(
-      `http://localhost:5000/api/invoicelines?$filter=InvoiceId eq ${invoiceId}`
+      `http://localhost:5000/api/invoicelines?$filter=InvoiceId eq ${invoiceId}`,
+      { headers: { 'X-MS-API-ROLE': 'Admin' } }
     );
     const verifyLinesJson = await verifyLinesResponse.json();
     const updatedLines = verifyLinesJson.value;
