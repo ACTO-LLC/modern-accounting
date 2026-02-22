@@ -21,7 +21,11 @@ export default function EditAccount() {
 
   const mutation = useMutation({
     mutationFn: async (data: AccountFormData) => {
-      await api.patch(`/accounts/Id/${id}`, data);
+      // Convert empty strings to null for DAB compatibility (DAB rejects empty strings for nullable columns)
+      const payload = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v === '' ? null : v])
+      );
+      await api.patch(`/accounts/Id/${id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });

@@ -11,7 +11,11 @@ export default function NewAccount() {
 
   const mutation = useMutation({
     mutationFn: async (data: AccountFormData) => {
-      await api.post('/accounts', data);
+      // Convert empty strings to null for DAB compatibility (DAB rejects empty strings for nullable columns)
+      const payload = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v === '' ? null : v])
+      );
+      await api.post('/accounts', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
