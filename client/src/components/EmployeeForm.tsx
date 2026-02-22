@@ -150,7 +150,7 @@ export default function EmployeeForm({
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{title}</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Personal Information */}
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Personal Information</h2>

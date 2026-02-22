@@ -32,8 +32,9 @@ test.describe('Estimates Management', () => {
     await page.getByLabel('Estimate Number').fill(estimateNumber);
 
     // Select customer from dropdown
-    await page.getByRole('button', { name: /Select a customer/i }).click();
-    await page.getByRole('option').first().click();
+    await page.getByPlaceholder('Select a customer...').click();
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+    await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
     await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.getByLabel('Expiration Date').fill('2026-02-15');
@@ -70,8 +71,9 @@ test.describe('Estimates Management', () => {
     await page.getByLabel('Estimate Number').fill(estimateNumber);
 
     // Select customer from dropdown
-    await page.getByRole('button', { name: /Select a customer/i }).click();
-    await page.getByRole('option').first().click();
+    await page.getByPlaceholder('Select a customer...').click();
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+    await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
     await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.locator('input[name="Lines.0.Description"]').fill('Initial Service');
@@ -182,8 +184,9 @@ test.describe('Estimates Management', () => {
     await page.getByLabel('Estimate Number').fill(draftEstimateNumber);
 
     // Select customer from dropdown
-    await page.getByRole('button', { name: /Select a customer/i }).click();
-    await page.getByRole('option').first().click();
+    await page.getByPlaceholder('Select a customer...').click();
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+    await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
     await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.getByLabel('Status').selectOption('Draft');
@@ -208,8 +211,9 @@ test.describe('Estimates Management', () => {
     await page.getByLabel('Estimate Number').fill(sentEstimateNumber);
 
     // Select customer from dropdown
-    await page.getByRole('button', { name: /Select a customer/i }).click();
-    await page.getByRole('option').first().click();
+    await page.getByPlaceholder('Select a customer...').click();
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+    await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
 
     await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.getByLabel('Status').selectOption('Sent');
@@ -303,8 +307,8 @@ test.describe('Estimates Management', () => {
     await expect(page.getByRole('heading', { name: /Edit Invoice/i })).toBeVisible({ timeout: 10000 });
     
     // Verify the invoice has the correct customer (should match the estimate)
-    const customerButton = page.getByRole('button', { name: /Acme Corporation/i });
-    await expect(customerButton).toBeVisible({ timeout: 5000 });
+    const customerInput = page.getByPlaceholder('Select a customer...');
+    await expect(customerInput).toHaveValue(/Acme Corporation/i, { timeout: 5000 });
 
     // Verify the total amount matches the estimate
     await expect(page.getByText('Total:')).toBeVisible();

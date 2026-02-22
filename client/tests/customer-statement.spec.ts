@@ -81,7 +81,7 @@ test.describe('Customer Statement Report', () => {
     await page.goto('/reports/customer-statement');
 
     // Look for the date range picker button
-    const dateRangeButton = page.locator('button:has(svg.lucide-calendar)');
+    const dateRangeButton = page.locator('button').filter({ hasText: / - / }).first();
     await expect(dateRangeButton).toBeVisible();
 
     // Click to open dropdown

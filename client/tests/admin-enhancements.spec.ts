@@ -53,6 +53,12 @@ test.describe('Admin Enhancements - AI Feature System', () => {
     });
 
     test('should submit enhancement request successfully', async ({ page }) => {
+      // Requires chat-api for POST /api/enhancements
+      const healthCheck = await page.request.get('http://localhost:8080/api/health', {
+        timeout: 3000, failOnStatusCode: false
+      }).catch(() => null);
+      test.skip(!healthCheck || !healthCheck.ok(), 'chat-api server not running at port 8080');
+
       const timestamp = Date.now();
       const description = `Test enhancement request ${timestamp} - Add export functionality`;
 
@@ -61,14 +67,14 @@ test.describe('Admin Enhancements - AI Feature System', () => {
       const textarea = page.getByLabel(/describe the feature/i);
       await textarea.fill(description);
 
+      // Wait for the API response
+      const responsePromise = page.waitForResponse(
+        resp => resp.url().includes('/enhancements') && resp.request().method() === 'POST',
+        { timeout: 30000 }
+      );
       await page.getByRole('button', { name: /submit/i }).click();
-
-      // Wait for success indication (form clears or success message or error)
-      await page.waitForTimeout(3000);
-      const cleared = await textarea.inputValue() === '';
-      const hasSuccess = await page.getByText(/success|submitted/i).isVisible().catch(() => false);
-      const hasError = await page.getByText(/error|failed/i).first().isVisible().catch(() => false);
-      expect(cleared || hasSuccess || hasError).toBeTruthy();
+      const response = await responsePromise;
+      expect(response.ok()).toBeTruthy();
     });
 
     test('should show loading state while submitting', async ({ page }) => {
@@ -94,12 +100,11 @@ test.describe('Admin Enhancements - AI Feature System', () => {
     test('should display list of enhancements', async ({ page }) => {
       await page.getByRole('tab', { name: /all requests/i }).click();
 
-      // Should have a list/table or empty state message
+      // Should have a list (ul with li items) or empty state message
       await page.waitForTimeout(2000);
-      const hasList = await page.locator('[data-testid="enhancement-list"], .enhancement-list, table, [class*="list"]').first().isVisible().catch(() => false);
+      const hasList = await page.locator('ul li').first().isVisible().catch(() => false);
       const hasEmpty = await page.getByText(/no enhancement|no requests|empty/i).isVisible().catch(() => false);
-      const hasItems = await page.locator('[class*="enhancement"], [class*="card"]').first().isVisible().catch(() => false);
-      expect(hasList || hasEmpty || hasItems).toBeTruthy();
+      expect(hasList || hasEmpty).toBeTruthy();
     });
 
     test('should show status badges for each enhancement', async ({ page }) => {
@@ -108,8 +113,8 @@ test.describe('Admin Enhancements - AI Feature System', () => {
       // Wait for list to load
       await page.waitForTimeout(3000);
 
-      // Status badges or list items should be visible
-      const statusBadges = page.locator('[class*="badge"], [class*="status"], [class*="pending"], [class*="enhancement"]');
+      // Status badges (rounded-full spans) or list items should be visible
+      const statusBadges = page.locator('span.rounded-full');
       const count = await statusBadges.count();
       const hasEmpty = await page.getByText(/no enhancement|no requests/i).isVisible().catch(() => false);
       expect(count > 0 || hasEmpty).toBeTruthy();
@@ -200,19 +205,27 @@ test.describe('Admin Enhancements - AI Feature System', () => {
 
   test.describe('Deployments Tab', () => {
     test('should display deployments tab content', async ({ page }) => {
-      await page.getByRole('tab', { name: /deployments/i }).click();
-      await page.waitForTimeout(1000);
+      // Requires chat-api for fetching deployments
+      const healthCheck = await page.request.get('http://localhost:8080/api/health', {
+        timeout: 3000, failOnStatusCode: false
+      }).catch(() => null);
+      test.skip(!healthCheck || !healthCheck.ok(), 'chat-api server not running at port 8080');
 
-      // Should show deployment-related content or empty state
-      const hasContent = await page.getByText(/deployment|schedule|pending|no approved/i).isVisible().catch(() => false);
-      expect(hasContent).toBeTruthy();
+      await page.getByRole('tab', { name: /deployments/i }).click();
+      await page.waitForTimeout(2000);
+
+      // Should show deployment-related content (heading or empty state)
+      const hasHeading = await page.getByRole('heading', { name: /pending deployments/i }).isVisible().catch(() => false);
+      const hasEmpty = await page.getByText(/no pending deployments/i).isVisible().catch(() => false);
+      const hasContent = await page.getByText(/no approved/i).isVisible().catch(() => false);
+      expect(hasHeading || hasEmpty || hasContent).toBeTruthy();
     });
 
     test('should show pending deployments list', async ({ page }) => {
       await page.getByRole('tab', { name: /deployments/i }).click();
 
       // Should have a section for pending deployments
-      await expect(page.getByText(/pending|scheduled/i)).toBeVisible();
+      await expect(page.getByRole('heading', { name: /pending deployments/i })).toBeVisible();
     });
 
     test('should have date picker for scheduling', async ({ page }) => {

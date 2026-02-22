@@ -15,6 +15,9 @@ import { test, expect } from '../coverage.fixture';
 const demoPause = (ms: number = 1000) => new Promise(resolve => setTimeout(resolve, ms));
 
 test.describe('Dashboard Overview Demo', () => {
+  // Demo tests use deliberate pauses for video recording - need longer timeout
+  test.describe.configure({ timeout: 300000 });
+
   test('showcase the main dashboard features', async ({ page }) => {
     // Scene 1: Land on Dashboard
     await page.goto('/');
@@ -51,24 +54,42 @@ test.describe('Dashboard Overview Demo', () => {
     await demoPause(1000);
 
     // Scene 7: Show navigation sidebar
-    // Hover over sidebar items to show the menu structure
-    const invoicesLink = page.getByRole('link', { name: /Invoices/i });
-    if (await invoicesLink.isVisible()) {
-      await invoicesLink.hover();
-      await demoPause(500);
-    }
+    // Expand sidebar groups and hover over items
+    try {
+      // Expand Sales group to show Invoices
+      const salesGroup = page.getByRole('button', { name: /Sales/i });
+      if (await salesGroup.isVisible()) {
+        await salesGroup.click();
+        await demoPause(300);
+      }
+      const invoicesLink = page.getByRole('link', { name: 'Invoices' });
+      if (await invoicesLink.isVisible()) {
+        await invoicesLink.hover();
+        await demoPause(500);
+      }
+    } catch { /* sidebar navigation may differ */ }
 
-    const customersLink = page.getByRole('link', { name: /Customers/i });
-    if (await customersLink.isVisible()) {
-      await customersLink.hover();
-      await demoPause(500);
-    }
+    try {
+      // Expand People group to show Customers
+      const peopleGroup = page.getByRole('button', { name: /People/i });
+      if (await peopleGroup.isVisible()) {
+        await peopleGroup.click();
+        await demoPause(300);
+      }
+      const customersLink = page.getByRole('link', { name: 'Customers' });
+      if (await customersLink.isVisible()) {
+        await customersLink.hover();
+        await demoPause(500);
+      }
+    } catch { /* ignore */ }
 
-    const reportsLink = page.getByRole('link', { name: /Reports/i });
-    if (await reportsLink.isVisible()) {
-      await reportsLink.hover();
-      await demoPause(500);
-    }
+    try {
+      const reportsLink = page.getByRole('link', { name: 'Reports' });
+      if (await reportsLink.isVisible()) {
+        await reportsLink.hover();
+        await demoPause(500);
+      }
+    } catch { /* ignore */ }
 
     // Return to dashboard view
     await page.mouse.move(600, 400);
@@ -81,27 +102,31 @@ test.describe('Dashboard Overview Demo', () => {
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await demoPause(2000);
 
-    // Scene 2: Go to Invoices
-    await page.getByRole('link', { name: /Invoices/i }).click();
+    // Scene 2: Go to Invoices (expand Sales group first)
+    await page.getByRole('button', { name: /Sales/i }).click();
+    await page.getByRole('link', { name: 'Invoices' }).click();
     await expect(page.getByRole('heading', { name: /Invoices/i })).toBeVisible();
     await demoPause(2000);
 
-    // Scene 3: Go to Customers
-    await page.getByRole('link', { name: /Customers/i }).click();
+    // Scene 3: Go to Customers (expand People group first)
+    await page.getByRole('button', { name: /People/i }).click();
+    await page.getByRole('link', { name: 'Customers' }).click();
     await expect(page.getByRole('heading', { name: /Customers/i })).toBeVisible();
     await demoPause(2000);
 
-    // Scene 4: Go to Vendors
-    await page.getByRole('link', { name: /Vendors/i }).click();
+    // Scene 4: Go to Vendors (already in People group)
+    await page.getByRole('link', { name: 'Vendors' }).click();
     await expect(page.getByRole('heading', { name: /Vendors/i })).toBeVisible();
     await demoPause(2000);
 
-    // Scene 5: Go to Products & Services
-    await page.getByRole('link', { name: /Products|Services/i }).click();
+    // Scene 5: Go to Products & Services (expand Products group first)
+    await page.getByRole('button', { name: /Products/i }).click();
+    await page.getByRole('link', { name: 'Products & Services' }).click();
     await demoPause(2000);
 
-    // Scene 6: Go to Chart of Accounts
-    await page.getByRole('link', { name: /Chart of Accounts|Accounts/i }).click();
+    // Scene 6: Go to Chart of Accounts (expand Accounting group first)
+    await page.getByRole('button', { name: /Accounting/i }).click();
+    await page.getByRole('link', { name: 'Chart of Accounts' }).click();
     await demoPause(2000);
 
     // Scene 7: Return to Dashboard

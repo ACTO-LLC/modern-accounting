@@ -99,7 +99,7 @@ export default function SalesReceiptForm({
     queryKey: ['deposit-accounts'],
     queryFn: async (): Promise<Account[]> => {
       // Get Bank and Cash type accounts
-      const response = await api.get("/accounts?$filter=Type eq 'Asset' and (SubType eq 'Bank' or SubType eq 'Cash' or SubType eq 'Checking' or SubType eq 'Savings')&$orderby=Name");
+      const response = await api.get("/accounts?$filter=Type eq 'Asset' and (Subtype eq 'Bank' or Subtype eq 'Cash' or Subtype eq 'Checking' or Subtype eq 'Savings')&$orderby=Name");
       return response.data.value;
     },
   });

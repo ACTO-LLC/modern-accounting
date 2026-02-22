@@ -126,7 +126,7 @@ test.describe('Address Autocomplete', () => {
 
   test('should handle API errors gracefully', async ({ page }) => {
     // Intercept the Nominatim API and return an error
-    await page.route('**/nominatim.openstreetmap.org/**', route => {
+    await page.route('**/api.geoapify.com/**', route => {
       route.fulfill({
         status: 500,
         body: 'Internal Server Error',

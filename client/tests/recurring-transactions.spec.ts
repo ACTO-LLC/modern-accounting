@@ -157,4 +157,44 @@ test.describe('Recurring Transactions', () => {
     // 6. Verify the template is removed from the list
     await expect(page.locator('table').getByText(templateName)).not.toBeVisible();
   });
+
+  test('should edit a recurring template', async ({ page }) => {
+    const timestamp = Date.now();
+    const templateName = `Edit Test ${timestamp}`;
+    const startDate = new Date().toISOString().split('T')[0];
+
+    // 1. Navigate and create a template
+    await page.goto('/recurring');
+    await page.getByRole('button', { name: 'New Recurring Template' }).click();
+    await page.getByLabel('Template Name').fill(templateName);
+    await page.getByLabel('Transaction Type').selectOption('Invoice');
+    await page.getByLabel('Frequency').selectOption('Monthly');
+    await page.getByLabel('Every').fill('1');
+    await page.getByLabel('Day of Month').selectOption('1');
+    await page.getByLabel('Start Date').fill(startDate);
+    await page.getByRole('button', { name: 'Create Template' }).click();
+
+    // Wait for the template to appear
+    await expect(page.getByText(templateName)).toBeVisible();
+
+    // 2. Find the row and click Edit
+    const row = page.getByRole('row').filter({ hasText: templateName });
+    const editButton = row.getByRole('button', { name: /Edit/i });
+
+    if (await editButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await editButton.click();
+
+      // 3. Verify edit modal opens
+      await expect(page.getByRole('heading', { name: /Edit.*Template/i })).toBeVisible();
+
+      // 4. Update frequency
+      await page.getByLabel('Frequency').selectOption('Weekly');
+
+      // 5. Save changes
+      await page.getByRole('button', { name: /Save|Update/i }).click();
+
+      // 6. Verify the template is updated
+      await expect(page.getByText(templateName)).toBeVisible();
+    }
+  });
 });

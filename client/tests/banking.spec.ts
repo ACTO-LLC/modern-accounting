@@ -4,6 +4,18 @@ import * as fs from 'fs';
 
 test.describe('Banking Module', () => {
   test('should import transactions, review them, and post to GL', async ({ page }) => {
+    // Banking import flow requires chat-api for AI categorization
+    const healthCheck = await page.request.get('http://localhost:8080/api/health', {
+      timeout: 3000, failOnStatusCode: false
+    }).catch(() => null);
+    test.skip(!healthCheck || !healthCheck.ok(), 'chat-api server not running (needed for AI categorization)');
+
+    // Import also requires the import service at port 7072
+    const importCheck = await page.request.get('http://localhost:7072/', {
+      timeout: 3000, failOnStatusCode: false
+    }).catch(() => null);
+    test.skip(!importCheck, 'Import service not running at port 7072');
+
     // 1. Create a dummy CSV file for testing
     const csvContent = `Date,Post Date,Description,Category,Type,Amount,Memo
 2023-12-01,2023-12-02,Test Merchant,Office Expenses,Sale,-50.00,Test Transaction
@@ -14,8 +26,8 @@ test.describe('Banking Module', () => {
 
     try {
       // 2. Navigate to Import Page
-      await page.goto('/import');
-      await expect(page.getByRole('heading', { name: 'Import Transactions' })).toBeVisible();
+      await page.goto('/import?tab=csv-import');
+      await expect(page.getByRole('heading', { name: 'Import', exact: true })).toBeVisible();
 
       // 3. Select Source Account (assuming 'Checking' account exists from seed data or previous tests)
       // We might need to select by index if names vary, but let's try selecting a Bank account.
@@ -31,12 +43,12 @@ test.describe('Banking Module', () => {
       // 5. Click Import
       await page.getByRole('button', { name: 'Import & Categorize with AI' }).click();
 
-      // 6. Handle Alert (Import Success)
-      // Playwright automatically dismisses alerts, but we can verify the navigation to /review
-      await expect(page).toHaveURL('//review');
+      // 6. Wait for import to complete and navigate to review page
+      // /review redirects to /transactions?view=review
+      await expect(page).toHaveURL(/\/transactions|\/review/, { timeout: 60000 });
 
       // 7. Review Transactions
-      await expect(page.getByRole('heading', { name: 'Review Imported Transactions' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /Review|Transactions/i })).toBeVisible();
       await expect(page.getByText('Test Merchant').first()).toBeVisible();
       await expect(page.getByText('Client Payment').first()).toBeVisible();
 

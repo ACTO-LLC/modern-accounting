@@ -140,8 +140,8 @@ test.describe('Bank Import History', () => {
   test('can navigate to review matches', async ({ page }) => {
     await page.getByRole('link', { name: /Review Matches/i }).click();
 
-    // Should navigate to matches page
-    await expect(page).toHaveURL('/bank-import/matches');
+    // Should navigate to matches page (redirects from /bank-import/matches to /import?tab=review-matches)
+    await expect(page).toHaveURL(/review-matches/, { timeout: 10000 });
   });
 });
 
@@ -155,22 +155,20 @@ test.describe('Navigation', () => {
     await expect(importSyncNav).toBeVisible();
     await importSyncNav.click();
 
-    // Check for bank import link
-    await expect(page.getByRole('link', { name: 'Bank Import' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Review Matches' })).toBeVisible();
+    // Check for import-related links in the nav
+    await expect(page.getByRole('link', { name: 'Import' })).toBeVisible();
   });
 
-  test('can navigate to bank import from sidebar', async ({ page }) => {
+  test('can navigate to import from sidebar', async ({ page }) => {
     await page.goto('/');
 
     // Expand Import & Sync group
     const importSyncNav = page.getByText('Import & Sync');
     await importSyncNav.click();
 
-    // Click bank import link
-    await page.getByRole('link', { name: 'Bank Import' }).click();
+    // Click import link
+    await page.getByRole('link', { name: 'Import' }).click();
 
-    await expect(page).toHaveURL('/bank-import');
-    await expect(page.getByRole('heading', { name: 'Import Bank Transactions' })).toBeVisible();
+    await expect(page).toHaveURL(/\/import/);
   });
 });

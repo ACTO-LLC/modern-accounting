@@ -111,7 +111,7 @@ export function EnhancementList({ enhancements: rawEnhancements, isLoading, onRe
         <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredEnhancements.map((enhancement) => {
-              const statusInfo = statusConfig[enhancement.status];
+              const statusInfo = statusConfig[enhancement.status] || { label: enhancement.status, color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300', icon: AlertCircle };
               const StatusIcon = statusInfo.icon;
 
               return (
@@ -124,9 +124,9 @@ export function EnhancementList({ enhancements: rawEnhancements, isLoading, onRe
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {enhancement.description.length > 80
-                            ? enhancement.description.substring(0, 80) + '...'
-                            : enhancement.description}
+                          {(enhancement.description || '').length > 80
+                            ? (enhancement.description || '').substring(0, 80) + '...'
+                            : enhancement.description || '(No description)'}
                         </p>
                         <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                           <span>#{enhancement.id}</span>

@@ -14,8 +14,8 @@ import AddressFields, { AddressFieldValues } from './AddressFields';
 
 export const vendorSchema = z.object({
   Name: z.string().min(1, 'Name is required'),
-  Email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  Phone: z.string().optional(),
+  Email: z.string().email('Invalid email address').nullish().or(z.literal('')),
+  Phone: z.string().nullish(),
   // Separate address fields (use .nullish() for API compatibility - see CLAUDE.md)
   AddressLine1: z.string().nullish(),
   AddressLine2: z.string().nullish(),
@@ -24,12 +24,12 @@ export const vendorSchema = z.object({
   PostalCode: z.string().nullish(),
   Country: z.string().nullish(),
   // Legacy field for backward compatibility
-  Address: z.string().optional(),
-  PaymentTerms: z.string().optional(),
-  TaxId: z.string().optional(),
-  Is1099Vendor: z.boolean().optional(),
+  Address: z.string().nullish(),
+  PaymentTerms: z.string().nullish(),
+  TaxId: z.string().nullish(),
+  Is1099Vendor: z.boolean().nullish(),
   DefaultExpenseAccountId: z.string().uuid().optional().nullable(),
-  Status: z.enum(['Active', 'Inactive']).optional(),
+  Status: z.enum(['Active', 'Inactive']).nullish(),
 });
 
 export type VendorFormData = z.infer<typeof vendorSchema> & AddressFieldValues;

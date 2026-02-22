@@ -84,7 +84,7 @@ export default function CustomerDepositForm({
   const { data: bankAccounts } = useQuery({
     queryKey: ['accounts-bank'],
     queryFn: async (): Promise<Account[]> => {
-      const response = await api.get("/accounts?$filter=Type eq 'Asset' and Status eq 'Active'&$orderby=Name");
+      const response = await api.get("/accounts?$filter=Type eq 'Asset' and IsActive eq true&$orderby=Name");
       return response.data.value;
     }
   });
@@ -93,7 +93,7 @@ export default function CustomerDepositForm({
   const { data: liabilityAccounts } = useQuery({
     queryKey: ['accounts-liability'],
     queryFn: async (): Promise<Account[]> => {
-      const response = await api.get("/accounts?$filter=Type eq 'Liability' and Status eq 'Active'&$orderby=Name");
+      const response = await api.get("/accounts?$filter=Type eq 'Liability' and IsActive eq true&$orderby=Name");
       return response.data.value;
     }
   });
@@ -115,7 +115,7 @@ export default function CustomerDepositForm({
     queryKey: ['projects', watchedCustomerId],
     queryFn: async (): Promise<Project[]> => {
       if (!watchedCustomerId) return [];
-      const response = await api.get(`/projects?$filter=CustomerId eq ${watchedCustomerId} and Status eq 'Active'&$orderby=Name`);
+      const response = await api.get(`/projects?$filter=CustomerId eq ${watchedCustomerId} and IsActive eq true&$orderby=Name`);
       return response.data.value;
     },
     enabled: !!watchedCustomerId
@@ -146,7 +146,7 @@ export default function CustomerDepositForm({
         {headerActions && <div className="flex items-center">{headerActions}</div>}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6 dark:bg-gray-800">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="bg-white shadow rounded-lg p-6 space-y-6 dark:bg-gray-800">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <Controller
             name="DepositNumber"

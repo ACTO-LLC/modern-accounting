@@ -85,7 +85,7 @@ export default function PayBillForm({
   const { data: bankAccounts } = useQuery({
     queryKey: ['accounts-bank'],
     queryFn: async (): Promise<Account[]> => {
-      const response = await api.get("/accounts?$filter=Type eq 'Asset' and Status eq 'Active'&$orderby=Name");
+      const response = await api.get("/accounts?$filter=Type eq 'Asset' and IsActive eq true&$orderby=Name");
       return response.data.value;
     }
   });

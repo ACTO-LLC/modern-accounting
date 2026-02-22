@@ -21,8 +21,9 @@ test.describe('Invoice Creation Demo', () => {
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await demoPause(2000); // Let viewers see the dashboard
 
-    // Scene 2: Navigate to Invoices
-    await page.getByRole('link', { name: /Invoices/i }).click();
+    // Scene 2: Navigate to Invoices (expand Sales group first)
+    await page.getByRole('button', { name: /Sales/i }).click();
+    await page.getByRole('link', { name: 'Invoices' }).click();
     await expect(page.getByRole('heading', { name: /Invoices/i })).toBeVisible();
     await demoPause(1500);
 
@@ -37,9 +38,10 @@ test.describe('Invoice Creation Demo', () => {
     await demoPause(500);
 
     // Scene 5: Select Customer
-    await page.getByRole('button', { name: /Select a customer/i }).click();
+    await page.getByPlaceholder('Select a customer...').click();
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
     await demoPause(500);
-    await page.getByRole('option').first().click();
+    await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
     await demoPause(1000);
 
     // Scene 6: Set Dates
@@ -63,7 +65,7 @@ test.describe('Invoice Creation Demo', () => {
     await demoPause(1500);
 
     // Let the total calculate and be visible
-    await expect(page.getByText(/Total.*\$1,500/)).toBeVisible();
+    await expect(page.getByText(/Total.*\$1500\.00/)).toBeVisible();
     await demoPause(2000);
 
     // Scene 8: Create the Invoice
@@ -94,8 +96,9 @@ test.describe('Invoice Creation Demo', () => {
     await page.getByLabel('Invoice Number').fill(invoiceNumber);
 
     // Select customer
-    await page.getByRole('button', { name: /Select a customer/i }).click();
-    await page.getByRole('option').first().click();
+    await page.getByPlaceholder('Select a customer...').click();
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+    await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
     await demoPause(1000);
 
     // Set dates

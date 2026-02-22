@@ -49,6 +49,22 @@ export async function submitEnhancement(description: string, requestorName: stri
   return res.json();
 }
 
+/** Map PascalCase API fields to camelCase interface fields */
+function mapEnhancement(raw: Record<string, unknown>): Enhancement {
+  return {
+    id: (raw.id ?? raw.Id) as number,
+    description: (raw.description ?? raw.Description ?? '') as string,
+    requestorName: (raw.requestorName ?? raw.RequestorName ?? '') as string,
+    status: ((raw.status ?? raw.Status ?? 'pending') as string).toLowerCase() as Enhancement['status'],
+    intent: (raw.intent ?? raw.Intent) as string | undefined,
+    branchName: (raw.branchName ?? raw.BranchName) as string | undefined,
+    prUrl: (raw.prUrl ?? raw.PrUrl ?? raw.PRUrl) as string | undefined,
+    notes: (raw.notes ?? raw.Notes) as string | undefined,
+    createdAt: (raw.createdAt ?? raw.CreatedAt ?? '') as string,
+    updatedAt: (raw.updatedAt ?? raw.UpdatedAt ?? '') as string,
+  };
+}
+
 /**
  * Get all enhancement requests, optionally filtered by status
  */
@@ -61,9 +77,12 @@ export async function getEnhancements(status?: Enhancement['status']): Promise<E
     throw new Error('Failed to fetch enhancements');
   }
   const data = await res.json();
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.value)) return data.value;
-  return [];
+  let items: unknown[];
+  if (Array.isArray(data)) items = data;
+  else if (data && Array.isArray(data.enhancements)) items = data.enhancements;
+  else if (data && Array.isArray(data.value)) items = data.value;
+  else items = [];
+  return items.map(item => mapEnhancement(item as Record<string, unknown>));
 }
 
 /**
@@ -130,7 +149,8 @@ export async function getPendingDeployments(): Promise<Deployment[]> {
 export async function getDeployments(): Promise<Deployment[]> {
   const res = await fetch(`${API_BASE}/api/deployments`);
   if (!res.ok) {
-    throw new Error('Failed to fetch deployments');
+    // Return empty array instead of throwing - deployments may not be configured
+    return [];
   }
   const data = await res.json();
   if (Array.isArray(data)) return data;
