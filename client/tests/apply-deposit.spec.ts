@@ -26,15 +26,16 @@ test.describe('Apply Customer Deposit', () => {
 
     await page.getByLabel('Deposit Number').fill(depositNumber);
 
-    // Select customer using CustomerSelector (custom dropdown)
-    const customerTrigger = page.locator('button[aria-haspopup="listbox"]').first();
-    await customerTrigger.click();
-    const hasCustomers = await page.locator('[role="option"]').first().isVisible({ timeout: 5000 }).catch(() => false);
+    // Select customer using CustomerSelector (MUI Autocomplete)
+    const customerInput = page.getByPlaceholder('Select a customer...');
+    await customerInput.click();
+    const customerListbox = page.locator('.MuiAutocomplete-listbox');
+    const hasCustomers = await customerListbox.isVisible({ timeout: 5000 }).catch(() => false);
     if (!hasCustomers) {
       test.skip(true, 'No customers available');
       return;
     }
-    await page.locator('[role="option"]').first().click();
+    await customerListbox.locator('[role="option"]').first().click();
 
     await page.getByLabel('Amount').fill('250.00');
 

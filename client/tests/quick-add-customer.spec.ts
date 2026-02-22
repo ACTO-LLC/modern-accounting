@@ -9,13 +9,12 @@ test.describe('Quick Add Customer from Invoice', () => {
     const invoiceNumber = 'INV-QUICK-ADD-' + Date.now();
     await page.getByLabel('Invoice Number').fill(invoiceNumber);
 
-    // Click customer selector to open dropdown
-    await page.getByRole('button', { name: /Select a customer/i }).click();
+    // Click customer selector (MUI Autocomplete) to open dropdown
+    const customerInput = page.getByPlaceholder('Select a customer...');
+    await customerInput.click();
 
-    // Wait for dropdown to be visible
-    await expect(page.getByPlaceholder('Search customers...')).toBeVisible();
-
-    // Click "Add New Customer" button
+    // Wait for dropdown to be visible and click "Add New Customer" button
+    await expect(page.getByRole('button', { name: /Add New Customer/i })).toBeVisible({ timeout: 10000 });
     await page.getByRole('button', { name: /Add New Customer/i }).click();
 
     // Wait for modal to appear
@@ -24,7 +23,7 @@ test.describe('Quick Add Customer from Invoice', () => {
 
     // Fill in customer details
     const customerName = 'Test Quick Customer ' + Date.now();
-    await modal.getByLabel('Name *').fill(customerName);
+    await modal.getByLabel(/Name/).fill(customerName);
     await modal.getByLabel('Email').fill('quicktest@example.com');
     await modal.getByLabel('Phone').fill('555-123-4567');
 
@@ -34,12 +33,8 @@ test.describe('Quick Add Customer from Invoice', () => {
     // Wait for modal to close
     await expect(modal.getByRole('heading', { name: 'Quick Add Customer' })).not.toBeVisible({ timeout: 10000 });
 
-    // The customer should be auto-selected - wait for customer name to appear in selector
-    // The selector button should now show the customer name instead of "Select a customer..."
-    await expect(page.getByRole('button', { name: new RegExp(customerName) })).toBeVisible({ timeout: 15000 });
-
-    // Verify that "Select a customer..." is no longer visible (customer is selected)
-    await expect(page.getByRole('button', { name: /Select a customer/i })).not.toBeVisible();
+    // The customer should be auto-selected in the Autocomplete input
+    await expect(customerInput).toHaveValue(new RegExp(customerName), { timeout: 15000 });
 
     // Quick add customer test complete - the customer was created and auto-selected
     // Invoice creation is tested in separate invoice tests
@@ -49,10 +44,12 @@ test.describe('Quick Add Customer from Invoice', () => {
     // Navigate to new invoice page
     await page.goto('/invoices/new');
 
-    // Click customer selector to open dropdown
-    await page.getByRole('button', { name: /Select a customer/i }).click();
+    // Click customer selector (MUI Autocomplete) to open dropdown
+    const customerInput = page.getByPlaceholder('Select a customer...');
+    await customerInput.click();
 
     // Click "Add New Customer" button
+    await expect(page.getByRole('button', { name: /Add New Customer/i })).toBeVisible({ timeout: 10000 });
     await page.getByRole('button', { name: /Add New Customer/i }).click();
 
     // Wait for modal to appear
@@ -60,7 +57,7 @@ test.describe('Quick Add Customer from Invoice', () => {
     await expect(modal.getByRole('heading', { name: 'Quick Add Customer' })).toBeVisible();
 
     // Fill in some data
-    await modal.getByLabel('Name *').fill('Will Be Cancelled');
+    await modal.getByLabel(/Name/).fill('Will Be Cancelled');
 
     // Click Cancel button inside the modal
     await modal.getByRole('button', { name: 'Cancel' }).click();
@@ -68,18 +65,20 @@ test.describe('Quick Add Customer from Invoice', () => {
     // Modal should close
     await expect(modal).not.toBeVisible();
 
-    // Customer selector should still show placeholder
-    await expect(page.getByRole('button', { name: /Select a customer/i })).toBeVisible();
+    // Customer selector should still show placeholder (no customer selected)
+    await expect(customerInput).toHaveValue('');
   });
 
   test('quick add customer validates required fields', async ({ page }) => {
     // Navigate to new invoice page
     await page.goto('/invoices/new');
 
-    // Click customer selector to open dropdown
-    await page.getByRole('button', { name: /Select a customer/i }).click();
+    // Click customer selector (MUI Autocomplete) to open dropdown
+    const customerInput = page.getByPlaceholder('Select a customer...');
+    await customerInput.click();
 
     // Click "Add New Customer" button
+    await expect(page.getByRole('button', { name: /Add New Customer/i })).toBeVisible({ timeout: 10000 });
     await page.getByRole('button', { name: /Add New Customer/i }).click();
 
     // Wait for modal to appear
@@ -87,7 +86,7 @@ test.describe('Quick Add Customer from Invoice', () => {
     await expect(modal.getByRole('heading', { name: 'Quick Add Customer' })).toBeVisible();
 
     // Ensure the name field is empty
-    const nameInput = modal.getByLabel('Name *');
+    const nameInput = modal.getByLabel(/Name/);
     await expect(nameInput).toBeVisible();
     await expect(nameInput).toHaveValue('');
 
@@ -102,7 +101,7 @@ test.describe('Quick Add Customer from Invoice', () => {
 
     // Now fill in the name and verify it can submit successfully
     const customerName = 'Validation Test Customer ' + Date.now();
-    await modal.getByLabel('Name *').fill(customerName);
+    await modal.getByLabel(/Name/).fill(customerName);
     await modal.getByRole('button', { name: /Create Customer/i }).click();
 
     // Now modal should close

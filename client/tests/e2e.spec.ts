@@ -31,8 +31,9 @@ test('can create a new invoice', async ({ page }) => {
   await page.getByLabel('Invoice Number').fill(invoiceNumber);
   
   // Select customer from dropdown
-  await page.getByRole('button', { name: /Select a customer/i }).click();
-  await page.getByRole('option').first().click();
+  await page.getByPlaceholder('Select a customer...').click();
+  await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+  await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
   
   // Fill line item (TotalAmount is now calculated from line items)
   await page.locator('input[name="Lines.0.Description"]').fill('Test Service');
@@ -86,8 +87,8 @@ test('can create a balanced journal entry', async ({ page }) => {
   await line0Account.click();
   await line0Account.fill('1');
   // Wait for autocomplete options to load and select first match
-  await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
-  await page.getByRole('option').first().click();
+  await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+  await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
   await page.locator('input[name="Lines.0.Description"]').fill('Cash on Hand');
   await page.locator('input[name="Lines.0.Debit"]').fill('1000');
 
@@ -95,8 +96,8 @@ test('can create a balanced journal entry', async ({ page }) => {
   const line1Account = page.locator('.MuiAutocomplete-root').nth(1).locator('input');
   await line1Account.click();
   await line1Account.fill('3');
-  await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
-  await page.getByRole('option').first().click();
+  await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+  await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
   await page.locator('input[name="Lines.1.Description"]').fill('Owner Equity');
   await page.locator('input[name="Lines.1.Credit"]').fill('1000');
   
@@ -123,27 +124,32 @@ test('can edit an existing invoice', async ({ page }) => {
   const invoiceNumber = `INV-EDIT-${Date.now()}`;
   await page.goto('/invoices/new');
   await page.getByLabel('Invoice Number').fill(invoiceNumber);
-  
+
   // Select customer from dropdown
-  await page.getByRole('button', { name: /Select a customer/i }).click();
-  await page.getByRole('option').first().click();
-  
+  await page.getByPlaceholder('Select a customer...').click();
+  await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 10000 });
+  await page.locator('.MuiAutocomplete-listbox [role="option"]').first().click();
+
   // Fill line item (TotalAmount is calculated from line items)
   await page.locator('input[name="Lines.0.Description"]').fill('Test Item');
   await page.locator('input[name="Lines.0.Quantity"]').fill('1');
   await page.locator('input[name="Lines.0.UnitPrice"]').fill('100');
 
   await page.getByRole('button', { name: /Create Invoice/i }).click();
-  await expect(page).toHaveURL(/.*invoices/, { timeout: 30000 });
-  await expect(page.getByText(invoiceNumber)).toBeVisible();
+  await expect(page).toHaveURL(/\/invoices$/, { timeout: 30000 });
 
-  // 2. Click Edit on the new invoice
-  const row = page.getByRole('row', { name: invoiceNumber });
-  await row.getByRole('button', { name: 'Edit' }).click();
+  // 2. Query API to get the invoice ID (avoids pagination issues in DataGrid)
+  const escapedInvoiceNumber = String(invoiceNumber).replace(/'/g, "''");
+  const queryResponse = await page.request.get(
+    `http://localhost:5000/api/invoices?$filter=InvoiceNumber eq '${escapedInvoiceNumber}'`
+  );
+  const queryResult = await queryResponse.json();
+  expect(queryResult.value).toHaveLength(1);
+  const invoiceId = queryResult.value[0].Id;
 
-  // 3. Verify Edit Page
-  await expect(page).toHaveURL(/.*\/edit/);
-  await expect(page.getByLabel('Invoice Number')).toHaveValue(invoiceNumber);
+  // 3. Navigate to edit page directly
+  await page.goto(`/invoices/${invoiceId}/edit`);
+  await expect(page.getByLabel('Invoice Number')).toHaveValue(invoiceNumber, { timeout: 10000 });
 
   // 4. Update Invoice - change unit price from 100 to 200
   const unitPriceInput = page.locator('input[name="Lines.0.UnitPrice"]');
@@ -155,9 +161,14 @@ test('can edit an existing invoice', async ({ page }) => {
 
   await page.getByRole('button', { name: /Save Invoice/i }).click();
 
-  // 5. Verify Redirect and Update
-  await expect(page).toHaveURL(/.*invoices/, { timeout: 30000 });
-  await expect(page.getByText('$200.00').first()).toBeVisible();
+  // 5. Verify redirect and update via API
+  await expect(page).toHaveURL(/\/invoices$/, { timeout: 30000 });
+
+  const verifyResponse = await page.request.get(
+    `http://localhost:5000/api/invoicelines?$filter=InvoiceId eq ${invoiceId}`
+  );
+  const verifyResult = await verifyResponse.json();
+  expect(verifyResult.value[0].UnitPrice).toBe(200);
 });
 
 test('can use AI chat to get invoices', async ({ page }) => {

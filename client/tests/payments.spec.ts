@@ -9,15 +9,16 @@ test.describe('Receive Payments', () => {
     await page.goto('/payments/new');
     await expect(page.getByRole('heading', { name: /Receive Payment/i })).toBeVisible();
 
-    // Select customer using CustomerSelector (custom dropdown, not native select)
-    const customerTrigger = page.locator('button[aria-haspopup="listbox"]').first();
-    await customerTrigger.click();
-    const hasCustomers = await page.locator('[role="option"]').first().isVisible({ timeout: 5000 }).catch(() => false);
+    // Select customer using CustomerSelector (MUI Autocomplete)
+    const customerInput = page.getByPlaceholder('Select a customer...');
+    await customerInput.click();
+    const customerListbox = page.locator('.MuiAutocomplete-listbox');
+    const hasCustomers = await customerListbox.isVisible({ timeout: 5000 }).catch(() => false);
     if (!hasCustomers) {
       test.skip(true, 'No customers available');
       return;
     }
-    await page.locator('[role="option"]').first().click();
+    await customerListbox.locator('[role="option"]').first().click();
 
     // Fill date
     const today = new Date().toISOString().split('T')[0];

@@ -9,15 +9,16 @@ test.describe('Bill Payments', () => {
     await page.goto('/bill-payments/new');
     await expect(page.getByRole('heading', { name: /Pay Bills/i })).toBeVisible();
 
-    // Select vendor using VendorSelector (custom dropdown, not native select)
-    const vendorTrigger = page.locator('button[aria-haspopup="listbox"]').first();
-    await vendorTrigger.click();
-    const hasVendors = await page.locator('[role="option"]').first().isVisible({ timeout: 5000 }).catch(() => false);
+    // Select vendor using VendorSelector (MUI Autocomplete)
+    const vendorInput = page.getByPlaceholder('Select a vendor...');
+    await vendorInput.click();
+    const vendorListbox = page.locator('.MuiAutocomplete-listbox');
+    const hasVendors = await vendorListbox.isVisible({ timeout: 5000 }).catch(() => false);
     if (!hasVendors) {
       test.skip(true, 'No vendors available');
       return;
     }
-    await page.locator('[role="option"]').first().click();
+    await vendorListbox.locator('[role="option"]').first().click();
 
     // Fill date
     const today = new Date().toISOString().split('T')[0];

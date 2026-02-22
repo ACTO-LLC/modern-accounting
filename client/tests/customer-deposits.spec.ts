@@ -16,12 +16,13 @@ test.describe('Customer Deposits', () => {
     // Select customer using CustomerSelector (MUI Autocomplete)
     const customerInput = page.getByPlaceholder('Select a customer...');
     await customerInput.click();
-    const hasCustomers = await page.getByRole('option').first().isVisible({ timeout: 10000 }).catch(() => false);
+    const customerListbox = page.locator('.MuiAutocomplete-listbox');
+    const hasCustomers = await customerListbox.isVisible({ timeout: 10000 }).catch(() => false);
     if (!hasCustomers) {
       test.skip(true, 'No customers available');
       return;
     }
-    await page.getByRole('option').first().click();
+    await customerListbox.locator('[role="option"]').first().click();
 
     // Fill date
     const today = new Date().toISOString().split('T')[0];

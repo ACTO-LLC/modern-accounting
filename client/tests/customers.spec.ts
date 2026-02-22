@@ -7,14 +7,13 @@ test.describe('Customer Management', () => {
     const updatedName = `${customerName} Updated`;
     const email = `test${timestamp}@example.com`;
 
-    // 1. Navigate to Customers page
-    await page.goto('/customers');
+    // Handle potential alert dialogs from failed API calls
+    page.on('dialog', async dialog => { await dialog.dismiss(); });
 
-    // 2. Click "New Customer"
-    await page.getByRole('link', { name: 'New Customer' }).click();
-    await expect(page).toHaveURL(/\/customers\/new/);
+    // 1. Navigate to New Customer page directly
+    await page.goto('/customers/new');
 
-    // 3. Fill Form (using new separate address fields)
+    // 2. Fill Form (MUI TextFields + AddressFields)
     await page.getByLabel('Name').fill(customerName);
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Phone').fill('555-0123');
@@ -26,36 +25,54 @@ test.describe('Customer Management', () => {
     await page.getByRole('combobox', { name: 'State' }).selectOption('IL');
     await page.getByLabel('ZIP Code').fill('62701');
 
-    // 4. Save - wait for API response
+    // 3. Save - wait for API response
     const responsePromise = page.waitForResponse(
       resp => resp.url().includes('/customers') && resp.request().method() === 'POST' && resp.status() < 400
     );
     await page.getByRole('button', { name: 'Save Customer' }).click();
     await responsePromise;
 
-    // 5. Verify Redirect and List
+    // 4. Verify redirect to customer list
     await expect(page).toHaveURL(/\/customers$/);
-    await expect(page.getByText(customerName)).toBeVisible();
-    await expect(page.getByText(email)).toBeVisible();
 
-    // 6. Edit Customer
-    // Find the row with the customer and click Edit
-    const row = page.getByRole('row').filter({ hasText: customerName });
-    await row.getByRole('link', { name: 'Edit' }).click();
+    // 5. Query API to get the created customer's ID (avoids pagination issues in DataGrid)
+    const escapedName = String(customerName).replace(/'/g, "''");
+    const queryResponse = await page.request.get(
+      `http://localhost:5000/api/customers?$filter=Name eq '${escapedName}'`
+    );
+    const queryResult = await queryResponse.json();
+    expect(queryResult.value).toHaveLength(1);
+    const customerId = queryResult.value[0].Id;
+    expect(queryResult.value[0].Email).toBe(email);
 
-    // 7. Update Name
-    await page.getByLabel('Name').fill(updatedName);
+    // 6. Navigate to edit page directly
+    await page.goto(`/customers/${customerId}/edit`);
+    await expect(page.getByLabel('Name')).toHaveValue(customerName, { timeout: 10000 });
 
-    // Wait for save to complete
-    const updatePromise = page.waitForResponse(
-      resp => resp.url().includes('/customers') && resp.status() < 400
+    // 7. Update Name - clear and retype to ensure Controller registers change
+    const nameInput = page.getByLabel('Name');
+    await nameInput.click();
+    await nameInput.press('Control+a');
+    await nameInput.press('Backspace');
+    await nameInput.pressSequentially(updatedName, { delay: 30 });
+    await nameInput.press('Tab'); // Blur to trigger onBlur
+
+    // 8. Save and wait for PATCH response
+    const patchPromise = page.waitForResponse(
+      resp => resp.url().includes('/customers') && resp.request().method() === 'PATCH',
+      { timeout: 15000 }
     );
     await page.getByRole('button', { name: 'Save Customer' }).click();
-    await updatePromise;
+    await patchPromise;
 
-    // 8. Verify Update
-    await expect(page).toHaveURL(/\/customers$/);
-    await expect(page.getByText(updatedName)).toBeVisible();
-    await expect(page.getByText(customerName, { exact: true })).not.toBeVisible();
+    // 9. Verify redirect
+    await expect(page).toHaveURL(/\/customers$/, { timeout: 10000 });
+
+    // 10. Verify update via API
+    const verifyResponse = await page.request.get(
+      `http://localhost:5000/api/customers?$filter=Id eq ${customerId}`
+    );
+    const verifyResult = await verifyResponse.json();
+    expect(verifyResult.value[0].Name).toBe(updatedName);
   });
 });
