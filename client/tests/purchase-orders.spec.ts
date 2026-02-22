@@ -11,19 +11,20 @@ test.describe('Purchase Orders', () => {
     await expect(page.getByRole('heading', { name: /New Purchase Order/i })).toBeVisible();
 
     // Fill header fields
-    await page.locator('#PONumber').fill(poNumber);
+    await page.getByLabel('PO Number').fill(poNumber);
 
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await vendorSelect.selectOption({ index: 1 });
+    // Select vendor (MUI select)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     const today = new Date().toISOString().split('T')[0];
-    await page.locator('#PODate').fill(today);
+    await page.getByLabel('PO Date').fill(today);
 
     const expectedDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    await page.locator('#ExpectedDate').fill(expectedDate);
+    await page.getByLabel('Expected Delivery Date').fill(expectedDate);
 
-    await page.locator('#Notes').fill('Test PO via E2E');
+    await page.getByLabel('Notes').fill('Test PO via E2E');
 
     // Fill first line item
     await page.locator('input[name="Lines.0.Description"]').fill('Widget A');
@@ -53,10 +54,12 @@ test.describe('Purchase Orders', () => {
 
     // Create first
     await page.goto('/purchase-orders/new');
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await vendorSelect.selectOption({ index: 1 });
-    await page.locator('#PONumber').fill(poNumber);
+
+    // Select vendor (MUI select)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
+    await page.getByLabel('PO Number').fill(poNumber);
 
     await page.locator('input[name="Lines.0.Description"]').fill('Initial Item');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
@@ -77,9 +80,9 @@ test.describe('Purchase Orders', () => {
       await expect(page.getByRole('heading', { name: /Edit Purchase Order/i })).toBeVisible();
 
       // Wait for form data to load
-      await expect(page.locator('#PONumber')).not.toHaveValue('', { timeout: 10000 });
+      await expect(page.getByLabel('PO Number')).not.toHaveValue('', { timeout: 10000 });
 
-      await page.locator('#Notes').fill('Updated notes via E2E');
+      await page.getByLabel('Notes').fill('Updated notes via E2E');
       await page.locator('input[name="Lines.0.Quantity"]').clear();
       await page.locator('input[name="Lines.0.Quantity"]').fill('5');
 

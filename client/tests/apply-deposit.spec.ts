@@ -24,7 +24,7 @@ test.describe('Apply Customer Deposit', () => {
 
     await page.goto('/customer-deposits/new');
 
-    await page.locator('#DepositNumber').fill(depositNumber);
+    await page.getByLabel('Deposit Number').fill(depositNumber);
 
     // Select customer using CustomerSelector (custom dropdown)
     const customerTrigger = page.locator('button[aria-haspopup="listbox"]').first();
@@ -36,16 +36,21 @@ test.describe('Apply Customer Deposit', () => {
     }
     await page.locator('[role="option"]').first().click();
 
-    await page.locator('#Amount').fill('250.00');
-    await page.locator('#PaymentMethod').selectOption('Check');
+    await page.getByLabel('Amount').fill('250.00');
 
-    const depositAccountSelect = page.locator('#DepositAccountId');
-    await expect(depositAccountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await depositAccountSelect.selectOption({ index: 1 });
+    // Select Payment Method (MUI select)
+    await page.getByLabel('Payment Method').click();
+    await page.getByRole('option', { name: 'Check' }).click();
 
-    const liabilitySelect = page.locator('#LiabilityAccountId');
-    await expect(liabilitySelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await liabilitySelect.selectOption({ index: 1 });
+    // Select Deposit To Account (MUI select)
+    await page.getByLabel('Deposit To Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
+
+    // Select Liability Account (MUI select)
+    await page.getByLabel('Liability Account (Unearned Revenue)').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/customerdeposits') && (resp.status() === 201 || resp.status() === 200),

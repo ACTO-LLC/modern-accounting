@@ -34,12 +34,16 @@ test('can create a new invoice', async ({ page }) => {
   await page.getByRole('button', { name: /Select a customer/i }).click();
   await page.getByRole('option').first().click();
   
-  await page.getByLabel('Total Amount').fill('500.50');
-  await page.getByRole('button', { name: 'Create Invoice' }).click();
+  // Fill line item (TotalAmount is now calculated from line items)
+  await page.locator('input[name="Lines.0.Description"]').fill('Test Service');
+  await page.locator('input[name="Lines.0.Quantity"]').fill('1');
+  await page.locator('input[name="Lines.0.UnitPrice"]').fill('500.50');
+
+  await page.getByRole('button', { name: /Create Invoice/i }).click();
 
   // Should redirect back to invoices
-  await expect(page).toHaveURL(/.*invoices/);
-  
+  await expect(page).toHaveURL(/.*invoices/, { timeout: 30000 });
+
   // Should see the new invoice
   await expect(page.getByText(invoiceNumber)).toBeVisible();
   await expect(page.getByText('$500.50').first()).toBeVisible();
@@ -77,13 +81,22 @@ test('can create a balanced journal entry', async ({ page }) => {
   await page.getByLabel('Date').fill('2023-12-31');
   await page.getByLabel('Description').fill('Opening Balance');
   
-  // Line 1 (Debit)
-  await page.locator('input[name="Lines.0.AccountId"]').fill('00000000-0000-0000-0000-000000000001'); // Cash (Dummy GUID)
+  // Line 1 (Debit) - AccountId uses MUI Autocomplete (search by Code - Name)
+  const line0Account = page.locator('.MuiAutocomplete-root').nth(0).locator('input');
+  await line0Account.click();
+  await line0Account.fill('1');
+  // Wait for autocomplete options to load and select first match
+  await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
+  await page.getByRole('option').first().click();
   await page.locator('input[name="Lines.0.Description"]').fill('Cash on Hand');
   await page.locator('input[name="Lines.0.Debit"]').fill('1000');
-  
-  // Line 2 (Credit)
-  await page.locator('input[name="Lines.1.AccountId"]').fill('00000000-0000-0000-0000-000000000002'); // Equity (Dummy GUID)
+
+  // Line 2 (Credit) - AccountId uses MUI Autocomplete
+  const line1Account = page.locator('.MuiAutocomplete-root').nth(1).locator('input');
+  await line1Account.click();
+  await line1Account.fill('3');
+  await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
+  await page.getByRole('option').first().click();
   await page.locator('input[name="Lines.1.Description"]').fill('Owner Equity');
   await page.locator('input[name="Lines.1.Credit"]').fill('1000');
   
@@ -115,33 +128,36 @@ test('can edit an existing invoice', async ({ page }) => {
   await page.getByRole('button', { name: /Select a customer/i }).click();
   await page.getByRole('option').first().click();
   
-  await page.getByLabel('Total Amount').fill('100.00');
-  await page.getByRole('button', { name: 'Create Invoice' }).click();
-  await expect(page).toHaveURL(/.*invoices/);
+  // Fill line item (TotalAmount is calculated from line items)
+  await page.locator('input[name="Lines.0.Description"]').fill('Test Item');
+  await page.locator('input[name="Lines.0.Quantity"]').fill('1');
+  await page.locator('input[name="Lines.0.UnitPrice"]').fill('100');
+
+  await page.getByRole('button', { name: /Create Invoice/i }).click();
+  await expect(page).toHaveURL(/.*invoices/, { timeout: 30000 });
   await expect(page.getByText(invoiceNumber)).toBeVisible();
 
   // 2. Click Edit on the new invoice
-  console.log('Finding invoice row...');
   const row = page.getByRole('row', { name: invoiceNumber });
-  console.log('Clicking Edit...');
   await row.getByRole('button', { name: 'Edit' }).click();
 
   // 3. Verify Edit Page
-  console.log('Verifying Edit Page...');
   await expect(page).toHaveURL(/.*\/edit/);
   await expect(page.getByLabel('Invoice Number')).toHaveValue(invoiceNumber);
-  await expect(page.getByLabel('Total Amount')).toHaveValue('100');
 
-  // 4. Update Invoice
-  console.log('Updating Invoice...');
-  const newAmount = '200.00';
-  await page.getByLabel('Total Amount').fill(newAmount);
-  await page.getByRole('button', { name: 'Save Invoice' }).click();
+  // 4. Update Invoice - change unit price from 100 to 200
+  const unitPriceInput = page.locator('input[name="Lines.0.UnitPrice"]');
+  await expect(unitPriceInput).toBeVisible({ timeout: 10000 });
+  await unitPriceInput.click();
+  await unitPriceInput.press('Control+a');
+  await unitPriceInput.pressSequentially('200');
+  await unitPriceInput.press('Tab');
+
+  await page.getByRole('button', { name: /Save Invoice/i }).click();
 
   // 5. Verify Redirect and Update
-  console.log('Verifying Update...');
-  await expect(page).toHaveURL(/.*invoices/);
-  await expect(page.getByText(`$${newAmount}`)).toBeVisible();
+  await expect(page).toHaveURL(/.*invoices/, { timeout: 30000 });
+  await expect(page.getByText('$200.00').first()).toBeVisible();
 });
 
 test('can use AI chat to get invoices', async ({ page }) => {

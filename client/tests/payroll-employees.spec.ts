@@ -44,12 +44,15 @@ test.describe('Employee Management', () => {
     await page.getByLabel('Hire Date *').fill('2026-01-15');
 
     // 4. Fill Compensation - Hourly
-    await page.getByLabel('Pay Type *').selectOption('Hourly');
+    await page.getByLabel('Pay Type *').click();
+    await page.getByRole('option', { name: 'Hourly' }).click();
     await page.getByLabel(/Hourly Rate/).fill('25.00');
-    await page.getByLabel('Pay Frequency *').selectOption('Biweekly');
+    await page.getByLabel('Pay Frequency *').click();
+    await page.getByRole('option', { name: 'Biweekly' }).click();
 
     // 5. Fill Tax Information
-    await page.getByLabel('Filing Status *').selectOption('Single');
+    await page.getByLabel('Filing Status *').click();
+    await page.getByRole('option', { name: 'Single' }).click();
 
     // 6. Save
     await page.getByRole('button', { name: 'Save Employee' }).click();
@@ -90,13 +93,16 @@ test.describe('Employee Management', () => {
     await page.getByLabel('Hire Date *').fill('2026-01-10');
 
     // 4. Fill Compensation - Salary
-    await page.getByLabel('Pay Type *').selectOption('Salary');
+    await page.getByLabel('Pay Type *').click();
+    await page.getByRole('option', { name: 'Salary' }).click();
     // The label changes to "Annual Salary" when Salary is selected
     await page.getByLabel(/Annual Salary/).fill('75000.00');
-    await page.getByLabel('Pay Frequency *').selectOption('Monthly');
+    await page.getByLabel('Pay Frequency *').click();
+    await page.getByRole('option', { name: 'Monthly' }).click();
 
     // 5. Fill Tax Information
-    await page.getByLabel('Filing Status *').selectOption('MarriedFilingJointly');
+    await page.getByLabel('Filing Status *').click();
+    await page.getByRole('option', { name: 'MarriedFilingJointly' }).click();
 
     // 6. Save
     await page.getByRole('button', { name: 'Save Employee' }).click();

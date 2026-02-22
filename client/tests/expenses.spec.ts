@@ -11,29 +11,30 @@ test.describe('Expenses', () => {
 
     // Fill date
     const today = new Date().toISOString().split('T')[0];
-    await page.locator('#ExpenseDate').fill(today);
+    await page.getByLabel('Date').fill(today);
 
     // Fill amount
-    await page.locator('#Amount').fill('125.50');
+    await page.getByLabel('Amount').fill('125.50');
 
-    // Select account/category
-    const accountSelect = page.locator('#AccountId');
-    await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await accountSelect.selectOption({ index: 1 });
+    // Select account/category (MUI select)
+    await page.getByLabel('Category / Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    // Select payment method
-    await page.locator('#PaymentMethod').selectOption('Credit Card');
+    // Select payment method (MUI select)
+    await page.getByLabel('Payment Method').click();
+    await page.getByRole('option', { name: 'Credit Card' }).click();
 
-    // Select payment account (avoid empty-string UUID validation)
-    const paymentSelect = page.locator('#PaymentAccountId');
-    await expect(paymentSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await paymentSelect.selectOption({ index: 1 });
+    // Select payment account (MUI select)
+    await page.getByLabel('Paid From Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     // Fill reference
-    await page.locator('#Reference').fill(`REF-${timestamp}`);
+    await page.getByLabel('Reference / Check #').fill(`REF-${timestamp}`);
 
     // Fill description
-    await page.locator('#Description').fill('Test expense via E2E');
+    await page.getByLabel('Description').fill('Test expense via E2E');
 
     // Save
     const responsePromise = page.waitForResponse(
@@ -51,20 +52,23 @@ test.describe('Expenses', () => {
 
     // Create first
     await page.goto('/expenses/new');
-    await page.locator('#Amount').fill('50.00');
+    await page.getByLabel('Amount').fill('50.00');
 
-    const accountSelect = page.locator('#AccountId');
-    await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await accountSelect.selectOption({ index: 1 });
+    // Select account (MUI select)
+    await page.getByLabel('Category / Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    await page.locator('#PaymentMethod').selectOption('Cash');
+    // Select payment method (MUI select)
+    await page.getByLabel('Payment Method').click();
+    await page.getByRole('option', { name: 'Cash' }).click();
 
-    // Select payment account (avoid empty-string UUID validation)
-    const paymentSelect = page.locator('#PaymentAccountId');
-    await expect(paymentSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await paymentSelect.selectOption({ index: 1 });
+    // Select payment account (MUI select)
+    await page.getByLabel('Paid From Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    await page.locator('#Description').fill('Initial expense');
+    await page.getByLabel('Description').fill('Initial expense');
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/expenses') && (resp.status() === 201 || resp.status() === 200),
@@ -81,11 +85,11 @@ test.describe('Expenses', () => {
       await expect(page.getByRole('heading', { name: /Edit Expense/i })).toBeVisible();
 
       // Wait for form data to load
-      await expect(page.locator('#Amount')).not.toHaveValue('0', { timeout: 10000 });
+      await expect(page.getByLabel('Amount')).not.toHaveValue('0', { timeout: 10000 });
 
-      await page.locator('#Amount').clear();
-      await page.locator('#Amount').fill('75.00');
-      await page.locator('#Description').fill('Updated expense via E2E');
+      await page.getByLabel('Amount').clear();
+      await page.getByLabel('Amount').fill('75.00');
+      await page.getByLabel('Description').fill('Updated expense via E2E');
 
       await page.getByRole('button', { name: /Save Changes/i }).click();
       await expect(page).toHaveURL(/\/expenses$/);
@@ -110,7 +114,7 @@ test.describe('Expenses', () => {
     const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 5000 }).catch(() => false);
     test.skip(!hasRows, 'No expense data to filter');
 
-    const methodHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: /Payment.*Method|PaymentMethod/i });
+    const methodHeader = page.locator('.MuiDataGrid-columnHeader').filter({ hasText: /^Payment$/i });
     await methodHeader.first().hover();
     const menuButton = methodHeader.first().locator('.MuiDataGrid-menuIcon button');
     await expect(menuButton).toBeVisible({ timeout: 5000 });

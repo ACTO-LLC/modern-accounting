@@ -11,16 +11,19 @@ test.describe('Chart of Accounts', () => {
     await page.goto('/accounts/new');
     await expect(page.getByRole('heading', { name: /New Account/i })).toBeVisible();
 
-    await page.locator('#Code').fill(accountCode);
-    await page.locator('#Name').fill(accountName);
-    await page.locator('#Type').selectOption('Expense');
+    await page.getByLabel('Code').fill(accountCode);
+    await page.getByLabel('Name').fill(accountName);
 
-    // Wait for subtype options to load based on Type
-    const subtypeSelect = page.locator('#Subtype');
-    await expect(subtypeSelect.locator('option')).not.toHaveCount(1, { timeout: 5000 });
-    await subtypeSelect.selectOption({ index: 1 });
+    // Select Type (MUI select)
+    await page.getByRole('combobox', { name: 'Type', exact: true }).click();
+    await page.getByRole('option', { name: 'Expense' }).click();
 
-    await page.locator('#Description').fill('Test account created via E2E');
+    // Wait for subtype options to load based on Type, then select
+    await page.getByLabel('Subtype').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 5000 });
+    await page.getByRole('option').nth(1).click();
+
+    await page.getByLabel('Description').fill('Test account created via E2E');
 
     const responsePromise = page.waitForResponse(
       resp => resp.url().includes('/accounts') && (resp.status() === 201 || resp.status() === 200),
@@ -35,7 +38,7 @@ test.describe('Chart of Accounts', () => {
 
     if (createdId) {
       await page.goto(`/accounts/${createdId}/edit`);
-      await expect(page.locator('#Name')).toHaveValue(accountName);
+      await expect(page.getByLabel('Name')).toHaveValue(accountName);
     }
   });
 
@@ -45,9 +48,12 @@ test.describe('Chart of Accounts', () => {
     const updatedDesc = `Updated description ${timestamp}`;
 
     await page.goto('/accounts/new');
-    await page.locator('#Code').fill(`${timestamp}`.slice(-6));
-    await page.locator('#Name').fill(accountName);
-    await page.locator('#Type').selectOption('Expense');
+    await page.getByLabel('Code').fill(`${timestamp}`.slice(-6));
+    await page.getByLabel('Name').fill(accountName);
+
+    // Select Type (MUI select)
+    await page.getByRole('combobox', { name: 'Type', exact: true }).click();
+    await page.getByRole('option', { name: 'Expense' }).click();
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/accounts') && (resp.status() === 201 || resp.status() === 200),
@@ -62,9 +68,9 @@ test.describe('Chart of Accounts', () => {
     await expect(page.getByRole('heading', { name: /Edit Account/i })).toBeVisible();
 
     // Wait for form data to load
-    await expect(page.locator('#Name')).not.toHaveValue('', { timeout: 10000 });
+    await expect(page.getByLabel('Name')).not.toHaveValue('', { timeout: 10000 });
 
-    await page.locator('#Description').fill(updatedDesc);
+    await page.getByLabel('Description').fill(updatedDesc);
 
     const editPromise = page.waitForResponse(
       resp => resp.url().includes('/accounts') && (resp.status() === 200 || resp.status() === 204),

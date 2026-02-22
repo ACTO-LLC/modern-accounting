@@ -10,22 +10,22 @@ test.describe('Vendor Credits', () => {
     await page.goto('/vendor-credits/new');
     await expect(page.getByRole('heading', { name: /New Vendor Credit/i })).toBeVisible();
 
-    // Select vendor
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await vendorSelect.selectOption({ index: 1 });
+    // Select vendor (MUI select)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    await page.locator('#CreditNumber').fill(creditNumber);
+    await page.getByLabel('Credit Number').fill(creditNumber);
 
     const today = new Date().toISOString().split('T')[0];
-    await page.locator('#CreditDate').fill(today);
+    await page.getByLabel('Credit Date').fill(today);
 
-    await page.locator('#Reason').fill('Return of defective goods');
+    await page.getByLabel('Reason / Notes').fill('Return of defective goods');
 
-    // Fill first line item
-    const accountSelect = page.locator('select[name="Lines.0.AccountId"]');
-    await expect(accountSelect.locator('option')).not.toHaveCount(1);
-    await accountSelect.selectOption({ index: 1 });
+    // Fill first line item - select account (MUI select)
+    await page.getByLabel('Account').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
     await page.locator('input[name="Lines.0.Description"]').fill('Returned Widget');
     await page.locator('input[name="Lines.0.Quantity"]').fill('2');
     await page.locator('input[name="Lines.0.UnitPrice"]').fill('75.00');
@@ -47,14 +47,17 @@ test.describe('Vendor Credits', () => {
 
     // Create first
     await page.goto('/vendor-credits/new');
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await vendorSelect.selectOption({ index: 1 });
-    await page.locator('#CreditNumber').fill(creditNumber);
 
-    const accountSelect = page.locator('select[name="Lines.0.AccountId"]');
-    await expect(accountSelect.locator('option')).not.toHaveCount(1);
-    await accountSelect.selectOption({ index: 1 });
+    // Select vendor (MUI select)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
+    await page.getByLabel('Credit Number').fill(creditNumber);
+
+    // Select account for line item (MUI select)
+    await page.getByLabel('Account').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
     await page.locator('input[name="Lines.0.Description"]').fill('Initial item');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
     await page.locator('input[name="Lines.0.UnitPrice"]').fill('100.00');
@@ -74,9 +77,9 @@ test.describe('Vendor Credits', () => {
       await expect(page.getByRole('heading', { name: /Edit Vendor Credit/i })).toBeVisible();
 
       // Wait for form data to load
-      await expect(page.locator('#CreditNumber')).not.toHaveValue('', { timeout: 10000 });
+      await expect(page.getByLabel('Credit Number')).not.toHaveValue('', { timeout: 10000 });
 
-      await page.locator('#Reason').fill('Updated reason via E2E');
+      await page.getByLabel('Reason / Notes').fill('Updated reason via E2E');
       await page.locator('input[name="Lines.0.Quantity"]').clear();
       await page.locator('input[name="Lines.0.Quantity"]').fill('3');
 

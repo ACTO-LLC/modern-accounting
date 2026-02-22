@@ -88,8 +88,9 @@ test.describe('Invoice Form Posting Indicator', () => {
     // Wait for the form to load
     await expect(page.getByLabel('Invoice Number')).toBeVisible();
 
-    // Change status to Sent (non-draft)
-    await page.getByLabel('Status').selectOption('Sent');
+    // Change status to Sent (non-draft) - MUI select
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Sent' }).click();
 
     // Check that the auto-post indicator is visible
     await expect(page.getByText(/will post to your.*books/i)).toBeVisible();
@@ -101,8 +102,8 @@ test.describe('Invoice Form Posting Indicator', () => {
     // Wait for the form to load
     await expect(page.getByLabel('Invoice Number')).toBeVisible();
 
-    // Status should be Draft by default
-    await expect(page.getByLabel('Status')).toHaveValue('Draft');
+    // Status should be Draft by default (check hidden input for MUI select)
+    await expect(page.locator('input[name="Status"]')).toHaveValue('Draft');
 
     // Check that the draft indicator is visible
     await expect(page.getByText(/Draft.*don't affect your books/i)).toBeVisible();
@@ -128,8 +129,8 @@ test.describe('Bill Form Posting Indicator', () => {
     // Wait for the form to load
     await expect(page.getByLabel('Bill Number')).toBeVisible();
 
-    // Status should be Open by default (non-draft)
-    await expect(page.getByLabel('Status')).toHaveValue('Open');
+    // Status should be Open by default (non-draft) - check hidden input for MUI select
+    await expect(page.locator('input[name="Status"]')).toHaveValue('Open');
 
     // Check that the auto-post indicator is visible
     await expect(page.getByText(/will post to your.*books/i)).toBeVisible();
@@ -141,8 +142,9 @@ test.describe('Bill Form Posting Indicator', () => {
     // Wait for the form to load
     await expect(page.getByLabel('Bill Number')).toBeVisible();
 
-    // Change status to Draft
-    await page.getByLabel('Status').selectOption('Draft');
+    // Change status to Draft - MUI select
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Draft' }).click();
 
     // Check that the draft indicator is visible
     await expect(page.getByText(/Draft.*don't affect your books/i)).toBeVisible();

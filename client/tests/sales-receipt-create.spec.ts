@@ -27,19 +27,18 @@ test.describe('Sales Receipt Creation', () => {
   test('can create a sales receipt', async ({ page }) => {
     await page.goto('/sales-receipts/new');
 
-    // Fill in the sales receipt number (should be auto-generated but let's set it)
+    // Fill in the sales receipt number
     const salesReceiptNumber = `SR-TEST-${Date.now()}`;
     await page.getByLabel('Sales Receipt #').fill(salesReceiptNumber);
 
-    // Set the sale date (use today's date which is already set by default)
+    // Wait for deposit accounts to load and select one (MUI select)
+    await page.getByLabel('Deposit To').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    // Wait for deposit accounts to load and select one
-    const depositSelect = page.getByLabel('Deposit To');
-    await expect(depositSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await depositSelect.selectOption({ index: 1 });
-
-    // Select payment method
-    await page.getByLabel('Payment Method').selectOption('Cash');
+    // Select payment method (MUI select)
+    await page.getByLabel('Payment Method').click();
+    await page.getByRole('option', { name: 'Cash' }).click();
 
     // Fill in line item
     await page.locator('input[name="Lines.0.Description"]').fill('Test Product');
@@ -110,11 +109,14 @@ test.describe('Sales Receipt Creation', () => {
     await page.goto('/sales-receipts/new');
     await page.getByLabel('Sales Receipt #').fill(salesReceiptNumber);
 
-    const depositSelect = page.getByLabel('Deposit To');
-    await expect(depositSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await depositSelect.selectOption({ index: 1 });
+    // Select deposit account (MUI select)
+    await page.getByLabel('Deposit To').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    await page.getByLabel('Payment Method').selectOption('Cash');
+    // Select payment method (MUI select)
+    await page.getByLabel('Payment Method').click();
+    await page.getByRole('option', { name: 'Cash' }).click();
 
     await page.locator('input[name="Lines.0.Description"]').fill('Edit Test Product');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');

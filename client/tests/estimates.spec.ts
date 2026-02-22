@@ -37,7 +37,8 @@ test.describe('Estimates Management', () => {
 
     await page.getByLabel('Issue Date').fill('2026-01-15');
     await page.getByLabel('Expiration Date').fill('2026-02-15');
-    await page.getByLabel('Status').selectOption('Draft');
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Draft' }).click();
     await page.getByLabel('Notes').fill('Test estimate notes');
 
     // 3. Fill first line item
@@ -186,7 +187,8 @@ test.describe('Estimates Management', () => {
     await page.getByRole('option').first().click();
 
     await page.getByLabel('Issue Date').fill('2026-01-15');
-    await page.getByLabel('Status').selectOption('Draft');
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Draft' }).click();
     await page.locator('input[name="Lines.0.Description"]').fill('Draft Service');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
     await page.locator('input[name="Lines.0.UnitPrice"]').fill('100');
@@ -212,7 +214,8 @@ test.describe('Estimates Management', () => {
     await page.getByRole('option').first().click();
 
     await page.getByLabel('Issue Date').fill('2026-01-15');
-    await page.getByLabel('Status').selectOption('Sent');
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Sent' }).click();
     await page.locator('input[name="Lines.0.Description"]').fill('Sent Service');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
     await page.locator('input[name="Lines.0.UnitPrice"]').fill('200');

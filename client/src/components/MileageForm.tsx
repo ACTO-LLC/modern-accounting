@@ -142,10 +142,12 @@ export default function MileageForm({
   const endOdometer = useWatch({ control, name: 'EndOdometer' });
   const isSubmitting = externalIsSubmitting || formIsSubmitting;
 
-  // Destructure register refs for valueAsNumber fields
-  const { ref: distanceRef, ...distanceRest } = register('Distance', { valueAsNumber: true });
-  const { ref: startOdometerRef, ...startOdometerRest } = register('StartOdometer', { valueAsNumber: true });
-  const { ref: endOdometerRef, ...endOdometerRest } = register('EndOdometer', { valueAsNumber: true });
+  // Destructure register refs for number fields
+  // Use setValueAs to convert empty strings to null (valueAsNumber converts empty to NaN which Zod rejects)
+  const numOrNull = (v: string) => { const n = Number(v); return v === '' || isNaN(n) ? null : n; };
+  const { ref: distanceRef, ...distanceRest } = register('Distance', { setValueAs: (v) => { const n = Number(v); return v === '' || isNaN(n) ? 0 : n; } });
+  const { ref: startOdometerRef, ...startOdometerRest } = register('StartOdometer', { setValueAs: numOrNull });
+  const { ref: endOdometerRef, ...endOdometerRest } = register('EndOdometer', { setValueAs: numOrNull });
 
   // Get the applicable rate for the selected category and date
   const getApplicableRate = () => {

@@ -11,21 +11,28 @@ test.describe('Vendors', () => {
     await expect(page.getByRole('heading', { name: 'New Vendor' })).toBeVisible();
 
     // Fill required fields
-    await page.locator('#Name').fill(vendorName);
-    await page.locator('#Email').fill(`vendor${timestamp}@test.com`);
-    await page.locator('#Phone').fill('555-0100');
+    await page.getByLabel('Name').fill(vendorName);
+    await page.getByLabel('Email').fill(`vendor${timestamp}@test.com`);
+    await page.getByLabel('Phone').fill('555-0100');
     await page.locator('#AddressLine1').fill('123 Vendor St');
     await page.locator('#City').fill('Test City');
     await page.locator('#State').selectOption('TX');
     await page.locator('#PostalCode').fill('75001');
-    await page.locator('#PaymentTerms').selectOption('Net 30');
-    await page.locator('#Status').selectOption('Active');
-    await page.locator('#TaxId').fill('12-3456789');
 
-    // Select default expense account (required to avoid empty-string UUID validation)
-    const expenseAccountSelect = page.locator('#DefaultExpenseAccountId');
-    await expect(expenseAccountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await expenseAccountSelect.selectOption({ index: 1 });
+    // Select payment terms (MUI select)
+    await page.getByLabel('Payment Terms').click();
+    await page.getByRole('option', { name: 'Net 30' }).click();
+
+    // Select status (MUI select)
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Active', exact: true }).click();
+
+    await page.getByLabel('Tax ID (EIN/SSN)').fill('12-3456789');
+
+    // Select default expense account (MUI select - wait for data to load)
+    await page.getByLabel('Default Expense Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     // Save and capture ID
     const responsePromise = page.waitForResponse(
@@ -43,7 +50,7 @@ test.describe('Vendors', () => {
     // Verify created record
     if (createdId) {
       await page.goto(`/vendors/${createdId}/edit`);
-      await expect(page.locator('#Name')).toHaveValue(vendorName);
+      await expect(page.getByLabel('Name')).toHaveValue(vendorName);
     }
   });
 
@@ -54,14 +61,17 @@ test.describe('Vendors', () => {
 
     // Create first
     await page.goto('/vendors/new');
-    await page.locator('#Name').fill(vendorName);
-    await page.locator('#Email').fill(`edit${timestamp}@test.com`);
-    await page.locator('#PaymentTerms').selectOption('Net 30');
+    await page.getByLabel('Name').fill(vendorName);
+    await page.getByLabel('Email').fill(`edit${timestamp}@test.com`);
 
-    // Select default expense account to avoid UUID validation
-    const expenseAccountSelect = page.locator('#DefaultExpenseAccountId');
-    await expect(expenseAccountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await expenseAccountSelect.selectOption({ index: 1 });
+    // Select payment terms (MUI select)
+    await page.getByLabel('Payment Terms').click();
+    await page.getByRole('option', { name: 'Net 30' }).click();
+
+    // Select default expense account (MUI select)
+    await page.getByLabel('Default Expense Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     const createPromise = page.waitForResponse(
       resp => resp.url().includes('/vendors') && (resp.status() === 201 || resp.status() === 200),
@@ -77,15 +87,21 @@ test.describe('Vendors', () => {
     await expect(page.getByRole('heading', { name: 'Edit Vendor' })).toBeVisible();
 
     // Wait for form data to load
-    await expect(page.locator('#Name')).not.toHaveValue('', { timeout: 10000 });
+    await expect(page.getByLabel('Name')).not.toHaveValue('', { timeout: 10000 });
 
     // Update name
-    await page.locator('#Name').clear();
-    await page.locator('#Name').fill(updatedName);
-    await page.locator('#Phone').fill('555-9999');
+    await page.getByLabel('Name').clear();
+    await page.getByLabel('Name').fill(updatedName);
+    await page.getByLabel('Phone').fill('555-9999');
+
+    // Tab out to trigger blur events
+    await page.getByLabel('Phone').press('Tab');
+
+    // Wait a moment for form state to settle
+    await page.waitForTimeout(500);
 
     await page.getByRole('button', { name: 'Save Vendor' }).click();
-    await expect(page).toHaveURL(/\/vendors$/);
+    await expect(page).toHaveURL(/\/vendors$/, { timeout: 30000 });
   });
 
   // --- DATAGRID TESTS ---

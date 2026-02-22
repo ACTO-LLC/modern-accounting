@@ -36,36 +36,36 @@ test.describe('Bills Management', () => {
     await expect(page.getByRole('heading', { name: 'New Bill' })).toBeVisible();
 
     // 4. Fill Bill Form
-    // Select a vendor (wait for options to load, then select first available)
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1); // Wait for more than just placeholder
-    await vendorSelect.selectOption({ index: 1 });
+    // Select a vendor (MUI select - wait for options to load)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     // Fill bill number
-    await page.locator('#BillNumber').fill(billNumber);
+    await page.getByLabel('Bill Number').fill(billNumber);
 
-    // Bill Date and Due Date should have default values, but we can set them explicitly
+    // Bill Date and Due Date
     const today = new Date().toISOString().split('T')[0];
-    await page.locator('#BillDate').fill(today);
+    await page.getByLabel('Bill Date').fill(today);
 
     const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    await page.locator('#DueDate').fill(dueDate);
+    await page.getByLabel('Due Date').fill(dueDate);
 
-    // Select payment terms
-    await page.locator('#Terms').selectOption('Net 30');
+    // Select payment terms (MUI select)
+    await page.getByLabel('Payment Terms').click();
+    await page.getByRole('option', { name: 'Net 30' }).click();
 
-    // Status defaults to "Open"
-    await expect(page.locator('#Status')).toHaveValue('Open');
+    // Status defaults to "Open" - verify via hidden input
+    await expect(page.locator('input[name="Status"]')).toHaveValue('Open');
 
     // Add memo
-    await page.locator('#Memo').fill('Test bill created via E2E test');
+    await page.getByLabel('Memo').fill('Test bill created via E2E test');
 
     // 5. Add Line Items
-    // First line item is already present
-    // Select an expense account for first line (wait for options to load)
-    const firstLineAccountSelect = page.locator('select[name="Lines.0.AccountId"]');
-    await expect(firstLineAccountSelect.locator('option')).not.toHaveCount(1);
-    await firstLineAccountSelect.selectOption({ index: 1 });
+    // First line item - select account (MUI select)
+    await page.getByLabel('Account').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     // Fill description and amount for first line
     await page.locator('input[name="Lines.0.Description"]').fill('Office Supplies');
@@ -74,9 +74,9 @@ test.describe('Bills Management', () => {
     // Add a second line item
     await page.getByRole('button', { name: 'Add Item' }).click();
 
-    // Fill second line item (account options already loaded)
-    const secondLineAccountSelect = page.locator('select[name="Lines.1.AccountId"]');
-    await secondLineAccountSelect.selectOption({ index: 1 });
+    // Fill second line item account (MUI select)
+    await page.getByLabel('Account').nth(1).click();
+    await page.getByRole('option').nth(1).click();
     await page.locator('input[name="Lines.1.Description"]').fill('Equipment Rental');
     await page.locator('input[name="Lines.1.Amount"]').fill('350.00');
 
@@ -84,7 +84,6 @@ test.describe('Bills Management', () => {
     await expect(page.getByText('Total: $500.00')).toBeVisible();
 
     // 7. Save the bill and wait for the query that fetches the created bill
-    // DAB doesn't return created entity, so frontend queries by BillNumber
     const queryPromise = page.waitForResponse(resp =>
       resp.url().includes('/bills') &&
       resp.url().includes(encodeURIComponent(billNumber)) &&
@@ -101,7 +100,7 @@ test.describe('Bills Management', () => {
     // 9. Navigate directly to the created bill to verify it exists
     await page.goto(`/bills/${createdId}/edit`);
     await expect(page.getByRole('heading', { name: 'Edit Bill' })).toBeVisible();
-    await expect(page.locator('#BillNumber')).toHaveValue(billNumber);
+    await expect(page.getByLabel('Bill Number')).toHaveValue(billNumber);
   });
 
   test('should edit an existing bill', async ({ page }) => {
@@ -112,19 +111,22 @@ test.describe('Bills Management', () => {
     // 1. First create a bill to edit
     await page.goto('/bills/new');
 
-    // Select vendor (wait for options to load)
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1);
-    await vendorSelect.selectOption({ index: 1 });
+    // Select vendor (MUI select)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     // Fill bill details
-    await page.locator('#BillNumber').fill(billNumber);
-    await page.locator('#Terms').selectOption('Net 30');
+    await page.getByLabel('Bill Number').fill(billNumber);
 
-    // Add line item (wait for account options to load)
-    const lineAccountSelect = page.locator('select[name="Lines.0.AccountId"]');
-    await expect(lineAccountSelect.locator('option')).not.toHaveCount(1);
-    await lineAccountSelect.selectOption({ index: 1 });
+    // Select payment terms (MUI select)
+    await page.getByLabel('Payment Terms').click();
+    await page.getByRole('option', { name: 'Net 30' }).click();
+
+    // Add line item account (MUI select)
+    await page.getByLabel('Account').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
     await page.locator('input[name="Lines.0.Description"]').fill('Initial item');
     await page.locator('input[name="Lines.0.Amount"]').fill('200.00');
 
@@ -146,7 +148,7 @@ test.describe('Bills Management', () => {
     await expect(page.getByRole('heading', { name: 'Edit Bill' })).toBeVisible();
 
     // 4. Update the memo
-    await page.locator('#Memo').fill(updatedMemo);
+    await page.getByLabel('Memo').fill(updatedMemo);
 
     // 5. Update line item amount
     await page.locator('input[name="Lines.0.Amount"]').clear();
@@ -213,15 +215,15 @@ test.describe('Bills Management', () => {
     // Navigate to new bill form
     await page.goto('/bills/new');
 
-    // Select vendor (wait for options to load)
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1);
-    await vendorSelect.selectOption({ index: 1 });
+    // Select vendor (MUI select)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    // Select account for first line (wait for options to load)
-    const firstLineAccountSelect = page.locator('select[name="Lines.0.AccountId"]');
-    await expect(firstLineAccountSelect.locator('option')).not.toHaveCount(1);
-    await firstLineAccountSelect.selectOption({ index: 1 });
+    // Select account for first line (MUI select)
+    await page.getByLabel('Account').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     // Enter first amount
     await page.locator('input[name="Lines.0.Amount"]').fill('100.50');
@@ -231,8 +233,10 @@ test.describe('Bills Management', () => {
 
     // Add second line item
     await page.getByRole('button', { name: 'Add Item' }).click();
-    const secondLineAccountSelect = page.locator('select[name="Lines.1.AccountId"]');
-    await secondLineAccountSelect.selectOption({ index: 1 });
+
+    // Select account for second line (MUI select)
+    await page.getByLabel('Account').nth(1).click();
+    await page.getByRole('option').nth(1).click();
     await page.locator('input[name="Lines.1.Amount"]').fill('200.25');
 
     // Verify updated total (100.50 + 200.25 = 300.75)
@@ -253,17 +257,17 @@ test.describe('Bills Management', () => {
     // Create a bill with a unique bill number
     await page.goto('/bills/new');
 
-    // Select vendor (wait for options to load)
-    const vendorSelect = page.locator('#VendorId');
-    await expect(vendorSelect.locator('option')).not.toHaveCount(1);
-    await vendorSelect.selectOption({ index: 1 });
+    // Select vendor (MUI select)
+    await page.getByRole('combobox', { name: 'Vendor' }).click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
-    await page.locator('#BillNumber').fill(billNumber);
+    await page.getByLabel('Bill Number').fill(billNumber);
 
-    // Select account (wait for options to load)
-    const lineAccountSelect = page.locator('select[name="Lines.0.AccountId"]');
-    await expect(lineAccountSelect.locator('option')).not.toHaveCount(1);
-    await lineAccountSelect.selectOption({ index: 1 });
+    // Select account (MUI select)
+    await page.getByLabel('Account').first().click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
     await page.locator('input[name="Lines.0.Amount"]').fill('100.00');
 
     // Save and wait for the query that fetches the created bill
@@ -280,6 +284,6 @@ test.describe('Bills Management', () => {
     // Verify the bill exists by navigating to its edit page
     await page.goto(`/bills/${createdId}/edit`);
     await expect(page.getByRole('heading', { name: 'Edit Bill' })).toBeVisible();
-    await expect(page.locator('#BillNumber')).toHaveValue(billNumber);
+    await expect(page.getByLabel('Bill Number')).toHaveValue(billNumber);
   });
 });

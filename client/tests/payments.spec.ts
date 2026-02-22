@@ -21,21 +21,22 @@ test.describe('Receive Payments', () => {
 
     // Fill date
     const today = new Date().toISOString().split('T')[0];
-    await page.locator('#PaymentDate').fill(today);
+    await page.getByLabel('Payment Date').fill(today);
 
-    // Select payment method
-    await page.locator('#PaymentMethod').selectOption('Check');
+    // Select payment method (MUI select)
+    await page.getByLabel('Payment Method').click();
+    await page.getByRole('option', { name: 'Check' }).click();
 
-    // Select deposit account
-    const depositSelect = page.locator('#DepositAccountId');
-    await expect(depositSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await depositSelect.selectOption({ index: 1 });
+    // Select deposit account (MUI select)
+    await page.getByLabel('Deposit To Account').click();
+    await expect(page.getByRole('option').nth(1)).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').nth(1).click();
 
     // Wait for invoices to load and check if any are available
     await page.waitForTimeout(2000);
 
     // Fill memo
-    await page.locator('#Memo').fill('Test payment via E2E');
+    await page.getByLabel('Memo').fill('Test payment via E2E');
 
     // Check if there are invoices to apply payment to
     const amountInputs = page.locator('input[type="number"]').filter({ hasNotText: '' });

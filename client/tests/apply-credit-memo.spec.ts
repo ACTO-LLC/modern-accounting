@@ -24,15 +24,17 @@ test.describe('Apply Credit Memo', () => {
 
     await page.goto('/credit-memos/new');
 
-    const customerSelect = page.locator('#CustomerId');
-    await expect(customerSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await customerSelect.selectOption({ index: 1 });
+    // Select customer (MUI select)
+    await page.getByLabel('Customer').click();
+    await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').first().click();
 
-    await page.locator('#CreditMemoNumber').fill(creditMemoNumber);
+    await page.getByLabel('Credit Memo Number').fill(creditMemoNumber);
 
-    const accountSelect = page.locator('select[name="Lines.0.AccountId"]');
-    await expect(accountSelect.locator('option')).not.toHaveCount(1);
-    await accountSelect.selectOption({ index: 1 });
+    // Select account for line item (MUI select)
+    await page.getByLabel('Account').first().click();
+    await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10000 });
+    await page.getByRole('option').first().click();
     await page.locator('input[name="Lines.0.Description"]').fill('Apply test credit');
     await page.locator('input[name="Lines.0.Quantity"]').fill('1');
     await page.locator('input[name="Lines.0.UnitPrice"]').fill('100.00');
