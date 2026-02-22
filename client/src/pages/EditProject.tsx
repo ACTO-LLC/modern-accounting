@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { projectsApi, timeEntriesApi, ProjectInput, Project, TimeEntry } from '../lib/api';
+import api, { projectsApi, timeEntriesApi, ProjectInput, Project, TimeEntry } from '../lib/api';
+import { formatGuidForOData } from '../lib/validation';
 import ProjectForm, { ProjectFormData } from '../components/ProjectForm';
 
 export default function EditProject() {
@@ -12,7 +12,7 @@ export default function EditProject() {
   const { data: project, isLoading: projectLoading, error: projectError } = useQuery<Project>({
     queryKey: ['project', id],
     queryFn: async () => {
-      const response = await api.get<{ value: Project[] }>(`/projects?$filter=Id eq ${id}`);
+      const response = await api.get<{ value: Project[] }>(`/projects?$filter=Id eq ${formatGuidForOData(id, 'Id')}`);
       return response.data.value[0];
     },
     enabled: !!id,
