@@ -3,16 +3,20 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '../lib/api';
 import ReceivePaymentForm, { ReceivePaymentFormData } from '../components/ReceivePaymentForm';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { createPaymentJournalEntry } from '../lib/autoPostingService';
 
 interface Payment {
   Id: string;
   PaymentNumber: string;
+  CustomerName?: string;
 }
 
 export default function NewPayment() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { settings } = useCompanySettings();
 
   // Fetch existing payments to generate next payment number
   const { data: existingPayments } = useQuery({
@@ -42,6 +46,8 @@ export default function NewPayment() {
       const { Applications, ...paymentData } = data;
       await api.post('/payments_write', {
         ...paymentData,
+        ReferenceNumber: paymentData.ReferenceNumber || null,
+        Memo: paymentData.Memo || null,
         Status: 'Completed'
       });
 
@@ -79,6 +85,22 @@ export default function NewPayment() {
             AmountPaid: newAmountPaid,
             Status: newStatus
           });
+        }
+      }
+
+      // In Simple mode, auto-post journal entry (Debit Bank, Credit AR)
+      if (settings.invoicePostingMode === 'simple') {
+        try {
+          await createPaymentJournalEntry(
+            payment.Id,
+            paymentData.TotalAmount,
+            paymentData.PaymentNumber,
+            payment.CustomerName || 'Customer',
+            paymentData.PaymentDate,
+            paymentData.DepositAccountId
+          );
+        } catch (postingError) {
+          console.warn('Auto-posting failed, payment still created:', postingError);
         }
       }
 

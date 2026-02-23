@@ -2068,6 +2068,7 @@
             "mappings": {
                 "Id": "Id",
                 "PaymentNumber": "PaymentNumber",
+                "ReferenceNumber": "ReferenceNumber",
                 "CustomerId": "CustomerId",
                 "CustomerName": "CustomerName",
                 "PaymentDate": "PaymentDate",
@@ -2108,6 +2109,7 @@
             "mappings": {
                 "Id": "Id",
                 "PaymentNumber": "PaymentNumber",
+                "ReferenceNumber": "ReferenceNumber",
                 "CustomerId": "CustomerId",
                 "PaymentDate": "PaymentDate",
                 "TotalAmount": "TotalAmount",

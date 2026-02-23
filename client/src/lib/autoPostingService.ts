@@ -253,6 +253,82 @@ export async function createInvoiceJournalEntry(
 }
 
 /**
+ * Creates a journal entry for a payment (Cash receipt posting)
+ *
+ * Debit: Bank/Deposit account (cash in)
+ * Credit: Accounts Receivable (reduce customer balance)
+ */
+export async function createPaymentJournalEntry(
+  paymentId: string,
+  totalAmount: number,
+  paymentNumber: string,
+  customerName: string,
+  paymentDate: string,
+  depositAccountId: string
+): Promise<{ journalEntryId: string } | null> {
+  try {
+    const arAccountId = await getARAccountId();
+
+    if (!arAccountId) {
+      console.warn('Cannot auto-post payment: Missing AR account');
+      return null;
+    }
+
+    const entryNumber = await generateNextEntryNumber();
+    const description = `Payment ${paymentNumber} - ${customerName}`;
+
+    // Create journal entry lines
+    const lines: JournalEntryLine[] = [
+      {
+        AccountId: depositAccountId,
+        Description: `Deposit - ${paymentNumber}`,
+        DebitAmount: totalAmount,
+        CreditAmount: 0
+      },
+      {
+        AccountId: arAccountId,
+        Description: `AR - ${paymentNumber}`,
+        DebitAmount: 0,
+        CreditAmount: totalAmount
+      }
+    ];
+
+    // Create the journal entry
+    const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
+      EntryNumber: entryNumber,
+      EntryDate: paymentDate,
+      Description: description,
+      Status: 'Posted'
+    });
+
+    const journalEntry = journalEntryResponse.data;
+
+    // Create journal entry lines
+    await Promise.all(
+      lines.map(line =>
+        api.post('/journalentrylines', {
+          JournalEntryId: journalEntry.Id,
+          AccountId: line.AccountId,
+          Description: line.Description,
+          DebitAmount: line.DebitAmount,
+          CreditAmount: line.CreditAmount
+        })
+      )
+    );
+
+    // Update the payment with the journal entry reference
+    await api.patch(`/payments_write/Id/${paymentId}`, {
+      JournalEntryId: journalEntry.Id
+    });
+
+    return { journalEntryId: journalEntry.Id };
+  } catch (error) {
+    console.error('Failed to create payment journal entry:', error);
+    return null;
+  }
+}
+
+/**
  * Creates a journal entry for a bill (AP posting)
  *
  * Debit: Expense accounts (from bill lines)

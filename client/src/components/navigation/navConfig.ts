@@ -45,6 +45,7 @@ export const navigationConfig: NavEntry[] = [
     icon: FileText,
     items: [
       { id: 'invoices', name: 'Invoices', href: '/invoices', icon: FileText, featureKey: 'invoices' },
+      { id: 'receive-payment', name: 'Receive Payment', href: '/payments', icon: Banknote },
       { id: 'sales-receipts', name: 'Sales Receipts', href: '/sales-receipts', icon: Banknote, featureKey: 'sales_receipts', visibilityFlag: 'sales_receipts' },
       { id: 'estimates', name: 'Estimates', href: '/estimates', icon: ClipboardList, featureKey: 'estimates' },
       { id: 'customer-deposits', name: 'Customer Deposits', href: '/customer-deposits', icon: PiggyBank },

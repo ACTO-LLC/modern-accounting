@@ -7,6 +7,7 @@ CREATE TABLE [dbo].[Payments]
     [TotalAmount] DECIMAL(19, 4) NOT NULL DEFAULT 0,
     [PaymentMethod] NVARCHAR(50) NULL,
     [DepositAccountId] UNIQUEIDENTIFIER NULL,
+    [ReferenceNumber] NVARCHAR(100) NULL,
     [Memo] NVARCHAR(500) NULL,
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Completed',
     [SourceSystem] NVARCHAR(50) NULL,
