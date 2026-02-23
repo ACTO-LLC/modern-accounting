@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import api from '../lib/api';
 import axios, { AxiosError } from 'axios';
 import { useCompanySettings } from './CompanySettingsContext';
+import { formatGuidForOData } from '../lib/validation';
 
 // Helper to extract error message from axios error
 function getErrorMessage(err: unknown): string {
@@ -83,7 +84,8 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       // Fetch existing feature flags for the actual company
-      const response = await api.get(`/companyfeatureflags?$filter=CompanyId eq ${companyId}`);
+      const validatedCompanyId = formatGuidForOData(companyId, 'CompanyId');
+      const response = await api.get(`/companyfeatureflags?$filter=CompanyId eq ${validatedCompanyId}`);
       const records = response.data?.value || [];
 
       if (records.length > 0) {
