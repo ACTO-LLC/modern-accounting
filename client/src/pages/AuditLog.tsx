@@ -668,8 +668,18 @@ export default function AuditLog() {
           getRowId={(row) => row.Id}
           sx={{
             border: 0,
+            color: 'var(--mui-palette-text-primary)',
             '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(79, 70, 229, 0.04)',
+              backgroundColor: 'action.hover',
+            },
+            '& .MuiDataGrid-cell': {
+              borderColor: 'var(--mui-palette-divider)',
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              borderColor: 'var(--mui-palette-divider)',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderColor: 'var(--mui-palette-divider)',
             },
           }}
           localeText={{

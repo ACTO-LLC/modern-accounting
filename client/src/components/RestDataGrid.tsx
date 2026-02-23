@@ -170,6 +170,8 @@ export default function RestDataGrid<T extends GridValidRowModel>({
           disableRowSelectionOnClick={disableRowSelectionOnClick}
           // Styling
           sx={{
+            border: '1px solid var(--mui-palette-divider)',
+            color: 'var(--mui-palette-text-primary)',
             '& .MuiDataGrid-main': {
               overflow: 'auto',
             },
@@ -177,8 +179,17 @@ export default function RestDataGrid<T extends GridValidRowModel>({
               overflow: 'auto !important',
             },
             '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(79, 70, 229, 0.04)',
+              backgroundColor: 'action.hover',
               cursor: editPath || onRowClick ? 'pointer' : 'default',
+            },
+            '& .MuiDataGrid-cell': {
+              borderColor: 'var(--mui-palette-divider)',
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              borderColor: 'var(--mui-palette-divider)',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderColor: 'var(--mui-palette-divider)',
             },
           }}
           localeText={{
