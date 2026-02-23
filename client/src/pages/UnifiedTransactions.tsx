@@ -13,7 +13,7 @@ import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
-import BulkActionsBar from '../components/transactions/BulkActionsBar';
+import BulkActionsBar, { BULK_ACTIONS_BAR_HEIGHT } from '../components/transactions/BulkActionsBar';
 import PlaidLinkButton from '../components/PlaidLinkButton';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -61,7 +61,6 @@ export default function UnifiedTransactions() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const gridRef = useRef<HTMLDivElement>(null);
-  const gridHeight = useGridHeight(gridRef);
 
   // Initialize filters based on URL params
   const [filters, setFilters] = useState<TransactionFiltersState>(() => {
@@ -367,6 +366,10 @@ export default function UnifiedTransactions() {
   const approvedCount = transactions.filter(t => t.Status === 'Approved').length;
   const isLoading = bulkApproveMutation.isPending || bulkRejectMutation.isPending || updateMutation.isPending;
 
+  // Calculate grid height, reserving space for the fixed bottom bulk-actions bar when visible
+  const bulkBarVisible = selectedIds.ids.size > 0 || highConfidenceCount > 0;
+  const gridHeight = useGridHeight(gridRef, 16, bulkBarVisible ? BULK_ACTIONS_BAR_HEIGHT : 0);
+
   // DataGrid columns
   const columns: GridColDef[] = [
     {
@@ -610,18 +613,6 @@ export default function UnifiedTransactions() {
         onFilterChange={setFilters}
       />
 
-      {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedCount={selectedIds.ids.size}
-        highConfidenceCount={highConfidenceCount}
-        onApproveSelected={handleBulkApprove}
-        onRejectSelected={handleBulkReject}
-        onApproveHighConfidence={handleApproveHighConfidence}
-        onCategorizeSelected={() => {/* TODO: Open categorize modal */}}
-        onClearSelection={() => setSelectedIds({ type: 'include', ids: new Set() })}
-        isLoading={isLoading}
-      />
-
       {/* Post Approved Button */}
       {approvedCount > 0 && (
         <div className="mb-4 flex justify-end">
@@ -669,6 +660,18 @@ export default function UnifiedTransactions() {
         cancelText="Cancel"
         isLoading={postMutation.isPending}
         variant="default"
+      />
+
+      {/* Fixed bottom bulk actions bar - visible when rows are selected */}
+      <BulkActionsBar
+        selectedCount={selectedIds.ids.size}
+        highConfidenceCount={highConfidenceCount}
+        onApproveSelected={handleBulkApprove}
+        onRejectSelected={handleBulkReject}
+        onApproveHighConfidence={handleApproveHighConfidence}
+        onCategorizeSelected={() => {/* TODO: Open categorize modal */}}
+        onClearSelection={() => setSelectedIds({ type: 'include', ids: new Set() })}
+        isLoading={isLoading}
       />
     </div>
   );
