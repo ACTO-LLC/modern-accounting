@@ -26,10 +26,10 @@ test.describe('Inventory Management', () => {
   test('should display inventory items with stock levels', async ({ page }) => {
     await page.goto('/inventory');
 
-    // Wait for inventory table to load
-    await expect(page.getByRole('table')).toBeVisible();
+    // Wait for inventory DataGrid to load
+    await expect(page.getByRole('grid')).toBeVisible();
 
-    // Verify table headers
+    // Verify column headers
     await expect(page.getByRole('columnheader', { name: 'Product' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'SKU' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'On Hand' })).toBeVisible();
@@ -97,8 +97,8 @@ test.describe('Inventory Management', () => {
   test('should create inventory adjustment', async ({ page }) => {
     await page.goto('/inventory');
 
-    // Wait for inventory table to load
-    await expect(page.getByRole('table')).toBeVisible();
+    // Wait for inventory DataGrid to load
+    await expect(page.getByRole('grid')).toBeVisible();
 
     // Check if there are any inventory items with an Adjust button
     const adjustButtons = page.getByRole('button', { name: 'Adjust' });
@@ -125,7 +125,7 @@ test.describe('Inventory Management', () => {
       // Modal should close after successful save
       await expect(page.getByText('Adjust Inventory:')).not.toBeVisible();
     } else {
-      // No inventory items exist - verify empty state or add skip message
+      // No inventory items exist - verify empty state
       const emptyMessage = page.getByText('No inventory items found');
       await expect(emptyMessage).toBeVisible();
     }
@@ -134,8 +134,8 @@ test.describe('Inventory Management', () => {
   test('should cancel inventory adjustment', async ({ page }) => {
     await page.goto('/inventory');
 
-    // Wait for inventory table to load
-    await expect(page.getByRole('table')).toBeVisible();
+    // Wait for inventory DataGrid to load
+    await expect(page.getByRole('grid')).toBeVisible();
 
     // Check if there are any inventory items with an Adjust button
     const adjustButtons = page.getByRole('button', { name: 'Adjust' });
