@@ -13,7 +13,7 @@ test.describe('Journal Entry Balance Enforcement', () => {
 
     await page.getByLabel('Entry Number').fill(entryNumber);
     await page.getByLabel('Date').fill('2023-12-31');
-    await page.getByLabel('Description').fill('Test invalid line');
+    await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Test invalid line');
 
     // This would create an unbalanced entry, so button is disabled
     await expect(page.getByRole('button', { name: 'Post Entry' })).toBeDisabled();
@@ -26,7 +26,7 @@ test.describe('Journal Entry Balance Enforcement', () => {
 
     await page.getByLabel('Entry Number').fill(entryNumber);
     await page.getByLabel('Date').fill('2023-12-31');
-    await page.getByLabel('Description').fill('Test zero line');
+    await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Test zero line');
 
     // Button should be disabled when entry is not balanced
     await expect(page.getByRole('button', { name: 'Post Entry' })).toBeDisabled();
@@ -39,7 +39,7 @@ test.describe('Journal Entry Balance Enforcement', () => {
     // Fill header
     await page.getByLabel('Entry Number').fill(entryNumber);
     await page.getByLabel('Date').fill('2023-12-31');
-    await page.getByLabel('Description').fill('Test unbalanced');
+    await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Test unbalanced');
 
     // Fill first line with debit
     const line1 = page.locator('.space-y-4 > div').first();
@@ -74,7 +74,7 @@ test.describe('Journal Entry Balance Enforcement', () => {
     // Fill header
     await page.getByLabel('Entry Number').fill(entryNumber);
     await page.getByLabel('Date').fill('2023-12-31');
-    await page.getByLabel('Description').fill('Valid balanced entry');
+    await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Valid balanced entry');
 
     // Fill first line with debit
     const line1 = page.locator('.space-y-4 > div').first();
@@ -108,7 +108,7 @@ test.describe('Journal Entry Balance Enforcement', () => {
     // Fill header
     await page.getByLabel('Entry Number').fill(entryNumber);
     await page.getByLabel('Date').fill('2023-12-31');
-    await page.getByLabel('Description').fill('Complex balanced entry');
+    await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Complex balanced entry');
 
     // Fill first line with debit
     const line1 = page.locator('.space-y-4 > div').first();

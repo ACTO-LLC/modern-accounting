@@ -12,7 +12,7 @@ test.describe('Journal Entry Creation', () => {
     // 2. Fill Header
     await page.getByLabel('Entry Number').fill(entryNumber);
     await page.getByLabel('Date').fill('2023-12-31');
-    await page.getByLabel('Description').fill(description);
+    await page.getByRole('textbox', { name: 'Description', exact: true }).fill(description);
 
     // 3. Fill Lines
     // Line 1
