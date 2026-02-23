@@ -170,7 +170,7 @@ export default function Sidebar({ isMobileMenuOpen }: SidebarProps) {
         })}
       </nav>
 
-      {/* Collapse Toggle */}
+      {/* Collapse Toggle & Version */}
       <div className="border-t border-gray-200 dark:border-gray-700 p-2">
         <button
           onClick={toggleCollapsed}
@@ -189,6 +189,11 @@ export default function Sidebar({ isMobileMenuOpen }: SidebarProps) {
             </>
           )}
         </button>
+        {!isCollapsed && (
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">
+            v{__APP_VERSION__}
+          </p>
+        )}
       </div>
     </div>
   );
