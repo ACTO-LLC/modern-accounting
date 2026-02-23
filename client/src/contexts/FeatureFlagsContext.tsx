@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import api from '../lib/api';
 import axios, { AxiosError } from 'axios';
+import { useCompanySettings } from './CompanySettingsContext';
+import { formatGuidForOData } from '../lib/validation';
 
 // Helper to extract error message from axios error
 function getErrorMessage(err: unknown): string {
@@ -59,22 +61,31 @@ const featureKeyMap: Record<FeatureKey, keyof FeatureFlags> = {
   'payroll': 'PayrollEnabled',
 };
 
-// For now, use a fixed company ID (in a multi-tenant app, this would come from auth context)
-const DEFAULT_COMPANY_ID = '00000000-0000-0000-0000-000000000001';
-
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
+  const { settings: companySettings, isLoaded: companyLoaded } = useCompanySettings();
+  const companyId = companySettings.id;
+
   const [featureFlags, setFeatureFlags] = useState<FeatureFlags>(defaultFeatureFlags);
   const [recordId, setRecordId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchFeatureFlags = useCallback(async () => {
+    if (!companyId) {
+      // No company exists yet — use defaults (all enabled)
+      setRecordId(null);
+      setFeatureFlags(defaultFeatureFlags);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
 
-      // Try to fetch existing feature flags for the company
-      const response = await api.get(`/companyfeatureflags?$filter=CompanyId eq ${DEFAULT_COMPANY_ID}`);
+      // Fetch existing feature flags for the actual company
+      const validatedCompanyId = formatGuidForOData(companyId, 'CompanyId');
+      const response = await api.get(`/companyfeatureflags?$filter=CompanyId eq ${validatedCompanyId}`);
       const records = response.data?.value || [];
 
       if (records.length > 0) {
@@ -100,11 +111,14 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [companyId]);
 
+  // Re-fetch when company ID becomes available or changes
   useEffect(() => {
-    fetchFeatureFlags();
-  }, [fetchFeatureFlags]);
+    if (companyLoaded) {
+      fetchFeatureFlags();
+    }
+  }, [companyLoaded, fetchFeatureFlags]);
 
   const isFeatureEnabled = useCallback((featureKey: FeatureKey): boolean => {
     const flagKey = featureKeyMap[featureKey];
@@ -112,6 +126,10 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   }, [featureFlags]);
 
   const updateFeatureFlags = useCallback(async (flags: Partial<FeatureFlags>) => {
+    if (!companyId) {
+      throw new Error('Cannot save feature flags: no company exists yet. Please set up your company first.');
+    }
+
     try {
       setError(null);
       const updatedFlags = { ...featureFlags, ...flags };
@@ -123,9 +141,9 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           UpdatedAt: new Date().toISOString(),
         });
       } else {
-        // Create new record
+        // Create new record using the actual company ID
         const response = await api.post('/companyfeatureflags', {
-          CompanyId: DEFAULT_COMPANY_ID,
+          CompanyId: companyId,
           ...updatedFlags,
         });
         const newRecord = response.data?.value?.[0] || response.data;
@@ -140,7 +158,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
       setError(getErrorMessage(err));
       throw err;
     }
-  }, [featureFlags, recordId]);
+  }, [featureFlags, recordId, companyId]);
 
   const refreshFeatureFlags = useCallback(async () => {
     await fetchFeatureFlags();
