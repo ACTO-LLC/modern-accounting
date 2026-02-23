@@ -190,7 +190,7 @@ export default function Sidebar({ isMobileMenuOpen }: SidebarProps) {
           )}
         </button>
         {!isCollapsed && (
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-1">
             v{__APP_VERSION__}
           </p>
         )}

@@ -81,10 +81,14 @@ export default defineConfig(({ mode }) => {
 
   // Read version from root package.json
   const rootPkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'))
+  const appVersion =
+    typeof rootPkg.version === 'string' && rootPkg.version.trim().length > 0
+      ? rootPkg.version
+      : '0.0.0'
 
   return {
     define: {
-      __APP_VERSION__: JSON.stringify(rootPkg.version),
+      __APP_VERSION__: JSON.stringify(appVersion),
     },
     plugins: [
       // DAB URL - always port 5000 for direct write operations (bypasses Express proxy chain)
