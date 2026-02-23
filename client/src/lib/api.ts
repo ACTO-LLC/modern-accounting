@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { PublicClientApplication, SilentRequest, AccountInfo } from '@azure/msal-browser';
-import { apiRequest, roleHierarchy, type UserRole } from './authConfig';
+import { apiRequest, roleHierarchy } from './authConfig';
 import { formatDateForOData } from './dateUtils';
 
 const api = axios.create({

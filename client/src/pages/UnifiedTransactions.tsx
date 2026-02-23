@@ -299,18 +299,22 @@ export default function UnifiedTransactions() {
   }, []);
 
   const handleSaveEdit = useCallback((id: string) => {
+    // Look up the account name to use as category text
+    const selectedAccount = accounts.find(a => a.Id === editForm.accountId);
     updateMutation.mutate({
       id,
       data: {
-        SuggestedAccountId: editForm.accountId,
+        SuggestedAccountId: editForm.accountId || undefined,
+        SuggestedCategory: selectedAccount?.Name || undefined,
         SuggestedMemo: editForm.memo,
-        Status: 'Approved',
-        ApprovedAccountId: editForm.accountId,
-        ApprovedMemo: editForm.memo,
         IsPersonal: editForm.isPersonal,
       },
+    }, {
+      onSuccess: () => {
+        toast.success('Transaction updated');
+      },
     });
-  }, [editForm, updateMutation]);
+  }, [editForm, accounts, updateMutation]);
 
   const handleBulkApprove = useCallback(() => {
     bulkApproveMutation.mutate(Array.from(selectedIds.ids) as string[]);
