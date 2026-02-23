@@ -34,7 +34,7 @@ export default function ProductsServices() {
         const iconColor = params.row.Type === 'Service' ? 'text-blue-500' :
           params.row.Type === 'Inventory' ? 'text-green-500' : 'text-orange-500';
         return (
-          <div className="flex items-center">
+          <div className="flex items-center h-full">
             <IconComponent className={`w-4 h-4 mr-2 ${iconColor}`} />
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{params.value}</span>
           </div>
