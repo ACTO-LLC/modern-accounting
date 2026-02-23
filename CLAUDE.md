@@ -123,6 +123,7 @@ For detailed technical guidance on specific topics, see these documents:
 | Schema management, migrations, production SQL | [docs/claude-database.md](docs/claude-database.md) |
 | QBO migration architecture, field mapping, cutoff dates | [docs/claude-qbo-migration.md](docs/claude-qbo-migration.md) |
 | MUI DataGrid, Zod nullish, Express proxy, pagination | [docs/claude-frontend.md](docs/claude-frontend.md) |
+| Feature flags system, admin toggles, nav visibility | [docs/claude-feature-flags.md](docs/claude-feature-flags.md) |
 
 ---
 
