@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calculator, Save, TestTube, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../lib/api';
 
 interface TaxSettings {
   id?: string;
@@ -20,8 +20,6 @@ interface TaxRate {
   Rate: number;
   TaxType: string;
 }
-
-const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
 export default function TaxSettings() {
   const [settings, setSettings] = useState<TaxSettings>({
@@ -48,8 +46,8 @@ export default function TaxSettings() {
     const loadData = async () => {
       try {
         const [settingsRes, taxRatesRes] = await Promise.all([
-          axios.get(`${CHAT_API_URL}/api/tax/settings`),
-          axios.get('/api/taxrates?$filter=TaxType eq \'Sales\' and IsActive eq true')
+          api.get('/tax/settings'),
+          api.get('/taxrates?$filter=TaxType eq \'Sales\' and IsActive eq true')
         ]);
         setSettings(settingsRes.data);
         setTaxRates(taxRatesRes.data.value || []);
@@ -92,7 +90,7 @@ export default function TaxSettings() {
         payload.accountId = settings.avalaraAccountId || '';
       }
 
-      const response = await axios.post(`${CHAT_API_URL}/api/tax/test-connection`, payload);
+      const response = await api.post('/tax/test-connection', payload);
       setTestResult(response.data);
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : 'Connection test failed';
@@ -125,7 +123,7 @@ export default function TaxSettings() {
         payload.apiSecret = apiSecret;
       }
 
-      await axios.put(`${CHAT_API_URL}/api/tax/settings`, payload);
+      await api.put('/tax/settings', payload);
       setMessage({ type: 'success', text: 'Tax settings saved successfully!' });
 
       // Clear credential fields after save
@@ -133,7 +131,7 @@ export default function TaxSettings() {
       setApiSecret('');
 
       // Refresh settings to get updated hasApiCredentials
-      const settingsRes = await axios.get(`${CHAT_API_URL}/api/tax/settings`);
+      const settingsRes = await api.get('/tax/settings');
       setSettings(settingsRes.data);
     } catch (error) {
       console.error('Failed to save tax settings:', error);
