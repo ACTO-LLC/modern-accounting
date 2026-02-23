@@ -144,9 +144,7 @@ export default function ReceivePaymentForm({
 
       if (hasInvalidApplications && unpaidInvoices?.length) {
         // Clear applications for different customer
-        while (fields.length > 0) {
-          remove(0);
-        }
+        remove();
       }
     }
   }, [watchedCustomerId, unpaidInvoices]);
