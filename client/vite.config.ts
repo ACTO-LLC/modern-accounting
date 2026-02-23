@@ -2,6 +2,8 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import istanbul from 'vite-plugin-istanbul'
 import http from 'http'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 
 // Vite plugin that buffers and forwards write requests to DAB directly.
 // DAB's Kestrel server enforces MinRequestBodyDataRate, and Vite's
@@ -77,7 +79,17 @@ export default defineConfig(({ mode }) => {
 
   const chatApiUrl = env.VITE_CHAT_API_URL || 'http://localhost:8080'
 
+  // Read version from root package.json
+  const rootPkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'))
+  const appVersion =
+    typeof rootPkg.version === 'string' && rootPkg.version.trim().length > 0
+      ? rootPkg.version
+      : '0.0.0'
+
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+    },
     plugins: [
       // DAB URL - always port 5000 for direct write operations (bypasses Express proxy chain)
       dabProxyBufferPlugin(env.VITE_DAB_URL || 'http://localhost:5000'),
