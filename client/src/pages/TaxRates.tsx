@@ -224,9 +224,9 @@ export default function TaxRates() {
     return matchesSearch && matchesStatus;
   });
 
-  if (isLoading) return <div className="p-4">Loading tax rates...</div>;
+  if (isLoading) return <div className="p-4 dark:text-gray-300">Loading tax rates...</div>;
   if (error)
-    return <div className="p-4 text-red-600">Error loading tax rates</div>;
+    return <div className="p-4 text-red-600 dark:text-red-400">Error loading tax rates</div>;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -239,7 +239,7 @@ export default function TaxRates() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Tax Rate
@@ -255,7 +255,7 @@ export default function TaxRates() {
             </h2>
             <button
               onClick={resetForm}
-              className="text-gray-400 hover:text-gray-500"
+              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
             >
               <X className="w-5 h-5" />
             </button>
@@ -424,7 +424,7 @@ export default function TaxRates() {
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-900/50">
+          <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th
                 scope="col"
@@ -464,7 +464,7 @@ export default function TaxRates() {
               </tr>
             ) : (
               filteredTaxRates?.map((taxRate) => (
-                <tr key={taxRate.Id}>
+                <tr key={taxRate.Id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
