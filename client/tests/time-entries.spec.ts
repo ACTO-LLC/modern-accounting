@@ -18,26 +18,28 @@ test.describe('Time Entries', () => {
     await page.goto('/time-entries/new');
     await expect(page.getByRole('heading', { name: 'Log Time' })).toBeVisible();
 
-    // Select project (only shows Active projects)
-    const projectSelect = page.locator('#ProjectId');
-    await expect(projectSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await projectSelect.selectOption({ index: 1 });
+    // Select project via MUI Autocomplete
+    await page.getByLabel('Project').fill('');
+    await page.getByLabel('Project').click();
+    await page.getByRole('option').first().click();
 
-    // Fill employee name
-    await page.locator('#EmployeeName').fill(`Tester ${timestamp}`);
+    // Select employee via MUI Autocomplete
+    await page.getByLabel('Employee').fill('');
+    await page.getByLabel('Employee').click();
+    await page.getByRole('option').first().click();
 
-    // Fill date
+    // Fill date via MUI TextField
     const today = new Date().toISOString().split('T')[0];
-    await page.locator('#EntryDate').fill(today);
+    await page.getByLabel('Date').fill(today);
 
-    // Fill hours
-    await page.locator('#Hours').fill('4');
+    // Fill hours via MUI TextField
+    await page.getByLabel('Hours').fill('4');
 
-    // Fill hourly rate
-    await page.locator('#HourlyRate').fill('75.00');
+    // Fill hourly rate via MUI TextField
+    await page.getByLabel('Hourly Rate ($)').fill('75.00');
 
-    // Fill description
-    await page.locator('#Description').fill('Development work - E2E test');
+    // Fill description via MUI TextField
+    await page.getByLabel('Description').fill('Development work - E2E test');
 
     // Save
     const responsePromise = page.waitForResponse(

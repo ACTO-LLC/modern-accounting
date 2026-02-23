@@ -88,23 +88,23 @@ export default function TimeEntries() {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'Approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'Invoiced':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
-  if (isLoading) return <div className="p-4">Loading time entries...</div>;
-  if (error) return <div className="p-4 text-red-600">Error loading time entries</div>;
+  if (isLoading) return <div className="p-4 dark:text-gray-300">Loading time entries...</div>;
+  if (error) return <div className="p-4 text-red-600 dark:text-red-400">Error loading time entries</div>;
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Time Tracking</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Time Tracking</h1>
         <Link
           to="/time-entries/new"
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -115,43 +115,43 @@ export default function TimeEntries() {
       </div>
 
       {/* Week Navigation */}
-      <div className="bg-white shadow rounded-lg p-4 mb-6">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigateWeek('prev')}
-              className="p-2 rounded-md hover:bg-gray-100"
+              className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="text-lg font-medium">
+            <span className="text-lg font-medium dark:text-gray-100">
               {currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
               {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
             <button
               onClick={() => navigateWeek('next')}
-              className="p-2 rounded-md hover:bg-gray-100"
+              className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
             <button
               onClick={goToThisWeek}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
+              className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
             >
               This Week
             </button>
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-500">
-              Total: <span className="font-semibold text-gray-900">{totalHours.toFixed(1)} hrs</span>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Total: <span className="font-semibold text-gray-900 dark:text-gray-100">{totalHours.toFixed(1)} hrs</span>
             </div>
-            <div className="flex border rounded-md">
+            <div className="flex border dark:border-gray-600 rounded-md">
               <button
                 onClick={() => setViewMode('list')}
                 className={clsx(
                   'px-3 py-1 text-sm',
-                  viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 )}
               >
                 <List className="w-4 h-4" />
@@ -160,7 +160,7 @@ export default function TimeEntries() {
                 onClick={() => setViewMode('calendar')}
                 className={clsx(
                   'px-3 py-1 text-sm',
-                  viewMode === 'calendar' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  viewMode === 'calendar' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 )}
               >
                 <Calendar className="w-4 h-4" />
@@ -172,47 +172,47 @@ export default function TimeEntries() {
 
       {viewMode === 'calendar' ? (
         /* Calendar View */
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="grid grid-cols-7 gap-px bg-gray-200">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-600">
             {weekDays.map((day) => (
-              <div key={day.toISOString()} className="bg-gray-50 py-2 text-center">
-                <div className="text-xs text-gray-500">
+              <div key={day.toISOString()} className="bg-gray-50 dark:bg-gray-700 py-2 text-center">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {day.toLocaleDateString('en-US', { weekday: 'short' })}
                 </div>
                 <div className={clsx(
                   'text-sm font-medium',
-                  formatDate(day) === formatDate(new Date()) ? 'text-indigo-600' : 'text-gray-900'
+                  formatDate(day) === formatDate(new Date()) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'
                 )}>
                   {day.getDate()}
                 </div>
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-px bg-gray-200 min-h-[200px]">
+          <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-600 min-h-[200px]">
             {weekDays.map((day) => {
               const dayEntries = getEntriesForDay(day);
               const dayTotal = dayEntries.reduce((sum, e) => sum + e.Hours, 0);
               return (
-                <div key={day.toISOString()} className="bg-white p-2">
+                <div key={day.toISOString()} className="bg-white dark:bg-gray-800 p-2">
                   {dayEntries.length > 0 ? (
                     <div className="space-y-1">
                       {dayEntries.map((entry) => (
                         <div
                           key={entry.Id}
-                          className="text-xs p-1 bg-indigo-50 rounded border-l-2 border-indigo-500"
+                          className="text-xs p-1 bg-indigo-50 dark:bg-indigo-900/30 rounded border-l-2 border-indigo-500"
                         >
-                          <div className="font-medium truncate">
+                          <div className="font-medium truncate dark:text-gray-200">
                             {entry.ProjectName || 'Unknown'}
                           </div>
-                          <div className="text-gray-500">{entry.Hours}h</div>
+                          <div className="text-gray-500 dark:text-gray-400">{entry.Hours}h</div>
                         </div>
                       ))}
-                      <div className="text-xs text-gray-500 pt-1 border-t">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 pt-1 border-t dark:border-gray-600">
                         Total: {dayTotal.toFixed(1)}h
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-gray-400 text-center py-4">-</div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">-</div>
                   )}
                 </div>
               );
@@ -221,12 +221,12 @@ export default function TimeEntries() {
         </div>
       ) : (
         /* List View */
-        <div className="bg-white shadow overflow-x-auto sm:rounded-lg">
+        <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
           {weekEntries.length === 0 ? (
             <div className="text-center py-12">
-              <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No time entries</h3>
-              <p className="mt-1 text-sm text-gray-500">No time logged for this week.</p>
+              <Calendar className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No time entries</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">No time logged for this week.</p>
               <div className="mt-6">
                 <Link
                   to="/time-entries/new"
@@ -238,25 +238,25 @@ export default function TimeEntries() {
               </div>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Date
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Project
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Description
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Hours
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Billable
                   </th>
                   <th scope="col" className="relative px-6 py-3">
@@ -264,25 +264,25 @@ export default function TimeEntries() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {weekEntries
                   .sort((a, b) => new Date(b.EntryDate).getTime() - new Date(a.EntryDate).getTime())
                   .map((entry) => (
-                    <tr key={entry.Id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <tr key={entry.Id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {new Date(entry.EntryDate).toLocaleDateString('en-US', {
                           weekday: 'short',
                           month: 'short',
                           day: 'numeric',
                         })}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {entry.ProjectName || 'Unknown'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
                         {entry.Description || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {entry.Hours.toFixed(1)}h
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -293,7 +293,7 @@ export default function TimeEntries() {
                           {entry.Status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {entry.IsBillable ? 'Yes' : 'No'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -303,7 +303,7 @@ export default function TimeEntries() {
                               deleteMutation.mutate(entry.Id);
                             }
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
