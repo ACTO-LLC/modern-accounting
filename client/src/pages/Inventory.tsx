@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus, Box, AlertTriangle, TrendingDown, ArrowUpCircle, ArrowDownCircle, RefreshCw } from 'lucide-react';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import useGridHeight from '../hooks/useGridHeight';
 
 // Security: Validation utilities for input sanitization
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -79,6 +81,16 @@ interface InventoryLocation {
 type ViewMode = 'inventory' | 'transactions' | 'locations';
 type StockFilter = 'All' | 'LowStock' | 'OutOfStock' | 'InStock';
 
+const formatCurrency = (value: number | null) => {
+  if (value === null || value === undefined) return '-';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+};
+
+const formatNumber = (value: number | null) => {
+  if (value === null || value === undefined) return '-';
+  return new Intl.NumberFormat('en-US').format(value);
+};
+
 export default function Inventory() {
   const [viewMode, setViewMode] = useState<ViewMode>('inventory');
   const [stockFilter, setStockFilter] = useState<StockFilter>('All');
@@ -89,6 +101,8 @@ export default function Inventory() {
   const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridHeight = useGridHeight(gridRef);
 
   // Fetch inventory items (only Type = 'Inventory')
   const { data: inventoryItems, isLoading: loadingInventory, error: inventoryError } = useQuery({
@@ -197,7 +211,7 @@ export default function Inventory() {
       default:
         return true;
     }
-  });
+  }) || [];
 
   // Calculate inventory stats
   const stats = {
@@ -211,16 +225,6 @@ export default function Inventory() {
     totalValue: inventoryItems?.reduce((sum, item) => {
       return sum + ((item.QuantityOnHand || 0) * (item.PurchaseCost || 0));
     }, 0) || 0
-  };
-
-  const formatCurrency = (value: number | null) => {
-    if (value === null || value === undefined) return '-';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-  };
-
-  const formatNumber = (value: number | null) => {
-    if (value === null || value === undefined) return '-';
-    return new Intl.NumberFormat('en-US').format(value);
   };
 
   const getStockStatusBadge = (item: ProductService) => {
@@ -299,6 +303,215 @@ export default function Inventory() {
       notes: adjustmentNotes
     });
   };
+
+  // Column definitions for inventory items DataGrid
+  const inventoryColumns: GridColDef[] = [
+    {
+      field: 'Name',
+      headerName: 'Product',
+      flex: 1,
+      minWidth: 180,
+      renderCell: (params) => (
+        <div className="flex items-center h-full">
+          <Box className="w-4 h-4 text-green-500 mr-2" />
+          <span className="text-sm font-medium">{params.value}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'SKU',
+      headerName: 'SKU',
+      width: 120,
+      renderCell: (params) => params.value || '-',
+    },
+    {
+      field: 'QuantityOnHand',
+      headerName: 'On Hand',
+      width: 110,
+      type: 'number',
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => formatNumber(params.value),
+    },
+    {
+      field: 'ReorderPoint',
+      headerName: 'Reorder Point',
+      width: 120,
+      type: 'number',
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => formatNumber(params.value),
+    },
+    {
+      field: 'PurchaseCost',
+      headerName: 'Unit Cost',
+      width: 120,
+      type: 'number',
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => formatCurrency(params.value),
+    },
+    {
+      field: 'Value',
+      headerName: 'Value',
+      width: 120,
+      type: 'number',
+      align: 'right',
+      headerAlign: 'right',
+      valueGetter: (_value, row) => (row.QuantityOnHand || 0) * (row.PurchaseCost || 0),
+      renderCell: (params) => formatCurrency(params.value),
+    },
+    {
+      field: 'Status',
+      headerName: 'Status',
+      width: 120,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => getStockStatusBadge(params.row),
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 140,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="flex items-center h-full gap-4">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openAdjustmentModal(params.row);
+            }}
+            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium"
+          >
+            Adjust
+          </button>
+          <Link
+            to={`/products-services/${params.row.Id}/edit`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium"
+          >
+            Edit
+          </Link>
+        </div>
+      ),
+    },
+  ];
+
+  // Column definitions for transactions DataGrid
+  const transactionColumns: GridColDef[] = [
+    {
+      field: 'TransactionDate',
+      headerName: 'Date',
+      width: 120,
+      renderCell: (params) => formatDate(params.value),
+    },
+    {
+      field: 'TransactionType',
+      headerName: 'Type',
+      width: 140,
+      renderCell: (params) => (
+        <div className="flex items-center h-full">
+          {getTransactionTypeIcon(params.value)}
+          <span className="ml-2 text-sm">{params.value}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'Quantity',
+      headerName: 'Quantity',
+      width: 110,
+      type: 'number',
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => (
+        <span className={params.value >= 0 ? 'text-green-600' : 'text-red-600'}>
+          {params.value >= 0 ? '+' : ''}{formatNumber(params.value)}
+        </span>
+      ),
+    },
+    {
+      field: 'UnitCost',
+      headerName: 'Unit Cost',
+      width: 120,
+      type: 'number',
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => formatCurrency(params.value),
+    },
+    {
+      field: 'TotalCost',
+      headerName: 'Total',
+      width: 120,
+      type: 'number',
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => formatCurrency(params.value),
+    },
+    {
+      field: 'ReferenceType',
+      headerName: 'Reference',
+      width: 130,
+      renderCell: (params) => params.value || '-',
+    },
+    {
+      field: 'Notes',
+      headerName: 'Notes',
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => params.value || '-',
+    },
+  ];
+
+  // Column definitions for locations DataGrid
+  const locationColumns: GridColDef[] = [
+    {
+      field: 'Name',
+      headerName: 'Name',
+      flex: 1,
+      minWidth: 180,
+    },
+    {
+      field: 'Code',
+      headerName: 'Code',
+      width: 120,
+      renderCell: (params) => params.value || '-',
+    },
+    {
+      field: 'Address',
+      headerName: 'Address',
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params) => params.value || '-',
+    },
+    {
+      field: 'IsDefault',
+      headerName: 'Default',
+      width: 100,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) =>
+        params.value ? (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+            Default
+          </span>
+        ) : null,
+    },
+    {
+      field: 'Status',
+      headerName: 'Status',
+      width: 100,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          params.value === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+        }`}>
+          {params.value}
+        </span>
+      ),
+    },
+  ];
 
   if (loadingInventory && viewMode === 'inventory') {
     return <div className="p-4">Loading inventory...</div>;
@@ -423,246 +636,69 @@ export default function Inventory() {
               </div>
               <div className="flex items-end">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing {filteredItems?.length || 0} of {inventoryItems?.length || 0} items
+                  Showing {filteredItems.length} of {inventoryItems?.length || 0} items
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Inventory Table */}
-          <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    SKU
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    On Hand
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Reorder Point
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Unit Cost
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Value
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="relative px-6 py-3">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredItems?.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                      No inventory items found.{' '}
-                      <Link to="/products-services/new" className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 ml-1">
-                        Add your first inventory item.
-                      </Link>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredItems?.map((item) => {
-                    const value = (item.QuantityOnHand || 0) * (item.PurchaseCost || 0);
-                    return (
-                      <tr key={item.Id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <Box className="w-4 h-4 text-green-500 mr-2" />
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.Name}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {item.SKU || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
-                          {formatNumber(item.QuantityOnHand)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">
-                          {formatNumber(item.ReorderPoint)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
-                          {formatCurrency(item.PurchaseCost)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
-                          {formatCurrency(value)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          {getStockStatusBadge(item)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => openAdjustmentModal(item)}
-                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
-                          >
-                            Adjust
-                          </button>
-                          <Link
-                            to={`/products-services/${item.Id}/edit`}
-                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                          >
-                            Edit
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+          {/* Inventory DataGrid */}
+          <div ref={gridRef} style={{ height: gridHeight, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <DataGrid
+              rows={filteredItems}
+              columns={inventoryColumns}
+              getRowId={(row) => row.Id}
+              loading={loadingInventory}
+              pageSizeOptions={[10, 25, 50, 100]}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 25 } },
+              }}
+              disableRowSelectionOnClick
+              localeText={{
+                noRowsLabel: 'No inventory items found.',
+              }}
+            />
           </div>
         </>
       )}
 
       {/* Transactions View */}
       {viewMode === 'transactions' && (
-        <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
-          {loadingTransactions ? (
-            <div className="p-4">Loading transactions...</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Quantity
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Unit Cost
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Reference
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Notes
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {transactions?.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                      No inventory transactions found.
-                    </td>
-                  </tr>
-                ) : (
-                  transactions?.map((tx) => (
-                    <tr key={tx.Id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(tx.TransactionDate)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getTransactionTypeIcon(tx.TransactionType)}
-                          <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{tx.TransactionType}</span>
-                        </div>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${tx.Quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {tx.Quantity >= 0 ? '+' : ''}{formatNumber(tx.Quantity)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
-                        {formatCurrency(tx.UnitCost)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
-                        {formatCurrency(tx.TotalCost)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {tx.ReferenceType || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                        {tx.Notes || '-'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+        <div ref={gridRef} style={{ height: gridHeight, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <DataGrid
+            rows={transactions || []}
+            columns={transactionColumns}
+            getRowId={(row) => row.Id}
+            loading={loadingTransactions}
+            pageSizeOptions={[10, 25, 50, 100]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 25 } },
+            }}
+            disableRowSelectionOnClick
+            localeText={{
+              noRowsLabel: 'No inventory transactions found.',
+            }}
+          />
         </div>
       )}
 
       {/* Locations View */}
       {viewMode === 'locations' && (
-        <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto sm:rounded-lg">
-          {loadingLocations ? (
-            <div className="p-4">Loading locations...</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Code
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Address
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Default
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {locations?.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                      No inventory locations found. Locations can be used to track inventory across multiple warehouses or stores.
-                    </td>
-                  </tr>
-                ) : (
-                  locations?.map((loc) => (
-                    <tr key={loc.Id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {loc.Name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {loc.Code || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                        {loc.Address || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        {loc.IsDefault && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
-                            Default
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          loc.Status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                        }`}>
-                          {loc.Status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+        <div ref={gridRef} style={{ height: gridHeight, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <DataGrid
+            rows={locations || []}
+            columns={locationColumns}
+            getRowId={(row) => row.Id}
+            loading={loadingLocations}
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 25 } },
+            }}
+            disableRowSelectionOnClick
+            localeText={{
+              noRowsLabel: 'No inventory locations found.',
+            }}
+          />
         </div>
       )}
 
