@@ -1,6 +1,6 @@
 {
   "name": "modern-accounting-system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Modern Double-Entry Accounting System",
   "scripts": {
     "start": "concurrently -n docker,api,client -c blue,yellow,green \"npm run start:docker\" \"npm run start:api\" \"npm run start:client\"",
