@@ -43,11 +43,25 @@ const appTheme = createTheme({
       styleOverrides: {
         root: {
           '--DataGrid-containerBackground': 'var(--mui-palette-background-default)',
+          border: '1px solid var(--mui-palette-divider)',
+          color: 'var(--mui-palette-text-primary)',
           '& .MuiDataGrid-columnHeaderTitle': {
             fontWeight: 600,
           },
           '& .MuiDataGrid-cell:focus': {
             outline: 'none',
+          },
+          '& .MuiDataGrid-cell': {
+            borderColor: 'var(--mui-palette-divider)',
+          },
+          '& .MuiDataGrid-columnHeaders': {
+            borderColor: 'var(--mui-palette-divider)',
+          },
+          '& .MuiDataGrid-footerContainer': {
+            borderColor: 'var(--mui-palette-divider)',
+          },
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: 'var(--mui-palette-action-hover)',
           },
         },
         columnHeaders: {

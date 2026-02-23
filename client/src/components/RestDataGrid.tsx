@@ -177,7 +177,6 @@ export default function RestDataGrid<T extends GridValidRowModel>({
               overflow: 'auto !important',
             },
             '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(79, 70, 229, 0.04)',
               cursor: editPath || onRowClick ? 'pointer' : 'default',
             },
           }}

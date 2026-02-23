@@ -668,9 +668,6 @@ export default function AuditLog() {
           getRowId={(row) => row.Id}
           sx={{
             border: 0,
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(79, 70, 229, 0.04)',
-            },
           }}
           localeText={{
             noRowsLabel: 'No audit log entries found.',
