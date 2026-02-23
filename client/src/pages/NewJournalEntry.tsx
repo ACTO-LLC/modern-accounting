@@ -7,6 +7,7 @@ import api from '../lib/api';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
 
 interface Account {
   Id: string;
@@ -63,7 +64,7 @@ export default function NewJournalEntry() {
     name: "Lines"
   });
 
-  const { data: accounts = [] } = useQuery({
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['accounts'],
     queryFn: async (): Promise<Account[]> => {
       const response = await api.get<{ value: Account[] }>('/accounts?$orderby=Code');
@@ -94,16 +95,9 @@ export default function NewJournalEntry() {
       }
 
       for (const line of data.Lines) {
-        const accountResponse = await api.get<{ value: any[] }>(`/accounts?$filter=Code eq '${line.AccountId}'`);
-        const account = accountResponse.data.value?.[0];
-
-        if (!account) {
-          throw new Error(`Account code '${line.AccountId}' not found`);
-        }
-
         await api.post('/journalentrylines', {
           JournalEntryId: journalEntryId,
-          AccountId: account.Id,
+          AccountId: line.AccountId,
           Description: line.Description,
           Debit: line.Debit,
           Credit: line.Credit
@@ -183,16 +177,41 @@ export default function NewJournalEntry() {
                         <Autocomplete
                           options={accounts}
                           getOptionLabel={(option: Account) => `${option.Code} - ${option.Name}`}
-                          value={accounts.find((a) => a.Code === accountField.value) ?? null}
+                          value={accounts.find((a) => a.Id === accountField.value) ?? null}
                           onChange={(_event, newValue: Account | null) => {
-                            accountField.onChange(newValue?.Code ?? '');
+                            accountField.onChange(newValue?.Id ?? '');
                           }}
                           isOptionEqualToValue={(option: Account, val: Account) => option.Id === val.Id}
+                          loading={accountsLoading}
                           size="small"
+                          renderOption={(props, option: Account) => {
+                            const { key, ...rest } = props;
+                            return (
+                              <li key={key} {...rest}>
+                                <div>
+                                  <div className="font-medium">{option.Code} - {option.Name}</div>
+                                </div>
+                              </li>
+                            );
+                          }}
                           renderInput={(params) => (
                             <TextField
                               {...params}
-                              placeholder="Account Code"
+                              label="Account"
+                              placeholder="Search accounts..."
+                              error={!!errors.Lines?.[index]?.AccountId}
+                              helperText={errors.Lines?.[index]?.AccountId?.message}
+                              slotProps={{
+                                input: {
+                                  ...params.InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {accountsLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                                      {params.InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
                             />
                           )}
                         />

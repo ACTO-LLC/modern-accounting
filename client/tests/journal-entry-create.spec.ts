@@ -17,13 +17,15 @@ test.describe('Journal Entry Creation', () => {
     // 3. Fill Lines
     // Line 1
     const line1 = page.locator('.space-y-4 > div').first();
-    await line1.locator('input[placeholder="Account Code"]').fill('1000'); // Assuming 1000 exists or is accepted as string (based on my earlier analysis, this might fail if DB enforces GUID, but let's test)
+    await line1.getByLabel('Account').fill('1000');
+    await page.getByRole('option').first().click();
     await line1.locator('input[placeholder="Line Description"]').fill('Debit Line');
     await line1.locator('input[placeholder="Debit"]').fill('100.00');
 
     // Line 2
     const line2 = page.locator('.space-y-4 > div').nth(1);
-    await line2.locator('input[placeholder="Account Code"]').fill('2000');
+    await line2.getByLabel('Account').fill('2000');
+    await page.getByRole('option').first().click();
     await line2.locator('input[placeholder="Line Description"]').fill('Credit Line');
     await line2.locator('input[placeholder="Credit"]').fill('100.00');
 

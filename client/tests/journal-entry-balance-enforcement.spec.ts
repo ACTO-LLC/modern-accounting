@@ -43,12 +43,14 @@ test.describe('Journal Entry Balance Enforcement', () => {
 
     // Fill first line with debit
     const line1 = page.locator('.space-y-4 > div').first();
-    await line1.locator('input[placeholder="Account Code"]').fill('1000');
+    await line1.getByLabel('Account').fill('1000');
+    await page.getByRole('option').first().click();
     await line1.locator('input[placeholder="Debit"]').fill('100.00');
 
     // Fill second line with DIFFERENT credit (unbalanced)
     const line2 = page.locator('.space-y-4 > div').nth(1);
-    await line2.locator('input[placeholder="Account Code"]').fill('2000');
+    await line2.getByLabel('Account').fill('2000');
+    await page.getByRole('option').first().click();
     await line2.locator('input[placeholder="Credit"]').fill('50.00'); // Only 50, not 100 - unbalanced
 
     // Should show unbalanced status
@@ -76,13 +78,15 @@ test.describe('Journal Entry Balance Enforcement', () => {
 
     // Fill first line with debit
     const line1 = page.locator('.space-y-4 > div').first();
-    await line1.locator('input[placeholder="Account Code"]').fill('1000');
+    await line1.getByLabel('Account').fill('1000');
+    await page.getByRole('option').first().click();
     await line1.locator('input[placeholder="Line Description"]').fill('Debit Line');
     await line1.locator('input[placeholder="Debit"]').fill('100.00');
 
     // Fill second line with matching credit
     const line2 = page.locator('.space-y-4 > div').nth(1);
-    await line2.locator('input[placeholder="Account Code"]').fill('2000');
+    await line2.getByLabel('Account').fill('2000');
+    await page.getByRole('option').first().click();
     await line2.locator('input[placeholder="Line Description"]').fill('Credit Line');
     await line2.locator('input[placeholder="Credit"]').fill('100.00');
 
@@ -108,24 +112,28 @@ test.describe('Journal Entry Balance Enforcement', () => {
 
     // Fill first line with debit
     const line1 = page.locator('.space-y-4 > div').first();
-    await line1.locator('input[placeholder="Account Code"]').fill('1000');
+    await line1.getByLabel('Account').fill('1000');
+    await page.getByRole('option').first().click();
     await line1.locator('input[placeholder="Debit"]').fill('75.00');
 
     // Fill second line with debit
     const line2 = page.locator('.space-y-4 > div').nth(1);
-    await line2.locator('input[placeholder="Account Code"]').fill('1100');
+    await line2.getByLabel('Account').fill('1100');
+    await page.getByRole('option').first().click();
     await line2.locator('input[placeholder="Debit"]').fill('25.00');
 
     // Add third line with credit
     await page.getByRole('button', { name: /Add Line/i }).click();
     const line3 = page.locator('.space-y-4 > div').nth(2);
-    await line3.locator('input[placeholder="Account Code"]').fill('2000');
+    await line3.getByLabel('Account').fill('2000');
+    await page.getByRole('option').first().click();
     await line3.locator('input[placeholder="Credit"]').fill('50.00');
 
     // Add fourth line with credit
     await page.getByRole('button', { name: /Add Line/i }).click();
     const line4 = page.locator('.space-y-4 > div').nth(3);
-    await line4.locator('input[placeholder="Account Code"]').fill('2100');
+    await line4.getByLabel('Account').fill('2100');
+    await page.getByRole('option').first().click();
     await line4.locator('input[placeholder="Credit"]').fill('50.00');
 
     // Total debits: 75 + 25 = 100
