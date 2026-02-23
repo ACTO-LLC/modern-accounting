@@ -288,6 +288,7 @@ export default function NewJournalEntry() {
                       color="error"
                       size="small"
                       sx={{ mt: 1 }}
+                      aria-label="Remove line"
                     >
                       <Trash2 className="w-5 h-5" />
                     </IconButton>
