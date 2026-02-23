@@ -6,6 +6,9 @@ import * as z from 'zod';
 import { ArrowLeft } from 'lucide-react';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
 import { timeEntriesApi, projectsApi, customersApi, employeesApi, Project, Customer, Employee, TimeEntryInput } from '../lib/api';
 
@@ -86,6 +89,11 @@ export default function NewTimeEntry() {
     }
   });
 
+  // Extract refs from register for use with MUI TextField
+  const { ref: hoursRef, ...hoursRest } = register('Hours');
+  const { ref: hourlyRateRef, ...hourlyRateRest } = register('HourlyRate');
+  const { ref: descriptionRef, ...descriptionRest } = register('Description');
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex items-center">
@@ -97,21 +105,56 @@ export default function NewTimeEntry() {
 
       <form onSubmit={handleSubmit((data) => mutation.mutateAsync(data))} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         <div>
-          <label htmlFor="ProjectId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
-          <select
-            id="ProjectId"
-            {...register('ProjectId')}
-            disabled={projectsLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-          >
-            <option value="">Select a project...</option>
-            {activeProjects.map((project) => (
-              <option key={project.Id} value={project.Id}>
-                {project.Name}
-              </option>
-            ))}
-          </select>
-          {errors.ProjectId && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ProjectId.message}</p>}
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                options={activeProjects}
+                getOptionLabel={(option: Project) => option.Name}
+                value={activeProjects.find(p => p.Id === field.value) ?? null}
+                onChange={(_event, newValue: Project | null) => {
+                  field.onChange(newValue?.Id ?? '');
+                }}
+                isOptionEqualToValue={(option: Project, val: Project) => option.Id === val.Id}
+                loading={projectsLoading}
+                size="small"
+                renderOption={(props, option: Project) => {
+                  const { key, ...rest } = props;
+                  const customer = customers.find(c => c.Id === option.CustomerId);
+                  return (
+                    <li key={key} {...rest}>
+                      <div>
+                        <div className="font-medium">{option.Name}</div>
+                        {customer && <div className="text-xs opacity-60">{customer.Name}</div>}
+                      </div>
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Project"
+                    placeholder="Select a project..."
+                    required
+                    error={!!errors.ProjectId}
+                    helperText={errors.ProjectId?.message}
+                    slotProps={{
+                      input: {
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {projectsLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      },
+                    }}
+                  />
+                )}
+              />
+            )}
+          />
           {selectedProject && (
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Customer: {customers.find(c => c.Id === selectedProject.CustomerId)?.Name || 'Unknown'}
@@ -172,84 +215,94 @@ export default function NewTimeEntry() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="EntryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
-            <input
-              id="EntryDate"
-              type="date"
-              {...register('EntryDate')}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            />
-            {errors.EntryDate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.EntryDate.message}</p>}
-          </div>
+          <Controller
+            name="EntryDate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                type="date"
+                label="Date"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
 
-          <div>
-            <label htmlFor="Hours" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Hours</label>
-            <input
-              id="Hours"
-              type="number"
-              step="0.25"
-              min="0.25"
-              max="24"
-              {...register('Hours')}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            />
-            {errors.Hours && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Hours.message}</p>}
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="HourlyRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Hourly Rate ($)</label>
-          <input
-            id="HourlyRate"
+          <TextField
+            {...hoursRest}
+            inputRef={hoursRef}
             type="number"
-            step="0.01"
-            min="0"
-            {...register('HourlyRate')}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+            label="Hours"
+            required
+            error={!!errors.Hours}
+            helperText={errors.Hours?.message}
+            size="small"
+            fullWidth
+            slotProps={{ htmlInput: { step: '0.25', min: '0.25', max: '24' } }}
           />
-          {errors.HourlyRate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.HourlyRate.message}</p>}
         </div>
 
-        <div>
-          <label htmlFor="Description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-          <textarea
-            id="Description"
-            rows={3}
-            {...register('Description')}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            placeholder="What did you work on?"
-          />
-          {errors.Description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Description.message}</p>}
-        </div>
+        <TextField
+          {...hourlyRateRest}
+          inputRef={hourlyRateRef}
+          type="number"
+          label="Hourly Rate ($)"
+          error={!!errors.HourlyRate}
+          helperText={errors.HourlyRate?.message}
+          size="small"
+          fullWidth
+          slotProps={{ htmlInput: { step: '0.01', min: '0' } }}
+        />
 
-        <div className="flex items-center">
-          <input
-            id="IsBillable"
-            type="checkbox"
-            {...register('IsBillable')}
-            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
-          />
-          <label htmlFor="IsBillable" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
-            Billable
-          </label>
-        </div>
+        <TextField
+          {...descriptionRest}
+          inputRef={descriptionRef}
+          label="Description"
+          placeholder="What did you work on?"
+          multiline
+          rows={3}
+          error={!!errors.Description}
+          helperText={errors.Description?.message}
+          size="small"
+          fullWidth
+        />
 
-        <div className="flex justify-end items-center border-t border-gray-200 dark:border-gray-600 pt-4">
-          <button
-            type="button"
+        <Controller
+          name="IsBillable"
+          control={control}
+          render={({ field }) => (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={field.value ?? true}
+                  onChange={field.onChange}
+                />
+              }
+              label="Billable"
+            />
+          )}
+        />
+
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <Button
+            variant="outlined"
             onClick={() => navigate('/time-entries')}
-            className="mr-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            sx={{ mr: 1.5 }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="contained"
             disabled={mutation.isPending}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {mutation.isPending ? 'Saving...' : 'Log Time'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
