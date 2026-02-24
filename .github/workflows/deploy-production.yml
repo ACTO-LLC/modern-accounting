@@ -167,7 +167,7 @@ jobs:
                 </rules>
               </rewrite>
               <iisnode node_env="production" nodeProcessCommandLine="node" />
-              <!-- Remove IIS default cache headers that can interfere with Express -->
+              <!-- Remove default IIS response headers not needed for Node.js apps -->
               <httpProtocol>
                 <customHeaders>
                   <remove name="X-Powered-By" />

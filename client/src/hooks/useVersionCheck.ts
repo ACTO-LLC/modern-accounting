@@ -59,23 +59,23 @@ export function useVersionCheck(): VersionCheckResult {
           cache: 'no-store',
         });
 
-        if (!res.ok) return;
+        if (res.ok) {
+          const manifest: VersionManifest = await res.json();
 
-        const manifest: VersionManifest = await res.json();
+          if (cancelled) return;
 
-        if (cancelled) return;
+          if (currentBuildIdRef.current === null) {
+            // First check — store the current buildId as baseline
+            currentBuildIdRef.current = manifest.buildId;
+          } else if (manifest.buildId !== currentBuildIdRef.current) {
+            // Build ID changed — a new deployment happened
+            currentBuildIdRef.current = manifest.buildId;
 
-        if (currentBuildIdRef.current === null) {
-          // First check — store the current buildId as baseline
-          currentBuildIdRef.current = manifest.buildId;
-        } else if (manifest.buildId !== currentBuildIdRef.current) {
-          // Build ID changed — a new deployment happened
-          currentBuildIdRef.current = manifest.buildId;
-
-          // Only show notification if this build hasn't been dismissed
-          if (manifest.buildId !== dismissedBuildIdRef.current) {
-            setNewVersion(manifest.version);
-            setUpdateAvailable(true);
+            // Only show notification if this build hasn't been dismissed
+            if (manifest.buildId !== dismissedBuildIdRef.current) {
+              setNewVersion(manifest.version);
+              setUpdateAvailable(true);
+            }
           }
         }
       } catch {
