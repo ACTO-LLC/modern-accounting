@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePlaidLink, PlaidLinkOptions, PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { Link2, Link2Off, Loader2, Building2, RefreshCw, WifiOff } from 'lucide-react';
+import { formatDateShort } from '../lib/dateUtils';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
@@ -257,7 +258,7 @@ export default function PlaidLinkButton({ onConnectionChange, compact = false }:
                   {conn.accountCount} account{conn.accountCount !== 1 ? 's' : ''} linked
                   {conn.lastSyncAt && (
                     <span className="ml-2">
-                      Last sync: {new Date(conn.lastSyncAt).toLocaleDateString()}
+                      Last sync: {formatDateShort(conn.lastSyncAt)}
                     </span>
                   )}
                 </div>

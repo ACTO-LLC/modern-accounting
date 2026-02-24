@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
 import { ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
+import { formatDateLong } from '../../lib/dateUtils';
 
 interface Account { Id: string; Name: string; Type: string; Subtype: string | null; }
 interface JournalEntry { Id: string; TransactionDate: string; }
@@ -178,11 +179,7 @@ export default function TrialBalance() {
   const handleExportCSV = () => exportToCSV(`trial-balance-${asOfDate}`, columns, tableData);
 
   const formatAsOfDate = () =>
-    `As of ${new Date(asOfDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })}`;
+    `As of ${formatDateLong(asOfDate)}`;
 
   const isBalanced = Math.abs(reportData.totalDebits - reportData.totalCredits) < 0.01;
 
@@ -258,13 +255,7 @@ export default function TrialBalance() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {formatDateLong(new Date())}
         </p>
       </div>
     </div>

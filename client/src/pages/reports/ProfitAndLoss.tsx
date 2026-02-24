@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
+import { formatDateLong } from '../../lib/dateUtils';
 
 interface Account { Id: string; Name: string; Type: string; Subtype: string | null; }
 interface JournalEntry { Id: string; TransactionDate: string; }
@@ -177,15 +178,7 @@ export default function ProfitAndLoss() {
     exportToCSV(`profit-loss-${startDate}-to-${endDate}`, columns, tableData);
 
   const formatDateRange = () =>
-    `${new Date(startDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })} - ${new Date(endDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })}`;
+    `${formatDateLong(startDate)} - ${formatDateLong(endDate)}`;
 
   if (isLoading) {
     return <div className="max-w-4xl mx-auto p-4">Loading profit and loss report...</div>;
@@ -235,13 +228,7 @@ export default function ProfitAndLoss() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {formatDateLong(new Date())}
         </p>
       </div>
     </div>

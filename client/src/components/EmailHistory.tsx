@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, CheckCircle, XCircle, Clock, RefreshCw, Loader2 } from 'lucide-react';
 import { emailSendApi, EmailLog } from '../lib/emailApi';
+import { formatDateTime } from '../lib/dateUtils';
 
 interface EmailHistoryProps {
   invoiceId: string;
@@ -129,8 +130,8 @@ export default function EmailHistory({ invoiceId, refreshTrigger }: EmailHistory
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {log.SentAt
-                  ? new Date(log.SentAt).toLocaleString()
-                  : new Date(log.CreatedAt).toLocaleString()}
+                  ? formatDateTime(log.SentAt)
+                  : formatDateTime(log.CreatedAt)}
               </div>
             </div>
           </div>

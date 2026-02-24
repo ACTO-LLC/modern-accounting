@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Plus, ChevronLeft, ChevronRight, Calendar, List, Trash2 } from 'lucide-react';
 import { timeEntriesApi, TimeEntry } from '../lib/api';
 import clsx from 'clsx';
+import { formatDateForInput, formatDateMonthDay, formatDateMonthDayYear, formatWeekday, formatDateWithWeekday } from '../lib/dateUtils';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -25,7 +26,7 @@ export default function TimeEntries() {
     return end;
   }, [currentWeekStart]);
 
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+  const toISODate = (date: Date) => formatDateForInput(date);
 
   const { data: allEntries = [], isLoading, error } = useQuery<TimeEntry[]>({
     queryKey: ['timeEntries'],
@@ -81,7 +82,7 @@ export default function TimeEntries() {
   const totalHours = weekEntries.reduce((sum, entry) => sum + entry.Hours, 0);
 
   const getEntriesForDay = (date: Date) => {
-    const dateStr = formatDate(date);
+    const dateStr = toISODate(date);
     return weekEntries.filter(entry => entry.EntryDate.split('T')[0] === dateStr);
   };
 
@@ -125,8 +126,8 @@ export default function TimeEntries() {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <span className="text-lg font-medium dark:text-gray-100">
-              {currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
-              {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {formatDateMonthDay(currentWeekStart)} -{' '}
+              {formatDateMonthDayYear(weekEnd)}
             </span>
             <button
               onClick={() => navigateWeek('next')}
@@ -177,11 +178,11 @@ export default function TimeEntries() {
             {weekDays.map((day) => (
               <div key={day.toISOString()} className="bg-gray-50 dark:bg-gray-700 py-2 text-center">
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {formatWeekday(day)}
                 </div>
                 <div className={clsx(
                   'text-sm font-medium',
-                  formatDate(day) === formatDate(new Date()) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'
+                  toISODate(day) === toISODate(new Date()) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'
                 )}>
                   {day.getDate()}
                 </div>
@@ -270,11 +271,7 @@ export default function TimeEntries() {
                   .map((entry) => (
                     <tr key={entry.Id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {new Date(entry.EntryDate).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {formatDateWithWeekday(entry.EntryDate)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {entry.ProjectName || 'Unknown'}

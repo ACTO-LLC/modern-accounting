@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Package, FileSpreadsheet } from 'lucide-react';
 import api from '../../lib/api';
 import ReportHeader from '../../components/reports/ReportHeader';
+import { formatDateLong, formatDateShort } from '../../lib/dateUtils';
 
 interface ProductService {
   Id: string;
@@ -107,7 +108,7 @@ export default function PhysicalInventoryWorksheet() {
     <div className="max-w-7xl mx-auto">
       <ReportHeader
         title="Physical Inventory Worksheet"
-        subtitle={`Prepared ${new Date(asOfDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
+        subtitle={`Prepared ${formatDateLong(asOfDate)}`}
       />
 
       {/* Export and Options */}
@@ -164,7 +165,7 @@ export default function PhysicalInventoryWorksheet() {
         <div className="border-b-2 border-gray-800 pb-4 mb-4">
           <h1 className="text-xl font-bold">Physical Inventory Worksheet</h1>
           <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
-            <div>Date: {new Date(asOfDate).toLocaleDateString()}</div>
+            <div>Date: {formatDateShort(asOfDate)}</div>
             <div>Location: ___________________</div>
             <div>Counted By: ___________________</div>
             <div>Verified By: ___________________</div>

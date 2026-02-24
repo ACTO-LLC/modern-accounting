@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePlaidLink, PlaidLinkOptions, PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { CheckCircle, AlertTriangle, Loader2, ShieldCheck, Link2Off, Building2 } from 'lucide-react';
+import { formatDateShort } from '../lib/dateUtils';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
@@ -216,7 +217,7 @@ export default function PlaidBankVerification({
                 <span>{verificationStatus.institutionName}</span>
                 {verificationStatus.verifiedAt && (
                   <span className="ml-2">
-                    Verified on {new Date(verificationStatus.verifiedAt).toLocaleDateString()}
+                    Verified on {formatDateShort(verificationStatus.verifiedAt)}
                   </span>
                 )}
               </div>
