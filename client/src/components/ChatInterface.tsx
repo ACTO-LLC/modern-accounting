@@ -700,7 +700,7 @@ What would you like to do?`
       } else {
         addMessage({
           role: 'assistant',
-          content: data.response || 'Sorry, I encountered an error.',
+          content: data.response ?? 'Sorry, I encountered an error.',
           isUncertain: data.isUncertain,
           toolUsed: data.toolUsed,
         });

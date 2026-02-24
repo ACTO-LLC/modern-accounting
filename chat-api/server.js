@@ -7664,7 +7664,7 @@ app.post('/api/chat', optionalJWT, async (req, res) => {
         let toolUsed = null;
 
         let iterations = 0;
-        const maxIterations = 3;
+        const maxIterations = 10;
 
         while (responseMessage.toolCalls && responseMessage.toolCalls.length > 0 && iterations < maxIterations) {
             iterations++;
@@ -7684,6 +7684,18 @@ app.post('/api/chat', optionalJWT, async (req, res) => {
             }
 
             response = await client.getChatCompletions(deploymentName, messages, { tools: getAllTools(), toolChoice: 'auto' });
+            responseMessage = response.choices[0].message;
+        }
+
+        // If we hit the iteration limit and the model still wants to call tools,
+        // force a final text response so the user gets an answer instead of an empty string
+        if (iterations >= maxIterations && responseMessage.toolCalls && responseMessage.toolCalls.length > 0) {
+            console.warn(`Hit maxIterations (${maxIterations}) with pending tool calls, forcing text response`);
+            messages.push(responseMessage);
+            for (const toolCall of responseMessage.toolCalls) {
+                messages.push({ role: 'tool', toolCallId: toolCall.id, content: JSON.stringify({ error: 'Iteration limit reached' }) });
+            }
+            response = await client.getChatCompletions(deploymentName, messages, { tools: getAllTools(), toolChoice: 'none' });
             responseMessage = response.choices[0].message;
         }
 
