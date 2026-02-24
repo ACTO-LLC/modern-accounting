@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
+import { formatDate } from '../../lib/dateUtils';
 
 interface DateRangePickerProps {
   startDate: string;
@@ -117,11 +118,7 @@ export default function DateRangePicker({
   };
 
   const formatDisplayDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDate(dateStr);
   };
 
   return (

@@ -22,7 +22,7 @@ import {
 import { GridColDef, GridRowParams } from '@mui/x-data-grid';
 import { DataGrid, GridPaginationModel } from '@mui/x-data-grid';
 import api from '../lib/api';
-import { formatDate } from '../lib/dateUtils';
+import { formatDate, formatTime, formatDateTime } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
 
 // Audit Log entry interface
@@ -120,10 +120,7 @@ function formatTimestamp(timestamp: string): string {
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 
-  return formatDate(timestamp) + ' ' + date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  return formatDate(timestamp) + ' ' + formatTime(date);
 }
 
 // Parse JSON safely
@@ -411,7 +408,7 @@ export default function AuditLog() {
       renderCell: (params) => (
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-gray-400" />
-          <span title={new Date(params.value).toLocaleString()}>
+          <span title={formatDateTime(params.value)}>
             {formatTimestamp(params.value)}
           </span>
         </div>
@@ -719,7 +716,7 @@ export default function AuditLog() {
                   <div>
                     <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">When</dt>
                     <dd className="text-sm text-gray-900 dark:text-gray-100">
-                      {new Date(selectedEntry.Timestamp).toLocaleString()}
+                      {formatDateTime(selectedEntry.Timestamp)}
                     </dd>
                   </div>
                   <div>

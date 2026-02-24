@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
+import { formatDateShort, formatDateLong } from '../../lib/dateUtils';
 
 interface Account {
   Id: string;
@@ -239,7 +240,7 @@ export default function GeneralLedger() {
           return {
             id: line.Id,
             journalEntryId: entry.Id,
-            date: new Date(entry.TransactionDate).toLocaleDateString('en-US'),
+            date: formatDateShort(entry.TransactionDate),
             num: entry.Reference || entry.Id.slice(0, 8),
             description: entry.Description + (line.Description ? ` - ${line.Description}` : ''),
             debit: line.Debit,
@@ -360,15 +361,7 @@ export default function GeneralLedger() {
     exportToCSV(`general-ledger-${startDate}-to-${endDate}`, columns, tableData);
 
   const formatDateRange = () =>
-    `${new Date(startDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })} - ${new Date(endDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })}`;
+    `${formatDateLong(startDate)} - ${formatDateLong(endDate)}`;
 
   // Handle account type change - reset account selection if it's no longer in filtered list
   const handleAccountTypeChange = (newType: string) => {
@@ -537,13 +530,7 @@ export default function GeneralLedger() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {formatDateLong(new Date())}
         </p>
       </div>
     </div>

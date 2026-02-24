@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Plus, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { formatDateShort } from '../lib/dateUtils';
 
 interface Employee {
   Id: string;
@@ -43,7 +44,7 @@ export default function Employees() {
       width: 110,
       valueFormatter: (params) => {
         const value = params as string;
-        return value ? new Date(value).toLocaleDateString() : '';
+        return value ? formatDateShort(value) : '';
       }
     },
     {

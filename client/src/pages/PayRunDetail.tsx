@@ -14,6 +14,7 @@ import {
   calculateBatchPayroll,
   EmployeePayInput,
 } from '../lib/payrollApi';
+import { formatDateShort } from '../lib/dateUtils';
 
 // Extended Employee type with bank verification fields
 interface EmployeeWithVerification extends Employee {
@@ -353,7 +354,7 @@ export default function PayRunDetail() {
               Pay Run {payRun.PayRunNumber}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Period: {new Date(payRun.PayPeriodStart).toLocaleDateString()} - {new Date(payRun.PayPeriodEnd).toLocaleDateString()} | Pay Date: {new Date(payRun.PayDate).toLocaleDateString()}
+              Period: {formatDateShort(payRun.PayPeriodStart)} - {formatDateShort(payRun.PayPeriodEnd)} | Pay Date: {formatDateShort(payRun.PayDate)}
             </p>
           </div>
         </div>

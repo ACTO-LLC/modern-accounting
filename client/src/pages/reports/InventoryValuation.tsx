@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Package } from 'lucide-react';
 import api from '../../lib/api';
 import ReportHeader from '../../components/reports/ReportHeader';
+import { formatDateLong } from '../../lib/dateUtils';
 
 interface ProductService {
   Id: string;
@@ -108,7 +109,7 @@ export default function InventoryValuation() {
     <div className="max-w-7xl mx-auto">
       <ReportHeader
         title="Inventory Valuation Summary"
-        subtitle={`As of ${new Date(asOfDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
+        subtitle={`As of ${formatDateLong(asOfDate)}`}
         onExportCSV={handleExportCSV}
       />
 

@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
+import { formatDateShort } from '../lib/dateUtils';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import VendorSelector from './VendorSelector';
@@ -167,9 +168,7 @@ export default function PayBillForm({
     });
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
-  };
+  const formatDate = formatDateShort;
 
   return (
     <div className="max-w-4xl mx-auto">

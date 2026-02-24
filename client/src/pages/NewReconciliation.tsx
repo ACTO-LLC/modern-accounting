@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, AlertCircle, Building2 } from 'lucide-react';
 import clsx from 'clsx';
+import { formatDate } from '../lib/dateUtils';
 
 interface Account {
   Id: string;
@@ -313,8 +314,7 @@ export default function NewReconciliation() {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  // formatDate imported from dateUtils for locale-aware formatting
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Loader2, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { emailSettingsApi, emailSendApi, replaceTemplateVariables } from '../lib/emailApi';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { formatDateShort } from '../lib/dateUtils';
 
 interface Invoice {
   Id: string;
@@ -74,8 +75,8 @@ export default function EmailInvoiceModal({
       const templateVars = {
         CustomerName: customer?.Name || '',
         InvoiceNumber: invoice.InvoiceNumber,
-        IssueDate: new Date(invoice.IssueDate).toLocaleDateString(),
-        DueDate: new Date(invoice.DueDate).toLocaleDateString(),
+        IssueDate: formatDateShort(invoice.IssueDate),
+        DueDate: formatDateShort(invoice.DueDate),
         TotalAmount: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(invoice.TotalAmount),
         CompanyName: companySettings.name || '',
         CompanyEmail: companySettings.email || '',
