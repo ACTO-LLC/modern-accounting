@@ -8,13 +8,28 @@
  */
 
 /**
+ * Normalizes a date string for reliable cross-browser parsing.
+ * Handles .NET-style timestamps with >3 fractional second digits (e.g. "2025-11-26T22:21:33.9678004")
+ * which are not reliably parsed by `new Date()` in Safari and other browsers.
+ * - Trims fractional seconds to 3 digits
+ * - Appends 'Z' (UTC) when no timezone indicator is present
+ */
+function normalizeDateString(date: string): string {
+  let normalized = date.replace(/(\.\d{3})\d+/, '$1');
+  if (/T\d{2}:\d{2}:\d{2}/.test(normalized) && !/Z$|[+-]\d{2}:\d{2}$/.test(normalized)) {
+    normalized += 'Z';
+  }
+  return normalized;
+}
+
+/**
  * Format a date for display (date only, no time)
  * Use for: IssueDate, DueDate, BillDate, StartDate, EndDate, TransactionDate
  * Output: "Jan 13, 2026"
  */
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? new Date(normalizeDateString(date)) : date;
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -30,7 +45,7 @@ export function formatDate(date: string | Date | null | undefined): string {
  */
 export function formatDateTime(date: string | Date | null | undefined): string {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? new Date(normalizeDateString(date)) : date;
   if (isNaN(d.getTime())) return '';
   return d.toLocaleString('en-US', {
     year: 'numeric',
@@ -48,7 +63,7 @@ export function formatDateTime(date: string | Date | null | undefined): string {
  */
 export function formatDateShort(date: string | Date | null | undefined): string {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? new Date(normalizeDateString(date)) : date;
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US');
 }
@@ -59,7 +74,7 @@ export function formatDateShort(date: string | Date | null | undefined): string 
  */
 export function formatDateForInput(date: string | Date | null | undefined): string {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? new Date(normalizeDateString(date)) : date;
   if (isNaN(d.getTime())) return '';
   return d.toISOString().split('T')[0];
 }
@@ -71,7 +86,7 @@ export function formatDateForInput(date: string | Date | null | undefined): stri
  */
 export function formatTime(date: string | Date | null | undefined): string {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? new Date(normalizeDateString(date)) : date;
   if (isNaN(d.getTime())) return '';
   return d.toLocaleTimeString('en-US', {
     hour: 'numeric',
