@@ -102,7 +102,9 @@ jobs:
               QBO_ENVIRONMENT="production" \
               QBO_REDIRECT_URI="https://${{ env.MAIN_APP_NAME }}.azurewebsites.net/api/qbo/callback" \
               SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
-              ENABLE_ORYX_BUILD="false"
+              ENABLE_ORYX_BUILD="false" \
+              WEBSITE_RUN_FROM_PACKAGE="1" \
+              WEBSITES_CONTAINER_START_TIME_LIMIT="600"
 
       - name: Set Startup Command
         run: |
