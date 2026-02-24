@@ -135,6 +135,7 @@ import FeatureTour from './components/onboarding/FeatureTour';
 import OnboardingNotifications from './components/onboarding/OnboardingNotifications';
 import MiltonOnboardingHelper from './components/onboarding/MiltonOnboardingHelper';
 import SpotlightManager from './components/onboarding/SpotlightManager';
+import VersionUpdateBanner from './components/VersionUpdateBanner';
 
 const queryClient = new QueryClient();
 
@@ -158,6 +159,8 @@ function AppContent() {
   }, []);
 
   return (
+    <>
+    <VersionUpdateBanner />
     <BrowserRouter>
       <Routes>
         {/* Public route */}
@@ -291,6 +294,7 @@ function AppContent() {
       <MiltonOnboardingHelper />
       <SpotlightManager />
     </BrowserRouter>
+    </>
   );
 }
 
