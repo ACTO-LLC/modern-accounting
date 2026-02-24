@@ -167,15 +167,18 @@ export default function ReceivePaymentForm({
     });
   };
 
-  // Real-time overpayment detection (no useMemo — needs to react to every render)
-  const overpaymentErrors: { index: number; applied: number; balance: number }[] = [];
-  fields.forEach((field, index) => {
-    const applied = watchedApplications?.[index]?.AmountApplied ?? 0;
-    const balance = field.InvoiceBalanceDue ?? 0;
-    if (balance > 0 && applied > balance) {
-      overpaymentErrors.push({ index, applied, balance });
-    }
-  });
+  // Real-time overpayment detection
+  const overpaymentErrors = useMemo((): { index: number; applied: number; balance: number }[] => {
+    const errors: { index: number; applied: number; balance: number }[] = [];
+    fields.forEach((field, index) => {
+      const applied = watchedApplications?.[index]?.AmountApplied ?? 0;
+      const balance = field.InvoiceBalanceDue ?? 0;
+      if (balance > 0 && applied > balance) {
+        errors.push({ index, applied, balance });
+      }
+    });
+    return errors;
+  }, [fields, watchedApplications]);
   const hasOverpayment = overpaymentErrors.length > 0;
 
   const formatDate = (dateStr: string) => {

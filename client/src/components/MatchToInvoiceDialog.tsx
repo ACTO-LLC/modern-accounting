@@ -5,6 +5,8 @@ import { X, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import { createPaymentJournalEntry } from '../lib/autoPostingService';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import CustomerSelector from './CustomerSelector';
 
 interface Invoice {
@@ -39,6 +41,7 @@ export default function MatchToInvoiceDialog({
   onMatched,
 }: MatchToInvoiceDialogProps) {
   const queryClient = useQueryClient();
+  const { settings } = useCompanySettings();
   const [customerId, setCustomerId] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState('');
   const [amountToApply, setAmountToApply] = useState<number>(bankTransaction.Amount);
@@ -72,9 +75,29 @@ export default function MatchToInvoiceDialog({
     mutationFn: async () => {
       if (!selectedInvoice) throw new Error('No invoice selected');
 
+      // Generate sequential payment number (same pattern as NewPayment.tsx)
+      let paymentNumber = `PMT-${Date.now()}`;
+      try {
+        const lastPaymentResp = await api.get<{ value: { PaymentNumber: string }[] }>(
+          '/payments?$orderby=PaymentNumber desc&$top=1'
+        );
+        const lastNumber = lastPaymentResp.data.value?.[0]?.PaymentNumber;
+        if (lastNumber) {
+          const match = lastNumber.match(/PMT-(\d+)/);
+          if (match) {
+            const num = parseInt(match[1], 10) + 1;
+            paymentNumber = `PMT-${num.toString().padStart(4, '0')}`;
+          }
+        } else {
+          paymentNumber = 'PMT-0001';
+        }
+      } catch {
+        // Fall back to timestamp-based number
+      }
+
       // 1. Create payment record
       const paymentResponse = await api.post('/payments_write', {
-        PaymentNumber: `PMT-MATCH-${Date.now()}`,
+        PaymentNumber: paymentNumber,
         CustomerId: customerId,
         PaymentDate: bankTransaction.TransactionDate,
         TotalAmount: amountToApply,
@@ -85,15 +108,34 @@ export default function MatchToInvoiceDialog({
       });
 
       const paymentId = paymentResponse.data.value?.[0]?.Id || paymentResponse.data.Id;
+      if (!paymentId) {
+        throw new Error('Failed to determine created payment ID');
+      }
 
-      // 2. Create payment application
+      // 2. Auto-post journal entry (Debit Bank, Credit AR) in simple mode
+      if (settings.invoicePostingMode === 'simple') {
+        try {
+          await createPaymentJournalEntry(
+            paymentId,
+            amountToApply,
+            paymentNumber,
+            selectedInvoice.CustomerName || 'Customer',
+            bankTransaction.TransactionDate,
+            bankTransaction.SourceAccountId
+          );
+        } catch (postingError) {
+          console.warn('Auto-posting failed, payment still created:', postingError);
+        }
+      }
+
+      // 3. Create payment application
       await api.post('/paymentapplications', {
         PaymentId: paymentId,
         InvoiceId: selectedInvoiceId,
         AmountApplied: amountToApply,
       });
 
-      // 3. Update invoice AmountPaid and Status
+      // 4. Update invoice AmountPaid and Status
       const newAmountPaid = (selectedInvoice.AmountPaid || 0) + amountToApply;
       const newStatus = newAmountPaid >= selectedInvoice.TotalAmount ? 'Paid' : 'Partial';
 
@@ -102,7 +144,7 @@ export default function MatchToInvoiceDialog({
         Status: newStatus,
       });
 
-      // 4. Update bank transaction status
+      // 5. Update bank transaction status
       await api.patch(`/banktransactions/Id/${bankTransaction.Id}`, {
         Status: 'Matched',
         MatchedPaymentId: paymentId,
