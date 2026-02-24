@@ -6,7 +6,7 @@ import { useCompanySettings } from '../../contexts/CompanySettingsContext';
 import { DateRangePicker, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
 import api from '../../lib/api';
-import { formatDate, formatDateForOData, formatDateLong } from '../../lib/dateUtils';
+import { formatDate, formatDateForOData, formatDateTime } from '../../lib/dateUtils';
 import EmailStatementModal from '../../components/EmailStatementModal';
 
 interface Customer {
@@ -639,7 +639,7 @@ export default function CustomerStatement() {
         <div className="mt-6 text-center text-sm text-gray-500 print:hidden">
           <p>
             Generated on{' '}
-            {formatDateLong(new Date())}
+            {formatDateTime(new Date())}
           </p>
         </div>
       )}

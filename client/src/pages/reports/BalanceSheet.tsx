@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
-import { formatDateLong } from '../../lib/dateUtils';
+import { formatDateLong, formatDateTime } from '../../lib/dateUtils';
 
 interface Account { Id: string; Name: string; Type: string; Subtype: string | null; }
 interface JournalEntry { Id: string; TransactionDate: string; }
@@ -291,7 +291,7 @@ export default function BalanceSheet() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {formatDateLong(new Date())}
+          {formatDateTime(new Date())}
         </p>
       </div>
     </div>

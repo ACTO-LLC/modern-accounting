@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
-import { formatDateShort, formatDateLong } from '../../lib/dateUtils';
+import { formatDateShort, formatDateLong, formatDateTime } from '../../lib/dateUtils';
 
 interface Account {
   Id: string;
@@ -530,7 +530,7 @@ export default function GeneralLedger() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {formatDateLong(new Date())}
+          {formatDateTime(new Date())}
         </p>
       </div>
     </div>

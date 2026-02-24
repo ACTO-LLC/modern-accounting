@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
 import api from '../../lib/api';
-import { formatDateShort, formatDateLong } from '../../lib/dateUtils';
+import { formatDateShort, formatDateLong, formatDateTime } from '../../lib/dateUtils';
 
 interface PayRun {
   Id: string;
@@ -302,7 +302,7 @@ export default function PayrollSummary() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {formatDateLong(new Date())}
+          {formatDateTime(new Date())}
         </p>
       </div>
     </div>

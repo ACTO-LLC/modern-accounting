@@ -163,7 +163,7 @@ export function formatDateWithWeekday(date: string | Date | null | undefined): s
 /**
  * Format a month name (short) for chart labels
  * Use for: Dashboard chart X-axis labels
- * Output (en-US): "Jan" | (de-DE): "Jan"
+ * Output (en-US): "Jan" | (de-DE): "Jan." (exact abbreviation may vary by environment)
  */
 export function formatMonthShort(date: string | Date | null | undefined): string {
   const d = parseDate(date);

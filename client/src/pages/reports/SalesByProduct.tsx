@@ -18,7 +18,7 @@ import {
 import api from '../../lib/api';
 import { DateRangePicker, ReportHeader, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
-import { formatDateLong } from '../../lib/dateUtils';
+import { formatDateLong, formatDateTime } from '../../lib/dateUtils';
 
 interface Invoice {
   Id: string;
@@ -520,7 +520,7 @@ export default function SalesByProduct() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {formatDateLong(new Date())}
+          {formatDateTime(new Date())}
         </p>
       </div>
     </div>
