@@ -234,18 +234,22 @@ export async function queryAllPaginated(
     console.log(`[QBO MCP] Fetching all ${entityType} records with pagination...`);
 
     while (hasMore) {
-        // Build criteria object for node-quickbooks
-        // It expects { limit, offset, ... } not array format
-        const paginatedCriteria: any = {
-            limit: pageSize,
-            offset: startPosition - 1  // node-quickbooks uses 0-based offset
-        };
+        // Build criteria as array format for node-quickbooks
+        // Array format preserves operators (>=, <=, LIKE, etc.)
+        const paginatedCriteria: any[] = [
+            { field: 'limit', value: pageSize },
+            { field: 'offset', value: startPosition - 1 },
+        ];
 
-        // Add any filter criteria (convert array format to object if needed)
+        // Add any filter criteria (already in {field, value, operator} format)
         if (Array.isArray(criteria)) {
             criteria.forEach((c: any) => {
                 if (c.field && c.value !== undefined) {
-                    paginatedCriteria[c.field] = c.value;
+                    paginatedCriteria.push({
+                        field: c.field,
+                        value: c.value,
+                        operator: c.operator || '='
+                    });
                 }
             });
         }

@@ -214,16 +214,21 @@ export const tools = [
                 }
 
                 // Single query with limit/offset
+                // Use array format to preserve operators (>=, <=, LIKE, etc.)
                 const { offset = 0 } = args.params || {};
-                const searchCriteria: any = {
-                    limit: limit || 1000,
-                    offset: offset
-                };
+                const searchCriteria: any[] = [
+                    { field: 'limit', value: limit || 1000 },
+                    { field: 'offset', value: offset },
+                ];
 
                 if (Array.isArray(criteria)) {
                     criteria.forEach((c: any) => {
                         if (c.field && c.value !== undefined) {
-                            searchCriteria[c.field] = c.value;
+                            searchCriteria.push({
+                                field: c.field,
+                                value: c.value,
+                                operator: c.operator || '='
+                            });
                         }
                     });
                 }
