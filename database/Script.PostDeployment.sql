@@ -150,19 +150,24 @@ GO
 -- ============================================================================
 IF NOT EXISTS (SELECT 1 FROM [dbo].[Projects])
 BEGIN
-    PRINT 'Seeding Projects...'
-
     DECLARE @Customer1Id UNIQUEIDENTIFIER = (SELECT TOP 1 [Id] FROM [dbo].[Customers] WHERE [Name] = 'Acme Corporation')
     DECLARE @Customer2Id UNIQUEIDENTIFIER = (SELECT TOP 1 [Id] FROM [dbo].[Customers] WHERE [Name] = 'TechStart Inc.')
     DECLARE @Customer3Id UNIQUEIDENTIFIER = (SELECT TOP 1 [Id] FROM [dbo].[Customers] WHERE [Name] = 'Global Dynamics')
 
-    INSERT INTO [dbo].[Projects] ([Id], [Name], [CustomerId], [Description], [Status], [StartDate], [EndDate], [BudgetedHours], [BudgetedAmount])
-    VALUES
-    (NEWID(), 'Website Redesign', @Customer1Id, 'Complete redesign of corporate website', 'Active', DATEADD(month, -2, GETDATE()), DATEADD(month, 2, GETDATE()), 200, 30000.00),
-    (NEWID(), 'ERP Implementation', @Customer2Id, 'Enterprise resource planning system implementation', 'Active', DATEADD(month, -1, GETDATE()), DATEADD(month, 6, GETDATE()), 500, 87500.00),
-    (NEWID(), 'Security Audit', @Customer3Id, 'Annual security assessment and recommendations', 'Active', GETDATE(), DATEADD(month, 1, GETDATE()), 80, 12000.00),
-    (NEWID(), 'Mobile App Development', @Customer1Id, 'iOS and Android app for customer portal', 'Active', DATEADD(month, -3, GETDATE()), DATEADD(month, 3, GETDATE()), 400, 70000.00),
-    (NEWID(), 'Data Migration', @Customer2Id, 'Legacy system data migration to cloud', 'Completed', DATEADD(month, -6, GETDATE()), DATEADD(month, -2, GETDATE()), 150, 22500.00)
+    IF @Customer1Id IS NOT NULL AND @Customer2Id IS NOT NULL AND @Customer3Id IS NOT NULL
+    BEGIN
+        PRINT 'Seeding Projects...'
+
+        INSERT INTO [dbo].[Projects] ([Id], [Name], [CustomerId], [Description], [Status], [StartDate], [EndDate], [BudgetedHours], [BudgetedAmount])
+        VALUES
+        (NEWID(), 'Website Redesign', @Customer1Id, 'Complete redesign of corporate website', 'Active', DATEADD(month, -2, GETDATE()), DATEADD(month, 2, GETDATE()), 200, 30000.00),
+        (NEWID(), 'ERP Implementation', @Customer2Id, 'Enterprise resource planning system implementation', 'Active', DATEADD(month, -1, GETDATE()), DATEADD(month, 6, GETDATE()), 500, 87500.00),
+        (NEWID(), 'Security Audit', @Customer3Id, 'Annual security assessment and recommendations', 'Active', GETDATE(), DATEADD(month, 1, GETDATE()), 80, 12000.00),
+        (NEWID(), 'Mobile App Development', @Customer1Id, 'iOS and Android app for customer portal', 'Active', DATEADD(month, -3, GETDATE()), DATEADD(month, 3, GETDATE()), 400, 70000.00),
+        (NEWID(), 'Data Migration', @Customer2Id, 'Legacy system data migration to cloud', 'Completed', DATEADD(month, -6, GETDATE()), DATEADD(month, -2, GETDATE()), 150, 22500.00)
+    END
+    ELSE
+        PRINT 'Skipping Projects seed — referenced customers not found.'
 END
 GO
 
