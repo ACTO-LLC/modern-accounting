@@ -9,7 +9,7 @@ import {
 } from '@mui/x-data-grid';
 import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, FileText, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../lib/api';
+import api, { customersApi, Customer } from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
@@ -140,6 +140,31 @@ export default function UnifiedTransactions() {
     }
     return map;
   }, [accountsData]);
+
+  // Fetch vendors, customers, classes for name resolution in grid
+  const { data: vendorsData } = useQuery({
+    queryKey: ['vendors'],
+    queryFn: async () => {
+      const response = await api.get<{ value: { Id: string; Name: string }[] }>("/vendors?$filter=Status eq 'Active'&$orderby=Name");
+      return response.data.value;
+    },
+  });
+  const { data: customersData } = useQuery({
+    queryKey: ['customers'],
+    queryFn: customersApi.getAll,
+  });
+  const { data: classesData } = useQuery({
+    queryKey: ['classes'],
+    queryFn: async () => {
+      const response = await api.get<{ value: { Id: string; Name: string }[] }>("/classes?$filter=Status eq 'Active'&$orderby=Name");
+      return response.data.value;
+    },
+  });
+
+  const vendorMap = useMemo(() => new Map((vendorsData ?? []).map(v => [v.Id, v.Name])), [vendorsData]);
+  const customerMap = useMemo(() => new Map((customersData ?? []).map((c: Customer) => [c.Id, c.Name])), [customersData]);
+  const classMap = useMemo(() => new Map((classesData ?? []).map(c => [c.Id, c.Name])), [classesData]);
+
   const transactions = useMemo(() => {
     let data = transactionsData || [];
 
@@ -427,15 +452,46 @@ export default function UnifiedTransactions() {
       field: 'Description',
       headerName: 'Description',
       flex: 1,
-      minWidth: 200,
-      renderCell: (params: GridRenderCellParams) => (
-        <div className="py-1">
-          <div className="font-medium truncate">{params.value}</div>
-          {params.row.OriginalCategory && (
-            <div className="text-xs text-gray-500 truncate">Bank: {params.row.OriginalCategory}</div>
-          )}
-        </div>
-      ),
+      minWidth: 250,
+      renderCell: (params: GridRenderCellParams) => {
+        const txn = params.row as BankTransaction;
+        const vendorName = txn.VendorId ? vendorMap.get(txn.VendorId) : null;
+        const customerName = txn.CustomerId ? customerMap.get(txn.CustomerId) : null;
+        const className = txn.ClassId ? classMap.get(txn.ClassId) : null;
+        const hasDetails = vendorName || customerName || className || txn.Payee;
+        return (
+          <div className="py-1">
+            <div className="font-medium truncate">{params.value}</div>
+            {txn.OriginalCategory && (
+              <div className="text-xs text-gray-500 truncate">Bank: {txn.OriginalCategory}</div>
+            )}
+            {hasDetails && (
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {vendorName && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                    {vendorName}
+                  </span>
+                )}
+                {customerName && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    {customerName}
+                  </span>
+                )}
+                {className && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                    {className}
+                  </span>
+                )}
+                {txn.Payee && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    {txn.Payee}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       field: 'Amount',
@@ -655,6 +711,7 @@ export default function UnifiedTransactions() {
           columns={columns}
           getRowId={(row) => row.Id}
           loading={transactionsLoading}
+          getRowHeight={() => 'auto'}
           checkboxSelection
           disableRowSelectionOnClick
           onRowDoubleClick={(params) => {
