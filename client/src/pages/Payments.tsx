@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Payment {
   Id: string;
@@ -15,6 +16,8 @@ interface Payment {
   PaymentMethod: string;
   DepositAccountName: string;
   Status: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -51,6 +54,7 @@ export default function Payments() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
   ];
 
   return (

@@ -13,6 +13,7 @@ import {
   type Invoice
 } from '../lib/invoiceUtils';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 import { formatGuidForOData } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
 
@@ -155,6 +156,7 @@ export default function Invoices() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: 'Actions',

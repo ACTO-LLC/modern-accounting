@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface VendorCredit {
   Id: string;
@@ -15,6 +16,8 @@ interface VendorCredit {
   AmountApplied: number;
   BalanceRemaining: number;
   Status: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -68,6 +71,7 @@ export default function VendorCredits() {
       ),
     },
     { field: 'Reason', headerName: 'Reason', width: 200, filterable: true },
+    ...getTimestampColumns(),
   ];
 
   return (

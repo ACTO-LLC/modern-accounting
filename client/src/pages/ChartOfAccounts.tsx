@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Account {
   Id: string;
@@ -12,6 +13,8 @@ interface Account {
   AccountNumber: string;
   Description: string;
   IsActive: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const typeColors: Record<string, string> = {
@@ -50,6 +53,7 @@ export default function ChartOfAccounts() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
   ];
 
   return (

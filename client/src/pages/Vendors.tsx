@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, GitBranch } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Vendor {
   Id: string;
@@ -11,6 +12,8 @@ interface Vendor {
   PaymentTerms: string;
   Status: string;
   Is1099Vendor: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 export default function Vendors() {
@@ -45,6 +48,7 @@ export default function Vendors() {
         <span className="text-gray-400">No</span>
       ),
     },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: 'Actions',

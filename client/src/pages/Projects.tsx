@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Project {
   Id: string;
@@ -15,6 +16,8 @@ interface Project {
   EndDate?: string;
   BudgetedHours?: number;
   BudgetedAmount?: number;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const getStatusBadgeClass = (status: string) => {
@@ -87,6 +90,7 @@ export default function Projects() {
         </div>
       ),
     },
+    ...getTimestampColumns(),
   ];
 
   return (

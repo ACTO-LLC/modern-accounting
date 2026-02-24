@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Bill {
   Id: string;
@@ -17,6 +18,8 @@ interface Bill {
   Status: string;
   Terms: string;
   Memo: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -63,6 +66,7 @@ export default function Bills() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
   ];
 
   return (

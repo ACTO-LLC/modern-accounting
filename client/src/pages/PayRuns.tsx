@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatCurrency } from '../lib/payrollCalculations';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface PayRun {
   Id: string;
@@ -15,6 +16,8 @@ interface PayRun {
   TotalDeductions: number;
   TotalNetPay: number;
   EmployeeCount: number;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 export default function PayRuns() {
@@ -118,6 +121,7 @@ export default function PayRuns() {
         return formatCurrency(value || 0);
       }
     },
+    ...getTimestampColumns(),
   ];
 
   return (

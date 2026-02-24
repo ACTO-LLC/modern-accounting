@@ -3,6 +3,7 @@ import { Plus, FileText, CheckCircle, AlertCircle, Clock, RefreshCw } from 'luci
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface BankTransactionImport {
   Id: string;
@@ -18,6 +19,7 @@ interface BankTransactionImport {
   ImportedBy: string;
   ErrorMessage: string | null;
   CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string }> = {
@@ -122,6 +124,7 @@ export default function BankImportHistory() {
       width: 120,
       filterable: true,
     },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: '',
