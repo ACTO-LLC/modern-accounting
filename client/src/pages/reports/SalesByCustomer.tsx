@@ -18,6 +18,7 @@ import {
 import api from '../../lib/api';
 import { DateRangePicker, ReportHeader, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
+import { formatDateLong } from '../../lib/dateUtils';
 
 interface Invoice {
   Id: string;
@@ -180,15 +181,7 @@ export default function SalesByCustomer() {
   };
 
   const formatDateRange = () =>
-    `${new Date(startDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })} - ${new Date(endDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })}`;
+    `${formatDateLong(startDate)} - ${formatDateLong(endDate)}`;
 
   const handleRowClick = (row: ReportRow) => {
     if (row.customerId && !row.isTotal) {
@@ -415,13 +408,7 @@ export default function SalesByCustomer() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {formatDateLong(new Date())}
         </p>
       </div>
     </div>

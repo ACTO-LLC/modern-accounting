@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
+import { formatDateShort } from '../lib/dateUtils';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import CustomerSelector from './CustomerSelector';
@@ -181,9 +182,7 @@ export default function ReceivePaymentForm({
   }, [fields, watchedApplications]);
   const hasOverpayment = overpaymentErrors.length > 0;
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
-  };
+  const formatDate = formatDateShort;
 
   const getAgingInfo = (dueDateStr: string): { label: string; className: string } => {
     const today = new Date();

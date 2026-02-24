@@ -4,6 +4,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import api from '../lib/api';
 import { formatCurrency } from '../lib/payrollCalculations';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { formatDateShort } from '../lib/dateUtils';
 
 interface PayStub {
   Id: string;
@@ -123,10 +124,10 @@ export default function PayStubView() {
           <div className="text-right">
             <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Pay Period</h4>
             <p className="text-sm text-gray-900 dark:text-white">
-              {new Date(payStub.PayPeriodStart).toLocaleDateString()} - {new Date(payStub.PayPeriodEnd).toLocaleDateString()}
+              {formatDateShort(payStub.PayPeriodStart)} - {formatDateShort(payStub.PayPeriodEnd)}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Pay Date: <span className="font-medium text-gray-900 dark:text-white">{new Date(payStub.PayDate).toLocaleDateString()}</span>
+              Pay Date: <span className="font-medium text-gray-900 dark:text-white">{formatDateShort(payStub.PayDate)}</span>
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Payment: {payStub.PaymentMethod === 'DirectDeposit' ? 'Direct Deposit' : `Check #${payStub.CheckNumber || 'N/A'}`}

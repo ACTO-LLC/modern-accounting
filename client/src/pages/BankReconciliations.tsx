@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus, CheckCircle, Clock, Eye } from 'lucide-react';
+import { formatDate } from '../lib/dateUtils';
 
 interface Account {
   Id: string;
@@ -49,8 +50,7 @@ export default function BankReconciliations() {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  // formatDate imported from dateUtils for locale-aware formatting
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
+import { formatDateShort, formatDateLong } from '../../lib/dateUtils';
 
 interface Account {
   Id: string;
@@ -145,7 +146,7 @@ export default function TransactionDetail() {
       if (!entry) return;
 
       const transaction: TransactionDetail = {
-        date: new Date(entry.TransactionDate).toLocaleDateString('en-US'),
+        date: formatDateShort(entry.TransactionDate),
         type: 'Journal Entry',
         num: entry.Reference || entry.Id.slice(0, 8),
         name: entry.Description,
@@ -305,15 +306,7 @@ export default function TransactionDetail() {
     exportToCSV(`transaction-detail-${startDate}-to-${endDate}`, columns, tableData);
 
   const formatDateRange = () =>
-    `${new Date(startDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })} - ${new Date(endDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })}`;
+    `${formatDateLong(startDate)} - ${formatDateLong(endDate)}`;
 
   if (isLoading) {
     return <div className="max-w-6xl mx-auto p-4">Loading transaction detail report...</div>;
@@ -391,13 +384,7 @@ export default function TransactionDetail() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {formatDateLong(new Date())}
         </p>
       </div>
     </div>

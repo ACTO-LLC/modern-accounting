@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
+import { formatDateLong } from '../../lib/dateUtils';
 
 interface Customer {
   Id: string;
@@ -260,11 +261,7 @@ export default function ARAgingSummary() {
       <ReportHeader
         title="Accounts Receivable Aging Summary"
         subtitle="Outstanding invoices by age"
-        dateRange={`As of ${new Date().toLocaleDateString('en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        })}`}
+        dateRange={`As of ${formatDateLong(new Date())}`}
         onExportCSV={handleExportCSV}
       />
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6 print:hidden">
@@ -317,13 +314,7 @@ export default function ARAgingSummary() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {formatDateLong(new Date())}
         </p>
       </div>
     </div>

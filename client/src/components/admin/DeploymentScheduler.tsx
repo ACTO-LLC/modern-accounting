@@ -10,7 +10,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Deployment, Enhancement } from '../../services/enhancementApi';
-import { formatDate } from '../../lib/dateUtils';
+import { formatDate, formatTimeCompact } from '../../lib/dateUtils';
 
 interface DeploymentSchedulerProps {
   deployments: Deployment[];
@@ -289,7 +289,7 @@ export function DeploymentScheduler({
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {scheduledDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formatTimeCompact(scheduledDateTime)}
                       </span>
                     </div>
                     {deployment.enhancement && (

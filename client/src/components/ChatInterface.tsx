@@ -6,6 +6,7 @@ import { useChat, Insight, FileAttachment, ProactiveSuggestion, SuggestionFreque
 import { useAuth } from '../contexts/AuthContext';
 import QBOConnectButton, { getQboSessionId } from './QBOConnectButton';
 import api from '../lib/api';
+import { formatDate, formatTimeCompact } from '../lib/dateUtils';
 
 // API configuration
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
@@ -332,8 +333,8 @@ function CopyAllButton({ messages }: { messages: Array<{ role: string; content: 
 
   const handleCopyAll = async () => {
     const formattedMessages = messages.map(msg => {
-      const date = msg.timestamp.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-      const time = msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const date = formatDate(msg.timestamp);
+      const time = formatTimeCompact(msg.timestamp);
       const speaker = msg.role === 'user' ? 'You' : 'Milton';
       return `[${date} ${time}] ${speaker}:\n${msg.content}`;
     }).join('\n\n---\n\n');
@@ -1005,10 +1006,7 @@ What would you like to do?`
                         : 'text-gray-400 dark:text-gray-500'
                     }`}
                   >
-                    {message.timestamp.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatTimeCompact(message.timestamp)}
                   </p>
                 </>
               )}

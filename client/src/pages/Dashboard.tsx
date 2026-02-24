@@ -18,7 +18,7 @@ import {
   Activity,
   ArrowRight
 } from 'lucide-react';
-import { formatDate } from '../lib/dateUtils';
+import { formatDate, formatMonthShort } from '../lib/dateUtils';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import LearningChecklist from '../components/onboarding/LearningChecklist';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -258,7 +258,7 @@ export default function Dashboard() {
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
     d.setMonth(d.getMonth() - i);
-    const month = d.toLocaleString('default', { month: 'short' });
+    const month = formatMonthShort(d);
     const year = d.getFullYear();
     const monthStart = new Date(year, d.getMonth(), 1);
     const monthEnd = new Date(year, d.getMonth() + 1, 0);

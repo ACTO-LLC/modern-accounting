@@ -4,6 +4,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatCurrency } from '../lib/payrollCalculations';
 import { getTimestampColumns } from '../lib/gridColumns';
+import { formatDateShort } from '../lib/dateUtils';
 
 interface PayRun {
   Id: string;
@@ -29,7 +30,7 @@ export default function PayRuns() {
       width: 110,
       valueFormatter: (params) => {
         const value = params as string;
-        return value ? new Date(value).toLocaleDateString() : '';
+        return value ? formatDateShort(value) : '';
       }
     },
     {
@@ -38,7 +39,7 @@ export default function PayRuns() {
       width: 110,
       valueFormatter: (params) => {
         const value = params as string;
-        return value ? new Date(value).toLocaleDateString() : '';
+        return value ? formatDateShort(value) : '';
       }
     },
     {
@@ -47,7 +48,7 @@ export default function PayRuns() {
       width: 110,
       valueFormatter: (params) => {
         const value = params as string;
-        return value ? new Date(value).toLocaleDateString() : '';
+        return value ? formatDateShort(value) : '';
       }
     },
     {

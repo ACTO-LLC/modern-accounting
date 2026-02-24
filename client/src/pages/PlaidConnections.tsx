@@ -16,6 +16,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import api from '../lib/api';
+import { formatDateTime } from '../lib/dateUtils';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
 
@@ -469,7 +470,7 @@ export default function PlaidConnections() {
                         {getStatusIcon(conn.syncStatus)}
                         <span>
                           {conn.syncStatus}
-                          {conn.lastSyncAt && ` - Last sync: ${new Date(conn.lastSyncAt).toLocaleString()}`}
+                          {conn.lastSyncAt && ` - Last sync: ${formatDateTime(conn.lastSyncAt)}`}
                         </span>
                       </div>
                     </div>

@@ -10,6 +10,7 @@ import {
   replaceTemplateVariables,
 } from '../lib/emailApi';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { formatDateShort } from '../lib/dateUtils';
 
 interface SendReminderModalProps {
   invoice: OverdueInvoice;
@@ -48,8 +49,8 @@ export default function SendReminderModal({
     const templateVars = {
       CustomerName: invoice.CustomerName,
       InvoiceNumber: invoice.InvoiceNumber,
-      InvoiceDate: new Date(invoice.IssueDate).toLocaleDateString(),
-      DueDate: new Date(invoice.DueDate).toLocaleDateString(),
+      InvoiceDate: formatDateShort(invoice.IssueDate),
+      DueDate: formatDateShort(invoice.DueDate),
       AmountDue: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
         invoice.AmountDue
       ),

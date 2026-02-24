@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
 import api from '../../lib/api';
+import { formatDateShort, formatDateLong } from '../../lib/dateUtils';
 
 interface PayRun {
   Id: string;
@@ -143,8 +144,8 @@ export default function PayrollSummary() {
     if (viewMode === 'payrun') {
       const rows: ReportRow[] = reportData.filteredPayRuns.map(pr => ({
         payRunNumber: pr.PayRunNumber,
-        payPeriod: `${new Date(pr.PayPeriodStart).toLocaleDateString()} - ${new Date(pr.PayPeriodEnd).toLocaleDateString()}`,
-        payDate: new Date(pr.PayDate).toLocaleDateString(),
+        payPeriod: `${formatDateShort(pr.PayPeriodStart)} - ${formatDateShort(pr.PayPeriodEnd)}`,
+        payDate: formatDateShort(pr.PayDate),
         employees: pr.EmployeeCount,
         gross: pr.TotalGrossPay,
         deductions: pr.TotalDeductions,
@@ -193,15 +194,7 @@ export default function PayrollSummary() {
     exportToCSV(`payroll-summary-${startDate}-to-${endDate}`, columns, tableData);
 
   const formatDateRange = () =>
-    `${new Date(startDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })} - ${new Date(endDate).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })}`;
+    `${formatDateLong(startDate)} - ${formatDateLong(endDate)}`;
 
   if (isLoading) {
     return <div className="max-w-5xl mx-auto p-4">Loading payroll summary report...</div>;
@@ -309,13 +302,7 @@ export default function PayrollSummary() {
       <div className="mt-6 text-center text-sm text-gray-500 print:mt-4 print:text-xs">
         <p>
           Generated on{' '}
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+          {formatDateLong(new Date())}
         </p>
       </div>
     </div>
