@@ -19,7 +19,7 @@ test.describe('Transaction Edit Drawer', () => {
     );
     const accountsBody = await accountsResp.json();
     sourceAccountId = accountsBody.value?.[0]?.Id;
-    if (!sourceAccountId) return;
+    if (!sourceAccountId) throw new Error('No active Asset account found — seed data required');
 
     // Create a pending bank transaction for testing
     const txnResp = await request.post(`${DAB}/banktransactions`, {
@@ -41,6 +41,7 @@ test.describe('Transaction Edit Drawer', () => {
     });
     const txnBody = await txnResp.json();
     bankTxnId = txnBody.value?.[0]?.Id;
+    if (!bankTxnId) throw new Error('Failed to create test bank transaction');
   });
 
   test('Edit button opens drawer', async ({ page }) => {
@@ -138,6 +139,16 @@ test.describe('Transaction Edit Drawer', () => {
     const patchResp = await patchPromise;
     expect(patchResp.status()).toBeLessThan(300);
 
+    // Verify PATCH payload contains the edited fields with null normalization
+    const body = patchResp.request().postDataJSON();
+    expect(body.SuggestedMemo).toBe('Updated memo from E2E');
+    expect(body.Payee).toBe('Test Payee Inc');
+    expect(body.IsPersonal).toBe(false);
+    // Empty optional fields should be null, not empty strings
+    expect(body.VendorId).toBeNull();
+    expect(body.CustomerId).toBeNull();
+    expect(body.ClassId).toBeNull();
+
     // Drawer should close
     await expect(page.getByText('Edit Transaction')).not.toBeVisible({ timeout: 5000 });
   });
@@ -221,7 +232,7 @@ test.describe('Transaction Edit Drawer', () => {
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
     // Change status filter to "all" so both Pending and Approved show
-    const statusSelect = page.locator('select').first();
+    const statusSelect = page.locator('#statusFilter');
     await statusSelect.selectOption('all');
     await page.waitForTimeout(500);
 

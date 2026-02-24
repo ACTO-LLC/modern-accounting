@@ -9,7 +9,7 @@ import {
 } from '@mui/x-data-grid';
 import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, FileText, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
-import api, { customersApi, Customer } from '../lib/api';
+import api, { customersApi, Customer, BankTransaction } from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
@@ -18,36 +18,6 @@ import PlaidLinkButton from '../components/PlaidLinkButton';
 import ConfirmModal from '../components/ConfirmModal';
 import MatchToInvoiceDialog from '../components/MatchToInvoiceDialog';
 import TransactionEditDrawer, { TransactionEditFormData } from '../components/transactions/TransactionEditDrawer';
-
-interface BankTransaction {
-  Id: string;
-  SourceType: string;
-  SourceName: string;
-  SourceAccountId: string;
-  TransactionDate: string;
-  Amount: number;
-  Description: string;
-  Merchant: string;
-  OriginalCategory?: string;
-  SuggestedAccountId?: string | null;
-  SuggestedCategory: string | null;
-  SuggestedMemo: string | null;
-  ConfidenceScore: number;
-  Status: 'Pending' | 'Approved' | 'Rejected' | 'Posted' | 'Excluded' | 'Matched';
-  ApprovedAccountId?: string;
-  ApprovedCategory?: string;
-  ApprovedMemo?: string;
-  JournalEntryId?: string;
-  MatchedPaymentId?: string;
-  MatchedAt?: string;
-  IsPersonal: boolean;
-  VendorId?: string | null;
-  CustomerId?: string | null;
-  ClassId?: string | null;
-  Payee?: string | null;
-  BankName?: string;
-  Category?: string;
-}
 
 interface Account {
   Id: string;
@@ -711,7 +681,12 @@ export default function UnifiedTransactions() {
           columns={columns}
           getRowId={(row) => row.Id}
           loading={transactionsLoading}
-          getRowHeight={() => 'auto'}
+          getRowHeight={(params) => {
+            const row = params.model;
+            const hasDetails = row.VendorId || row.CustomerId || row.ClassId || row.Payee;
+            const hasMemo = row.SuggestedMemo || row.OriginalCategory;
+            return hasDetails ? 72 : hasMemo ? 58 : 44;
+          }}
           checkboxSelection
           disableRowSelectionOnClick
           onRowDoubleClick={(params) => {

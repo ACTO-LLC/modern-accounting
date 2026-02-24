@@ -11,22 +11,7 @@ import VendorSelector from '../VendorSelector';
 import CustomerSelector from '../CustomerSelector';
 import ClassSelector from '../ClassSelector';
 import { formatDate } from '../../lib/dateUtils';
-
-interface BankTransaction {
-  Id: string;
-  TransactionDate: string;
-  Amount: number;
-  Description: string;
-  Merchant: string;
-  SourceName: string;
-  SuggestedAccountId?: string | null;
-  SuggestedMemo: string | null;
-  IsPersonal: boolean;
-  VendorId?: string | null;
-  CustomerId?: string | null;
-  ClassId?: string | null;
-  Payee?: string | null;
-}
+import type { BankTransaction } from '../../lib/api';
 
 interface Account {
   Id: string;
