@@ -9,7 +9,7 @@ import {
 } from '@mui/x-data-grid';
 import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, FileText, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../lib/api';
+import api, { customersApi, Customer, BankTransaction } from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
@@ -17,32 +17,7 @@ import BulkActionsBar, { BULK_ACTIONS_BAR_HEIGHT } from '../components/transacti
 import PlaidLinkButton from '../components/PlaidLinkButton';
 import ConfirmModal from '../components/ConfirmModal';
 import MatchToInvoiceDialog from '../components/MatchToInvoiceDialog';
-
-interface BankTransaction {
-  Id: string;
-  SourceType: string;
-  SourceName: string;
-  SourceAccountId: string;
-  TransactionDate: string;
-  Amount: number;
-  Description: string;
-  Merchant: string;
-  OriginalCategory?: string;
-  SuggestedAccountId?: string;
-  SuggestedCategory: string;
-  SuggestedMemo: string;
-  ConfidenceScore: number;
-  Status: 'Pending' | 'Approved' | 'Rejected' | 'Posted' | 'Excluded' | 'Matched';
-  ApprovedAccountId?: string;
-  ApprovedCategory?: string;
-  ApprovedMemo?: string;
-  JournalEntryId?: string;
-  MatchedPaymentId?: string;
-  MatchedAt?: string;
-  IsPersonal: boolean;
-  BankName?: string;
-  Category?: string;
-}
+import TransactionEditDrawer, { TransactionEditFormData } from '../components/transactions/TransactionEditDrawer';
 
 interface Account {
   Id: string;
@@ -85,12 +60,7 @@ export default function UnifiedTransactions() {
   });
 
   const [selectedIds, setSelectedIds] = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ accountId: string; memo: string; isPersonal: boolean }>({
-    accountId: '',
-    memo: '',
-    isPersonal: false,
-  });
+  const [drawerTransaction, setDrawerTransaction] = useState<BankTransaction | null>(null);
   const [showPostConfirm, setShowPostConfirm] = useState(false);
   const [matchingTransaction, setMatchingTransaction] = useState<BankTransaction | null>(null);
 
@@ -140,6 +110,31 @@ export default function UnifiedTransactions() {
     }
     return map;
   }, [accountsData]);
+
+  // Fetch vendors, customers, classes for name resolution in grid
+  const { data: vendorsData } = useQuery({
+    queryKey: ['vendors'],
+    queryFn: async () => {
+      const response = await api.get<{ value: { Id: string; Name: string }[] }>("/vendors?$filter=Status eq 'Active'&$orderby=Name");
+      return response.data.value;
+    },
+  });
+  const { data: customersData } = useQuery({
+    queryKey: ['customers'],
+    queryFn: customersApi.getAll,
+  });
+  const { data: classesData } = useQuery({
+    queryKey: ['classes'],
+    queryFn: async () => {
+      const response = await api.get<{ value: { Id: string; Name: string }[] }>("/classes?$filter=Status eq 'Active'&$orderby=Name");
+      return response.data.value;
+    },
+  });
+
+  const vendorMap = useMemo(() => new Map((vendorsData ?? []).map(v => [v.Id, v.Name])), [vendorsData]);
+  const customerMap = useMemo(() => new Map((customersData ?? []).map((c: Customer) => [c.Id, c.Name])), [customersData]);
+  const classMap = useMemo(() => new Map((classesData ?? []).map(c => [c.Id, c.Name])), [classesData]);
+
   const transactions = useMemo(() => {
     let data = transactionsData || [];
 
@@ -208,12 +203,12 @@ export default function UnifiedTransactions() {
 
   // Update transaction mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<BankTransaction> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       await api.patch(`/banktransactions/Id/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
-      setEditingId(null);
+      setDrawerTransaction(null);
       setSelectedIds({ type: 'include', ids: new Set() });
     },
   });
@@ -308,6 +303,10 @@ export default function UnifiedTransactions() {
         ApprovedAccountId: txn.SuggestedAccountId,
         ApprovedCategory: resolvedCategory ?? txn.SuggestedCategory,
         ApprovedMemo: txn.SuggestedMemo,
+        VendorId: txn.VendorId || null,
+        CustomerId: txn.CustomerId || null,
+        ClassId: txn.ClassId || null,
+        Payee: txn.Payee || null,
       },
     });
   }, [transactions, updateMutation, accountMap]);
@@ -321,31 +320,29 @@ export default function UnifiedTransactions() {
   }, [updateMutation]);
 
   const handleEdit = useCallback((txn: BankTransaction) => {
-    setEditingId(txn.Id);
-    setEditForm({
-      accountId: txn.SuggestedAccountId || '',
-      memo: txn.SuggestedMemo,
-      isPersonal: txn.IsPersonal,
-    });
+    setDrawerTransaction(txn);
   }, []);
 
-  const handleSaveEdit = useCallback((id: string) => {
-    // Look up the account name to use as category text
-    const selectedAccount = accounts.find(a => a.Id === editForm.accountId);
+  const handleSaveEdit = useCallback((id: string, formData: TransactionEditFormData) => {
+    const selectedAccount = accounts.find(a => a.Id === formData.accountId);
     updateMutation.mutate({
       id,
       data: {
-        SuggestedAccountId: editForm.accountId || undefined,
-        SuggestedCategory: selectedAccount?.Name || undefined,
-        SuggestedMemo: editForm.memo,
-        IsPersonal: editForm.isPersonal,
+        SuggestedAccountId: formData.accountId || null,
+        SuggestedCategory: selectedAccount?.Name || null,
+        SuggestedMemo: formData.memo || null,
+        IsPersonal: formData.isPersonal,
+        VendorId: formData.vendorId || null,
+        CustomerId: formData.customerId || null,
+        ClassId: formData.classId || null,
+        Payee: formData.payee || null,
       },
     }, {
       onSuccess: () => {
         toast.success('Transaction updated');
       },
     });
-  }, [editForm, accounts, updateMutation]);
+  }, [accounts, updateMutation]);
 
   const handleBulkApprove = useCallback(() => {
     bulkApproveMutation.mutate(Array.from(selectedIds.ids) as string[]);
@@ -425,15 +422,46 @@ export default function UnifiedTransactions() {
       field: 'Description',
       headerName: 'Description',
       flex: 1,
-      minWidth: 200,
-      renderCell: (params: GridRenderCellParams) => (
-        <div className="py-1">
-          <div className="font-medium truncate">{params.value}</div>
-          {params.row.OriginalCategory && (
-            <div className="text-xs text-gray-500 truncate">Bank: {params.row.OriginalCategory}</div>
-          )}
-        </div>
-      ),
+      minWidth: 250,
+      renderCell: (params: GridRenderCellParams) => {
+        const txn = params.row as BankTransaction;
+        const vendorName = txn.VendorId ? vendorMap.get(txn.VendorId) : null;
+        const customerName = txn.CustomerId ? customerMap.get(txn.CustomerId) : null;
+        const className = txn.ClassId ? classMap.get(txn.ClassId) : null;
+        const hasDetails = vendorName || customerName || className || txn.Payee;
+        return (
+          <div className="py-1">
+            <div className="font-medium truncate">{params.value}</div>
+            {txn.OriginalCategory && (
+              <div className="text-xs text-gray-500 truncate">Bank: {txn.OriginalCategory}</div>
+            )}
+            {hasDetails && (
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {vendorName && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                    {vendorName}
+                  </span>
+                )}
+                {customerName && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    {customerName}
+                  </span>
+                )}
+                {className && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                    {className}
+                  </span>
+                )}
+                {txn.Payee && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    {txn.Payee}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       field: 'Amount',
@@ -462,23 +490,6 @@ export default function UnifiedTransactions() {
       headerName: 'Category',
       width: 150,
       renderCell: (params: GridRenderCellParams) => {
-        if (editingId === params.row.Id) {
-          return (
-            <div className="py-1 w-full">
-              <select
-                value={editForm.accountId}
-                onChange={(e) => setEditForm({ ...editForm, accountId: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <option value="">Select...</option>
-                {accounts.map(acc => (
-                  <option key={acc.Id} value={acc.Id}>{acc.Name}</option>
-                ))}
-              </select>
-            </div>
-          );
-        }
         const categoryDisplay = getCategoryDisplay(params.row as BankTransaction);
         return (
           <div>
@@ -528,27 +539,6 @@ export default function UnifiedTransactions() {
       headerAlign: 'center',
       renderCell: (params: GridRenderCellParams) => {
         const txn = params.row as BankTransaction;
-
-        if (editingId === txn.Id) {
-          return (
-            <div className="flex justify-center gap-1">
-              <button
-                onClick={(e) => { e.stopPropagation(); handleSaveEdit(txn.Id); }}
-                className="p-1 text-green-600 hover:text-green-800"
-                title="Save"
-              >
-                <CheckCircle className="h-4 w-4" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setEditingId(null); }}
-                className="p-1 text-gray-600 hover:text-gray-800"
-                title="Cancel"
-              >
-                <XCircle className="h-4 w-4" />
-              </button>
-            </div>
-          );
-        }
 
         if (txn.Status === 'Pending') {
           return (
@@ -691,8 +681,18 @@ export default function UnifiedTransactions() {
           columns={columns}
           getRowId={(row) => row.Id}
           loading={transactionsLoading}
+          getRowHeight={(params) => {
+            const row = params.model;
+            const hasDetails = row.VendorId || row.CustomerId || row.ClassId || row.Payee;
+            const hasMemo = row.SuggestedMemo || row.OriginalCategory;
+            return hasDetails ? 72 : hasMemo ? 58 : 44;
+          }}
           checkboxSelection
           disableRowSelectionOnClick
+          onRowDoubleClick={(params) => {
+            const txn = params.row as BankTransaction;
+            if (txn.Status === 'Pending') setDrawerTransaction(txn);
+          }}
           rowSelectionModel={selectedIds}
           onRowSelectionModelChange={setSelectedIds}
           pageSizeOptions={[10, 25, 50, 100]}
@@ -705,6 +705,15 @@ export default function UnifiedTransactions() {
           }}
         />
       </div>
+
+      {/* Transaction Edit Drawer */}
+      <TransactionEditDrawer
+        transaction={drawerTransaction}
+        accounts={accounts}
+        onSave={handleSaveEdit}
+        onClose={() => setDrawerTransaction(null)}
+        isSaving={updateMutation.isPending}
+      />
 
       {/* Post Confirmation Modal */}
       <ConfirmModal

@@ -191,7 +191,11 @@
                 "ReferenceNumber": "ReferenceNumber",
                 "MatchConfidence": "MatchConfidence",
                 "MatchedPaymentId": "MatchedPaymentId",
-                "MatchedAt": "MatchedAt"
+                "MatchedAt": "MatchedAt",
+                "VendorId": "VendorId",
+                "CustomerId": "CustomerId",
+                "ClassId": "ClassId",
+                "Payee": "Payee"
             },
             "key-fields": [
                 "Id"

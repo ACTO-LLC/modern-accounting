@@ -184,6 +184,37 @@ export async function graphql<T = any>(query: string, variables?: Record<string,
 
 export default api;
 
+// Bank Transaction Types
+export interface BankTransaction {
+  Id: string;
+  SourceType: string;
+  SourceName: string;
+  SourceAccountId: string;
+  TransactionDate: string;
+  Amount: number;
+  Description: string;
+  Merchant: string;
+  OriginalCategory?: string;
+  SuggestedAccountId?: string | null;
+  SuggestedCategory: string | null;
+  SuggestedMemo: string | null;
+  ConfidenceScore: number;
+  Status: 'Pending' | 'Approved' | 'Rejected' | 'Posted' | 'Excluded' | 'Matched';
+  ApprovedAccountId?: string;
+  ApprovedCategory?: string;
+  ApprovedMemo?: string;
+  JournalEntryId?: string;
+  MatchedPaymentId?: string;
+  MatchedAt?: string;
+  IsPersonal: boolean;
+  VendorId?: string | null;
+  CustomerId?: string | null;
+  ClassId?: string | null;
+  Payee?: string | null;
+  BankName?: string;
+  Category?: string;
+}
+
 // Project Types
 export interface Project {
   Id: string;

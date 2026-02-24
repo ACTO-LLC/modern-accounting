@@ -55,6 +55,10 @@ CREATE TABLE [dbo].[BankTransactions]
     [MatchedPaymentId] UNIQUEIDENTIFIER NULL,
     [MatchedAt] DATETIME2 NULL,
     [IsPersonal] BIT NOT NULL DEFAULT 0,
+    [VendorId] UNIQUEIDENTIFIER NULL,
+    [CustomerId] UNIQUEIDENTIFIER NULL,
+    [ClassId] UNIQUEIDENTIFIER NULL,
+    [Payee] NVARCHAR(255) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
@@ -62,6 +66,9 @@ CREATE TABLE [dbo].[BankTransactions]
     CONSTRAINT [FK_BankTransactions_SourceAccount] FOREIGN KEY ([SourceAccountId]) REFERENCES [dbo].[Accounts]([Id]),
     CONSTRAINT [FK_BankTransactions_SuggestedAccount] FOREIGN KEY ([SuggestedAccountId]) REFERENCES [dbo].[Accounts]([Id]),
     CONSTRAINT [FK_BankTransactions_ApprovedAccount] FOREIGN KEY ([ApprovedAccountId]) REFERENCES [dbo].[Accounts]([Id]),
-    CONSTRAINT [FK_BankTransactions_JournalEntry] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id])
+    CONSTRAINT [FK_BankTransactions_JournalEntry] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id]),
+    CONSTRAINT [FK_BankTransactions_Vendors] FOREIGN KEY ([VendorId]) REFERENCES [dbo].[Vendors]([Id]),
+    CONSTRAINT [FK_BankTransactions_Customers] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers]([Id]),
+    CONSTRAINT [FK_BankTransactions_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[BankTransactions_History]));
