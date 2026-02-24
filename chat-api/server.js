@@ -8013,13 +8013,24 @@ async function startServer() {
         }
     }));
 
-    // Serve other static files with short cache
+    // Serve other static files (favicon, version.json, etc.)
+    // HTML and version.json are never cached; other files get a short TTL
     app.use(express.static(publicPath, {
         maxAge: '1h',
+        etag: true,
+        lastModified: true,
         setHeaders: (res, filePath) => {
-            // HTML files should always revalidate
+            // HTML files must never be served from stale cache — always revalidate
             if (filePath.endsWith('.html')) {
-                res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                res.setHeader('Pragma', 'no-cache');
+                res.setHeader('Expires', '0');
+            }
+            // version.json must always be fresh for the version-check polling
+            if (filePath.endsWith('version.json')) {
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                res.setHeader('Pragma', 'no-cache');
+                res.setHeader('Expires', '0');
             }
         }
     }));
@@ -8031,8 +8042,11 @@ async function startServer() {
         if (req.path.startsWith('/api/')) {
             return res.status(404).json({ error: 'API endpoint not found' });
         }
-        // Always revalidate index.html to get latest asset references
-        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        // index.html must never be cached — it contains references to hashed assets
+        // Using no-store ensures browsers (including Edge) always fetch fresh copy
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.sendFile(path.join(publicPath, 'index.html'), (err) => {
             if (err) {
                 // If index.html doesn't exist, continue to 404

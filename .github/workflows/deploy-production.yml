@@ -143,6 +143,10 @@ jobs:
           cp -r client/dist/* deploy/public/
 
           # Create web.config for Azure App Service (IIS Node)
+          # All requests are routed through Express (server.js) which sets proper
+          # Cache-Control headers: no-store for index.html/version.json, immutable for
+          # hashed assets. This avoids IIS serving static files with default caching
+          # that can cause users to see stale versions after deployment.
           cat > deploy/web.config << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <configuration>
@@ -155,18 +159,20 @@ jobs:
                   <rule name="NodeInspector" patternSyntax="ECMAScript" stopProcessing="true">
                     <match url="^server.js\/debug[\/]?" />
                   </rule>
-                  <rule name="StaticContent">
-                    <action type="Rewrite" url="public{REQUEST_URI}"/>
-                  </rule>
-                  <rule name="DynamicContent">
-                    <conditions>
-                      <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
-                    </conditions>
+                  <!-- Route ALL requests through Express so cache headers are always applied -->
+                  <rule name="AllTraffic" stopProcessing="true">
+                    <match url=".*" />
                     <action type="Rewrite" url="server.js"/>
                   </rule>
                 </rules>
               </rewrite>
               <iisnode node_env="production" nodeProcessCommandLine="node" />
+              <!-- Remove default IIS response headers not needed for Node.js apps -->
+              <httpProtocol>
+                <customHeaders>
+                  <remove name="X-Powered-By" />
+                </customHeaders>
+              </httpProtocol>
             </system.webServer>
           </configuration>
           EOF

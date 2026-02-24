@@ -2,7 +2,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import istanbul from 'vite-plugin-istanbul'
 import http from 'http'
-import { readFileSync } from 'fs'
+import { readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 
 // Vite plugin that buffers and forwards write requests to DAB directly.
@@ -70,6 +70,27 @@ function dabProxyBufferPlugin(dabUrl: string): Plugin {
   }
 }
 
+// Vite plugin that generates a version.json manifest in the build output.
+// The client polls this file to detect new deployments and prompt users to reload.
+// The buildId is a timestamp so it changes on every build, even if the version stays the same.
+function versionManifestPlugin(version: string): Plugin {
+  return {
+    name: 'version-manifest',
+    apply: 'build',
+    closeBundle() {
+      const manifest = {
+        version,
+        buildId: new Date().toISOString(),
+      }
+      writeFileSync(
+        resolve(__dirname, 'dist', 'version.json'),
+        JSON.stringify(manifest, null, 2)
+      )
+      console.log(`[version-manifest] Generated version.json: v${version}, build ${manifest.buildId}`)
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -94,6 +115,8 @@ export default defineConfig(({ mode }) => {
       // DAB URL - always port 5000 for direct write operations (bypasses Express proxy chain)
       dabProxyBufferPlugin(env.VITE_DAB_URL || 'http://localhost:5000'),
       react(),
+      // Generate version.json for cache-busting version detection
+      versionManifestPlugin(appVersion),
       ...(process.env.VITE_COVERAGE === 'true'
         ? [istanbul({
             include: 'src/*',
