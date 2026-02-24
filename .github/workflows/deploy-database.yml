@@ -114,7 +114,8 @@ jobs:
             /OutputPath:diff-script.sql \
             /p:BlockOnPossibleDataLoss=false \
             /p:GenerateSmartDefaults=true \
-            /p:ScriptDatabaseOptions=false
+            /p:ScriptDatabaseOptions=false \
+            /v:SeedData=false
 
           MAX_LINES=200
           HEAD_LINES=100
@@ -161,7 +162,8 @@ jobs:
             /TargetConnectionString:"${{ steps.secrets.outputs.sql_connection_string }}" \
             /p:BlockOnPossibleDataLoss=false \
             /p:GenerateSmartDefaults=true \
-            /p:ScriptDatabaseOptions=false
+            /p:ScriptDatabaseOptions=false \
+            /v:SeedData=false
 
           echo "### Database Schema Deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"

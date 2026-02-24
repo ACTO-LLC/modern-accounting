@@ -2,9 +2,18 @@
 Post-Deployment Script - Seed Data
 --------------------------------------------------------------------------------------
 This script seeds the database with initial data for development and testing.
-Uses MERGE statements for idempotent operations (safe to run multiple times).
+Skipped in production by passing /v:SeedData=false to SqlPackage.
+Uses IF NOT EXISTS guards for idempotent operations (safe to run multiple times).
 --------------------------------------------------------------------------------------
 */
+
+-- Gate: skip all seed data when SeedData=false (production deploys)
+IF '$(SeedData)' = 'false'
+BEGIN
+    PRINT 'SeedData=false — skipping seed data for production.'
+    RETURN
+END
+GO
 
 -- ============================================================================
 -- ACCOUNTS - Chart of Accounts
@@ -171,5 +180,5 @@ BEGIN
 END
 GO
 
-PRINT 'Seed data deployment complete.'
+PRINT 'Post-deployment script complete.'
 GO
