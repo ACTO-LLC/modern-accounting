@@ -3,13 +3,6 @@ name: Deploy Database Schema
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'prod'
-        type: choice
-        options:
-          - prod
       dry_run:
         description: 'Dry run — generate diff script only, do not deploy'
         required: true
@@ -72,6 +65,8 @@ jobs:
           sparse-checkout: |
             scripts
             database/migrations
+            database/package.json
+            database/package-lock.json
 
       - name: Download DACPAC
         uses: actions/download-artifact@v4
@@ -120,11 +115,41 @@ jobs:
             /p:BlockOnPossibleDataLoss=false \
             /p:GenerateSmartDefaults=true
 
-          echo "### Database Schema Diff (Dry Run)" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo '```sql' >> "$GITHUB_STEP_SUMMARY"
-          cat diff-script.sql >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          MAX_LINES=200
+          HEAD_LINES=100
+          TAIL_LINES=100
+
+          if [ -f diff-script.sql ]; then
+            TOTAL_LINES=$(wc -l < diff-script.sql || echo 0)
+
+            {
+              echo "### Database Schema Diff (Dry Run)"
+              echo ""
+              echo '```sql'
+              if [ "$TOTAL_LINES" -le "$MAX_LINES" ]; then
+                cat diff-script.sql
+              else
+                head -n "$HEAD_LINES" diff-script.sql
+                echo ""
+                echo "-- ... output truncated; showing first $HEAD_LINES and last $TAIL_LINES of $TOTAL_LINES lines ..."
+                echo ""
+                tail -n "$TAIL_LINES" diff-script.sql
+              fi
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Database Schema Diff (Dry Run)" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "_No diff script was generated._" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload diff script artifact (dry run)
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-script
+          path: diff-script.sql
+          retention-days: 5
 
       - name: Publish schema changes
         if: ${{ !inputs.dry_run }}
@@ -138,7 +163,7 @@ jobs:
 
           echo "### Database Schema Deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Schema changes published successfully to **${{ inputs.environment }}**." >> "$GITHUB_STEP_SUMMARY"
+          echo "Schema changes published successfully to **production**." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run migrations
         if: ${{ !inputs.dry_run && inputs.run_migrations }}
@@ -161,8 +186,8 @@ jobs:
             exit 0
           fi
 
-          # Install mssql driver for migration runner
-          npm install mssql --no-save
+          # Install pinned dependencies (including mssql) for migration runner
+          (cd database && npm ci)
 
           for file in $MIGRATIONS; do
             BASENAME=$(basename "$file")
@@ -178,7 +203,7 @@ jobs:
           echo "---" >> "$GITHUB_STEP_SUMMARY"
           echo "| Parameter | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-----------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Environment | \`${{ inputs.environment }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Environment | \`production\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Dry Run | \`${{ inputs.dry_run }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Run Migrations | \`${{ inputs.run_migrations }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Status | ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }} |" >> "$GITHUB_STEP_SUMMARY"
