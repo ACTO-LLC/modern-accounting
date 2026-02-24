@@ -27,7 +27,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.QBO_MCP_PORT || 8001;
+const PORT = process.env.PORT || process.env.QBO_MCP_PORT || 8001;
 const DEFAULT_QBO_SESSION = process.env.QBO_DEFAULT_SESSION || 'default';
 
 // Track MCP sessions
