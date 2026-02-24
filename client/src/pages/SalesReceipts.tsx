@@ -4,6 +4,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { SalesReceipt } from '../lib/salesReceiptUtils';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 const statusColors: Record<string, string> = {
   Completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
@@ -37,6 +38,7 @@ export default function SalesReceipts() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: 'Actions',

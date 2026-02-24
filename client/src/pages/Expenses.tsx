@@ -4,6 +4,7 @@ import { Plus, Receipt, FileText, User } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Expense {
   Id: string;
@@ -18,6 +19,8 @@ interface Expense {
   IsPersonal: boolean;
   Status: string;
   ReceiptCount: number;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 type PersonalFilter = 'all' | 'business' | 'personal';
@@ -150,6 +153,7 @@ export default function Expenses() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
   ];
 
   return (

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Plus, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Employee {
   Id: string;
@@ -18,6 +19,8 @@ interface Employee {
   HireDate: string;
   BankVerificationStatus?: string;
   BankRoutingNumber?: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 export default function Employees() {
@@ -96,6 +99,7 @@ export default function Employees() {
         );
       }
     },
+    ...getTimestampColumns(),
   ];
 
   return (

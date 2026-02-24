@@ -2,7 +2,7 @@ import { Plus, Eye, Edit } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
-import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Submission {
   Id: string;
@@ -11,6 +11,7 @@ interface Submission {
   Priority: string;
   Status: string;
   CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const typeColors: Record<string, string> = {
@@ -77,13 +78,7 @@ export default function Submissions() {
         </span>
       ),
     },
-    {
-      field: 'CreatedAt',
-      headerName: 'Created',
-      width: 120,
-      filterable: true,
-      renderCell: (params) => formatDate(params.value),
-    },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: 'Actions',

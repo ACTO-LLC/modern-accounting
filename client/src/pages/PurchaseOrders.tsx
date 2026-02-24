@@ -7,6 +7,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatGuidForOData, isValidUUID } from '../lib/validation';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
 
@@ -21,6 +22,8 @@ interface PurchaseOrder {
   Status: string;
   ConvertedToBillId: string | null;
   Notes: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 interface PurchaseOrderLine {
@@ -179,6 +182,7 @@ export default function PurchaseOrders() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: 'Actions',

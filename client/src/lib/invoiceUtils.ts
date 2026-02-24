@@ -11,6 +11,8 @@ export interface Invoice {
   DueDate: string;
   TotalAmount: number;
   Status: string;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 }
 
 /**

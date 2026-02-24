@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Wrench, Box, Package } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface ProductService {
   Id: string;
@@ -14,6 +15,8 @@ interface ProductService {
   Category: string | null;
   Taxable: boolean;
   Status: 'Active' | 'Inactive';
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 const formatCurrency = (value: number | null) => {
@@ -102,6 +105,7 @@ export default function ProductsServices() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
   ];
 
   return (

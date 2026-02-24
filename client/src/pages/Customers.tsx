@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, GitBranch } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface Customer {
   Id: string;
@@ -9,6 +10,8 @@ interface Customer {
   Email: string;
   Phone: string;
   Address: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 export default function Customers() {
@@ -19,6 +22,7 @@ export default function Customers() {
     { field: 'Email', headerName: 'Email', width: 200, filterable: true },
     { field: 'Phone', headerName: 'Phone', width: 150, filterable: true },
     { field: 'Address', headerName: 'Address', width: 250, filterable: true },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: 'Actions',

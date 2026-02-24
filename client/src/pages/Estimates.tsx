@@ -7,6 +7,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatGuidForOData, isValidUUID } from '../lib/validation';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
 import { generateNextInvoiceNumber, type Invoice } from '../lib/invoiceUtils';
@@ -21,6 +22,8 @@ interface Estimate {
   Status: string;
   ConvertedToInvoiceId: string | null;
   Notes: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 interface EstimateLine {
@@ -164,6 +167,7 @@ export default function Estimates() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
     {
       field: 'actions',
       headerName: 'Actions',

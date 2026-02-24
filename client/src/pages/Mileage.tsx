@@ -4,6 +4,7 @@ import { Plus, Car, BarChart3, User } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { getTimestampColumns } from '../lib/gridColumns';
 
 interface MileageTrip {
   Id: string;
@@ -22,6 +23,8 @@ interface MileageTrip {
   IsRoundTrip: boolean;
   IsPersonal: boolean;
   Status: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 type PersonalFilter = 'all' | 'business' | 'personal';
@@ -205,6 +208,7 @@ export default function Mileage() {
         </span>
       ),
     },
+    ...getTimestampColumns(),
   ];
 
   return (

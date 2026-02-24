@@ -25,6 +25,8 @@ export interface SalesReceipt {
   ClassName?: string;
   LocationId?: string;
   LocationName?: string;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 }
 
 export interface SalesReceiptLine {
