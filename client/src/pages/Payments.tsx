@@ -7,6 +7,7 @@ import { formatDate } from '../lib/dateUtils';
 interface Payment {
   Id: string;
   PaymentNumber: string;
+  ReferenceNumber: string | null;
   CustomerId: string;
   CustomerName: string;
   PaymentDate: string;
@@ -26,6 +27,7 @@ const statusColors: Record<string, string> = {
 export default function Payments() {
   const columns: GridColDef[] = [
     { field: 'PaymentNumber', headerName: 'Payment #', width: 130, filterable: true },
+    { field: 'ReferenceNumber', headerName: 'Reference #', width: 130, filterable: true },
     { field: 'CustomerName', headerName: 'Customer', width: 180, filterable: true },
     { field: 'PaymentDate', headerName: 'Date', width: 120, filterable: true, renderCell: (params) => formatDate(params.value) },
     {
@@ -54,7 +56,7 @@ export default function Payments() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Received Payments</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Received Payments</h1>
         <Link
           to="/payments/new"
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"

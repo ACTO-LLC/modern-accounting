@@ -2,6 +2,7 @@ CREATE VIEW [dbo].[v_Payments] AS
 SELECT
     p.[Id],
     p.[PaymentNumber],
+    p.[ReferenceNumber],
     p.[CustomerId],
     c.[Name] AS CustomerName,
     p.[PaymentDate],

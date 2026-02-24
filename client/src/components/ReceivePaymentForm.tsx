@@ -32,6 +32,7 @@ export const receivePaymentSchema = z.object({
   TotalAmount: z.number().min(0.01, 'Amount must be greater than 0'),
   PaymentMethod: z.string().min(1, 'Payment method is required'),
   DepositAccountId: z.string().uuid('Please select a deposit account'),
+  ReferenceNumber: z.string().nullish(),
   Memo: z.string().nullish(),
   Applications: z.array(z.object({
     InvoiceId: z.string().uuid('Please select an invoice'),
@@ -143,9 +144,7 @@ export default function ReceivePaymentForm({
 
       if (hasInvalidApplications && unpaidInvoices?.length) {
         // Clear applications for different customer
-        while (fields.length > 0) {
-          remove(0);
-        }
+        remove();
       }
     }
   }, [watchedCustomerId, unpaidInvoices]);
@@ -168,8 +167,35 @@ export default function ReceivePaymentForm({
     });
   };
 
+  // Real-time overpayment detection
+  const overpaymentErrors = useMemo((): { index: number; applied: number; balance: number }[] => {
+    const errors: { index: number; applied: number; balance: number }[] = [];
+    fields.forEach((field, index) => {
+      const applied = watchedApplications?.[index]?.AmountApplied ?? 0;
+      const balance = field.InvoiceBalanceDue ?? 0;
+      if (balance > 0 && applied > balance) {
+        errors.push({ index, applied, balance });
+      }
+    });
+    return errors;
+  }, [fields, watchedApplications]);
+  const hasOverpayment = overpaymentErrors.length > 0;
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString();
+  };
+
+  const getAgingInfo = (dueDateStr: string): { label: string; className: string } => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(dueDateStr);
+    dueDate.setHours(0, 0, 0, 0);
+    const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysOverdue <= 0) return { label: 'Current', className: 'text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30' };
+    if (daysOverdue <= 30) return { label: `${daysOverdue}d overdue`, className: 'text-yellow-700 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/30' };
+    if (daysOverdue <= 60) return { label: `${daysOverdue}d overdue`, className: 'text-orange-700 bg-orange-100 dark:text-orange-300 dark:bg-orange-900/30' };
+    return { label: `${daysOverdue}d overdue`, className: 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30' };
   };
 
   return (
@@ -230,6 +256,21 @@ export default function ReceivePaymentForm({
                 size="small"
                 fullWidth
                 slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
+
+          <Controller
+            name="ReferenceNumber"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                label="Reference Number"
+                placeholder="Check #, transaction ID, etc."
+                size="small"
+                fullWidth
               />
             )}
           />
@@ -332,6 +373,7 @@ export default function ReceivePaymentForm({
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Invoice #</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Due Date</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Aging</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Total</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Balance Due</th>
                           <th className="px-4 py-2"></th>
@@ -342,6 +384,12 @@ export default function ReceivePaymentForm({
                           <tr key={invoice.Id}>
                             <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{invoice.InvoiceNumber}</td>
                             <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{formatDate(invoice.DueDate)}</td>
+                            <td className="px-4 py-2 text-sm">
+                              {(() => {
+                                const aging = getAgingInfo(invoice.DueDate);
+                                return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${aging.className}`}>{aging.label}</span>;
+                              })()}
+                            </td>
                             <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 text-right">${invoice.TotalAmount.toFixed(2)}</td>
                             <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">${invoice.BalanceDue.toFixed(2)}</td>
                             <td className="px-4 py-2 text-right">
@@ -371,6 +419,7 @@ export default function ReceivePaymentForm({
                       const { ref, ...rest } = register(`Applications.${index}.AmountApplied`, { valueAsNumber: true });
                       return (
                         <div key={field.id} className="bg-indigo-50 p-4 rounded-md flex items-center gap-4 dark:bg-indigo-950">
+                          <input type="hidden" {...register(`Applications.${index}.InvoiceId`)} />
                           <div className="flex-grow">
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               Invoice #{field.InvoiceNumber}
@@ -387,6 +436,8 @@ export default function ReceivePaymentForm({
                               label="Amount to Apply"
                               size="small"
                               fullWidth
+                              error={!!errors.Applications?.[index]?.AmountApplied || overpaymentErrors.some(e => e.index === index)}
+                              helperText={errors.Applications?.[index]?.AmountApplied?.message || (overpaymentErrors.find(e => e.index === index) ? `Amount exceeds balance due ($${(field.InvoiceBalanceDue || 0).toFixed(2)})` : undefined)}
                               slotProps={{
                                 input: {
                                   startAdornment: <InputAdornment position="start">$</InputAdornment>
@@ -445,7 +496,7 @@ export default function ReceivePaymentForm({
           <Button
             type="submit"
             variant="contained"
-            disabled={isSubmitting || fields.length === 0}
+            disabled={isSubmitting || fields.length === 0 || hasOverpayment}
           >
             {isSubmitting ? 'Processing...' : submitButtonText}
           </Button>
