@@ -25,6 +25,13 @@
     <ProjectGuid>{00000000-0000-0000-0000-000000000000}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
+    <!-- SQLCMD variable: set to 'false' to skip seed data (production deploys) -->
+    <SqlCmdVariable Include="SeedData">
+      <DefaultValue>true</DefaultValue>
+      <Value>$(SqlCmdVar__1)</Value>
+    </SqlCmdVariable>
+  </ItemGroup>
+  <ItemGroup>
     <!-- Use glob patterns to auto-include all SQL files in each directory -->
     <Build Include="dbo\Tables\*.sql" />
     <Build Include="dbo\Views\*.sql" />
