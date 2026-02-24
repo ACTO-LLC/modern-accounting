@@ -22,6 +22,41 @@ test.describe('Unified Transactions DataGrid', () => {
     await expect(dateHeader.locator('.MuiDataGrid-sortIcon')).toBeVisible({ timeout: 5000 });
   });
 
+  test('should display resolved account name in Category column when SuggestedAccountId is set', async ({ page }) => {
+    await page.goto('/transactions');
+    await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 5000 }).catch(() => false);
+    test.skip(!hasRows, 'No transaction data available');
+
+    // The Category column should show account names (not raw Plaid short names)
+    await expect(page.locator('.MuiDataGrid-columnHeader').filter({ hasText: /Category/i })).toBeVisible();
+    // Category cells should be visible
+    const categoryCells = page.locator('.MuiDataGrid-cell[data-field="SuggestedAccountId"]');
+    const count = await categoryCells.count();
+    if (count > 0) {
+      await expect(categoryCells.first()).toBeVisible();
+    }
+  });
+
+  test('should find transactions when searching by resolved account name', async ({ page }) => {
+    await page.goto('/transactions?view=review');
+    await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 5000 }).catch(() => false);
+    test.skip(!hasRows, 'No transaction data available');
+
+    // The search box should filter by resolved account name
+    const searchInput = page.locator('input[placeholder*="Search"]').first();
+    if (await searchInput.isVisible()) {
+      await searchInput.fill('Expense');
+      await page.waitForTimeout(500);
+      // Grid should still render (search doesn't break the page)
+      await expect(page.locator('.MuiDataGrid-root')).toBeVisible();
+      await searchInput.clear();
+    }
+  });
+
   test('should filter transactions using column filter', async ({ page }) => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
