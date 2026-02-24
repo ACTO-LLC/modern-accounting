@@ -36,7 +36,7 @@ const columns: GridColDef[] = [
     filterable: true,
     renderCell: (params) => (
       <span
-        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}`}
+        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}
       >
         {params.value}
       </span>
