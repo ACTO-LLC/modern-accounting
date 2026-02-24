@@ -113,7 +113,8 @@ jobs:
             /TargetConnectionString:"${{ steps.secrets.outputs.sql_connection_string }}" \
             /OutputPath:diff-script.sql \
             /p:BlockOnPossibleDataLoss=false \
-            /p:GenerateSmartDefaults=true
+            /p:GenerateSmartDefaults=true \
+            /p:DoNotAlterChangeDataCaptureObjects=true
 
           MAX_LINES=200
           HEAD_LINES=100
@@ -159,7 +160,8 @@ jobs:
             /SourceFile:AccountingDB.dacpac \
             /TargetConnectionString:"${{ steps.secrets.outputs.sql_connection_string }}" \
             /p:BlockOnPossibleDataLoss=false \
-            /p:GenerateSmartDefaults=true
+            /p:GenerateSmartDefaults=true \
+            /p:DoNotAlterChangeDataCaptureObjects=true
 
           echo "### Database Schema Deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
