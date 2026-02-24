@@ -101,7 +101,6 @@ jobs:
               QBO_CLIENT_SECRET="@Microsoft.KeyVault(SecretUri=https://${{ env.KEY_VAULT_NAME }}.vault.azure.net/secrets/qbo-client-secret)" \
               QBO_ENVIRONMENT="production" \
               QBO_REDIRECT_URI="https://${{ env.MAIN_APP_NAME }}.azurewebsites.net/api/qbo/callback" \
-              QBO_MCP_PORT="8001" \
               SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
               ENABLE_ORYX_BUILD="false"
 
