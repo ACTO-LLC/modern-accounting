@@ -1,0 +1,183 @@
+name: Deploy QBO MCP Server
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'qbo-mcp-http-server/**'
+      - '.github/workflows/deploy-qbo-mcp.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+  AZURE_WEBAPP_NAME: mcp-qbo-modern-accounting-prod
+  AZURE_RESOURCE_GROUP: rg-modern-accounting-prod
+  MAIN_APP_NAME: app-modern-accounting-prod
+  KEY_VAULT_NAME: kv2suhqabgprod
+
+jobs:
+  # ============================================================================
+  # Build Job - Build QBO MCP server artifacts
+  # ============================================================================
+  build:
+    name: Build QBO MCP Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: qbo-mcp-http-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: qbo-mcp-http-server
+
+      - name: Build TypeScript
+        run: npm run build
+        working-directory: qbo-mcp-http-server
+
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+        working-directory: qbo-mcp-http-server
+
+      - name: Package application
+        run: |
+          mkdir -p deploy
+          cp -r qbo-mcp-http-server/dist deploy/
+          cp -r qbo-mcp-http-server/node_modules deploy/
+          cp qbo-mcp-http-server/package.json deploy/
+          cd deploy
+          zip -r ../qbo-mcp-package.zip .
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: qbo-mcp-package
+          path: qbo-mcp-package.zip
+          retention-days: 1
+
+  # ============================================================================
+  # Deploy Job - Deploy to Azure App Service
+  # ============================================================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+      url: https://mcp-qbo-modern-accounting-prod.azurewebsites.net
+
+    steps:
+      - name: Download deployment package
+        uses: actions/download-artifact@v4
+        with:
+          name: qbo-mcp-package
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Configure App Settings
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings \
+              QBO_CLIENT_ID="@Microsoft.KeyVault(SecretUri=https://${{ env.KEY_VAULT_NAME }}.vault.azure.net/secrets/qbo-client-id)" \
+              QBO_CLIENT_SECRET="@Microsoft.KeyVault(SecretUri=https://${{ env.KEY_VAULT_NAME }}.vault.azure.net/secrets/qbo-client-secret)" \
+              QBO_ENVIRONMENT="production" \
+              QBO_REDIRECT_URI="https://${{ env.MAIN_APP_NAME }}.azurewebsites.net/api/qbo/callback" \
+              QBO_MCP_PORT="8001" \
+              SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
+              ENABLE_ORYX_BUILD="false"
+
+      - name: Set Startup Command
+        run: |
+          az webapp config set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --startup-file "node dist/index.js"
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: qbo-mcp-package.zip
+
+      - name: Wait for deployment to stabilize
+        run: sleep 30
+
+      - name: Health Check
+        run: |
+          for i in {1..10}; do
+            echo "Health check attempt $i..."
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/health || echo "000")
+            if [ "$response" = "200" ]; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            echo "Got status $response, waiting..."
+            sleep 15
+          done
+          echo "Health check failed after 10 attempts"
+          exit 1
+
+  # ============================================================================
+  # Post-Deploy - Update main app QBO_MCP_URL
+  # ============================================================================
+  update-main-app:
+    name: Update Main App Config
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update QBO_MCP_URL on main app
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.MAIN_APP_NAME }} \
+            --settings \
+              QBO_MCP_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/mcp"
+
+      - name: Restart main app to pick up new URL
+        run: |
+          az webapp restart \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.MAIN_APP_NAME }}
+
+      - name: Verify main app health
+        run: |
+          sleep 30
+          for i in {1..10}; do
+            echo "Main app health check attempt $i..."
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.MAIN_APP_NAME }}.azurewebsites.net/api/health || echo "000")
+            if [ "$response" = "200" ]; then
+              echo "Main app healthy!"
+              exit 0
+            fi
+            echo "Got status $response, waiting..."
+            sleep 15
+          done
+          echo "Main app health check failed after 10 attempts"
+          exit 1

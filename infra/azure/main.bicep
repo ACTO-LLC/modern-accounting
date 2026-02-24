@@ -173,6 +173,25 @@ module maMcpServer 'modules/mcp-service.bicep' = {
 }
 
 // -----------------------------------------------------------------------------
+// QBO MCP Server Module (QuickBooks Online MCP)
+// -----------------------------------------------------------------------------
+
+module qboMcpServer 'modules/mcp-service.bicep' = {
+  name: 'qboMcpServer-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    serviceName: 'mcp-qbo-${baseName}-${environment}'
+    appServicePlanId: appService.outputs.appServicePlanId
+    location: location
+    tags: tags
+    keyVaultName: keyVault.outputs.keyVaultName
+    appInsightsConnectionString: appService.outputs.appInsightsConnectionString
+    mcpType: 'qbo-mcp'
+    port: 8001
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Azure Automation Module (Start/Stop Scheduling)
 // Reduces costs by stopping App Services during off-hours (6 PM - 7 AM PT)
 // Only deployed for non-dev environments
@@ -189,6 +208,7 @@ module automation 'modules/automation.bicep' = if (environment != 'dev') {
     appServiceNames: [
       'app-${baseName}-${environment}'
       'mcp-ma-${baseName}-${environment}'
+      'mcp-qbo-${baseName}-${environment}'
     ]
     startTime: '07:00'
     stopTime: '18:00'
@@ -208,6 +228,7 @@ output sqlDatabaseName string = sqlServer.outputs.databaseName
 output appServiceUrl string = appService.outputs.appServiceUrl
 output appServicePrincipalId string = appService.outputs.principalId
 output maMcpServerUrl string = maMcpServer.outputs.serviceUrl
+output qboMcpServerUrl string = qboMcpServer.outputs.serviceUrl
 output openAIEndpoint string = deployOpenAI ? openAI.outputs.openAIEndpoint : ''
 output openAIDeploymentName string = deployOpenAI ? openAI.outputs.gpt4oDeploymentName : ''
 output automationAccountName string = automation.?outputs.?automationAccountName ?? ''
