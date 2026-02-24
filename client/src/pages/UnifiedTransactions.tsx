@@ -7,7 +7,7 @@ import {
   GridRowSelectionModel,
   GridRenderCellParams,
 } from '@mui/x-data-grid';
-import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, FileText } from 'lucide-react';
+import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, FileText, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
@@ -16,6 +16,7 @@ import TransactionFilters, { TransactionFiltersState } from '../components/trans
 import BulkActionsBar, { BULK_ACTIONS_BAR_HEIGHT } from '../components/transactions/BulkActionsBar';
 import PlaidLinkButton from '../components/PlaidLinkButton';
 import ConfirmModal from '../components/ConfirmModal';
+import MatchToInvoiceDialog from '../components/MatchToInvoiceDialog';
 
 interface BankTransaction {
   Id: string;
@@ -31,11 +32,13 @@ interface BankTransaction {
   SuggestedCategory: string;
   SuggestedMemo: string;
   ConfidenceScore: number;
-  Status: 'Pending' | 'Approved' | 'Rejected' | 'Posted' | 'Excluded';
+  Status: 'Pending' | 'Approved' | 'Rejected' | 'Posted' | 'Excluded' | 'Matched';
   ApprovedAccountId?: string;
   ApprovedCategory?: string;
   ApprovedMemo?: string;
   JournalEntryId?: string;
+  MatchedPaymentId?: string;
+  MatchedAt?: string;
   IsPersonal: boolean;
   BankName?: string;
   Category?: string;
@@ -79,6 +82,7 @@ export default function UnifiedTransactions() {
     isPersonal: false,
   });
   const [showPostConfirm, setShowPostConfirm] = useState(false);
+  const [matchingTransaction, setMatchingTransaction] = useState<BankTransaction | null>(null);
 
   // Fetch transactions
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
@@ -355,6 +359,7 @@ export default function UnifiedTransactions() {
     switch (status) {
       case 'Approved': return 'text-blue-600 bg-blue-50 dark:bg-blue-900/30';
       case 'Posted': return 'text-green-600 bg-green-50 dark:bg-green-900/30';
+      case 'Matched': return 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30';
       case 'Rejected': return 'text-red-600 bg-red-50 dark:bg-red-900/30';
       case 'Excluded': return 'text-gray-500 bg-gray-100 dark:bg-gray-700';
       default: return 'text-gray-600 bg-gray-50 dark:bg-gray-700';
@@ -487,7 +492,7 @@ export default function UnifiedTransactions() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 130,
+      width: 160,
       sortable: false,
       filterable: false,
       align: 'center',
@@ -540,6 +545,15 @@ export default function UnifiedTransactions() {
               >
                 <XCircle className="h-4 w-4" />
               </button>
+              {txn.Amount > 0 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMatchingTransaction(txn); }}
+                  className="p-1 text-indigo-600 hover:text-indigo-800"
+                  title="Match to Invoice"
+                >
+                  <Link2 className="h-4 w-4" />
+                </button>
+              )}
               <button
                 onClick={(e) => { e.stopPropagation(); handleExclude(txn.Id); }}
                 className="p-1 text-gray-500 hover:text-gray-700"
@@ -548,6 +562,20 @@ export default function UnifiedTransactions() {
                 <MinusCircle className="h-4 w-4" />
               </button>
             </div>
+          );
+        }
+
+        if (txn.Status === 'Matched' && txn.MatchedPaymentId) {
+          return (
+            <Link
+              to="/payments"
+              className="inline-flex items-center gap-1 p-1 text-indigo-600 hover:text-indigo-800"
+              title="View Payment"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Link2 className="h-4 w-4" />
+              <span className="text-xs">View Payment</span>
+            </Link>
           );
         }
 
@@ -661,6 +689,19 @@ export default function UnifiedTransactions() {
         isLoading={postMutation.isPending}
         variant="default"
       />
+
+      {/* Match to Invoice Dialog */}
+      {matchingTransaction && (
+        <MatchToInvoiceDialog
+          isOpen={!!matchingTransaction}
+          onClose={() => setMatchingTransaction(null)}
+          bankTransaction={matchingTransaction}
+          onMatched={() => {
+            queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+            setMatchingTransaction(null);
+          }}
+        />
+      )}
 
       {/* Fixed bottom bulk actions bar - visible when rows are selected */}
       <BulkActionsBar
