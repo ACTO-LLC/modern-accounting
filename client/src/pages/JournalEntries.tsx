@@ -55,13 +55,14 @@ function buildODataFilter(filterModel: GridFilterModel): string | null {
     const field = item.field;
     const operator = muiToODataOperator[item.operator] || 'contains';
     const value = item.value;
+    const escapedValue = String(value).replace(/'/g, "''");
 
     if (operator === 'contains' || operator === 'startsWith' || operator === 'endsWith') {
-      parts.push(`${operator}(${field}, '${value}')`);
+      parts.push(`${operator}(${field}, '${escapedValue}')`);
     } else {
       // For string fields, wrap value in quotes
       const isNumeric = !isNaN(Number(value));
-      const formattedValue = isNumeric ? value : `'${value}'`;
+      const formattedValue = isNumeric ? value : `'${escapedValue}'`;
       parts.push(`${field} ${operator} ${formattedValue}`);
     }
   }
@@ -120,7 +121,7 @@ export default function JournalEntries() {
       // Server-side filtering
       const filter = buildODataFilter(filterModel);
       if (filter) {
-        params.push(`$filter=${filter}`);
+        params.push(`$filter=${encodeURIComponent(filter)}`);
       }
 
       const url = `/journalentries?${params.join('&')}`;
@@ -183,7 +184,7 @@ export default function JournalEntries() {
       filterable: true,
       renderCell: (params) => (
         <span
-          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}`}
+          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[params.value] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}
         >
           {params.value}
         </span>
