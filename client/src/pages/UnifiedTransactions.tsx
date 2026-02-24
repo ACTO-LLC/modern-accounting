@@ -123,6 +123,13 @@ export default function UnifiedTransactions() {
   });
 
   const accounts = accountsData || [];
+  const accountMap = useMemo(() => {
+    const map = new Map<string, Account>();
+    for (const acc of accounts) {
+      map.set(acc.Id, acc);
+    }
+    return map;
+  }, [accounts]);
   const transactions = useMemo(() => {
     let data = transactionsData || [];
 
@@ -139,15 +146,21 @@ export default function UnifiedTransactions() {
     // Apply search filter client-side
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      data = data.filter(txn =>
-        txn.Description?.toLowerCase().includes(searchLower) ||
-        txn.Merchant?.toLowerCase().includes(searchLower) ||
-        txn.SuggestedCategory?.toLowerCase().includes(searchLower)
-      );
+      data = data.filter(txn => {
+        // Resolve category to account name for search
+        const resolvedCategory = txn.SuggestedAccountId
+          ? (accountMap.get(txn.SuggestedAccountId)?.Name || txn.SuggestedCategory)
+          : txn.SuggestedCategory;
+        return (
+          txn.Description?.toLowerCase().includes(searchLower) ||
+          txn.Merchant?.toLowerCase().includes(searchLower) ||
+          resolvedCategory?.toLowerCase().includes(searchLower)
+        );
+      });
     }
 
     return data;
-  }, [transactionsData, filters.confidence, filters.search]);
+  }, [transactionsData, filters.confidence, filters.search, accountMap]);
 
   // Sync bank feed mutation
   const syncMutation = useMutation({
@@ -269,20 +282,31 @@ export default function UnifiedTransactions() {
     },
   });
 
+  // Resolve category display: prefer account name from SuggestedAccountId, fall back to SuggestedCategory
+  const getCategoryDisplay = useCallback((txn: BankTransaction): string => {
+    if (txn.SuggestedAccountId) {
+      const account = accountMap.get(txn.SuggestedAccountId);
+      if (account) return account.Name;
+    }
+    return txn.SuggestedCategory || txn.Category || '-';
+  }, [accountMap]);
+
   // Action handlers
   const handleApprove = useCallback((id: string) => {
     const txn = transactions.find(t => t.Id === id);
     if (!txn) return;
+    // Resolve category to account name for consistency with display
+    const resolvedCategory = getCategoryDisplay(txn);
     updateMutation.mutate({
       id,
       data: {
         Status: 'Approved',
         ApprovedAccountId: txn.SuggestedAccountId,
-        ApprovedCategory: txn.SuggestedCategory,
+        ApprovedCategory: resolvedCategory !== '-' ? resolvedCategory : txn.SuggestedCategory,
         ApprovedMemo: txn.SuggestedMemo,
       },
     });
-  }, [transactions, updateMutation]);
+  }, [transactions, updateMutation, getCategoryDisplay]);
 
   const handleReject = useCallback((id: string) => {
     updateMutation.mutate({ id, data: { Status: 'Rejected' } });
@@ -451,9 +475,10 @@ export default function UnifiedTransactions() {
             </div>
           );
         }
+        const categoryDisplay = getCategoryDisplay(params.row as BankTransaction);
         return (
           <div>
-            <div className="font-medium truncate">{params.value || params.row.Category || '-'}</div>
+            <div className="font-medium truncate">{categoryDisplay}</div>
             {params.row.SuggestedMemo && (
               <div className="text-xs text-gray-500 truncate">{params.row.SuggestedMemo}</div>
             )}
