@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -34,7 +35,7 @@ interface CustomerFormProps {
 
 export default function CustomerForm({ initialValues, onSubmit, title, isSubmitting, submitButtonText = 'Save Customer' }: CustomerFormProps) {
   const navigate = useNavigate();
-  const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<CustomerFormData>({
+  const { control, register, handleSubmit, setValue, reset, formState: { errors } } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
       Name: '',
@@ -50,6 +51,24 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
       ...initialValues,
     }
   });
+
+  useEffect(() => {
+    if (initialValues) {
+      reset({
+        Name: '',
+        Email: '',
+        Phone: '',
+        AddressLine1: '',
+        AddressLine2: '',
+        City: '',
+        State: '',
+        PostalCode: '',
+        Country: '',
+        Address: '',
+        ...initialValues,
+      });
+    }
+  }, [initialValues, reset]);
 
   return (
     <div className="max-w-2xl mx-auto">
