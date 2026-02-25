@@ -260,6 +260,7 @@
                 "Phone": "Phone",
                 "Address": "Address",
                 "AddressLine1": "AddressLine1",
+                "AddressLine2": "AddressLine2",
                 "City": "City",
                 "State": "State",
                 "PostalCode": "PostalCode",
