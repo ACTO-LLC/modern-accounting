@@ -4,7 +4,7 @@
         "database-type": "mssql",
         "connection-string": "@env('DAB_CONNECTION_STRING')",
         "options": {
-            "set-session-context": true
+            "set-session-context": false
         }
     },
     "runtime": {
@@ -38,6 +38,10 @@
         "pagination": {
             "default-page-size": 1000,
             "max-page-size": 10000
+        },
+        "cache": {
+            "enabled": true,
+            "ttl-seconds": 5
         }
     },
     "entities": {
@@ -74,7 +78,11 @@
             ],
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "bankrules": {
             "source": "dbo.BankRules",
@@ -122,7 +130,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "banktransactions": {
             "source": "dbo.BankTransactions",
@@ -227,7 +239,10 @@
             ],
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "customers": {
             "source": "dbo.Customers",
@@ -271,7 +286,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "customerdeposits": {
             "source": {
@@ -374,7 +393,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "depositapplications": {
             "source": {
@@ -454,7 +476,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "invoices": {
             "source": {
@@ -508,6 +533,10 @@
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
                 "ClaimId": "ClaimId"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "invoices_write": {
@@ -553,7 +582,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "invoicelines": {
             "source": "dbo.InvoiceLines",
@@ -622,7 +654,10 @@
             ],
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "productsservices": {
             "source": "dbo.ProductsServices",
@@ -666,7 +701,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "bankreconciliations": {
             "source": "dbo.BankReconciliations",
@@ -707,7 +746,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "reconciliationitems": {
             "source": "dbo.ReconciliationItems",
@@ -746,7 +788,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "vendors": {
             "source": "dbo.Vendors",
@@ -790,7 +835,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "taxrates": {
             "source": "dbo.TaxRates",
@@ -832,7 +881,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "taxcalculationsettings": {
             "source": "dbo.TaxCalculationSettings",
@@ -875,7 +928,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "taxratecache": {
             "source": "dbo.TaxRateCache",
@@ -1017,6 +1074,10 @@
                 "InvoiceLineId": "InvoiceLineId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "timeentries_write": {
@@ -1058,7 +1119,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "classes": {
             "source": "dbo.Classes",
@@ -1095,7 +1159,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "locations": {
             "source": "dbo.Locations",
@@ -1133,7 +1201,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "inventorylocations": {
             "source": "dbo.InventoryLocations",
@@ -1264,6 +1336,10 @@
                 "Memo": "Memo",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "bills_write": {
@@ -1307,7 +1383,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "billlines": {
             "source": "dbo.BillLines",
@@ -1392,6 +1471,10 @@
                 "Notes": "Notes",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "estimates_write": {
@@ -1429,6 +1512,9 @@
                 "Status": "Status",
                 "ConvertedToInvoiceId": "ConvertedToInvoiceId",
                 "Notes": "Notes"
+            },
+            "cache": {
+                "enabled": false
             }
         },
         "estimatelines": {
@@ -1517,6 +1603,10 @@
                 "ConvertedToBillId": "ConvertedToBillId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "purchaseorders_write": {
@@ -1555,6 +1645,9 @@
                 "Subtotal": "Subtotal",
                 "Total": "Total",
                 "ConvertedToBillId": "ConvertedToBillId"
+            },
+            "cache": {
+                "enabled": false
             }
         },
         "purchaseorderlines": {
@@ -1643,7 +1736,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "recurringschedules": {
             "source": "dbo.RecurringSchedules",
@@ -1802,7 +1899,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "migrationtypemaps": {
             "source": "dbo.MigrationTypeMaps",
@@ -1841,7 +1941,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "migrationentitymaps": {
             "source": "dbo.MigrationEntityMaps",
@@ -1879,7 +1982,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "migrationconfigs": {
             "source": "dbo.MigrationConfigs",
@@ -1917,7 +2023,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "qboconnections": {
             "source": "dbo.QBOConnections",
@@ -1963,7 +2072,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "plaidconnections": {
             "source": "dbo.PlaidConnections",
@@ -1997,7 +2109,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "plaidaccounts": {
             "source": "dbo.PlaidAccounts",
@@ -2034,7 +2149,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "payments": {
             "source": {
@@ -2086,6 +2204,9 @@
                 "SourceId": "SourceId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": false
             }
         },
         "payments_write": {
@@ -2127,7 +2248,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "paymentapplications": {
             "source": "dbo.PaymentApplications",
@@ -2162,7 +2286,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "billpayments": {
             "source": {
@@ -2213,6 +2340,10 @@
                 "SourceId": "SourceId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "billpayments_write": {
@@ -2253,7 +2384,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "billpaymentapplications": {
             "source": "dbo.BillPaymentApplications",
@@ -2288,7 +2422,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "companies": {
             "source": "dbo.Companies",
@@ -2341,7 +2478,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "companyfeatureflags": {
             "source": "dbo.CompanyFeatureFlags",
@@ -2380,7 +2521,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "onboardingprogress": {
             "source": "dbo.OnboardingProgress",
@@ -2423,7 +2568,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "industrytemplates": {
             "source": "dbo.IndustryTemplates",
@@ -2465,7 +2613,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "onboardingconversations": {
             "source": "dbo.OnboardingConversations",
@@ -2502,7 +2654,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "enhancements": {
             "source": "dbo.Enhancements",
@@ -2541,7 +2696,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "deployments": {
             "source": "dbo.Deployments",
@@ -2577,7 +2735,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "employees": {
             "source": {
@@ -2647,6 +2808,10 @@
                 "BankInstitutionName": "BankInstitutionName",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
             }
         },
         "employees_write": {
@@ -2706,7 +2871,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "payruns": {
             "source": {
@@ -2800,7 +2968,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "paystubs": {
             "source": {
@@ -2922,7 +3093,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "accountdefaults": {
             "source": "dbo.AccountDefaults",
@@ -2959,7 +3133,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "expenses": {
             "source": {
@@ -3024,6 +3202,10 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "ReceiptCount": "ReceiptCount"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "expenses_write": {
@@ -3072,7 +3254,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "receipts": {
             "source": {
@@ -3169,7 +3354,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "employeeworkstates": {
             "source": {
@@ -3254,7 +3442,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "statetaxreciprocity": {
             "source": "dbo.StateTaxReciprocity",
@@ -3294,7 +3485,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "paystubstatewitholdings": {
             "source": "dbo.PayStubStateWithholdings",
@@ -3382,6 +3577,10 @@
                 "ImportedBy": "ImportedBy",
                 "ErrorMessage": "ErrorMessage",
                 "CreatedAt": "CreatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "banktransactionimports_write": {
@@ -3420,7 +3619,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "banktransactionmatches": {
             "source": {
@@ -3475,6 +3677,9 @@
                 "AcceptedAt": "AcceptedAt",
                 "AcceptedBy": "AcceptedBy",
                 "CreatedAt": "CreatedAt"
+            },
+            "cache": {
+                "enabled": false
             }
         },
         "banktransactionmatches_write": {
@@ -3512,7 +3717,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "vendorcredits": {
             "source": {
@@ -3606,7 +3814,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "vendorcreditlines": {
             "source": "dbo.VendorCreditLines",
@@ -3725,7 +3936,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "vehicles": {
             "source": "dbo.Vehicles",
@@ -3767,7 +3981,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "mileagerates": {
             "source": "dbo.MileageRates",
@@ -3805,7 +4023,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "mileagetrips": {
             "source": {
@@ -3912,7 +4134,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "salesreceipts": {
             "source": {
@@ -3975,6 +4200,10 @@
                 "TenantId": "TenantId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "salesreceipts_write": {
@@ -4021,7 +4250,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "salesreceiptlines": {
             "source": "dbo.SalesReceiptLines",
@@ -4103,7 +4335,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "emailremindersettings": {
             "source": "dbo.EmailReminderSettings",
@@ -4143,7 +4379,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "auditlog": {
             "source": "dbo.AuditLog",
@@ -4191,7 +4431,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "accountingperiods": {
             "source": "dbo.AccountingPeriods",
@@ -4232,7 +4475,11 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "yearendcloseentries": {
             "source": {
@@ -4287,6 +4534,9 @@
                 "FiscalYearStart": "FiscalYearStart",
                 "FiscalYearEnd": "FiscalYearEnd",
                 "PeriodIsLocked": "PeriodIsLocked"
+            },
+            "cache": {
+                "enabled": false
             }
         },
         "yearendcloseentries_write": {
@@ -4327,7 +4577,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "creditmemos": {
             "source": {
@@ -4380,6 +4633,10 @@
                 "JournalEntryReference": "JournalEntryReference",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
             }
         },
         "creditmemos_write": {
@@ -4420,7 +4677,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "creditmemolines": {
             "source": {
@@ -4505,7 +4765,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "creditapplications": {
             "source": {
@@ -4586,7 +4849,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "refunds": {
             "source": {
@@ -4676,7 +4942,10 @@
             },
             "key-fields": [
                 "Id"
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         }
     }
 }
