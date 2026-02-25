@@ -314,6 +314,8 @@ app.use('/api', async (req, res, next) => {
     // Kestrel (DAB) enforces MinRequestBodyDataRate which causes body stream timeouts
     // when http-proxy-middleware pipes the already-consumed express.json() stream.
     if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) {
+        // Parse user from JWT for audit logging (non-blocking)
+        await new Promise((resolve) => optionalJWT(req, res, resolve));
         try {
             const dabUrl = `${DAB_PROXY_URL}${fullPath}`;
             const headers = {
@@ -343,6 +345,9 @@ app.use('/api', async (req, res, next) => {
                         entityType: mapEntityType(entity),
                         entityId: id || req.body?.Id || req.body?.id || response.data?.value?.[0]?.Id || null,
                         newValues: ['POST', 'PATCH', 'PUT'].includes(req.method) ? req.body : null,
+                        userId: req.user?.entraObjectId || null,
+                        userName: req.user?.displayName || null,
+                        userEmail: req.user?.email || null,
                         req,
                         source: 'DAB',
                     });
