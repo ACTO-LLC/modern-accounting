@@ -46,6 +46,8 @@ infra/azure/
 ├── main.bicep              # Main orchestration template
 ├── modules/
 │   ├── app-service.bicep   # App Service + App Insights
+│   ├── custom-domain.bicep # Hostname binding + managed SSL cert
+│   ├── dns-zone.bicep      # Azure DNS zone + CNAME/TXT records
 │   ├── key-vault.bicep     # Key Vault for secrets
 │   ├── sendgrid.bicep      # SendGrid email service
 │   ├── sql-server.bicep    # Azure SQL Database
@@ -205,6 +207,20 @@ az sql server firewall-rule create \
   --end-ip-address YOUR.IP.HERE
 ```
 
+## Custom Domains (Production)
+
+Production uses custom domains on `a-cto.com` with free App Service Managed Certificates:
+
+| Service | Custom Domain |
+|---------|--------------|
+| Main App | `https://accounting.a-cto.com` |
+| QBO MCP | `https://mcp-qbo.a-cto.com` |
+| MA MCP | `https://mcp-ma.a-cto.com` |
+
+**DNS Zone location:** The `a-cto.com` DNS zone lives in subscription `8883174d...`, RG `acto-dns-prod-rg` — NOT in the modern-accounting resource group. See [docs/claude-azure.md](../../docs/claude-azure.md#custom-domains--ssl-feb-2026) for detailed setup instructions.
+
+**IMPORTANT:** The Bicep `dns-zone.bicep` module is designed for greenfield setups. For this project, DNS records are manually added to the existing zone because it contains 50+ records for other services (email, other apps). Do NOT deploy `dns-zone.bicep` — it would create a duplicate zone with different nameservers.
+
 ## Environment Differences
 
 | Feature | Dev | Staging | Prod |
@@ -213,6 +229,7 @@ az sql server firewall-rule create \
 | SQL Auto-Pause | 60 min | 120 min | 240 min |
 | SendGrid Plan | Free | Free | Bronze |
 | Always On | No | Yes | Yes |
+| Custom Domain | No | No | Yes (`*.a-cto.com`) |
 
 ## Troubleshooting
 

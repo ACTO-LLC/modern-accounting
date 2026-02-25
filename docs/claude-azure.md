@@ -37,15 +37,22 @@ In GitHub Actions workflow:
 **What Doesn't Work:**
 - `SCM_DO_BUILD_DURING_DEPLOYMENT=false` (only affects Kudu, not container startup)
 - `ENABLE_ORYX_BUILD=false` (ignored at runtime)
-- `WEBSITE_RUN_FROM_PACKAGE=1` without blob storage URL
 - Pre-zipped `node_modules` without startup command override
+
+**CRITICAL: Always set `WEBSITE_RUN_FROM_PACKAGE=1`** (Feb 2026 update):
+Even with startup command override, Oryx can still corrupt `node_modules` if it finds a stale `oryx-manifest.toml` from a previous deploy. It extracts an old `node_modules.tar.gz`, replaces the real `node_modules/` with a broken symlink, and the app crashes with `MODULE_NOT_FOUND`. Setting `WEBSITE_RUN_FROM_PACKAGE=1` mounts the zip as read-only wwwroot on every start, bypassing Oryx entirely.
+
+```bash
+az webapp config appsettings set \
+  --resource-group rg-modern-accounting-prod \
+  --name app-modern-accounting-prod \
+  --settings WEBSITE_RUN_FROM_PACKAGE="1"
+```
 
 **Key Insight:** The startup command must be set to skip Oryx's default startup script. Your `server.js` must:
 - Use `__dirname` relative paths (not `process.cwd()`)
 - Not rely on `npm start` (use `node server.js` directly)
 - Have all dependencies pre-installed in `node_modules`
-
-**Alternative:** Use Azure Container Apps with a Dockerfile for full control.
 
 ---
 
@@ -106,3 +113,93 @@ az containerapp update --name dab-ca-modern-accounting \
 ```
 
 **Note:** Container Apps don't have a simple "restart" command. Setting an env var triggers a new revision deployment.
+
+---
+
+## Custom Domains & SSL (Feb 2026)
+
+Production uses custom domains on `a-cto.com` with free App Service Managed Certificates.
+
+### Current Setup
+
+| Service | Custom Domain | App Service |
+|---------|--------------|-------------|
+| Main App | `accounting.a-cto.com` | `app-modern-accounting-prod` |
+| QBO MCP | `mcp-qbo.a-cto.com` | `mcp-qbo-modern-accounting-prod` |
+| MA MCP | `mcp-ma.a-cto.com` | `mcp-ma-modern-accounting-prod` |
+
+### DNS Zone Location
+
+The DNS zone for `a-cto.com` lives in a **separate subscription and resource group** from the app services:
+
+- **DNS Zone:** subscription `8883174d...`, RG `acto-dns-prod-rg` (nameservers `ns1-05.azure-dns.com`)
+- **App Services:** subscription `a6f5a418...`, RG `rg-modern-accounting-prod`
+
+Namecheap is the domain registrar, already pointing to Azure DNS nameservers `ns1-05`.
+
+**IMPORTANT:** Do NOT create a new DNS zone in `rg-modern-accounting-prod`. The Bicep `dns-zone.bicep` module would create a duplicate zone with different nameservers, breaking all existing DNS records (email, other services).
+
+### App Registration
+
+**Name:** "Modern Accounting Production"
+**Client ID:** `2685fbc4-b4fd-4ea7-8773-77ec0826e7af`
+**Tenant ID:** `f8ac75ce-d250-407e-b8cb-e05f5b4cd913`
+
+SPA Redirect URIs (already configured):
+- `https://accounting.a-cto.com`
+- `https://app-modern-accounting-prod.azurewebsites.net`
+- `http://localhost:5173`
+
+### Adding a New Custom Domain
+
+To add a new subdomain (e.g., `newservice.a-cto.com`):
+
+1. **Get the App Service verification ID:**
+   ```bash
+   az webapp show --name <app-service-name> --resource-group rg-modern-accounting-prod \
+     --query customDomainVerificationId -o tsv
+   ```
+
+2. **Add DNS records to the existing zone** (switch to DNS subscription first):
+   ```bash
+   az account set --subscription 8883174d-a6ce-48b0-b0a1-c5ec5c397666
+
+   # CNAME record
+   az network dns record-set cname set-record \
+     --resource-group acto-dns-prod-rg --zone-name a-cto.com \
+     --record-set-name newservice --cname <app-service-name>.azurewebsites.net
+
+   # TXT verification record
+   az network dns record-set txt add-record \
+     --resource-group acto-dns-prod-rg --zone-name a-cto.com \
+     --record-set-name asuid.newservice --value <verification-id>
+   ```
+
+3. **Deploy hostname binding + managed cert** (switch back to app subscription):
+   ```bash
+   az account set --subscription a6f5a418-461f-42c0-a07a-90142521e5fb
+
+   az deployment group create \
+     --resource-group rg-modern-accounting-prod \
+     --name custom-domain-newservice \
+     --template-file infra/azure/modules/custom-domain.bicep \
+     --parameters appServiceName=<app-service-name> \
+       customHostname=newservice.a-cto.com \
+       location=westus2 \
+       'tags={"application":"modern-accounting","environment":"prod","managedBy":"bicep","company":"A CTO LLC"}'
+   ```
+
+4. **Bind SSL cert:**
+   ```bash
+   # Get thumbprint from deployment output, then:
+   az webapp config ssl bind \
+     --resource-group rg-modern-accounting-prod \
+     --name <app-service-name> \
+     --certificate-thumbprint <THUMBPRINT> --ssl-type SNI
+   ```
+
+5. **Update App Registration** (if the service uses Azure AD auth):
+   ```bash
+   az ad app update --id 2685fbc4-b4fd-4ea7-8773-77ec0826e7af \
+     --spa-redirect-uris https://accounting.a-cto.com https://app-modern-accounting-prod.azurewebsites.net http://localhost:5173 https://newservice.a-cto.com
+   ```

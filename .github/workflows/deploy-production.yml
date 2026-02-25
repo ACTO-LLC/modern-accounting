@@ -232,7 +232,8 @@ jobs:
               WEBSITE_NODE_DEFAULT_VERSION="~20" \
               NODE_ENV="production" \
               SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
-              ENABLE_ORYX_BUILD="false"
+              ENABLE_ORYX_BUILD="false" \
+              WEBSITE_RUN_FROM_PACKAGE="1"
 
           # CRITICAL: Set custom startup command to bypass Oryx's npm install
           # Without this, Oryx runs "npm install && npm start" at container runtime
