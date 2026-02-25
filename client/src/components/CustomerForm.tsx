@@ -40,6 +40,13 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
       Name: '',
       Email: '',
       Phone: '',
+      AddressLine1: '',
+      AddressLine2: '',
+      City: '',
+      State: '',
+      PostalCode: '',
+      Country: '',
+      Address: '',
       ...initialValues,
     }
   });

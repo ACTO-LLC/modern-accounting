@@ -278,6 +278,12 @@ export interface Customer {
   Email?: string;
   Phone?: string;
   Address?: string;
+  AddressLine1?: string | null;
+  AddressLine2?: string | null;
+  City?: string | null;
+  State?: string | null;
+  PostalCode?: string | null;
+  Country?: string | null;
   CreatedAt: string;
   UpdatedAt: string;
 }
