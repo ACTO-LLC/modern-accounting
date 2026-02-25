@@ -398,7 +398,7 @@ export default function UnifiedTransactions() {
 
   // Calculate grid height, reserving space for the fixed bottom bulk-actions bar when visible
   const bulkBarVisible = selectedIds.ids.size > 0 || highConfidenceCount > 0;
-  const gridHeight = useGridHeight(gridRef, 16, bulkBarVisible ? BULK_ACTIONS_BAR_HEIGHT : 0);
+  const gridHeight = useGridHeight(gridRef, 80, bulkBarVisible ? BULK_ACTIONS_BAR_HEIGHT : 0);
 
   // DataGrid columns
   const columns: GridColDef[] = [
