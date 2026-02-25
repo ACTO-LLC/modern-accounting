@@ -233,7 +233,34 @@ jobs:
               NODE_ENV="production" \
               SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
               ENABLE_ORYX_BUILD="false" \
-              WEBSITE_RUN_FROM_PACKAGE="1"
+              WEBSITE_RUN_FROM_PACKAGE="1" \
+              DAB_URL="${{ vars.PROD_DAB_URL || 'https://dab-ca-modern-accounting.bravesky-c584bf83.westus2.azurecontainerapps.io' }}" \
+              DAB_REST_URL="${{ vars.PROD_DAB_URL || 'https://dab-ca-modern-accounting.bravesky-c584bf83.westus2.azurecontainerapps.io' }}/api" \
+              DAB_API_URL="${{ vars.PROD_DAB_URL || 'https://dab-ca-modern-accounting.bravesky-c584bf83.westus2.azurecontainerapps.io' }}/api" \
+              AZURE_AD_TENANT_ID="${{ secrets.AZURE_AD_TENANT_ID }}" \
+              AZURE_AD_AUDIENCE="api://${{ secrets.AZURE_AD_CLIENT_ID }}" \
+              AZURE_AD_ISSUER="https://login.microsoftonline.com/${{ secrets.AZURE_AD_TENANT_ID }}/v2.0" \
+              AZURE_OPENAI_DEPLOYMENT="gpt-4o" \
+              QBO_ENVIRONMENT="production" \
+              QBO_REDIRECT_URI="https://accounting.a-cto.com/api/qbo/oauth-callback"
+
+          # Set Key Vault references (must be set individually due to = in values)
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings 'AZURE_OPENAI_ENDPOINT=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/azure-openai-endpoint)'
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings 'AZURE_OPENAI_API_KEY=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/azure-openai-key)'
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings 'QBO_CLIENT_ID=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/qbo-client-id)'
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings 'QBO_CLIENT_SECRET=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/qbo-client-secret)'
 
           # CRITICAL: Set custom startup command to bypass Oryx's npm install
           # Without this, Oryx runs "npm install && npm start" at container runtime
