@@ -316,6 +316,26 @@ app.use('/api', async (req, res, next) => {
     if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) {
         // Parse user from JWT for audit logging (non-blocking)
         await new Promise((resolve) => optionalJWT(req, res, resolve));
+
+        // Fallback: if optionalJWT couldn't validate (issuer/audience mismatch etc.),
+        // decode the JWT payload without verification to get user info for audit logging.
+        // This is safe because DAB independently validates the token for authorization.
+        if (!req.user && req.headers.authorization?.startsWith('Bearer ')) {
+            try {
+                const token = req.headers.authorization.slice(7);
+                const payloadB64 = token.split('.')[1];
+                const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+                req.user = {
+                    entraObjectId: payload.oid || payload.sub || null,
+                    email: payload.email || payload.preferred_username || payload.upn || null,
+                    displayName: payload.name || payload.given_name || payload.email || null,
+                };
+                console.log('[DAB Direct] Decoded JWT for audit:', req.user.displayName, req.user.email);
+            } catch (decodeErr) {
+                console.warn('[DAB Direct] JWT decode fallback failed:', decodeErr.message);
+            }
+        }
+
         try {
             const dabUrl = `${DAB_PROXY_URL}${fullPath}`;
             const headers = {
