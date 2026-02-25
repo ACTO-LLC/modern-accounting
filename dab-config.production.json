@@ -4,7 +4,7 @@
         "database-type": "mssql",
         "connection-string": "@env('DATABASE_CONNECTION_STRING')",
         "options": {
-            "set-session-context": true
+            "set-session-context": false
         }
     },
     "runtime": {
@@ -36,6 +36,10 @@
         "pagination": {
             "default-page-size": 1000,
             "max-page-size": 10000
+        },
+        "cache": {
+            "enabled": true,
+            "ttl-seconds": 5
         }
     },
     "entities": {
@@ -64,7 +68,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "vendors": {
             "source": "dbo.Vendors",
@@ -91,7 +99,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "accounts": {
             "source": "dbo.Accounts",
@@ -118,7 +130,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "invoices": {
             "source": "dbo.Invoices",
@@ -145,7 +161,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "invoicelines": {
             "source": "dbo.InvoiceLines",
@@ -200,7 +220,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "billlines": {
             "source": "dbo.BillLines",
@@ -255,7 +279,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "journalentrylines": {
             "source": "dbo.JournalEntryLines",
@@ -283,7 +310,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "banktransactions": {
             "source": "dbo.BankTransactions",
@@ -337,7 +367,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "projects": {
             "source": "dbo.Projects",
@@ -405,7 +439,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "payments": {
             "source": "dbo.Payments",
@@ -432,7 +470,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "billpayments": {
             "source": "dbo.BillPayments",
@@ -459,7 +500,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "tenants": {
             "source": "dbo.Tenants",
@@ -536,7 +581,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "deployments": {
             "source": "dbo.Deployments",
@@ -555,7 +603,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "salesreceipts": {
             "source": "dbo.SalesReceipts",
@@ -580,7 +631,11 @@
                         "read"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "salesreceipts_write": {
             "source": "dbo.SalesReceipts",
@@ -601,7 +656,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "salesreceiptlines": {
             "source": "dbo.SalesReceiptLines",
@@ -648,7 +706,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "emailremindersettings": {
             "source": "dbo.EmailReminderSettings",
@@ -667,7 +729,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "auditlog": {
             "source": "dbo.AuditLog",
@@ -686,7 +752,10 @@
                         "read"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "expenses": {
             "source": {
@@ -717,7 +786,11 @@
                         "read"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "expenses_write": {
             "source": "dbo.Expenses",
@@ -738,7 +811,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "companyfeatureflags": {
             "source": "dbo.CompanyFeatureFlags",
@@ -757,13 +833,20 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "onboardingprogress": {
             "source": "dbo.OnboardingProgress",
             "rest": true,
             "graphql": true,
-            "permissions": []
+            "permissions": [],
+            "cache": {
+                "enabled": false
+            }
         },
         "estimates": {
             "source": {
@@ -788,7 +871,11 @@
                         "read"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "estimates_write": {
             "source": "dbo.Estimates",
@@ -810,7 +897,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "estimatelines": {
             "source": "dbo.EstimateLines",
@@ -879,7 +969,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "creditmemos": {
             "source": {
@@ -904,7 +997,11 @@
                         "read"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "creditmemos_write": {
             "source": "dbo.CreditMemos",
@@ -926,7 +1023,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "creditmemolines": {
             "source": {
@@ -973,7 +1073,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "purchaseorders": {
             "source": {
@@ -998,7 +1101,11 @@
                         "read"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
         },
         "purchaseorders_write": {
             "source": "dbo.PurchaseOrders",
@@ -1020,7 +1127,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "purchaseorderlines": {
             "source": "dbo.PurchaseOrderLines",
@@ -1089,7 +1199,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "vendorcreditlines": {
             "source": "dbo.VendorCreditLines",
@@ -1158,7 +1271,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "employees": {
             "source": {
@@ -1183,7 +1299,11 @@
                         "read"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "employees_write": {
             "source": "dbo.Employees",
@@ -1205,7 +1325,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "payruns": {
             "source": {
@@ -1252,7 +1375,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "paystubs": {
             "source": {
@@ -1299,7 +1425,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "bankrules": {
             "source": "dbo.BankRules",
@@ -1327,7 +1456,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "classes": {
             "source": "dbo.Classes",
@@ -1354,7 +1487,11 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "taxrates": {
             "source": "dbo.TaxRates",
@@ -1373,25 +1510,40 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "companies": {
             "source": "dbo.Companies",
             "rest": true,
             "graphql": true,
-            "permissions": []
+            "permissions": [],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 30
+            }
         },
         "industrytemplates": {
             "source": "dbo.IndustryTemplates",
             "rest": true,
             "graphql": true,
-            "permissions": []
+            "permissions": [],
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 120
+            }
         },
         "onboardingconversations": {
             "source": "dbo.OnboardingConversations",
             "rest": true,
             "graphql": true,
-            "permissions": []
+            "permissions": [],
+            "cache": {
+                "enabled": false
+            }
         },
         "migrationfieldmaps": {
             "source": "dbo.MigrationFieldMaps",
@@ -1410,7 +1562,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "migrationtypemaps": {
             "source": "dbo.MigrationTypeMaps",
@@ -1429,7 +1584,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "migrationentitymaps": {
             "source": "dbo.MigrationEntityMaps",
@@ -1448,7 +1606,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "migrationconfigs": {
             "source": "dbo.MigrationConfigs",
@@ -1467,7 +1628,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         },
         "qboconnections": {
             "source": "dbo.QBOConnections",
@@ -1486,7 +1650,10 @@
                         "*"
                     ]
                 }
-            ]
+            ],
+            "cache": {
+                "enabled": false
+            }
         }
     }
 }

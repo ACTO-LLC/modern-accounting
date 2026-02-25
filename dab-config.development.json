@@ -4,7 +4,7 @@
         "database-type": "mssql",
         "connection-string": "@env('DAB_CONNECTION_STRING')",
         "options": {
-            "set-session-context": true
+            "set-session-context": false
         }
     },
     "runtime": {
