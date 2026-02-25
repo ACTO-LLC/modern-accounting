@@ -15,9 +15,6 @@ param tags object
 @description('Custom domain verification ID from the main App Service')
 param appServiceVerificationId string
 
-@description('Custom domain verification ID from the MCP service (if different)')
-param mcpServiceVerificationId string = appServiceVerificationId
-
 // Domain-to-host mappings for CNAME records
 @description('CNAME record mappings: subdomain -> target hostname')
 param cnameRecords array = []
@@ -26,7 +23,7 @@ param cnameRecords array = []
 // DNS Zone
 // -----------------------------------------------------------------------------
 
-resource dnsZone 'Microsoft.Network/dnsZones@2023-07-01-preview' = {
+resource dnsZone 'Microsoft.Network/dnsZones@2018-05-01' = {
   name: zoneName
   location: location
   tags: tags
@@ -39,7 +36,7 @@ resource dnsZone 'Microsoft.Network/dnsZones@2023-07-01-preview' = {
 // CNAME Records (one per custom domain)
 // -----------------------------------------------------------------------------
 
-resource cnameRecord 'Microsoft.Network/dnsZones/CNAME@2023-07-01-preview' = [
+resource cnameRecord 'Microsoft.Network/dnsZones/CNAME@2018-05-01' = [
   for record in cnameRecords: {
     parent: dnsZone
     name: record.name
@@ -58,7 +55,7 @@ resource cnameRecord 'Microsoft.Network/dnsZones/CNAME@2023-07-01-preview' = [
 // App Service's custom domain verification ID.
 // -----------------------------------------------------------------------------
 
-resource txtVerificationRecord 'Microsoft.Network/dnsZones/TXT@2023-07-01-preview' = [
+resource txtVerificationRecord 'Microsoft.Network/dnsZones/TXT@2018-05-01' = [
   for record in cnameRecords: {
     parent: dnsZone
     name: 'asuid.${record.name}'
