@@ -210,7 +210,7 @@ jobs:
   deploy-prod:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [validate, deploy-staging]
+    needs: [validate]
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'prod'
     environment:
       name: production

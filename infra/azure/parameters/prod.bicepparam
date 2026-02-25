@@ -24,6 +24,10 @@ param sqlAutoPauseDelayMinutes = 60
 // Upgrade to 'bronze' for 40k emails/month if needed
 param sendGridAdminEmail = 'support@a-cto.com'
 
+// Custom domain
+param enableCustomDomain = true
+param customDomainName = 'a-cto.com'
+
 // Tags
 param tags = {
   application: 'modern-accounting'
