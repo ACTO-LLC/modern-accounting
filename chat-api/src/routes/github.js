@@ -1,6 +1,7 @@
 // GitHub/PR workflow API routes
 import express from 'express';
 import * as github from '../services/github.js';
+import { logAuditEvent } from '../services/audit-log.js';
 
 const router = express.Router();
 
@@ -20,6 +21,14 @@ router.post('/branches', async (req, res) => {
             return res.status(400).json({ error: 'branchName is required' });
         }
         const result = await github.createBranch(branchName, baseBranch);
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'GitBranch',
+            entityDescription: `Create branch ${branchName} from ${baseBranch || 'main'}`,
+            newValues: { branchName, baseBranch },
+            req,
+            source: 'System',
+        });
         res.json(result);
     } catch (err) {
         console.error('Create branch error:', err);
@@ -45,6 +54,14 @@ router.post('/commits', async (req, res) => {
             });
         }
         await github.commitFile(branch, path, content, message);
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'GitCommit',
+            entityDescription: `Commit to ${branch}: ${message.substring(0, 80)}`,
+            newValues: { branch, path, message },
+            req,
+            source: 'System',
+        });
         res.json({ success: true });
     } catch (err) {
         console.error('Commit file error:', err);
@@ -70,6 +87,15 @@ router.post('/pulls', async (req, res) => {
             });
         }
         const result = await github.createPR(head, base || 'main', title, body);
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'PullRequest',
+            entityId: result?.number?.toString(),
+            entityDescription: `Create PR: ${title.substring(0, 80)}`,
+            newValues: { head, base: base || 'main', title },
+            req,
+            source: 'System',
+        });
         res.json(result);
     } catch (err) {
         console.error('Create PR error:', err);
@@ -150,6 +176,15 @@ router.post('/pulls/:number/merge', async (req, res) => {
         }
         const { mergeMethod } = req.body;
         const result = await github.mergePR(prNumber, mergeMethod);
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'PullRequest',
+            entityId: prNumber.toString(),
+            entityDescription: `Merge PR #${prNumber} (${mergeMethod || 'merge'})`,
+            newValues: { prNumber, mergeMethod: mergeMethod || 'merge' },
+            req,
+            source: 'System',
+        });
         res.json(result);
     } catch (err) {
         console.error('Merge PR error:', err);
