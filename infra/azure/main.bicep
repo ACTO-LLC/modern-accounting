@@ -44,6 +44,12 @@ param deployOpenAI bool = true
 @description('Azure OpenAI location (may differ from main location due to quota availability)')
 param openAILocation string = 'eastus'
 
+@description('Custom domain name (e.g., a-cto.com)')
+param customDomainName string = 'a-cto.com'
+
+@description('Enable custom domain configuration')
+param enableCustomDomain bool = false
+
 @description('Tags to apply to all resources')
 param tags object = {
   application: 'modern-accounting'
@@ -169,6 +175,9 @@ module maMcpServer 'modules/mcp-service.bicep' = {
     appInsightsConnectionString: appService.outputs.appInsightsConnectionString
     mcpType: 'ma-mcp'
     port: 5002
+    additionalCorsOrigins: enableCustomDomain ? [
+      'https://accounting.${customDomainName}'
+    ] : []
   }
 }
 
@@ -188,6 +197,9 @@ module qboMcpServer 'modules/mcp-service.bicep' = {
     appInsightsConnectionString: appService.outputs.appInsightsConnectionString
     mcpType: 'qbo-mcp'
     port: 8001
+    additionalCorsOrigins: enableCustomDomain ? [
+      'https://accounting.${customDomainName}'
+    ] : []
   }
 }
 
@@ -216,6 +228,87 @@ module automation 'modules/automation.bicep' = if (environment != 'dev') {
 }
 
 // -----------------------------------------------------------------------------
+// DNS Zone Module (Custom Domains)
+// Creates Azure DNS Zone with CNAME + TXT verification records
+// Only deployed when custom domains are enabled
+// -----------------------------------------------------------------------------
+
+module dnsZone 'modules/dns-zone.bicep' = if (enableCustomDomain) {
+  name: 'dnsZone-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    zoneName: customDomainName
+    tags: tags
+    appServiceVerificationId: appService.outputs.customDomainVerificationId
+    cnameRecords: [
+      {
+        name: 'accounting'
+        target: appService.outputs.defaultHostName
+        verificationId: appService.outputs.customDomainVerificationId
+      }
+      {
+        name: 'mcp-qbo'
+        target: qboMcpServer.outputs.defaultHostName
+        verificationId: qboMcpServer.outputs.customDomainVerificationId
+      }
+      {
+        name: 'mcp-ma'
+        target: maMcpServer.outputs.defaultHostName
+        verificationId: maMcpServer.outputs.customDomainVerificationId
+      }
+    ]
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Custom Domain Bindings
+// Adds hostname bindings + managed certs for each custom domain
+// Only deployed when custom domains are enabled
+// -----------------------------------------------------------------------------
+
+module appCustomDomain 'modules/custom-domain.bicep' = if (enableCustomDomain) {
+  name: 'appCustomDomain-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    appServiceName: 'app-${baseName}-${environment}'
+    customHostname: 'accounting.${customDomainName}'
+    location: location
+    tags: tags
+  }
+  dependsOn: [
+    dnsZone
+  ]
+}
+
+module qboMcpCustomDomain 'modules/custom-domain.bicep' = if (enableCustomDomain) {
+  name: 'qboMcpCustomDomain-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    appServiceName: 'mcp-qbo-${baseName}-${environment}'
+    customHostname: 'mcp-qbo.${customDomainName}'
+    location: location
+    tags: tags
+  }
+  dependsOn: [
+    dnsZone
+  ]
+}
+
+module maMcpCustomDomain 'modules/custom-domain.bicep' = if (enableCustomDomain) {
+  name: 'maMcpCustomDomain-${uniqueSuffix}'
+  scope: resourceGroup
+  params: {
+    appServiceName: 'mcp-ma-${baseName}-${environment}'
+    customHostname: 'mcp-ma.${customDomainName}'
+    location: location
+    tags: tags
+  }
+  dependsOn: [
+    dnsZone
+  ]
+}
+
+// -----------------------------------------------------------------------------
 // Outputs
 // -----------------------------------------------------------------------------
 
@@ -232,3 +325,7 @@ output qboMcpServerUrl string = qboMcpServer.outputs.serviceUrl
 output openAIEndpoint string = deployOpenAI ? openAI.outputs.openAIEndpoint : ''
 output openAIDeploymentName string = deployOpenAI ? openAI.outputs.gpt4oDeploymentName : ''
 output automationAccountName string = automation.?outputs.?automationAccountName ?? ''
+output dnsNameServers array = enableCustomDomain ? dnsZone.outputs.nameServers : []
+output customDomainAppUrl string = enableCustomDomain ? 'https://accounting.${customDomainName}' : ''
+output customDomainQboMcpUrl string = enableCustomDomain ? 'https://mcp-qbo.${customDomainName}' : ''
+output customDomainMaMcpUrl string = enableCustomDomain ? 'https://mcp-ma.${customDomainName}' : ''

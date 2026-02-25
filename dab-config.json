@@ -27,7 +27,8 @@
                 "origins": [
                     "http://localhost:5173",
                     "http://localhost:5179",
-                    "https://app-modern-accounting-prod.azurewebsites.net"
+                    "https://app-modern-accounting-prod.azurewebsites.net",
+                    "https://accounting.a-cto.com"
                 ],
                 "allow-credentials": true
             },

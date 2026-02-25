@@ -76,7 +76,7 @@ jobs:
     needs: build
     environment:
       name: production
-      url: https://mcp-qbo-modern-accounting-prod.azurewebsites.net
+      url: https://mcp-qbo.a-cto.com
 
     steps:
       - name: Download deployment package
@@ -100,7 +100,7 @@ jobs:
               QBO_CLIENT_ID="@Microsoft.KeyVault(SecretUri=https://${{ env.KEY_VAULT_NAME }}.vault.azure.net/secrets/qbo-client-id)" \
               QBO_CLIENT_SECRET="@Microsoft.KeyVault(SecretUri=https://${{ env.KEY_VAULT_NAME }}.vault.azure.net/secrets/qbo-client-secret)" \
               QBO_ENVIRONMENT="production" \
-              QBO_REDIRECT_URI="https://${{ env.MAIN_APP_NAME }}.azurewebsites.net/api/qbo/callback" \
+              QBO_REDIRECT_URI="https://accounting.a-cto.com/api/qbo/callback" \
               SCM_DO_BUILD_DURING_DEPLOYMENT="false" \
               ENABLE_ORYX_BUILD="false" \
               WEBSITE_RUN_FROM_PACKAGE="1" \
@@ -126,7 +126,7 @@ jobs:
         run: |
           for i in {1..10}; do
             echo "Health check attempt $i..."
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/health || echo "000")
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://mcp-qbo.a-cto.com/health || echo "000")
             if [ "$response" = "200" ]; then
               echo "Health check passed!"
               exit 0
@@ -159,7 +159,7 @@ jobs:
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.MAIN_APP_NAME }} \
             --settings \
-              QBO_MCP_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/mcp"
+              QBO_MCP_URL="https://mcp-qbo.a-cto.com/mcp"
 
       - name: Restart main app to pick up new URL
         run: |
@@ -172,7 +172,7 @@ jobs:
           sleep 30
           for i in {1..10}; do
             echo "Main app health check attempt $i..."
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.MAIN_APP_NAME }}.azurewebsites.net/api/health || echo "000")
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://accounting.a-cto.com/api/health || echo "000")
             if [ "$response" = "200" ]; then
               echo "Main app healthy!"
               exit 0

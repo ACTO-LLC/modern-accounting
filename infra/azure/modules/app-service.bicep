@@ -162,7 +162,9 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
 
 output appServiceName string = appService.name
 output appServiceUrl string = 'https://${appService.properties.defaultHostName}'
+output defaultHostName string = appService.properties.defaultHostName
 output principalId string = appService.identity.principalId
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
 output appServicePlanId string = appServicePlan.id
+output customDomainVerificationId string = appService.properties.customDomainVerificationId
