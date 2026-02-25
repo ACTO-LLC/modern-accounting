@@ -44,10 +44,12 @@ export async function logAuditEvent({
     tenantId = null,
 }) {
     try {
-        // Extract user info from request if available
-        const effectiveUserId = userId || req?.dbUser?.Id || req?.dbUser?.EntraObjectId || null;
-        const effectiveUserName = userName || req?.dbUser?.DisplayName || null;
-        const effectiveUserEmail = userEmail || req?.dbUser?.Email || null;
+        // Extract user info from request if available.
+        // req.dbUser is populated by resolveTenant (DB lookup); req.user is the decoded JWT payload
+        // and is available even when only optionalJWT has run (e.g. DAB proxy requests).
+        const effectiveUserId = userId || req?.dbUser?.Id || req?.dbUser?.EntraObjectId || req?.user?.entraObjectId || null;
+        const effectiveUserName = userName || req?.dbUser?.DisplayName || req?.user?.displayName || null;
+        const effectiveUserEmail = userEmail || req?.dbUser?.Email || req?.user?.email || null;
         const effectiveTenantId = tenantId || req?.tenant?.Id || null;
         const ipAddress = req?.ip || req?.headers?.['x-forwarded-for'] || null;
         const userAgent = req?.headers?.['user-agent']?.substring(0, 500) || null;

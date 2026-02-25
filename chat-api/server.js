@@ -306,8 +306,9 @@ app.post('/api/companies', async (req, res) => {
 });
 
 // Apply proxy for /api/* routes, but skip locally-handled paths
+// optionalJWT runs first so req.user is populated for audit logging even on proxied requests.
 // Audit middleware runs before the proxy to log all DAB mutations
-app.use('/api', (req, res, next) => {
+app.use('/api', optionalJWT, (req, res, next) => {
     // Check if this path should be handled locally
     const fullPath = '/api' + req.path;
     const shouldSkip = DAB_EXCLUDED_PATHS.some(excluded =>
