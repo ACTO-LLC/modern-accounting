@@ -81,8 +81,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "bankrules": {
@@ -133,8 +132,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "banktransactions": {
@@ -290,8 +288,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "customerdeposits": {
@@ -705,8 +702,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "bankreconciliations": {
@@ -839,8 +835,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "taxrates": {
@@ -885,8 +880,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "taxcalculationsettings": {
@@ -932,8 +926,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "taxratecache": {
@@ -1163,8 +1156,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "locations": {
@@ -1205,8 +1197,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "inventorylocations": {
@@ -1740,8 +1731,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "recurringschedules": {
@@ -2482,8 +2472,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "companyfeatureflags": {
@@ -2525,8 +2514,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "onboardingprogress": {
@@ -2617,8 +2605,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "onboardingconversations": {
@@ -2812,8 +2799,7 @@
                 "UpdatedAt": "UpdatedAt"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "employees_write": {
@@ -3137,8 +3123,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "expenses": {
@@ -3489,8 +3474,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "paystubstatewitholdings": {
@@ -3985,8 +3969,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "mileagerates": {
@@ -4027,8 +4010,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "mileagetrips": {
@@ -4339,8 +4321,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "emailremindersettings": {
@@ -4383,8 +4364,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
+                "enabled": false
             }
         },
         "auditlog": {
@@ -4479,8 +4459,7 @@
                 "Id"
             ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
         "yearendcloseentries": {
