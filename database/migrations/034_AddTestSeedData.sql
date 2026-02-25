@@ -46,16 +46,16 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[Customers] WHERE [Name] = 'Acme Corporation')
 BEGIN
-    INSERT INTO [dbo].[Customers] ([Id], [Name], [Email], [Phone], [Address])
+    INSERT INTO [dbo].[Customers] ([Id], [Name], [Email], [Phone], [Address], [AddressLine1], [City], [State], [PostalCode], [Country])
     VALUES
-        (NEWID(), 'Acme Corporation', 'billing@acme.com', '555-0101', '123 Main St, New York, NY 10001'),
-        (NEWID(), 'TechStart Inc', 'ap@techstart.io', '555-0102', '456 Innovation Blvd, San Francisco, CA 94102'),
-        (NEWID(), 'Green Valley Foods', 'orders@greenvalley.com', '555-0103', '789 Farm Road, Austin, TX 78701'),
-        (NEWID(), 'Metro Healthcare', 'procurement@metrohc.org', '555-0104', '321 Medical Center Dr, Chicago, IL 60601'),
-        (NEWID(), 'Summit Construction', 'projects@summitbuild.com', '555-0105', '654 Builder Way, Denver, CO 80202'),
-        (NEWID(), 'Coastal Retail Group', 'purchasing@coastalretail.com', '555-0106', '987 Commerce St, Miami, FL 33101'),
-        (NEWID(), 'Pacific Logistics', 'accounts@pacificlog.com', '555-0107', '147 Shipping Lane, Seattle, WA 98101'),
-        (NEWID(), 'Mountain View Consulting', 'finance@mvcons.com', '555-0108', '258 Advisor Pkwy, Portland, OR 97201');
+        (NEWID(), 'Acme Corporation', 'billing@acme.com', '555-0101', '123 Main St, New York, NY 10001', '123 Main St', 'New York', 'NY', '10001', 'US'),
+        (NEWID(), 'TechStart Inc', 'ap@techstart.io', '555-0102', '456 Innovation Blvd, San Francisco, CA 94102', '456 Innovation Blvd', 'San Francisco', 'CA', '94102', 'US'),
+        (NEWID(), 'Green Valley Foods', 'orders@greenvalley.com', '555-0103', '789 Farm Road, Austin, TX 78701', '789 Farm Road', 'Austin', 'TX', '78701', 'US'),
+        (NEWID(), 'Metro Healthcare', 'procurement@metrohc.org', '555-0104', '321 Medical Center Dr, Chicago, IL 60601', '321 Medical Center Dr', 'Chicago', 'IL', '60601', 'US'),
+        (NEWID(), 'Summit Construction', 'projects@summitbuild.com', '555-0105', '654 Builder Way, Denver, CO 80202', '654 Builder Way', 'Denver', 'CO', '80202', 'US'),
+        (NEWID(), 'Coastal Retail Group', 'purchasing@coastalretail.com', '555-0106', '987 Commerce St, Miami, FL 33101', '987 Commerce St', 'Miami', 'FL', '33101', 'US'),
+        (NEWID(), 'Pacific Logistics', 'accounts@pacificlog.com', '555-0107', '147 Shipping Lane, Seattle, WA 98101', '147 Shipping Lane', 'Seattle', 'WA', '98101', 'US'),
+        (NEWID(), 'Mountain View Consulting', 'finance@mvcons.com', '555-0108', '258 Advisor Pkwy, Portland, OR 97201', '258 Advisor Pkwy', 'Portland', 'OR', '97201', 'US');
 END
 GO
 
