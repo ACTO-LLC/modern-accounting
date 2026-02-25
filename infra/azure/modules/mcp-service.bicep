@@ -28,6 +28,9 @@ param mcpType string = 'ma-mcp'
 @description('Port the MCP server runs on')
 param port int = 5002
 
+@description('Additional CORS origins beyond the defaults')
+param additionalCorsOrigins array = []
+
 // -----------------------------------------------------------------------------
 // App Service for MCP Server
 // -----------------------------------------------------------------------------
@@ -49,11 +52,11 @@ resource mcpService 'Microsoft.Web/sites@2023-12-01' = {
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
       cors: {
-        allowedOrigins: [
+        allowedOrigins: union([
           'https://*.azurewebsites.net'
           'http://localhost:5173'
           'http://localhost:3000'
-        ]
+        ], additionalCorsOrigins)
         supportCredentials: true
       }
       appSettings: [
@@ -107,4 +110,6 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
 
 output serviceName string = mcpService.name
 output serviceUrl string = 'https://${mcpService.properties.defaultHostName}'
+output defaultHostName string = mcpService.properties.defaultHostName
 output principalId string = mcpService.identity.principalId
+output customDomainVerificationId string = mcpService.properties.customDomainVerificationId
