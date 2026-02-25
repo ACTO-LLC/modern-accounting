@@ -44,8 +44,7 @@ import {
     getRendererType,
     renderPage
 } from './src/services/web-renderer.js';
-import { logAuditEvent } from './src/services/audit-log.js';
-import { auditDabMutation } from './src/middleware/audit.js';
+import { logAuditEvent, mapEntityType } from './src/services/audit-log.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -230,14 +229,8 @@ const dabProxyMiddleware = createProxyMiddleware({
         console.log(`[DAB Proxy] Forwarding: ${req.method} ${proxyReq.path} -> ${DAB_PROXY_URL}${proxyReq.path}`);
         console.log(`[DAB Proxy] Authorization: ${hasAuth}`);
 
-        // Re-serialize body for POST/PATCH/PUT since express.json() already consumed the stream
-        if (req.body && ['POST', 'PATCH', 'PUT'].includes(req.method)) {
-            const bodyData = JSON.stringify(req.body);
-            proxyReq.setHeader('Content-Type', 'application/json');
-            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-            proxyReq.write(bodyData);
-            console.log(`[DAB Proxy] Body re-serialized: ${bodyData.length} bytes`);
-        }
+        // Note: mutations (POST/PATCH/PUT/DELETE) are handled via axios above,
+        // so this proxy only handles GET requests. No body re-serialization needed.
     },
     onProxyRes: (proxyRes, req, res) => {
         console.log(`[DAB Proxy] Response: ${proxyRes.statusCode} for ${req.method} ${req.path}`);
@@ -306,8 +299,7 @@ app.post('/api/companies', async (req, res) => {
 });
 
 // Apply proxy for /api/* routes, but skip locally-handled paths
-// Audit middleware runs before the proxy to log all DAB mutations
-app.use('/api', (req, res, next) => {
+app.use('/api', async (req, res, next) => {
     // Check if this path should be handled locally
     const fullPath = '/api' + req.path;
     const shouldSkip = DAB_EXCLUDED_PATHS.some(excluded =>
@@ -318,11 +310,55 @@ app.use('/api', (req, res, next) => {
         return next();
     }
 
-    // Log mutations to audit log before proxying to DAB
-    auditDabMutation(req, res, () => {
-        // Forward to DAB proxy
-        return dabProxyMiddleware(req, res, next);
-    });
+    // Mutations (POST/PATCH/PUT/DELETE) bypass the proxy and use axios directly.
+    // Kestrel (DAB) enforces MinRequestBodyDataRate which causes body stream timeouts
+    // when http-proxy-middleware pipes the already-consumed express.json() stream.
+    if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) {
+        try {
+            const dabUrl = `${DAB_PROXY_URL}${fullPath}`;
+            const headers = {
+                'Content-Type': req.headers['content-type'] || 'application/json',
+                ...(req.headers['x-ms-api-role'] && { 'X-MS-API-ROLE': req.headers['x-ms-api-role'] }),
+                ...(req.headers.authorization && { 'Authorization': req.headers.authorization }),
+            };
+            console.log(`[DAB Direct] ${req.method} ${dabUrl}`);
+            const response = await axios({
+                method: req.method.toLowerCase(),
+                url: dabUrl,
+                data: ['POST', 'PATCH', 'PUT'].includes(req.method) ? req.body : undefined,
+                headers,
+                validateStatus: () => true,
+            });
+
+            // Audit log (fire-and-forget)
+            const pathMatch = fullPath.split('?')[0].match(/^\/api\/([^/]+)(?:\/Id\/(.+))?$/i);
+            if (pathMatch) {
+                const entity = pathMatch[1];
+                const id = pathMatch[2] || null;
+                const excluded = ['auditlog', 'authauditlog', 'health'];
+                if (!excluded.includes(entity.toLowerCase())) {
+                    const actionMap = { POST: 'Create', PATCH: 'Update', PUT: 'Update', DELETE: 'Delete' };
+                    logAuditEvent({
+                        action: actionMap[req.method] || 'System',
+                        entityType: mapEntityType(entity),
+                        entityId: id || req.body?.Id || req.body?.id || response.data?.value?.[0]?.Id || null,
+                        newValues: ['POST', 'PATCH', 'PUT'].includes(req.method) ? req.body : null,
+                        req,
+                        source: 'DAB',
+                    });
+                }
+            }
+
+            res.status(response.status).json(response.data);
+        } catch (error) {
+            console.error(`[DAB Direct] ${req.method} ${fullPath} failed:`, error.response?.data || error.message);
+            res.status(error.response?.status || 502).json(error.response?.data || { error: error.message });
+        }
+        return;
+    }
+
+    // GETs use the proxy (streaming works fine for reads)
+    return dabProxyMiddleware(req, res, next);
 });
 
 // ============================================================================
