@@ -207,7 +207,7 @@ jobs:
     if: always() && needs.build.result == 'success'
     environment:
       name: production
-      url: https://accounting.a-cto.com
+      url: https://app-modern-accounting-prod.azurewebsites.net
 
     steps:
       - name: Download deployment package
@@ -256,7 +256,7 @@ jobs:
         run: |
           for i in {1..10}; do
             echo "Health check attempt $i..."
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://accounting.a-cto.com/api/health || echo "000")
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://app-modern-accounting-prod.azurewebsites.net/api/health || echo "000")
             if [ "$response" = "200" ]; then
               echo "Health check passed!"
               exit 0
@@ -292,7 +292,7 @@ jobs:
           echo "Testing production API endpoints..."
 
           # Test health endpoint
-          curl -f https://accounting.a-cto.com/api/health || exit 1
+          curl -f https://app-modern-accounting-prod.azurewebsites.net/api/health || exit 1
 
           echo "Smoke tests passed!"
 
