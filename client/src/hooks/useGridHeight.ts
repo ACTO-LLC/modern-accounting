@@ -5,12 +5,12 @@ import { useState, useEffect, useCallback, type RefObject } from 'react';
  * Returns a pixel value that fills from the element to the bottom of the viewport.
  *
  * @param ref - Reference to the element whose top position is measured
- * @param bottomPadding - Base padding at the bottom (default 16px)
+ * @param bottomPadding - Base padding at the bottom (default 80px, accounts for floating chat widget)
  * @param extraBottomOffset - Additional offset, e.g. for a fixed bottom bar (default 0)
  */
 export default function useGridHeight(
   ref: RefObject<HTMLElement | null>,
-  bottomPadding = 16,
+  bottomPadding = 80,
   extraBottomOffset = 0,
 ): number {
   const [height, setHeight] = useState(600);
