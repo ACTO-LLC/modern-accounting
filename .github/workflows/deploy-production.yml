@@ -238,7 +238,7 @@ jobs:
               DAB_REST_URL="${{ vars.PROD_DAB_URL || 'https://dab-ca-modern-accounting.bravesky-c584bf83.westus2.azurecontainerapps.io' }}/api" \
               DAB_API_URL="${{ vars.PROD_DAB_URL || 'https://dab-ca-modern-accounting.bravesky-c584bf83.westus2.azurecontainerapps.io' }}/api" \
               AZURE_AD_TENANT_ID="${{ secrets.AZURE_AD_TENANT_ID }}" \
-              AZURE_AD_AUDIENCE="api://${{ secrets.AZURE_AD_CLIENT_ID }}" \
+              AZURE_AD_AUDIENCE="${{ secrets.AZURE_AD_CLIENT_ID }}" \
               AZURE_AD_ISSUER="https://login.microsoftonline.com/${{ secrets.AZURE_AD_TENANT_ID }}/v2.0" \
               AZURE_OPENAI_DEPLOYMENT="gpt-4o" \
               QBO_ENVIRONMENT="production" \
