@@ -44,7 +44,7 @@ import {
     getRendererType,
     renderPage
 } from './src/services/web-renderer.js';
-import { logAuditEvent, mapEntityType } from './src/services/audit-log.js';
+import { logAuditEvent } from './src/services/audit-log.js';
 import { auditDabMutation } from './src/middleware/audit.js';
 
 const __filename = fileURLToPath(import.meta.url);
