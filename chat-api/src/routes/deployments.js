@@ -6,6 +6,7 @@
 
 import express from 'express';
 import sql from 'mssql';
+import { logAuditEvent } from '../services/audit-log.js';
 
 const router = express.Router();
 
@@ -40,6 +41,16 @@ router.post('/', async (req, res) => {
         OUTPUT INSERTED.*
         VALUES (@enhancementId, @scheduledDate, 'pending')
       `);
+
+    logAuditEvent({
+      action: 'Create',
+      entityType: 'Deployment',
+      entityId: result.recordset[0]?.Id?.toString(),
+      entityDescription: `Schedule deployment for enhancement #${enhancementId}`,
+      newValues: { enhancementId, scheduledDate, status: 'pending' },
+      req,
+      source: 'API',
+    });
 
     res.status(201).json(result.recordset[0]);
   } catch (err) {
@@ -190,6 +201,16 @@ router.patch('/:id', async (req, res) => {
         .json({ error: 'Deployment not found or not in pending status' });
     }
 
+    logAuditEvent({
+      action: 'Update',
+      entityType: 'Deployment',
+      entityId: req.params.id,
+      entityDescription: `Update deployment #${req.params.id}${status ? ' (status -> ' + status + ')' : ''}`,
+      newValues: { scheduledDate, status, notes },
+      req,
+      source: 'API',
+    });
+
     res.json(result.recordset[0]);
   } catch (err) {
     console.error('Error updating deployment:', err);
@@ -218,6 +239,15 @@ router.delete('/:id', async (req, res) => {
         .status(404)
         .json({ error: 'Deployment not found or not in pending status' });
     }
+
+    logAuditEvent({
+      action: 'Delete',
+      entityType: 'Deployment',
+      entityId: req.params.id,
+      entityDescription: `Cancel deployment #${req.params.id}`,
+      req,
+      source: 'API',
+    });
 
     res.json({ success: true, deletedId: result.recordset[0].Id });
   } catch (err) {

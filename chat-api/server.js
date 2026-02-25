@@ -44,6 +44,8 @@ import {
     getRendererType,
     renderPage
 } from './src/services/web-renderer.js';
+import { logAuditEvent } from './src/services/audit-log.js';
+import { auditDabMutation } from './src/middleware/audit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -261,6 +263,15 @@ app.patch('/api/companies/Id/:id', async (req, res) => {
                 ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
             }
         });
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'Company',
+            entityId: req.params.id,
+            entityDescription: `Update Company #${req.params.id.substring(0, 8)}`,
+            newValues: req.body,
+            req,
+            source: 'API',
+        });
         res.status(response.status).json(response.data);
     } catch (error) {
         console.error('[DAB Direct] PATCH companies failed:', error.response?.data || error.message);
@@ -278,6 +289,15 @@ app.post('/api/companies', async (req, res) => {
                 ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
             }
         });
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'Company',
+            entityId: response.data?.value?.[0]?.Id || req.body?.Id,
+            entityDescription: `Create Company${req.body?.Name ? ' (' + req.body.Name + ')' : ''}`,
+            newValues: req.body,
+            req,
+            source: 'API',
+        });
         res.status(response.status).json(response.data);
     } catch (error) {
         console.error('[DAB Direct] POST companies failed:', error.response?.data || error.message);
@@ -286,6 +306,7 @@ app.post('/api/companies', async (req, res) => {
 });
 
 // Apply proxy for /api/* routes, but skip locally-handled paths
+// Audit middleware runs before the proxy to log all DAB mutations
 app.use('/api', (req, res, next) => {
     // Check if this path should be handled locally
     const fullPath = '/api' + req.path;
@@ -297,8 +318,11 @@ app.use('/api', (req, res, next) => {
         return next();
     }
 
-    // Forward to DAB proxy
-    return dabProxyMiddleware(req, res, next);
+    // Log mutations to audit log before proxying to DAB
+    auditDabMutation(req, res, () => {
+        // Forward to DAB proxy
+        return dabProxyMiddleware(req, res, next);
+    });
 });
 
 // ============================================================================
@@ -6032,6 +6056,15 @@ app.post('/api/qbo/connect', validateJWT, async (req, res) => {
         // Store state for callback verification
         qboSessions.set(state, { createdAt: new Date() });
 
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'QBOConnection',
+            entityDescription: 'Initiate QBO OAuth connection',
+            newValues: { sessionId: state },
+            req,
+            source: 'API',
+        });
+
         res.json({
             success: true,
             authUrl: authUrl,
@@ -6136,6 +6169,14 @@ app.post('/api/qbo/disconnect', validateJWT, async (req, res) => {
         const status = await qboAuth.getStatus();
         if (status.realmId) {
             await qboAuth.disconnect(status.realmId);
+            logAuditEvent({
+                action: 'Delete',
+                entityType: 'QBOConnection',
+                entityId: status.realmId,
+                entityDescription: `Disconnect QBO (realmId: ${status.realmId})`,
+                req,
+                source: 'API',
+            });
         }
         res.json({ success: true });
     } catch (error) {
@@ -6231,6 +6272,17 @@ app.post('/api/qbo/update-source-tracking', validateJWT, async (req, res) => {
             } else {
                 results.customers.unmatched.push(cust.Name);
             }
+        }
+
+        if (!dryRun) {
+            logAuditEvent({
+                action: 'Update',
+                entityType: 'SourceTracking',
+                entityDescription: `QBO source tracking update: ${results.accounts.updated} accounts, ${results.customers.updated} customers linked`,
+                newValues: { accountsUpdated: results.accounts.updated, customersUpdated: results.customers.updated },
+                req,
+                source: 'API',
+            });
         }
 
         res.json({
@@ -6545,6 +6597,14 @@ app.post('/api/plaid/exchange-token', async (req, res) => {
         }
 
         const result = await plaidService.exchangePublicToken(publicToken, metadata);
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'PlaidConnection',
+            entityDescription: `Exchange Plaid public token (${metadata?.institution?.name || 'unknown institution'})`,
+            newValues: { institutionName: metadata?.institution?.name, institutionId: metadata?.institution?.institution_id },
+            req,
+            source: 'API',
+        });
         res.json(result);
     } catch (error) {
         console.error('Plaid token exchange error:', error);
@@ -6587,6 +6647,14 @@ app.post('/api/plaid/connections/:itemId/disconnect', async (req, res) => {
     try {
         const { itemId } = req.params;
         const result = await plaidService.disconnect(itemId);
+        logAuditEvent({
+            action: 'Delete',
+            entityType: 'PlaidConnection',
+            entityId: itemId,
+            entityDescription: `Disconnect Plaid connection (itemId: ${itemId})`,
+            req,
+            source: 'API',
+        });
         res.json(result);
     } catch (error) {
         console.error('Plaid disconnect error:', error);
@@ -6638,6 +6706,15 @@ app.post('/api/plaid/accounts/:id/link', async (req, res) => {
         }
 
         const result = await plaidService.linkAccountToLedger(id, ledgerAccountId);
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'PlaidAccount',
+            entityId: id,
+            entityDescription: `Link Plaid account #${id} to ledger account ${ledgerAccountId}`,
+            newValues: { linkedAccountId: ledgerAccountId },
+            req,
+            source: 'API',
+        });
         res.json(result);
     } catch (error) {
         console.error('Plaid link account error:', error);
@@ -6861,6 +6938,15 @@ app.post('/api/plaid/verify-bank/exchange', async (req, res) => {
         }
 
         const result = await plaidService.verifyEmployeeBankAccount(publicToken, employeeId, metadata);
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'BankVerification',
+            entityId: employeeId,
+            entityDescription: `Verify bank account for employee ${employeeId}`,
+            newValues: { employeeId, institutionName: metadata?.institution?.name },
+            req,
+            source: 'API',
+        });
         res.json(result);
     } catch (error) {
         console.error('Plaid bank verification error:', error);
@@ -6885,6 +6971,14 @@ app.post('/api/plaid/verify-bank/remove/:employeeId', async (req, res) => {
     try {
         const { employeeId } = req.params;
         const result = await plaidService.removeEmployeeBankVerification(employeeId);
+        logAuditEvent({
+            action: 'Delete',
+            entityType: 'BankVerification',
+            entityId: employeeId,
+            entityDescription: `Remove bank verification for employee ${employeeId}`,
+            req,
+            source: 'API',
+        });
         res.json(result);
     } catch (error) {
         console.error('Plaid verification removal error:', error);
@@ -6991,6 +7085,26 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
                     console.warn('Failed to create learning rule:', ruleError.message);
                 }
             }
+        }
+
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'BankTransaction',
+            entityId: id,
+            entityDescription: `Approve BankTransaction #${id.substring(0, 8)}`,
+            newValues: { ApprovedAccountId: accountId, Status: 'Approved', ApprovedCategory: category },
+            req,
+            source: 'API',
+        });
+        if (ruleCreated) {
+            logAuditEvent({
+                action: 'Create',
+                entityType: 'CategorizationRule',
+                entityDescription: `Auto-created rule from transaction approval`,
+                newValues: { MatchValue: transaction.Merchant || transaction.Description?.substring(0, 50), AccountId: accountId },
+                req,
+                source: 'API',
+            });
         }
 
         res.json({
@@ -7106,6 +7220,15 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
 
                 if (updateResult.success) {
                     results.push({ id: txn.id, success: true });
+                    logAuditEvent({
+                        action: 'Update',
+                        entityType: 'BankTransaction',
+                        entityId: txn.id,
+                        entityDescription: `Batch approve BankTransaction #${txn.id.substring(0, 8)}`,
+                        newValues: { ApprovedAccountId: accountId, Status: 'Approved' },
+                        req,
+                        source: 'API',
+                    });
                 } else {
                     console.log(`[Batch Approve] Failed ${txn.id}: ${updateResult.error}`);
                     results.push({ id: txn.id, success: false, error: updateResult.error });
@@ -7188,6 +7311,16 @@ app.patch('/api/banktransactions/Id/:id', async (req, res) => {
             console.error(`[Bank Transaction] Update failed: ${result.error}`);
             return res.status(500).json({ error: result.error });
         }
+
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'BankTransaction',
+            entityId: id,
+            entityDescription: `Update BankTransaction #${id.substring(0, 8)}`,
+            newValues: req.body,
+            req,
+            source: 'API',
+        });
 
         res.json(result.value);
     } catch (error) {
@@ -7329,6 +7462,25 @@ app.post('/api/post-transactions', async (req, res) => {
                     JournalEntryId: journalEntryId
                 }, authToken);
 
+                logAuditEvent({
+                    action: 'Create',
+                    entityType: 'JournalEntry',
+                    entityId: journalEntryId,
+                    entityDescription: `Post BankTransaction #${txnId.substring(0, 8)} -> JournalEntry`,
+                    newValues: { TransactionDate: txn.TransactionDate, Reference: `BANK-${txnId.substring(0, 8)}`, Status: 'Posted' },
+                    req,
+                    source: 'API',
+                });
+                logAuditEvent({
+                    action: 'Update',
+                    entityType: 'BankTransaction',
+                    entityId: txnId,
+                    entityDescription: `Post BankTransaction #${txnId.substring(0, 8)} (status -> Posted)`,
+                    newValues: { Status: 'Posted', JournalEntryId: journalEntryId },
+                    req,
+                    source: 'API',
+                });
+
                 results.posted++;
             } catch (txnError) {
                 results.failed++;
@@ -7388,6 +7540,15 @@ app.put('/api/account-defaults/:type', async (req, res) => {
         }
 
         const result = await journalEntryService.setAccountDefault(type, accountId, description);
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'AccountDefault',
+            entityId: type,
+            entityDescription: `Set account default for ${type}`,
+            newValues: { type, accountId, description },
+            req,
+            source: 'API',
+        });
         res.json({
             success: true,
             ...result,
@@ -7406,6 +7567,15 @@ app.post('/api/invoices/:id/post', async (req, res) => {
         const userId = req.body.userId || 'system';
 
         const result = await journalEntryService.postInvoice(id, userId);
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'Invoice',
+            entityId: id,
+            entityDescription: `Post Invoice #${id.substring(0, 8)}`,
+            newValues: { Status: 'Posted', PostedBy: userId },
+            req,
+            source: 'API',
+        });
         res.json({
             success: true,
             message: 'Invoice posted successfully',
@@ -7426,6 +7596,15 @@ app.post('/api/invoices/:id/void', async (req, res) => {
         const userId = req.body.userId || 'system';
 
         const result = await journalEntryService.voidInvoice(id, userId);
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'Invoice',
+            entityId: id,
+            entityDescription: `Void Invoice #${id.substring(0, 8)}`,
+            newValues: { Status: 'Void', VoidedBy: userId },
+            req,
+            source: 'API',
+        });
         res.json({
             success: true,
             message: 'Invoice voided successfully',
@@ -7446,6 +7625,15 @@ app.post('/api/bills/:id/post', async (req, res) => {
         const userId = req.body.userId || 'system';
 
         const result = await journalEntryService.postBill(id, userId);
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'Bill',
+            entityId: id,
+            entityDescription: `Post Bill #${id.substring(0, 8)}`,
+            newValues: { Status: 'Posted', PostedBy: userId },
+            req,
+            source: 'API',
+        });
         res.json({
             success: true,
             message: 'Bill posted successfully',
@@ -7466,6 +7654,15 @@ app.post('/api/bills/:id/void', async (req, res) => {
         const userId = req.body.userId || 'system';
 
         const result = await journalEntryService.voidBill(id, userId);
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'Bill',
+            entityId: id,
+            entityDescription: `Void Bill #${id.substring(0, 8)}`,
+            newValues: { Status: 'Void', VoidedBy: userId },
+            req,
+            source: 'API',
+        });
         res.json({
             success: true,
             message: 'Bill voided successfully',
@@ -7548,6 +7745,15 @@ app.post('/api/payments', async (req, res) => {
         };
 
         const result = await journalEntryService.recordInvoicePayment(paymentData, userId);
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'Payment',
+            entityId: result.paymentId || null,
+            entityDescription: `Record customer payment ($${paymentData.totalAmount})`,
+            newValues: { customerId: paymentData.customerId, totalAmount: paymentData.totalAmount, paymentMethod: paymentData.paymentMethod },
+            req,
+            source: 'API',
+        });
         res.json({
             success: true,
             message: 'Payment recorded successfully',
@@ -7588,6 +7794,15 @@ app.post('/api/billpayments', async (req, res) => {
         };
 
         const result = await journalEntryService.recordBillPayment(paymentData, userId);
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'BillPayment',
+            entityId: result.paymentId || null,
+            entityDescription: `Record bill payment ($${paymentData.totalAmount})`,
+            newValues: { vendorId: paymentData.vendorId, totalAmount: paymentData.totalAmount, paymentMethod: paymentData.paymentMethod },
+            req,
+            source: 'API',
+        });
         res.json({
             success: true,
             message: 'Bill payment recorded successfully',
@@ -7861,6 +8076,16 @@ Respond in JSON format:
             throw new Error(result.error || 'Failed to create enhancement');
         }
 
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'Enhancement',
+            entityId: result.value?.Id,
+            entityDescription: `Create enhancement request: ${clarifiedDescription.substring(0, 80)}`,
+            newValues: enhancementData,
+            req,
+            source: 'API',
+        });
+
         res.status(201).json({
             success: true,
             enhancement: result.value,
@@ -7953,6 +8178,16 @@ app.patch('/api/enhancements/:id', async (req, res) => {
         if (!result.success) {
             return res.status(404).json({ error: 'Enhancement not found or update failed' });
         }
+
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'Enhancement',
+            entityId: id,
+            entityDescription: `Update enhancement #${id}${status ? ' (status -> ' + status + ')' : ''}`,
+            newValues: updateData,
+            req,
+            source: 'API',
+        });
 
         res.json({
             success: true,

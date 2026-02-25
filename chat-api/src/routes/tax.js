@@ -18,6 +18,7 @@ import {
     getTaxJarRate,
     testApiConnection
 } from '../services/tax-calculation.js';
+import { logAuditEvent } from '../services/audit-log.js';
 
 const router = Router();
 
@@ -252,6 +253,16 @@ router.put('/settings', validateJWT, requireRole('Admin'), async (req, res) => {
                 }
             );
         }
+
+        logAuditEvent({
+            action: existingResult.recordset[0] ? 'Update' : 'Create',
+            entityType: 'TaxSettings',
+            entityId: companyId,
+            entityDescription: `${existingResult.recordset[0] ? 'Update' : 'Create'} tax settings for company`,
+            newValues: { calculationMethod, paidApiProvider, avalaraEnvironment, cacheDurationMinutes },
+            req,
+            source: 'API',
+        });
 
         res.json({ success: true, message: 'Tax settings updated' });
     } catch (error) {
@@ -546,12 +557,26 @@ router.delete('/cache', validateJWT, requireRole('Admin'), async (req, res) => {
 
         if (all === 'true') {
             await query(`DELETE FROM TaxRateCache`);
+            logAuditEvent({
+                action: 'Delete',
+                entityType: 'TaxRateCache',
+                entityDescription: 'Clear all cached tax rates',
+                req,
+                source: 'API',
+            });
             res.json({ success: true, message: 'All cached tax rates cleared' });
         } else if (postalCode) {
             await query(
                 `DELETE FROM TaxRateCache WHERE PostalCode = @postalCode`,
                 { postalCode }
             );
+            logAuditEvent({
+                action: 'Delete',
+                entityType: 'TaxRateCache',
+                entityDescription: `Clear cache for postal code ${postalCode}`,
+                req,
+                source: 'API',
+            });
             res.json({ success: true, message: `Cache cleared for postal code ${postalCode}` });
         } else {
             // Clear expired entries only

@@ -9,6 +9,7 @@ import { Router } from 'express';
 import { query } from '../db/connection.js';
 import { requireRole, requirePermission, requireMFA } from '../middleware/auth.js';
 import { requireTenantFeature, clearTenantCache } from '../middleware/tenant.js';
+import { logAuditEvent } from '../services/audit-log.js';
 
 const router = Router();
 
@@ -125,6 +126,16 @@ router.patch('/me', async (req, res) => {
             `UPDATE Users SET ${updates.join(', ')} WHERE Id = @userId`,
             params
         );
+
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'User',
+            entityId: req.dbUser.Id,
+            entityDescription: `Update own profile`,
+            newValues: { displayName, firstName, lastName, preferences: preferences ? '(updated)' : undefined },
+            req,
+            source: 'API',
+        });
 
         res.json({ success: true, message: 'Profile updated' });
     } catch (error) {
@@ -252,6 +263,18 @@ router.post('/sync-roles', requireRole('Admin'), async (req, res) => {
                 );
                 removed.push({ groupId, roleName: mapping.RoleName });
             }
+        }
+
+        if (synced.length > 0 || removed.length > 0) {
+            logAuditEvent({
+                action: 'Update',
+                entityType: 'UserRoles',
+                entityId: userId,
+                entityDescription: `Sync roles from Entra: ${synced.length} added, ${removed.length} removed`,
+                newValues: { synced, removed },
+                req,
+                source: 'API',
+            });
         }
 
         res.json({
@@ -494,6 +517,16 @@ router.patch('/:id', requireRole('Admin'), async (req, res) => {
             params
         );
 
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'User',
+            entityId: id,
+            entityDescription: `Admin update user #${id.substring(0, 8)}`,
+            newValues: { displayName, firstName, lastName, isActive, mfaEnabled },
+            req,
+            source: 'API',
+        });
+
         res.json({ success: true, message: 'User updated' });
     } catch (error) {
         console.error('Update user failed:', error);
@@ -539,6 +572,16 @@ router.delete('/:id', requireRole('Admin'), requireMFA, async (req, res) => {
             `UPDATE Users SET IsActive = 0 WHERE Id = @id`,
             { id }
         );
+
+        logAuditEvent({
+            action: 'Delete',
+            entityType: 'User',
+            entityId: id,
+            entityDescription: `Deactivate user #${id.substring(0, 8)}`,
+            newValues: { IsActive: false },
+            req,
+            source: 'API',
+        });
 
         res.json({ success: true, message: 'User deactivated' });
     } catch (error) {
@@ -622,6 +665,16 @@ router.post('/:id/roles', requireRole('Admin'), async (req, res) => {
             }
         );
 
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'UserRole',
+            entityId: id,
+            entityDescription: `Assign role ${roleCheck.recordset[0].Name} to user #${id.substring(0, 8)}`,
+            newValues: { roleId, roleName: roleCheck.recordset[0].Name, companyId },
+            req,
+            source: 'API',
+        });
+
         res.json({
             success: true,
             message: `Assigned ${roleCheck.recordset[0].Name} role to user`,
@@ -670,6 +723,16 @@ router.delete('/:id/roles/:roleId', requireRole('Admin'), async (req, res) => {
                 message: 'Role assignment not found',
             });
         }
+
+        logAuditEvent({
+            action: 'Delete',
+            entityType: 'UserRole',
+            entityId: id,
+            entityDescription: `Remove role ${roleId} from user #${id.substring(0, 8)}`,
+            oldValues: { roleId, companyId: companyId || null },
+            req,
+            source: 'API',
+        });
 
         res.json({ success: true, message: 'Role removed from user' });
     } catch (error) {
