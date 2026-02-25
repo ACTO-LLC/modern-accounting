@@ -161,7 +161,7 @@ cd ../modern-accounting-XXX && VITE_BYPASS_AUTH=true npm run dev
 
 ## Quick Reference: Common Pitfalls
 
-1. **MUI + Tailwind Dark Mode:** Root-level `ThemeProvider` in `App.tsx` syncs MUI with Tailwind's `.dark` class via `colorSchemeSelector: '.dark'`. All MUI components must be inside this provider. Use MUI Autocomplete for complex interactive dropdowns (not custom HTML). For simple inputs, use Tailwind `dark:` variants for backgrounds, borders, and text colors.
+1. **MUI + Tailwind Dark Mode:** Root-level `ThemeProvider` in `App.tsx` syncs MUI with Tailwind's `.dark` class via `colorSchemeSelector: '.dark'`. All MUI components must be inside this provider. **All form controls MUST use MUI components** (`TextField`, `Select`, `Autocomplete`, `TextField multiline`, etc.) — never raw HTML `<input>`, `<select>`, or `<textarea>`. Raw HTML elements do not inherit the MUI theme and break dark mode. Only fall back to Tailwind `dark:` variants for non-MUI elements where no MUI equivalent exists (e.g., custom upload areas, static text).
 
 2. **QBO Migration Data:** Use `fetchAll: true` to get raw data in the `data` field for migration purposes.
 
