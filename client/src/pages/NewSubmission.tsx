@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
 import api from '../lib/api';
 import ScreenshotUploader, { Attachment } from '../components/ScreenshotUploader';
 import { useToast } from '../hooks/useToast';
@@ -29,11 +32,16 @@ export default function NewSubmission() {
   const { showToast } = useToast();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<SubmissionFormData>({
+  const { control, handleSubmit, watch } = useForm<SubmissionFormData>({
     resolver: zodResolver(submissionSchema),
     defaultValues: {
+      Title: '',
       Priority: 'Medium',
-      Type: undefined
+      Type: undefined,
+      Description: '',
+      StepsToReproduce: '',
+      ExpectedBehavior: '',
+      ActualBehavior: '',
     }
   });
 
@@ -75,132 +83,166 @@ export default function NewSubmission() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6 flex items-center">
-        <button onClick={() => navigate('/submissions')} className="mr-4 text-gray-500 hover:text-gray-700">
+        <button onClick={() => navigate('/submissions')} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">New Submission</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">New Submission</h1>
       </div>
 
-      <form onSubmit={handleSubmit((data) => mutation.mutateAsync(data))} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit((data) => mutation.mutateAsync(data))} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6">
         {/* Title */}
-        <div>
-          <label htmlFor="Title" className="block text-sm font-medium text-gray-700">
-            Title <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="Title"
-            type="text"
-            {...register('Title')}
-            placeholder="Brief summary of the issue or request"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-          />
-          {errors.Title && <p className="mt-1 text-sm text-red-600">{errors.Title.message}</p>}
-        </div>
+        <Controller
+          name="Title"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Title"
+              required
+              placeholder="Brief summary of the issue or request"
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
 
         {/* Type and Priority row */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="Type" className="block text-sm font-medium text-gray-700">
-              Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="Type"
-              {...register('Type')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="">Select type...</option>
-              <option value="Bug">Bug - Something is broken</option>
-              <option value="Enhancement">Enhancement - Feature request</option>
-              <option value="Question">Question - Need help</option>
-            </select>
-            {errors.Type && <p className="mt-1 text-sm text-red-600">{errors.Type.message}</p>}
-          </div>
+          <Controller
+            name="Type"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Type"
+                required
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="" disabled>Select type...</MenuItem>
+                <MenuItem value="Bug">Bug - Something is broken</MenuItem>
+                <MenuItem value="Enhancement">Enhancement - Feature request</MenuItem>
+                <MenuItem value="Question">Question - Need help</MenuItem>
+              </TextField>
+            )}
+          />
 
-          <div>
-            <label htmlFor="Priority" className="block text-sm font-medium text-gray-700">
-              Priority
-            </label>
-            <select
-              id="Priority"
-              {...register('Priority')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-            >
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
-            </select>
-            {errors.Priority && <p className="mt-1 text-sm text-red-600">{errors.Priority.message}</p>}
-          </div>
+          <Controller
+            name="Priority"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                value={field.value ?? 'Medium'}
+                select
+                label="Priority"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                size="small"
+                fullWidth
+              >
+                <MenuItem value="Low">Low</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="Critical">Critical</MenuItem>
+              </TextField>
+            )}
+          />
         </div>
 
         {/* Description */}
-        <div>
-          <label htmlFor="Description" className="block text-sm font-medium text-gray-700">
-            Description
-          </label>
-          <textarea
-            id="Description"
-            rows={4}
-            {...register('Description')}
-            placeholder="Provide a detailed description..."
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-          />
-          {errors.Description && <p className="mt-1 text-sm text-red-600">{errors.Description.message}</p>}
-        </div>
+        <Controller
+          name="Description"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              label="Description"
+              multiline
+              rows={4}
+              placeholder="Provide a detailed description..."
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            />
+          )}
+        />
 
         {/* Bug-specific fields */}
         {submissionType === 'Bug' && (
           <>
-            <div>
-              <label htmlFor="StepsToReproduce" className="block text-sm font-medium text-gray-700">
-                Steps to Reproduce
-              </label>
-              <textarea
-                id="StepsToReproduce"
-                rows={4}
-                {...register('StepsToReproduce')}
-                placeholder="1. Go to...&#10;2. Click on...&#10;3. See error..."
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-              />
-              {errors.StepsToReproduce && <p className="mt-1 text-sm text-red-600">{errors.StepsToReproduce.message}</p>}
-            </div>
+            <Controller
+              name="StepsToReproduce"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Steps to Reproduce"
+                  multiline
+                  rows={4}
+                  placeholder={"1. Go to...\n2. Click on...\n3. See error..."}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="ExpectedBehavior" className="block text-sm font-medium text-gray-700">
-                  Expected Behavior
-                </label>
-                <textarea
-                  id="ExpectedBehavior"
-                  rows={3}
-                  {...register('ExpectedBehavior')}
-                  placeholder="What should happen..."
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-                {errors.ExpectedBehavior && <p className="mt-1 text-sm text-red-600">{errors.ExpectedBehavior.message}</p>}
-              </div>
+              <Controller
+                name="ExpectedBehavior"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    label="Expected Behavior"
+                    multiline
+                    rows={3}
+                    placeholder="What should happen..."
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  />
+                )}
+              />
 
-              <div>
-                <label htmlFor="ActualBehavior" className="block text-sm font-medium text-gray-700">
-                  Actual Behavior
-                </label>
-                <textarea
-                  id="ActualBehavior"
-                  rows={3}
-                  {...register('ActualBehavior')}
-                  placeholder="What actually happens..."
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-                {errors.ActualBehavior && <p className="mt-1 text-sm text-red-600">{errors.ActualBehavior.message}</p>}
-              </div>
+              <Controller
+                name="ActualBehavior"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    value={field.value ?? ''}
+                    label="Actual Behavior"
+                    multiline
+                    rows={3}
+                    placeholder="What actually happens..."
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    size="small"
+                    fullWidth
+                  />
+                )}
+              />
             </div>
           </>
         )}
 
         {/* Screenshot Uploader */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Screenshots / Attachments
           </label>
           <ScreenshotUploader
@@ -210,21 +252,13 @@ export default function NewSubmission() {
         </div>
 
         {/* Form Actions */}
-        <div className="flex justify-end items-center border-t pt-4">
-          <button
-            type="button"
-            onClick={() => navigate('/submissions')}
-            className="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
+        <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
+          <Button variant="outlined" onClick={() => navigate('/submissions')} sx={{ mr: 1.5 }}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="submit" variant="contained" disabled={mutation.isPending}>
             {mutation.isPending ? 'Submitting...' : 'Submit'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

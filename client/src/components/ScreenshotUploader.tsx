@@ -144,17 +144,17 @@ export default function ScreenshotUploader({
         onDragLeave={handleDragLeave}
         onPaste={handlePaste}
         tabIndex={0}
-        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-400 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
         onClick={() => fileInputRef.current?.click()}
       >
-        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-2 text-sm text-gray-600">
-          <span className="font-semibold text-indigo-600">Click to upload</span> or drag and drop
+        <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <span className="font-semibold text-indigo-600 dark:text-indigo-400">Click to upload</span> or drag and drop
         </p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           You can also paste images from clipboard (Ctrl+V)
         </p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           PNG, JPG, GIF up to {maxSizeMB}MB each (max {maxFiles} files)
         </p>
       </div>
@@ -174,7 +174,7 @@ export default function ScreenshotUploader({
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {value.map((attachment, index) => (
             <div key={index} className="relative group">
-              <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+              <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
                 {attachment.fileData ? (
                   <img
                     src={attachment.fileData}
@@ -195,7 +195,7 @@ export default function ScreenshotUploader({
               >
                 <X className="h-4 w-4" />
               </button>
-              <p className="mt-1 text-xs text-gray-500 truncate" title={attachment.fileName}>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate" title={attachment.fileName}>
                 {attachment.fileName}
               </p>
             </div>
