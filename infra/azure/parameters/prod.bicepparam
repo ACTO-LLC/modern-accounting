@@ -20,10 +20,6 @@ param appServiceSku = 'B1'
 param sqlDatabaseSku = 'GP_S_Gen5_1'
 param sqlAutoPauseDelayMinutes = 60
 
-// SendGrid - Free tier for low-volume production
-// Upgrade to 'bronze' for 40k emails/month if needed
-param sendGridAdminEmail = 'support@a-cto.com'
-
 // Custom domain
 param enableCustomDomain = true
 param customDomainName = 'a-cto.com'
