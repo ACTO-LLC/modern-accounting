@@ -188,28 +188,70 @@ class McpClientManager {
     async discoverAllTools() {
         this.toolToServer.clear();
         this.allTools = [];
+        const failedServers = [];
 
         for (const [name, server] of this.servers) {
             const tools = await server.listTools();
-            for (const tool of tools) {
-                // Prefix tool name with server name to avoid conflicts
-                const prefixedName = `${name}_${tool.name}`.replace(/_+/g, '_');
-                this.toolToServer.set(prefixedName, { server, originalName: tool.name });
-                this.toolToServer.set(tool.name, { server, originalName: tool.name }); // Also map unprefixed
-
-                this.allTools.push({
-                    type: 'function',
-                    function: {
-                        name: prefixedName,
-                        description: `[${name.toUpperCase()}] ${tool.description}`,
-                        parameters: tool.inputSchema || { type: 'object', properties: {} }
-                    }
-                });
+            if (tools.length === 0 && !server.initialized) {
+                failedServers.push(name);
+                continue;
             }
+            this._registerTools(name, tools);
         }
 
         console.log(`Total tools discovered: ${this.allTools.length}`);
+
+        // Retry failed servers in the background
+        if (failedServers.length > 0) {
+            console.log(`Scheduling background retry for: ${failedServers.join(', ')}`);
+            this._retryFailedServers(failedServers);
+        }
+
         return this.allTools;
+    }
+
+    _registerTools(serverName, tools) {
+        for (const tool of tools) {
+            const prefixedName = `${serverName}_${tool.name}`.replace(/_+/g, '_');
+            this.toolToServer.set(prefixedName, { server: this.servers.get(serverName), originalName: tool.name });
+            this.toolToServer.set(tool.name, { server: this.servers.get(serverName), originalName: tool.name });
+
+            this.allTools.push({
+                type: 'function',
+                function: {
+                    name: prefixedName,
+                    description: `[${serverName.toUpperCase()}] ${tool.description}`,
+                    parameters: tool.inputSchema || { type: 'object', properties: {} }
+                }
+            });
+        }
+    }
+
+    async _retryFailedServers(failedServers, maxRetries = 10, intervalMs = 30000) {
+        let remaining = [...failedServers];
+        for (let attempt = 1; attempt <= maxRetries && remaining.length > 0; attempt++) {
+            await new Promise(r => setTimeout(r, intervalMs));
+            console.log(`[MCP retry ${attempt}/${maxRetries}] Retrying: ${remaining.join(', ')}`);
+
+            const stillFailed = [];
+            for (const name of remaining) {
+                const server = this.servers.get(name);
+                if (!server) continue;
+                server.initialized = false; // Reset so it re-initializes
+                const tools = await server.listTools();
+                if (tools.length > 0) {
+                    this._registerTools(name, tools);
+                    console.log(`[MCP retry] ${name} connected! ${tools.length} tools added (total: ${this.allTools.length})`);
+                } else {
+                    stillFailed.push(name);
+                }
+            }
+            remaining = stillFailed;
+        }
+
+        if (remaining.length > 0) {
+            console.error(`[MCP retry] Gave up on: ${remaining.join(', ')} after ${maxRetries} retries`);
+        }
     }
 
     getToolsForAI() {
