@@ -408,10 +408,9 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             render={({ field }) => (
               <ProjectSelector
                 value={field.value || ''}
-                onChange={field.onChange}
+                onChange={(projectId) => field.onChange(projectId || null)}
                 disabled={isSubmitting}
                 customerId={watch('CustomerId')}
-                className=""
               />
             )}
           />
@@ -422,7 +421,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             render={({ field }) => (
               <ClassSelector
                 value={field.value || ''}
-                onChange={field.onChange}
+                onChange={(classId) => field.onChange(classId || null)}
                 disabled={isSubmitting}
               />
             )}
@@ -581,7 +580,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                         render={({ field: pField }) => (
                           <ProjectSelector
                             value={pField.value || ''}
-                            onChange={pField.onChange}
+                            onChange={(projectId) => pField.onChange(projectId || null)}
                             disabled={isSubmitting}
                             customerId={watch('CustomerId')}
                           />
@@ -595,7 +594,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                         render={({ field: cField }) => (
                           <ClassSelector
                             value={cField.value || ''}
-                            onChange={cField.onChange}
+                            onChange={(classId) => cField.onChange(classId || null)}
                             disabled={isSubmitting}
                           />
                         )}
