@@ -71,7 +71,7 @@ describe('autoPostingService - ProjectId/ClassId propagation', () => {
       // Find calls to post journal entry lines
       const postCalls = (api.post as ReturnType<typeof vi.fn>).mock.calls;
       const jeCalls = postCalls.filter(
-        (c: [string, Record<string, unknown>]) => c[0] === '/journalentrylines'
+        (c: unknown[]) => c[0] === '/journalentrylines'
       );
 
       expect(jeCalls.length).toBeGreaterThanOrEqual(2);
@@ -110,7 +110,7 @@ describe('autoPostingService - ProjectId/ClassId propagation', () => {
 
       const postCalls = (api.post as ReturnType<typeof vi.fn>).mock.calls;
       const jeCalls = postCalls.filter(
-        (c: [string, Record<string, unknown>]) => c[0] === '/journalentrylines'
+        (c: unknown[]) => c[0] === '/journalentrylines'
       );
 
       expect(jeCalls.length).toBeGreaterThanOrEqual(2);
@@ -149,7 +149,7 @@ describe('autoPostingService - ProjectId/ClassId propagation', () => {
 
       const postCalls = (api.post as ReturnType<typeof vi.fn>).mock.calls;
       const jeCalls = postCalls.filter(
-        (c: [string, Record<string, unknown>]) => c[0] === '/journalentrylines'
+        (c: unknown[]) => c[0] === '/journalentrylines'
       );
 
       expect(jeCalls.length).toBeGreaterThanOrEqual(3); // 2 expense + 1 AP
@@ -198,7 +198,7 @@ describe('autoPostingService - ProjectId/ClassId propagation', () => {
 
       const postCalls = (api.post as ReturnType<typeof vi.fn>).mock.calls;
       const jeCalls = postCalls.filter(
-        (c: [string, Record<string, unknown>]) => c[0] === '/journalentrylines'
+        (c: unknown[]) => c[0] === '/journalentrylines'
       );
 
       for (const call of jeCalls) {
