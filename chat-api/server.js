@@ -2337,13 +2337,16 @@ async function executeDabCreate(params, authToken = null) {
 // ============================================================================
 
 async function executeQboQuery(params) {
+    console.log('[QBO Tool] executeQboQuery called with:', JSON.stringify(params));
     try {
         const status = await qboAuth.getStatus();
+        console.log('[QBO Tool] QBO status:', JSON.stringify(status));
         if (!status.connected) {
             return { success: false, error: 'Not connected to QuickBooks. Please connect first.', needsAuth: true };
         }
 
         const result = await qboAuth.query(params.query);
+        console.log('[QBO Tool] Query result keys:', Object.keys(result || {}), 'totalCount:', result?.totalCount);
 
         // QBO returns results keyed by entity type (e.g., { Invoice: [...], Customer: [...] })
         const entityTypes = Object.keys(result || {}).filter(k => k !== 'startPosition' && k !== 'maxResults' && k !== 'totalCount');
@@ -3208,8 +3211,10 @@ async function executeGetMigrationStatus(params, authToken = null) {
 }
 
 async function executeQboSearchEntity(params) {
+    console.log('[QBO Tool] executeQboSearchEntity called with:', JSON.stringify(params));
     try {
         const status = await qboAuth.getStatus();
+        console.log('[QBO Tool] QBO status:', JSON.stringify(status));
         if (!status.connected) {
             return { success: false, error: 'Not connected to QuickBooks', needsAuth: true };
         }
@@ -5855,6 +5860,7 @@ async function executeFunction(name, args, authToken = null) {
     }
 
     // Fall through to static tool handlers
+    console.log(`[Tool Dispatch] Static tool: ${name}, args:`, JSON.stringify(args).substring(0, 200));
     switch (name) {
         // Legacy static tools - these don't go through MCP
         case 'dab_describe_entities':
