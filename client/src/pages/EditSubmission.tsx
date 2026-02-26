@@ -298,6 +298,7 @@ export default function EditSubmission() {
               label="Description"
               multiline
               rows={4}
+              placeholder="Provide a detailed description..."
               error={!!fieldState.error}
               helperText={fieldState.error?.message}
               size="small"
@@ -319,6 +320,7 @@ export default function EditSubmission() {
                   label="Steps to Reproduce"
                   multiline
                   rows={4}
+                  placeholder={"1. Go to...\n2. Click on...\n3. See error..."}
                   error={!!fieldState.error}
                   helperText={fieldState.error?.message}
                   size="small"
@@ -338,6 +340,7 @@ export default function EditSubmission() {
                     label="Expected Behavior"
                     multiline
                     rows={3}
+                    placeholder="What should happen..."
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
                     size="small"
@@ -356,6 +359,7 @@ export default function EditSubmission() {
                     label="Actual Behavior"
                     multiline
                     rows={3}
+                    placeholder="What actually happens..."
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
                     size="small"
