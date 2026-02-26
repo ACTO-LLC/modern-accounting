@@ -1,8 +1,9 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Lock, Unlock, Plus, AlertCircle, CheckCircle } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Calendar, Lock, Unlock, Plus, CheckCircle } from 'lucide-react';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import { useToast } from '../hooks/useToast';
 
 interface AccountingPeriod {
   Id: string;
@@ -30,12 +31,8 @@ interface YearEndCloseEntry {
 
 export default function AccountingPeriods() {
   const queryClient = useQueryClient();
-  const [showNewPeriodForm, setShowNewPeriodForm] = useState(false);
-  const [newPeriodData, setNewPeriodData] = useState({
-    fiscalYearStart: '',
-    fiscalYearEnd: '',
-  });
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const { data: periods, isLoading: periodsLoading } = useQuery({
     queryKey: ['accounting-periods'],
@@ -53,21 +50,6 @@ export default function AccountingPeriods() {
     },
   });
 
-  const createPeriodMutation = useMutation({
-    mutationFn: async (data: { FiscalYearStart: string; FiscalYearEnd: string }) => {
-      return api.post('/accountingperiods', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['accounting-periods'] });
-      setShowNewPeriodForm(false);
-      setNewPeriodData({ fiscalYearStart: '', fiscalYearEnd: '' });
-      setError(null);
-    },
-    onError: (err: any) => {
-      setError(err.response?.data?.message || 'Failed to create accounting period');
-    },
-  });
-
   const lockPeriodMutation = useMutation({
     mutationFn: async ({ id, isLocked }: { id: string; isLocked: boolean }) => {
       return api.patch(`/accountingperiods/Id/${id}`, {
@@ -78,19 +60,12 @@ export default function AccountingPeriods() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounting-periods'] });
+      showToast('Period status updated', 'success');
+    },
+    onError: () => {
+      showToast('Failed to update period status', 'error');
     },
   });
-
-  const handleCreatePeriod = () => {
-    if (!newPeriodData.fiscalYearStart || !newPeriodData.fiscalYearEnd) {
-      setError('Please enter both start and end dates');
-      return;
-    }
-    createPeriodMutation.mutate({
-      FiscalYearStart: newPeriodData.fiscalYearStart,
-      FiscalYearEnd: newPeriodData.fiscalYearEnd,
-    });
-  };
 
   const getCloseEntryForPeriod = (period: AccountingPeriod) => {
     const year = new Date(period.FiscalYearEnd).getFullYear();
@@ -111,71 +86,14 @@ export default function AccountingPeriods() {
             Manage fiscal years and year-end closing processes.
           </p>
         </div>
-        <button
-          onClick={() => setShowNewPeriodForm(true)}
+        <Link
+          to="/accounting-periods/new"
           className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Fiscal Year
-        </button>
+        </Link>
       </div>
-
-      {/* Error Alert */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-          <span className="text-red-700 dark:text-red-300">{error}</span>
-        </div>
-      )}
-
-      {/* New Period Form */}
-      {showNewPeriodForm && (
-        <div className="mb-6 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Fiscal Year</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Fiscal Year Start
-              </label>
-              <input
-                type="date"
-                value={newPeriodData.fiscalYearStart}
-                onChange={(e) => setNewPeriodData(prev => ({ ...prev, fiscalYearStart: e.target.value }))}
-                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Fiscal Year End
-              </label>
-              <input
-                type="date"
-                value={newPeriodData.fiscalYearEnd}
-                onChange={(e) => setNewPeriodData(prev => ({ ...prev, fiscalYearEnd: e.target.value }))}
-                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={handleCreatePeriod}
-              disabled={createPeriodMutation.isPending}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {createPeriodMutation.isPending ? 'Creating...' : 'Create Period'}
-            </button>
-            <button
-              onClick={() => {
-                setShowNewPeriodForm(false);
-                setError(null);
-              }}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Periods List */}
       <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
@@ -213,7 +131,11 @@ export default function AccountingPeriods() {
                 const closeEntry = getCloseEntryForPeriod(period);
                 const fiscalYear = new Date(period.FiscalYearEnd).getFullYear();
                 return (
-                  <tr key={period.Id}>
+                  <tr
+                    key={period.Id}
+                    onClick={() => navigate(`/accounting-periods/${period.Id}/edit`)}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Calendar className="h-5 w-5 text-gray-400 mr-2" />
@@ -257,6 +179,7 @@ export default function AccountingPeriods() {
                       <div className="flex justify-end gap-2">
                         {!closeEntry && (
                           <a
+                            onClick={(e) => e.stopPropagation()}
                             href={`/year-end-close/${period.Id}`}
                             className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                           >
@@ -264,7 +187,10 @@ export default function AccountingPeriods() {
                           </a>
                         )}
                         <button
-                          onClick={() => lockPeriodMutation.mutate({ id: period.Id, isLocked: !period.IsLocked })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            lockPeriodMutation.mutate({ id: period.Id, isLocked: !period.IsLocked });
+                          }}
                           disabled={lockPeriodMutation.isPending}
                           className={`${
                             period.IsLocked
