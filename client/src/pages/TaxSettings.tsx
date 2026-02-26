@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Calculator, Save, TestTube, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Calculator, Save, TestTube, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 
-interface TaxSettings {
+interface TaxSettingsData {
   id?: string;
   calculationMethod: 'manual' | 'zip_api' | 'paid_api';
   paidApiProvider: 'avalara' | 'taxjar' | null;
@@ -22,7 +23,8 @@ interface TaxRate {
 }
 
 export default function TaxSettings() {
-  const [settings, setSettings] = useState<TaxSettings>({
+  const navigate = useNavigate();
+  const [settings, setSettings] = useState<TaxSettingsData>({
     calculationMethod: 'manual',
     paidApiProvider: null,
     avalaraAccountId: null,
@@ -61,7 +63,7 @@ export default function TaxSettings() {
     loadData();
   }, []);
 
-  const handleMethodChange = (method: TaxSettings['calculationMethod']) => {
+  const handleMethodChange = (method: TaxSettingsData['calculationMethod']) => {
     setSettings(prev => ({ ...prev, calculationMethod: method }));
     setTestResult(null);
   };
@@ -151,6 +153,15 @@ export default function TaxSettings() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Back Navigation */}
+      <button
+        onClick={() => navigate('/tax-rates')}
+        className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
+      >
+        <ArrowLeft className="w-4 h-4 mr-1" />
+        Back to Tax Rates
+      </button>
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3">

@@ -61,7 +61,11 @@ import EditProject from './pages/EditProject';
 import TimeEntries from './pages/TimeEntries';
 import NewTimeEntry from './pages/NewTimeEntry';
 import Classes from './pages/Classes';
+import NewClass from './pages/NewClass';
+import EditClass from './pages/EditClass';
 import Locations from './pages/Locations';
+import NewLocation from './pages/NewLocation';
+import EditLocation from './pages/EditLocation';
 import Inventory from './pages/Inventory';
 import Bills from './pages/Bills';
 import NewBill from './pages/NewBill';
@@ -70,6 +74,8 @@ import PurchaseOrders from './pages/PurchaseOrders';
 import NewPurchaseOrder from './pages/NewPurchaseOrder';
 import EditPurchaseOrder from './pages/EditPurchaseOrder';
 import RecurringTransactions from './pages/RecurringTransactions';
+import NewRecurringTemplate from './pages/NewRecurringTemplate';
+import EditRecurringTemplate from './pages/EditRecurringTemplate';
 import Submissions from './pages/Submissions';
 import NewSubmission from './pages/NewSubmission';
 import EditSubmission from './pages/EditSubmission';
@@ -84,6 +90,8 @@ import PayStubView from './pages/PayStubView';
 import PayrollSummary from './pages/reports/PayrollSummary';
 import SalesTaxLiability from './pages/reports/SalesTaxLiability';
 import TaxRates from './pages/TaxRates';
+import NewTaxRate from './pages/NewTaxRate';
+import EditTaxRate from './pages/EditTaxRate';
 import TaxSettings from './pages/TaxSettings';
 import PlaidConnections from './pages/PlaidConnections';
 import UnifiedTransactions from './pages/UnifiedTransactions';
@@ -128,6 +136,8 @@ import EditSalesReceipt from './pages/EditSalesReceipt';
 import EmailReminders from './pages/EmailReminders';
 import AuditLog from './pages/AuditLog';
 import AccountingPeriods from './pages/AccountingPeriods';
+import NewAccountingPeriod from './pages/NewAccountingPeriod';
+import EditAccountingPeriod from './pages/EditAccountingPeriod';
 import YearEndClose from './pages/YearEndClose';
 import ChatInterface from './components/ChatInterface';
 import OnboardingWelcome from './components/onboarding/OnboardingWelcome';
@@ -220,9 +230,15 @@ function AppContent() {
             <Route path="time-entries" element={<TimeEntries />} />
             <Route path="time-entries/new" element={<NewTimeEntry />} />
             <Route path="classes" element={<Classes />} />
+            <Route path="classes/new" element={<NewClass />} />
+            <Route path="classes/:id/edit" element={<EditClass />} />
             <Route path="locations" element={<Locations />} />
+            <Route path="locations/new" element={<NewLocation />} />
+            <Route path="locations/:id/edit" element={<EditLocation />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="recurring" element={<RecurringTransactions />} />
+            <Route path="recurring/new" element={<NewRecurringTemplate />} />
+            <Route path="recurring/:id/edit" element={<EditRecurringTemplate />} />
             <Route path="transactions" element={<UnifiedTransactions />} />
             <Route path="reconciliations" element={<BankReconciliations />} />
             <Route path="reconciliations/new" element={<NewReconciliation />} />
@@ -257,6 +273,8 @@ function AppContent() {
             <Route path="reports/sales-by-customer" element={<SalesByCustomer />} />
             <Route path="reports/sales-by-product" element={<SalesByProduct />} />
             <Route path="tax-rates" element={<TaxRates />} />
+            <Route path="tax-rates/new" element={<NewTaxRate />} />
+            <Route path="tax-rates/:id/edit" element={<EditTaxRate />} />
             <Route path="tax-settings" element={<TaxSettings />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />
@@ -283,6 +301,8 @@ function AppContent() {
             <Route path="email-reminders" element={<EmailReminders />} />
             <Route path="admin/audit-log" element={<AuditLog />} />
             <Route path="accounting-periods" element={<AccountingPeriods />} />
+            <Route path="accounting-periods/new" element={<NewAccountingPeriod />} />
+            <Route path="accounting-periods/:id/edit" element={<EditAccountingPeriod />} />
             <Route path="year-end-close/:periodId" element={<YearEndClose />} />
           </Route>
         </Route>
