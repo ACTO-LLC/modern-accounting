@@ -290,6 +290,333 @@ describe('JournalEntryService', () => {
         });
     });
 
+    describe('postInvoice - ProjectId/ClassId propagation', () => {
+        it('should propagate header ProjectId/ClassId to AR journal entry line', async () => {
+            axios.get
+                .mockResolvedValueOnce({
+                    data: {
+                        Id: 'inv-1',
+                        JournalEntryId: null,
+                        InvoiceNumber: 'INV-PC-001',
+                        IssueDate: '2024-01-15',
+                        TotalAmount: 1000,
+                        CustomerName: 'Test Customer',
+                        ProjectId: 'proj-aaa',
+                        ClassId: 'cls-bbb'
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { Id: 'line-1', Amount: 1000, Description: 'Service', RevenueAccountId: null, ProjectId: null, ClassId: null }
+                        ]
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { AccountType: 'AccountsReceivable', AccountId: 'ar-123', IsActive: true },
+                            { AccountType: 'DefaultRevenue', AccountId: 'rev-456', IsActive: true }
+                        ]
+                    }
+                });
+
+            axios.post.mockResolvedValue({ data: { Id: 'new-je' } });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            await service.postInvoice('inv-1', 'test-user');
+
+            const jeCalls = axios.post.mock.calls.filter(c => c[0].includes('/journalentrylines'));
+            // AR line should get header project/class
+            expect(jeCalls[0][1]).toMatchObject({
+                ProjectId: 'proj-aaa',
+                ClassId: 'cls-bbb'
+            });
+        });
+
+        it('should propagate line-level ProjectId/ClassId to revenue journal entry lines', async () => {
+            axios.get
+                .mockResolvedValueOnce({
+                    data: {
+                        Id: 'inv-2',
+                        JournalEntryId: null,
+                        InvoiceNumber: 'INV-PC-002',
+                        IssueDate: '2024-01-15',
+                        TotalAmount: 600,
+                        CustomerName: 'Test Customer',
+                        ProjectId: 'proj-header',
+                        ClassId: 'cls-header'
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { Id: 'line-1', Amount: 400, Description: 'Service A', RevenueAccountId: null, ProjectId: 'proj-line1', ClassId: 'cls-line1' },
+                            { Id: 'line-2', Amount: 200, Description: 'Service B', RevenueAccountId: null, ProjectId: null, ClassId: null }
+                        ]
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { AccountType: 'AccountsReceivable', AccountId: 'ar-123', IsActive: true },
+                            { AccountType: 'DefaultRevenue', AccountId: 'rev-456', IsActive: true }
+                        ]
+                    }
+                });
+
+            axios.post.mockResolvedValue({ data: { Id: 'new-je' } });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            await service.postInvoice('inv-2', 'test-user');
+
+            const jeCalls = axios.post.mock.calls.filter(c => c[0].includes('/journalentrylines'));
+            // AR line (first) gets header values
+            expect(jeCalls[0][1]).toMatchObject({
+                ProjectId: 'proj-header',
+                ClassId: 'cls-header'
+            });
+            // Revenue line 1 gets its own line-level values
+            expect(jeCalls[1][1]).toMatchObject({
+                ProjectId: 'proj-line1',
+                ClassId: 'cls-line1'
+            });
+            // Revenue line 2 (no line-level) falls back to header values
+            expect(jeCalls[2][1]).toMatchObject({
+                ProjectId: 'proj-header',
+                ClassId: 'cls-header'
+            });
+        });
+
+        it('should set ProjectId/ClassId to null when neither header nor line has values', async () => {
+            axios.get
+                .mockResolvedValueOnce({
+                    data: {
+                        Id: 'inv-3',
+                        JournalEntryId: null,
+                        InvoiceNumber: 'INV-PC-003',
+                        IssueDate: '2024-01-15',
+                        TotalAmount: 500,
+                        CustomerName: 'Test Customer',
+                        ProjectId: null,
+                        ClassId: null
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { Id: 'line-1', Amount: 500, Description: 'Service', RevenueAccountId: null, ProjectId: null, ClassId: null }
+                        ]
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { AccountType: 'AccountsReceivable', AccountId: 'ar-123', IsActive: true },
+                            { AccountType: 'DefaultRevenue', AccountId: 'rev-456', IsActive: true }
+                        ]
+                    }
+                });
+
+            axios.post.mockResolvedValue({ data: { Id: 'new-je' } });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            await service.postInvoice('inv-3', 'test-user');
+
+            const jeCalls = axios.post.mock.calls.filter(c => c[0].includes('/journalentrylines'));
+            expect(jeCalls[0][1].ProjectId).toBeNull();
+            expect(jeCalls[0][1].ClassId).toBeNull();
+            expect(jeCalls[1][1].ProjectId).toBeNull();
+            expect(jeCalls[1][1].ClassId).toBeNull();
+        });
+    });
+
+    describe('postBill - ProjectId/ClassId propagation', () => {
+        it('should propagate header ProjectId/ClassId to AP journal entry line', async () => {
+            axios.get
+                .mockResolvedValueOnce({
+                    data: {
+                        Id: 'bill-1',
+                        JournalEntryId: null,
+                        BillNumber: 'BILL-PC-001',
+                        BillDate: '2024-01-15',
+                        TotalAmount: 800,
+                        VendorName: 'Test Vendor',
+                        ProjectId: 'proj-bill',
+                        ClassId: 'cls-bill'
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { Id: 'line-1', Amount: 800, Description: 'Supplies', AccountId: 'exp-123', ProjectId: null, ClassId: null }
+                        ]
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { AccountType: 'AccountsPayable', AccountId: 'ap-456', IsActive: true }
+                        ]
+                    }
+                });
+
+            axios.post.mockResolvedValue({ data: { Id: 'new-je' } });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            await service.postBill('bill-1', 'test-user');
+
+            const jeCalls = axios.post.mock.calls.filter(c => c[0].includes('/journalentrylines'));
+            // Expense line falls back to header values
+            expect(jeCalls[0][1]).toMatchObject({
+                ProjectId: 'proj-bill',
+                ClassId: 'cls-bill'
+            });
+            // AP line gets header values
+            expect(jeCalls[1][1]).toMatchObject({
+                ProjectId: 'proj-bill',
+                ClassId: 'cls-bill'
+            });
+        });
+
+        it('should use line-level ProjectId/ClassId over header values for expense lines', async () => {
+            axios.get
+                .mockResolvedValueOnce({
+                    data: {
+                        Id: 'bill-2',
+                        JournalEntryId: null,
+                        BillNumber: 'BILL-PC-002',
+                        BillDate: '2024-01-15',
+                        TotalAmount: 500,
+                        VendorName: 'Test Vendor',
+                        ProjectId: 'proj-header',
+                        ClassId: 'cls-header'
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { Id: 'line-1', Amount: 300, Description: 'Part A', AccountId: 'exp-1', ProjectId: 'proj-lineA', ClassId: 'cls-lineA' },
+                            { Id: 'line-2', Amount: 200, Description: 'Part B', AccountId: 'exp-2', ProjectId: null, ClassId: null }
+                        ]
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { AccountType: 'AccountsPayable', AccountId: 'ap-456', IsActive: true }
+                        ]
+                    }
+                });
+
+            axios.post.mockResolvedValue({ data: { Id: 'new-je' } });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            await service.postBill('bill-2', 'test-user');
+
+            const jeCalls = axios.post.mock.calls.filter(c => c[0].includes('/journalentrylines'));
+            // Line 1 expense: uses its own project/class
+            expect(jeCalls[0][1]).toMatchObject({
+                ProjectId: 'proj-lineA',
+                ClassId: 'cls-lineA'
+            });
+            // Line 2 expense: falls back to header
+            expect(jeCalls[1][1]).toMatchObject({
+                ProjectId: 'proj-header',
+                ClassId: 'cls-header'
+            });
+            // AP line: uses header
+            expect(jeCalls[2][1]).toMatchObject({
+                ProjectId: 'proj-header',
+                ClassId: 'cls-header'
+            });
+        });
+    });
+
+    describe('voidInvoice - ProjectId/ClassId propagation', () => {
+        it('should copy ProjectId/ClassId from original JE lines to reversing lines', async () => {
+            axios.get
+                .mockResolvedValueOnce({
+                    data: {
+                        Id: 'inv-void',
+                        JournalEntryId: 'je-orig',
+                        InvoiceNumber: 'INV-VOID-001',
+                        Status: 'Posted'
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { AccountId: 'ar-123', Debit: 1000, Credit: 0, Description: 'AR', ProjectId: 'proj-ar', ClassId: 'cls-ar' },
+                            { AccountId: 'rev-456', Debit: 0, Credit: 1000, Description: 'Revenue', ProjectId: 'proj-rev', ClassId: 'cls-rev' }
+                        ]
+                    }
+                });
+
+            axios.post.mockResolvedValue({ data: {} });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            await service.voidInvoice('inv-void', 'test-user');
+
+            const jeCalls = axios.post.mock.calls.filter(c => c[0].includes('/journalentrylines'));
+            // Reversing AR line preserves original project/class
+            expect(jeCalls[0][1]).toMatchObject({
+                ProjectId: 'proj-ar',
+                ClassId: 'cls-ar',
+                Debit: 0,
+                Credit: 1000
+            });
+            // Reversing Revenue line preserves original project/class
+            expect(jeCalls[1][1]).toMatchObject({
+                ProjectId: 'proj-rev',
+                ClassId: 'cls-rev',
+                Debit: 1000,
+                Credit: 0
+            });
+        });
+    });
+
+    describe('voidBill - ProjectId/ClassId propagation', () => {
+        it('should copy ProjectId/ClassId from original JE lines to reversing lines', async () => {
+            axios.get
+                .mockResolvedValueOnce({
+                    data: {
+                        Id: 'bill-void',
+                        JournalEntryId: 'je-bill-orig',
+                        BillNumber: 'BILL-VOID-001',
+                        Status: 'Posted'
+                    }
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        value: [
+                            { AccountId: 'exp-1', Debit: 800, Credit: 0, Description: 'Expense', ProjectId: 'proj-exp', ClassId: 'cls-exp' },
+                            { AccountId: 'ap-456', Debit: 0, Credit: 800, Description: 'AP', ProjectId: 'proj-ap', ClassId: null }
+                        ]
+                    }
+                });
+
+            axios.post.mockResolvedValue({ data: {} });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            await service.voidBill('bill-void', 'test-user');
+
+            const jeCalls = axios.post.mock.calls.filter(c => c[0].includes('/journalentrylines'));
+            expect(jeCalls[0][1]).toMatchObject({
+                ProjectId: 'proj-exp',
+                ClassId: 'cls-exp',
+                Debit: 0,
+                Credit: 800
+            });
+            expect(jeCalls[1][1]).toMatchObject({
+                ProjectId: 'proj-ap',
+                ClassId: null,
+                Debit: 800,
+                Credit: 0
+            });
+        });
+    });
+
     describe('recordInvoicePayment', () => {
         it('should throw error if required fields missing', async () => {
             await expect(service.recordInvoicePayment({}))
