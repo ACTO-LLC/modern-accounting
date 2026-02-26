@@ -3,12 +3,14 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import InputAdornment from '@mui/material/InputAdornment';
+import api from '../lib/api';
 
 export const taxRateSchema = z.object({
   Name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -20,6 +22,11 @@ export const taxRateSchema = z.object({
 
 export type TaxRateFormData = z.infer<typeof taxRateSchema>;
 
+interface TaxRateItem {
+  Id: string;
+  Name: string;
+}
+
 interface TaxRateFormProps {
   initialValues?: Partial<TaxRateFormData> & { Id?: string };
   onSubmit: (data: TaxRateFormData) => Promise<void>;
@@ -29,6 +36,14 @@ interface TaxRateFormProps {
 
 export default function TaxRateForm({ initialValues, onSubmit, title, isSubmitting }: TaxRateFormProps) {
   const navigate = useNavigate();
+
+  const { data: allTaxRates } = useQuery({
+    queryKey: ['taxrates'],
+    queryFn: async () => {
+      const response = await api.get<{ value: TaxRateItem[] }>('/taxrates?$select=Id,Name');
+      return response.data.value;
+    },
+  });
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<TaxRateFormData>({
     resolver: zodResolver(taxRateSchema),
@@ -54,9 +69,21 @@ export default function TaxRateForm({ initialValues, onSubmit, title, isSubmitti
   }, [initialValues, reset]);
 
   const onFormSubmit = async (data: TaxRateFormData) => {
+    const trimmedName = data.Name.trim();
+
+    // Prevent duplicate tax rate names
+    const hasDuplicate = allTaxRates?.some(
+      (t) => t.Id !== initialValues?.Id && t.Name.trim().toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (hasDuplicate) {
+      alert('A tax rate with this name already exists.');
+      return;
+    }
+
     await onSubmit({
       ...data,
-      Name: data.Name.trim(),
+      Name: trimmedName,
       Description: data.Description?.trim() || null,
     });
   };

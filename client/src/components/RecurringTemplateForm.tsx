@@ -28,6 +28,29 @@ export const recurringTemplateSchema = z.object({
   AutoCreate: z.boolean(),
   AutoSend: z.boolean(),
   ReminderDays: z.number().min(0).max(365),
+}).superRefine((data, ctx) => {
+  if (data.Frequency === 'Weekly') {
+    const dow = data.DayOfWeek;
+    if (dow === null || dow === undefined || dow < 0 || dow > 6) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['DayOfWeek'], message: 'Day of week must be between 0 (Sunday) and 6 (Saturday).' });
+    }
+  }
+  if (data.Frequency === 'Monthly') {
+    const dom = data.DayOfMonth;
+    if (dom === null || dom === undefined || !(dom === -1 || (dom >= 1 && dom <= 31))) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['DayOfMonth'], message: 'Day of month must be between 1 and 31, or -1 for last day.' });
+    }
+  }
+  if (data.EndDate) {
+    const start = new Date(data.StartDate);
+    const end = new Date(data.EndDate);
+    if (end < start) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['EndDate'], message: 'End date must be on or after the start date.' });
+    }
+  }
+  if (data.MaxOccurrences !== null && data.MaxOccurrences !== undefined && data.MaxOccurrences < 1) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['MaxOccurrences'], message: 'Max occurrences must be at least 1.' });
+  }
 });
 
 export type RecurringTemplateFormData = z.infer<typeof recurringTemplateSchema>;

@@ -10,7 +10,15 @@ import Button from '@mui/material/Button';
 export const accountingPeriodSchema = z.object({
   FiscalYearStart: z.string().min(1, 'Fiscal year start is required'),
   FiscalYearEnd: z.string().min(1, 'Fiscal year end is required'),
-});
+}).refine(
+  (data) => {
+    const start = new Date(data.FiscalYearStart);
+    const end = new Date(data.FiscalYearEnd);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return true;
+    return end >= start;
+  },
+  { message: 'Fiscal year end must be on or after fiscal year start', path: ['FiscalYearEnd'] }
+);
 
 export type AccountingPeriodFormData = z.infer<typeof accountingPeriodSchema>;
 

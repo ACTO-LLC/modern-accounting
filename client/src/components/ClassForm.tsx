@@ -99,10 +99,28 @@ export default function ClassForm({ initialValues, onSubmit, title, isSubmitting
   }, [allClasses, initialValues?.Id]);
 
   const onFormSubmit = async (data: ClassFormData) => {
+    const trimmedName = data.Name.trim();
+    const parentId = data.ParentClassId || null;
+
+    // Prevent duplicate names at the same parent level
+    const hasDuplicate = allClasses?.some((c) => {
+      const cParentId = c.ParentClassId ?? null;
+      return (
+        c.Id !== initialValues?.Id &&
+        cParentId === parentId &&
+        c.Name.trim().toLowerCase() === trimmedName.toLowerCase()
+      );
+    });
+
+    if (hasDuplicate) {
+      alert('A class with this name already exists at this level.');
+      return;
+    }
+
     await onSubmit({
       ...data,
-      Name: data.Name.trim(),
-      ParentClassId: data.ParentClassId || null,
+      Name: trimmedName,
+      ParentClassId: parentId,
       Description: data.Description?.trim() || null,
     });
   };

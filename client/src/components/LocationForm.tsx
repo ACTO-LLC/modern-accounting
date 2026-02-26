@@ -118,10 +118,28 @@ export default function LocationForm({ initialValues, onSubmit, title, isSubmitt
   }, [allLocations, initialValues?.Id]);
 
   const onFormSubmit = async (data: LocationFormData) => {
+    const trimmedName = data.Name.trim();
+    const parentId = data.ParentLocationId || null;
+
+    // Prevent duplicate names at the same parent level
+    const hasDuplicate = allLocations?.some((l) => {
+      const lParentId = l.ParentLocationId ?? null;
+      return (
+        l.Id !== initialValues?.Id &&
+        lParentId === parentId &&
+        l.Name.trim().toLowerCase() === trimmedName.toLowerCase()
+      );
+    });
+
+    if (hasDuplicate) {
+      alert('A location with this name already exists at this level.');
+      return;
+    }
+
     await onSubmit({
       ...data,
-      Name: data.Name.trim(),
-      ParentLocationId: data.ParentLocationId || null,
+      Name: trimmedName,
+      ParentLocationId: parentId,
       Description: data.Description?.trim() || null,
     });
   };
