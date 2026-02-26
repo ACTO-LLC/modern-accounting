@@ -30,7 +30,6 @@ test.describe('Project/Class propagation during document conversion', () => {
       await expect(projectListbox).toBeVisible({ timeout: 5000 });
       const projectOptions = projectListbox.locator('[role="option"]');
       if (await projectOptions.count() > 0) {
-        const selectedProjectName = await projectOptions.first().textContent();
         await projectOptions.first().click();
         hasProjects = true;
       }
@@ -43,13 +42,11 @@ test.describe('Project/Class propagation during document conversion', () => {
     const headerClass = page.getByPlaceholder('Select a class...').first();
     await headerClass.click();
     let classListbox = page.locator('.MuiAutocomplete-listbox');
-    let hasClasses = false;
     try {
       await expect(classListbox).toBeVisible({ timeout: 5000 });
       const classOptions = classListbox.locator('[role="option"]');
       if (await classOptions.count() > 0) {
         await classOptions.first().click();
-        hasClasses = true;
       }
     } catch {
       await page.keyboard.press('Escape');
