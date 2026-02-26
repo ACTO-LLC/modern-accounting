@@ -1,16 +1,15 @@
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import InvoiceForm, { InvoiceFormData } from '../components/InvoiceForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { createInvoiceJournalEntry } from '../lib/autoPostingService';
 import { useAuth } from '../contexts/AuthContext';
+import { generateNextInvoiceNumber, type Invoice } from '../lib/invoiceUtils';
 
-interface Invoice {
+interface InvoiceWithCustomer {
   Id: string;
   InvoiceNumber: string;
-}
-
-interface InvoiceWithCustomer extends Invoice {
   CustomerName?: string;
 }
 
@@ -18,6 +17,19 @@ export default function NewInvoice() {
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
   const { user } = useAuth();
+
+  // Fetch existing invoices to generate the next invoice number
+  const { data: allInvoices } = useQuery({
+    queryKey: ['invoices-for-numbering'],
+    queryFn: async () => {
+      const response = await api.get<{ value: Invoice[] }>('/invoices?$select=InvoiceNumber');
+      return response.data.value;
+    },
+  });
+
+  const nextInvoiceNumber = allInvoices
+    ? generateNextInvoiceNumber(allInvoices, settings.invoiceNumberPrefix)
+    : '';
 
   const onSubmit = async (data: InvoiceFormData) => {
     try {
@@ -89,6 +101,7 @@ export default function NewInvoice() {
   return (
     <InvoiceForm
       title="New Invoice"
+      initialValues={nextInvoiceNumber ? { InvoiceNumber: nextInvoiceNumber } : undefined}
       onSubmit={onSubmit}
       submitButtonText="Create Invoice"
     />

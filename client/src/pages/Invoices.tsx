@@ -16,6 +16,7 @@ import { formatDate } from '../lib/dateUtils';
 import { getTimestampColumns } from '../lib/gridColumns';
 import { formatGuidForOData } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
 
 interface InvoiceLine {
   Id: string;
@@ -39,6 +40,7 @@ export default function Invoices() {
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { showToast } = useToast();
+  const { settings } = useCompanySettings();
 
   const { data: allInvoices } = useQuery({
     queryKey: ['invoices-all'],
@@ -67,7 +69,7 @@ export default function Invoices() {
         throw new Error('Cannot duplicate invoice with no line items');
       }
 
-      const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || []);
+      const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || [], settings.invoiceNumberPrefix);
       const totalAmount = calculateInvoiceTotal(originalLines);
 
       // Copy tax settings from original invoice

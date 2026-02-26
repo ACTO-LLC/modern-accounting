@@ -20,6 +20,8 @@ export interface CompanySettings {
   // - 'simple': QBO-like behavior - documents post to GL immediately on save
   // - 'advanced': Draft documents don't create journal entries until explicitly posted
   invoicePostingMode: InvoicePostingMode;
+  // Configurable prefix for auto-generated invoice numbers (e.g., "INV-", "ACME-")
+  invoiceNumberPrefix: string;
 }
 
 const defaultSettings: CompanySettings = {
@@ -35,6 +37,7 @@ const defaultSettings: CompanySettings = {
   taxId: '',
   stateEmployerId: '',
   invoicePostingMode: 'simple', // Default to QBO-like simple mode
+  invoiceNumberPrefix: 'INV-',
 };
 
 interface CompanySettingsContextType {
@@ -75,6 +78,7 @@ function mapDbToSettings(dbRecord: Record<string, unknown>): CompanySettings {
     taxId: (dbRecord.TaxId as string) || '',
     stateEmployerId: (extraSettings.stateEmployerId as string) || '',
     invoicePostingMode: (extraSettings.invoicePostingMode as InvoicePostingMode) || 'simple',
+    invoiceNumberPrefix: (extraSettings.invoiceNumberPrefix as string) || 'INV-',
   };
 }
 
@@ -84,6 +88,7 @@ function mapSettingsToDb(settings: CompanySettings): Record<string, unknown> {
   const extraSettings = JSON.stringify({
     stateEmployerId: settings.stateEmployerId,
     invoicePostingMode: settings.invoicePostingMode,
+    invoiceNumberPrefix: settings.invoiceNumberPrefix,
   });
 
   return {

@@ -11,6 +11,7 @@ import { getTimestampColumns } from '../lib/gridColumns';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
 import { generateNextInvoiceNumber, type Invoice } from '../lib/invoiceUtils';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
 
 interface Estimate {
   Id: string;
@@ -54,6 +55,7 @@ export default function Estimates() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { settings } = useCompanySettings();
   const [refreshKey, setRefreshKey] = useState(0);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -74,7 +76,7 @@ export default function Estimates() {
       // Fetch existing invoices to generate next invoice number
       const allInvoicesResponse = await api.get<{ value: Invoice[] }>('/invoices');
       const allInvoices = allInvoicesResponse.data.value;
-      const invoiceNumber = generateNextInvoiceNumber(allInvoices);
+      const invoiceNumber = generateNextInvoiceNumber(allInvoices, settings.invoiceNumberPrefix);
 
       // Create the invoice (copy ProjectId/ClassId from estimate)
       await api.post('/invoices_write', {

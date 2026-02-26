@@ -279,9 +279,9 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                 {...field}
                 label="Invoice Number"
                 required
-                placeholder="INV-002"
+                placeholder="INV-0001"
                 error={!!fieldState.error}
-                helperText={fieldState.error?.message}
+                helperText={fieldState.error?.message || (initialValues?.InvoiceNumber ? 'Auto-assigned. Clear to enter your own.' : undefined)}
                 size="small"
                 fullWidth
               />
