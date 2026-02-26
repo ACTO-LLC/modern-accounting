@@ -59,3 +59,6 @@ GO
 
 CREATE INDEX [IX_Invoices_ClassId] ON [dbo].[Invoices]([ClassId]) WHERE ClassId IS NOT NULL
 GO
+
+CREATE UNIQUE INDEX [UQ_Invoices_InvoiceNumber] ON [dbo].[Invoices]([InvoiceNumber])
+GO

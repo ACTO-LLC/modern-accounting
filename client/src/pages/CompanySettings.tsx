@@ -217,6 +217,33 @@ export default function CompanySettings() {
           )}
         </div>
 
+        {/* Invoice Numbering Section */}
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Invoice Numbering</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Configure the prefix used for auto-generated invoice numbers (e.g., INV-0001, ACME-0001).
+          </p>
+
+          <div className="max-w-sm">
+            <label htmlFor="invoiceNumberPrefix" className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
+              Invoice Number Prefix
+            </label>
+            <input
+              type="text"
+              id="invoiceNumberPrefix"
+              name="invoiceNumberPrefix"
+              value={formData.invoiceNumberPrefix}
+              onChange={handleChange}
+              placeholder="INV-"
+              maxLength={20}
+              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 dark:bg-gray-700 dark:text-white"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              New invoices will be numbered as {formData.invoiceNumberPrefix || 'INV-'}0001, {formData.invoiceNumberPrefix || 'INV-'}0002, etc.
+            </p>
+          </div>
+        </div>
+
         {/* Logo Section */}
         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Company Logo</h2>

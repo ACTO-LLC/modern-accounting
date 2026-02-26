@@ -179,7 +179,7 @@ export default function EditInvoice() {
       }
 
       // Generate new invoice number
-      const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || []);
+      const newInvoiceNumber = generateNextInvoiceNumber(allInvoices || [], settings.invoiceNumberPrefix);
 
       // Calculate total amount from lines
       const totalAmount = calculateInvoiceTotal(originalLines);

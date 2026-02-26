@@ -80,9 +80,10 @@ interface InvoiceFormProps {
   isSubmitting?: boolean;
   submitButtonText?: string;
   headerActions?: ReactNode;
+  isAutoNumbered?: boolean;
 }
 
-export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Invoice', headerActions }: InvoiceFormProps) {
+export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Invoice', headerActions, isAutoNumbered }: InvoiceFormProps) {
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
 
@@ -279,9 +280,9 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                 {...field}
                 label="Invoice Number"
                 required
-                placeholder="INV-002"
+                placeholder="INV-0001"
                 error={!!fieldState.error}
-                helperText={fieldState.error?.message}
+                helperText={fieldState.error?.message || (isAutoNumbered ? 'Auto-assigned. Clear to enter your own.' : undefined)}
                 size="small"
                 fullWidth
               />
