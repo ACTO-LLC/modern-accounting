@@ -24,7 +24,11 @@ export default function NewEstimate() {
       const { Lines, ...estimateData } = data;
 
       // Create the estimate first
-      await api.post('/estimates_write', estimateData);
+      await api.post('/estimates_write', {
+        ...estimateData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedEstimateNumber = String(estimateData.EstimateNumber).replace(/'/g, "''");
@@ -45,6 +49,8 @@ export default function NewEstimate() {
             Description: line.Description,
             Quantity: line.Quantity,
             UnitPrice: line.UnitPrice,
+            ProjectId: line.ProjectId || null,
+            ClassId: line.ClassId || null,
           })
         )
       );

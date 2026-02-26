@@ -33,6 +33,8 @@ interface JournalEntryLine {
   Description: string;
   DebitAmount: number;
   CreditAmount: number;
+  ProjectId?: string | null;
+  ClassId?: string | null;
 }
 
 interface JournalEntry {
@@ -168,7 +170,9 @@ export async function createInvoiceJournalEntry(
   invoiceNumber: string,
   customerName: string,
   issueDate: string,
-  userName?: string
+  userName?: string,
+  projectId?: string | null,
+  classId?: string | null
 ): Promise<{ journalEntryId: string } | null> {
   try {
     const arAccountId = await getARAccountId();
@@ -183,19 +187,23 @@ export async function createInvoiceJournalEntry(
     const description = `Invoice ${invoiceNumber} - ${customerName}`;
     const subtotal = totalAmount - taxAmount;
 
-    // Create journal entry lines
+    // Create journal entry lines (propagate header-level project/class)
     const lines: JournalEntryLine[] = [
       {
         AccountId: arAccountId,
         Description: `AR - ${invoiceNumber}`,
         DebitAmount: totalAmount,
-        CreditAmount: 0
+        CreditAmount: 0,
+        ProjectId: projectId || null,
+        ClassId: classId || null
       },
       {
         AccountId: revenueAccountId,
         Description: `Revenue - ${invoiceNumber}`,
         DebitAmount: 0,
-        CreditAmount: subtotal
+        CreditAmount: subtotal,
+        ProjectId: projectId || null,
+        ClassId: classId || null
       }
     ];
 
@@ -233,7 +241,9 @@ export async function createInvoiceJournalEntry(
           AccountId: line.AccountId,
           Description: line.Description,
           DebitAmount: line.DebitAmount,
-          CreditAmount: line.CreditAmount
+          CreditAmount: line.CreditAmount,
+          ProjectId: line.ProjectId || null,
+          ClassId: line.ClassId || null
         })
       )
     );
@@ -311,7 +321,9 @@ export async function createPaymentJournalEntry(
           AccountId: line.AccountId,
           Description: line.Description,
           DebitAmount: line.DebitAmount,
-          CreditAmount: line.CreditAmount
+          CreditAmount: line.CreditAmount,
+          ProjectId: line.ProjectId || null,
+          ClassId: line.ClassId || null
         })
       )
     );
@@ -340,8 +352,10 @@ export async function createBillJournalEntry(
   billNumber: string,
   vendorName: string,
   billDate: string,
-  lineItems: Array<{ AccountId: string; Amount: number; Description?: string }>,
-  userName?: string
+  lineItems: Array<{ AccountId: string; Amount: number; Description?: string; ProjectId?: string | null; ClassId?: string | null }>,
+  userName?: string,
+  projectId?: string | null,
+  classId?: string | null
 ): Promise<{ journalEntryId: string } | null> {
   try {
     const apAccountId = await getAPAccountId();
@@ -358,21 +372,26 @@ export async function createBillJournalEntry(
     const lines: JournalEntryLine[] = [];
 
     // Debit expense accounts for each line item
+    // Line-level project/class overrides header; falls back to header; falls back to null
     for (const item of lineItems) {
       lines.push({
         AccountId: item.AccountId,
         Description: item.Description || `Expense - ${billNumber || 'Bill'}`,
         DebitAmount: item.Amount,
-        CreditAmount: 0
+        CreditAmount: 0,
+        ProjectId: item.ProjectId || projectId || null,
+        ClassId: item.ClassId || classId || null
       });
     }
 
-    // Credit AP for total
+    // Credit AP for total (use header-level project/class)
     lines.push({
       AccountId: apAccountId,
       Description: `AP - ${billNumber || 'Bill'}`,
       DebitAmount: 0,
-      CreditAmount: totalAmount
+      CreditAmount: totalAmount,
+      ProjectId: projectId || null,
+      ClassId: classId || null
     });
 
     // Create the journal entry
@@ -393,7 +412,9 @@ export async function createBillJournalEntry(
           AccountId: line.AccountId,
           Description: line.Description,
           DebitAmount: line.DebitAmount,
-          CreditAmount: line.CreditAmount
+          CreditAmount: line.CreditAmount,
+          ProjectId: line.ProjectId || null,
+          ClassId: line.ClassId || null
         })
       )
     );

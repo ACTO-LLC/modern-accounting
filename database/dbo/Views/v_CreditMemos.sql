@@ -16,9 +16,15 @@ SELECT
     cm.[Status],
     cm.[JournalEntryId],
     je.[Reference] AS JournalEntryReference,
+    cm.[ProjectId],
+    p.[Name] AS ProjectName,
+    cm.[ClassId],
+    cl.[Name] AS ClassName,
     cm.[CreatedAt],
     cm.[UpdatedAt]
 FROM [dbo].[CreditMemos] cm
 LEFT JOIN [dbo].[Customers] c ON cm.[CustomerId] = c.[Id]
 LEFT JOIN [dbo].[JournalEntries] je ON cm.[JournalEntryId] = je.[Id]
+LEFT JOIN [dbo].[Projects] p ON cm.[ProjectId] = p.[Id]
+LEFT JOIN [dbo].[Classes] cl ON cm.[ClassId] = cl.[Id]
 GO

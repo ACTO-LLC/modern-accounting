@@ -11,6 +11,8 @@ CREATE TABLE [dbo].[CreditMemos]
     [AmountApplied] DECIMAL(19,4) NOT NULL DEFAULT 0,
     [AmountRefunded] DECIMAL(19,4) NOT NULL DEFAULT 0,
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Open',
+    [ProjectId] UNIQUEIDENTIFIER NULL,
+    [ClassId] UNIQUEIDENTIFIER NULL,
     [JournalEntryId] UNIQUEIDENTIFIER NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
@@ -21,6 +23,8 @@ CREATE TABLE [dbo].[CreditMemos]
 
     CONSTRAINT [FK_CreditMemos_Customers] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers]([Id]),
     CONSTRAINT [FK_CreditMemos_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id]),
+    CONSTRAINT [FK_CreditMemos_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
+    CONSTRAINT [FK_CreditMemos_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
     CONSTRAINT [CK_CreditMemos_Status] CHECK ([Status] IN ('Open', 'Applied', 'PartiallyApplied', 'Refunded', 'Voided'))
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[CreditMemos_History]))
@@ -36,4 +40,10 @@ CREATE INDEX [IX_CreditMemos_CreditDate] ON [dbo].[CreditMemos]([CreditDate])
 GO
 
 CREATE UNIQUE INDEX [IX_CreditMemos_CreditMemoNumber] ON [dbo].[CreditMemos]([CreditMemoNumber])
+GO
+
+CREATE INDEX [IX_CreditMemos_ProjectId] ON [dbo].[CreditMemos]([ProjectId]) WHERE ProjectId IS NOT NULL
+GO
+
+CREATE INDEX [IX_CreditMemos_ClassId] ON [dbo].[CreditMemos]([ClassId]) WHERE ClassId IS NOT NULL
 GO

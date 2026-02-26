@@ -9,10 +9,14 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import ProjectSelector from './ProjectSelector';
+import ClassSelector from './ClassSelector';
 import api from '../lib/api';
 
 export const vendorCreditSchema = z.object({
   VendorId: z.string().uuid('Please select a vendor'),
+  ProjectId: z.string().uuid().nullish(),
+  ClassId: z.string().uuid().nullish(),
   CreditNumber: z.string().min(1, 'Credit number is required'),
   CreditDate: z.string().min(1, 'Credit date is required'),
   Reason: z.string().nullish(),
@@ -25,6 +29,8 @@ export const vendorCreditSchema = z.object({
     Id: z.string().nullish(),
     AccountId: z.string().uuid('Please select an account'),
     ProductServiceId: z.string().nullish(),
+    ProjectId: z.string().uuid().nullish(),
+    ClassId: z.string().uuid().nullish(),
     Description: z.string().nullish(),
     Quantity: z.number().min(0, 'Quantity must be positive'),
     UnitPrice: z.number().min(0, 'Unit price must be positive'),
@@ -97,7 +103,9 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
     defaultValues: {
       Status: 'Open',
       CreditDate: new Date().toISOString().split('T')[0],
-      Lines: [{ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0 }],
+      ProjectId: null,
+      ClassId: null,
+      Lines: [{ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0, ProjectId: null, ClassId: null }],
       Subtotal: 0,
       TaxAmount: 0,
       TotalAmount: 0,
@@ -244,6 +252,30 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
             )}
           />
 
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <ProjectSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+
+          <Controller
+            name="ClassId"
+            control={control}
+            render={({ field }) => (
+              <ClassSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+
           <div className="sm:col-span-2">
             <Controller
               name="Reason"
@@ -275,7 +307,7 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
               variant="outlined"
               size="small"
               startIcon={<Plus className="w-4 h-4" />}
-              onClick={() => append({ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0 })}
+              onClick={() => append({ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0, ProjectId: null, ClassId: null })}
             >
               Add Item
             </Button>
@@ -422,6 +454,34 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
                   >
                     <Trash2 className="w-5 h-5" />
                   </IconButton>
+                  <div className="flex gap-4 items-start mt-2 w-full">
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ProjectId`}
+                        control={control}
+                        render={({ field: pField }) => (
+                          <ProjectSelector
+                            value={pField.value || ''}
+                            onChange={pField.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ClassId`}
+                        control={control}
+                        render={({ field: cField }) => (
+                          <ClassSelector
+                            value={cField.value || ''}
+                            onChange={cField.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}

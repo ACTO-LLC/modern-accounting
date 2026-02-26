@@ -15,6 +15,8 @@ interface PurchaseOrder {
   Total: number;
   Status: 'Draft' | 'Sent' | 'Received' | 'Partial' | 'Cancelled';
   Notes?: string;
+  ProjectId?: string | null;
+  ClassId?: string | null;
   Lines?: PurchaseOrderLine[];
 }
 
@@ -26,6 +28,8 @@ interface PurchaseOrderLine {
   Quantity: number;
   UnitPrice: number;
   Amount?: number;
+  ProjectId?: string | null;
+  ClassId?: string | null;
 }
 
 export default function EditPurchaseOrder() {
@@ -70,7 +74,11 @@ export default function EditPurchaseOrder() {
 
       // 1. Update PurchaseOrder (exclude Lines)
       const { Lines, ...poData } = data;
-      await api.patch(`/purchaseorders_write/Id/${id}`, poData);
+      await api.patch(`/purchaseorders_write/Id/${id}`, {
+        ...poData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // 2. Handle Lines Reconciliation
       // Fetch current lines from DB to know what to delete
@@ -96,14 +104,18 @@ export default function EditPurchaseOrder() {
           ProductServiceId: l.ProductServiceId || null,
           Description: l.Description,
           Quantity: l.Quantity,
-          UnitPrice: l.UnitPrice
+          UnitPrice: l.UnitPrice,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/purchaseorderlines', {
           PurchaseOrderId: id,
           ProductServiceId: l.ProductServiceId || null,
           Description: l.Description,
           Quantity: l.Quantity,
-          UnitPrice: l.UnitPrice
+          UnitPrice: l.UnitPrice,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         }))
       ];
 

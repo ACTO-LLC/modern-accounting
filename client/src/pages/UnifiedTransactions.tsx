@@ -306,6 +306,7 @@ export default function UnifiedTransactions() {
         VendorId: txn.VendorId || null,
         CustomerId: txn.CustomerId || null,
         ClassId: txn.ClassId || null,
+        ProjectId: txn.ProjectId || null,
         Payee: txn.Payee || null,
       },
     });
@@ -335,6 +336,7 @@ export default function UnifiedTransactions() {
         VendorId: formData.vendorId || null,
         CustomerId: formData.customerId || null,
         ClassId: formData.classId || null,
+        ProjectId: formData.projectId || null,
         Payee: formData.payee || null,
       },
     }, {

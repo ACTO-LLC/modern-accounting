@@ -16,8 +16,14 @@ SELECT
     vc.[JournalEntryId],
     vc.[SourceSystem],
     vc.[SourceId],
+    vc.[ProjectId],
+    p.[Name] AS ProjectName,
+    vc.[ClassId],
+    cl.[Name] AS ClassName,
     vc.[CreatedAt],
     vc.[UpdatedAt]
 FROM [dbo].[VendorCredits] vc
 LEFT JOIN [dbo].[Vendors] v ON vc.[VendorId] = v.[Id]
+LEFT JOIN [dbo].[Projects] p ON vc.[ProjectId] = p.[Id]
+LEFT JOIN [dbo].[Classes] cl ON vc.[ClassId] = cl.[Id]
 GO

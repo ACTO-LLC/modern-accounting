@@ -10,6 +10,7 @@ import { X } from 'lucide-react';
 import VendorSelector from '../VendorSelector';
 import CustomerSelector from '../CustomerSelector';
 import ClassSelector from '../ClassSelector';
+import ProjectSelector from '../ProjectSelector';
 import { formatDate } from '../../lib/dateUtils';
 import type { BankTransaction } from '../../lib/api';
 
@@ -25,6 +26,7 @@ export interface TransactionEditFormData {
   vendorId: string;
   customerId: string;
   classId: string;
+  projectId: string;
   payee: string;
   isPersonal: boolean;
 }
@@ -50,6 +52,7 @@ export default function TransactionEditDrawer({
     vendorId: '',
     customerId: '',
     classId: '',
+    projectId: '',
     payee: '',
     isPersonal: false,
   });
@@ -62,6 +65,7 @@ export default function TransactionEditDrawer({
         vendorId: transaction.VendorId ?? '',
         customerId: transaction.CustomerId ?? '',
         classId: transaction.ClassId ?? '',
+        projectId: transaction.ProjectId ?? '',
         payee: transaction.Payee ?? '',
         isPersonal: transaction.IsPersonal,
       });
@@ -218,6 +222,19 @@ export default function TransactionEditDrawer({
                 value={form.classId}
                 onChange={(classId) =>
                   setForm((prev) => ({ ...prev, classId }))
+                }
+              />
+            </div>
+
+            {/* Project */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Project
+              </label>
+              <ProjectSelector
+                value={form.projectId}
+                onChange={(projectId) =>
+                  setForm((prev) => ({ ...prev, projectId }))
                 }
               />
             </div>

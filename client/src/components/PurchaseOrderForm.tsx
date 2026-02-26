@@ -11,11 +11,15 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import api from '../lib/api';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
+import ProjectSelector from './ProjectSelector';
+import ClassSelector from './ClassSelector';
 
 // Line item schema with proper validation
 const lineItemSchema = z.object({
   Id: z.string().nullish(),
   ProductServiceId: z.string().nullish(),
+  ProjectId: z.string().uuid().nullish(),
+  ClassId: z.string().uuid().nullish(),
   Description: z.string().min(1, 'Description is required'),
   Quantity: z.number().min(0.0001, 'Quantity must be positive'),
   UnitPrice: z.number().min(0, 'Unit price must be zero or positive'),
@@ -26,6 +30,8 @@ const lineItemSchema = z.object({
 export const purchaseOrderSchema = z.object({
   PONumber: z.string().min(1, 'PO number is required'),
   VendorId: z.string().uuid('Please select a valid vendor'),
+  ProjectId: z.string().uuid().nullish(),
+  ClassId: z.string().uuid().nullish(),
   PODate: z.string().min(1, 'PO date is required'),
   ExpectedDate: z.string().optional(),
   Subtotal: z.number().min(0, 'Subtotal must be zero or positive'),
@@ -86,7 +92,9 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
       Status: 'Draft',
       PODate: new Date().toISOString().split('T')[0],
       ExpectedDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
-      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 }],
+      ProjectId: null,
+      ClassId: null,
+      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, ClassId: null }],
       Subtotal: 0,
       Total: 0,
       Notes: '',
@@ -225,6 +233,30 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
               </TextField>
             )}
           />
+
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <ProjectSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+
+          <Controller
+            name="ClassId"
+            control={control}
+            render={({ field }) => (
+              <ClassSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
         </div>
 
         {/* Notes */}
@@ -258,7 +290,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
               variant="outlined"
               size="small"
               startIcon={<Plus className="w-4 h-4" />}
-              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 })}
+              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, ClassId: null })}
             >
               Add Item
             </Button>
@@ -364,6 +396,34 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                     >
                       <Trash2 className="w-5 h-5" />
                     </IconButton>
+                  </div>
+                  <div className="flex gap-4 items-start mt-2">
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ProjectId`}
+                        control={control}
+                        render={({ field: pField }) => (
+                          <ProjectSelector
+                            value={pField.value || ''}
+                            onChange={pField.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ClassId`}
+                        control={control}
+                        render={({ field: cField }) => (
+                          <ClassSelector
+                            value={cField.value || ''}
+                            onChange={cField.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               );

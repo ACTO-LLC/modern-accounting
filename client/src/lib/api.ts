@@ -210,6 +210,7 @@ export interface BankTransaction {
   VendorId?: string | null;
   CustomerId?: string | null;
   ClassId?: string | null;
+  ProjectId?: string | null;
   Payee?: string | null;
   BankName?: string;
   Category?: string;

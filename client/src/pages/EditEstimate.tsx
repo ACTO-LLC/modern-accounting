@@ -14,6 +14,8 @@ interface Estimate {
   TotalAmount: number;
   Status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Expired' | 'Converted';
   Notes?: string;
+  ProjectId?: string | null;
+  ClassId?: string | null;
   Lines?: EstimateLine[];
 }
 
@@ -24,6 +26,8 @@ interface EstimateLine {
   Quantity: number;
   UnitPrice: number;
   Amount?: number;
+  ProjectId?: string | null;
+  ClassId?: string | null;
 }
 
 export default function EditEstimate() {
@@ -68,7 +72,11 @@ export default function EditEstimate() {
 
       // 1. Update Estimate (exclude Lines)
       const { Lines, ...estimateData } = data;
-      await api.patch(`/estimates_write/Id/${id}`, estimateData);
+      await api.patch(`/estimates_write/Id/${id}`, {
+        ...estimateData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // 2. Handle Lines Reconciliation
       // Fetch current lines from DB to know what to delete
@@ -93,13 +101,17 @@ export default function EditEstimate() {
         ...toUpdate.map(l => api.patch(`/estimatelines/Id/${l.Id}`, {
           Description: l.Description,
           Quantity: l.Quantity,
-          UnitPrice: l.UnitPrice
+          UnitPrice: l.UnitPrice,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/estimatelines', {
           EstimateId: id,
           Description: l.Description,
           Quantity: l.Quantity,
-          UnitPrice: l.UnitPrice
+          UnitPrice: l.UnitPrice,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         }))
       ];
 

@@ -18,7 +18,11 @@ export default function NewVendorCredit() {
     mutationFn: async (data: VendorCreditFormData) => {
       // Create the vendor credit first
       const { Lines, ...creditData } = data;
-      await api.post('/vendorcredits_write', creditData);
+      await api.post('/vendorcredits_write', {
+        ...creditData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedCreditNumber = String(creditData.CreditNumber).replace(/'/g, "''");
@@ -43,6 +47,8 @@ export default function NewVendorCredit() {
               Quantity: line.Quantity,
               UnitPrice: line.UnitPrice,
               Amount: line.Amount,
+              ProjectId: line.ProjectId || null,
+              ClassId: line.ClassId || null,
             })
           )
         );

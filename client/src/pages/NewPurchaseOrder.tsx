@@ -25,7 +25,11 @@ export default function NewPurchaseOrder() {
       const { Lines, ...poData } = data;
 
       // Create the purchase order first
-      await api.post('/purchaseorders_write', poData);
+      await api.post('/purchaseorders_write', {
+        ...poData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedPONumber = String(poData.PONumber).replace(/'/g, "''");
@@ -47,6 +51,8 @@ export default function NewPurchaseOrder() {
             Description: line.Description,
             Quantity: line.Quantity,
             UnitPrice: line.UnitPrice,
+            ProjectId: line.ProjectId || null,
+            ClassId: line.ClassId || null,
           })
         )
       );

@@ -11,6 +11,8 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import ProjectSelector from './ProjectSelector';
+import ClassSelector from './ClassSelector';
 
 export const billSchema = z.object({
   VendorId: z.string().uuid('Please select a vendor'),
@@ -22,11 +24,15 @@ export const billSchema = z.object({
   Status: z.enum(['Draft', 'Open', 'Partial', 'Paid', 'Overdue']),
   Terms: z.string().optional(),
   Memo: z.string().optional(),
+  ProjectId: z.string().uuid().nullish(),
+  ClassId: z.string().uuid().nullish(),
   Lines: z.array(z.object({
     Id: z.string().nullish(),
     AccountId: z.string().uuid('Please select an account'),
     Description: z.string().nullish(),
-    Amount: z.number().min(0, 'Amount must be positive')
+    Amount: z.number().min(0, 'Amount must be positive'),
+    ProjectId: z.string().uuid().nullish(),
+    ClassId: z.string().uuid().nullish()
   })).min(1, 'At least one line item is required')
 });
 
@@ -87,7 +93,9 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
       DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       Terms: '',
       Memo: '',
-      Lines: [{ AccountId: '', Description: '', Amount: 0 }],
+      ProjectId: null,
+      ClassId: null,
+      Lines: [{ AccountId: '', Description: '', Amount: 0, ProjectId: null, ClassId: null }],
       TotalAmount: 0,
       AmountPaid: 0,
       ...initialValues
@@ -270,6 +278,30 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
             )}
           />
 
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <ProjectSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+
+          <Controller
+            name="ClassId"
+            control={control}
+            render={({ field }) => (
+              <ClassSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+
           <div className="sm:col-span-2">
             <Controller
               name="Memo"
@@ -299,7 +331,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
               variant="outlined"
               size="small"
               startIcon={<Plus className="w-4 h-4" />}
-              onClick={() => append({ AccountId: '', Description: '', Amount: 0 })}
+              onClick={() => append({ AccountId: '', Description: '', Amount: 0, ProjectId: null, ClassId: null })}
             >
               Add Item
             </Button>
@@ -375,6 +407,34 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                 >
                   <Trash2 className="w-5 h-5" />
                 </IconButton>
+                <div className="flex gap-4 items-start mt-2">
+                  <div className="flex-1">
+                    <Controller
+                      name={`Lines.${index}.ProjectId`}
+                      control={control}
+                      render={({ field: pField }) => (
+                        <ProjectSelector
+                          value={pField.value || ''}
+                          onChange={pField.onChange}
+                          disabled={isSubmitting}
+                        />
+                      )}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Controller
+                      name={`Lines.${index}.ClassId`}
+                      control={control}
+                      render={({ field: cField }) => (
+                        <ClassSelector
+                          value={cField.value || ''}
+                          onChange={cField.onChange}
+                          disabled={isSubmitting}
+                        />
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
