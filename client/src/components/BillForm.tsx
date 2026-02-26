@@ -284,7 +284,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
             render={({ field }) => (
               <ProjectSelector
                 value={field.value || ''}
-                onChange={field.onChange}
+                onChange={(projectId) => field.onChange(projectId || null)}
                 disabled={isSubmitting}
               />
             )}
@@ -296,7 +296,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
             render={({ field }) => (
               <ClassSelector
                 value={field.value || ''}
-                onChange={field.onChange}
+                onChange={(classId) => field.onChange(classId || null)}
                 disabled={isSubmitting}
               />
             )}
@@ -415,7 +415,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                       render={({ field: pField }) => (
                         <ProjectSelector
                           value={pField.value || ''}
-                          onChange={pField.onChange}
+                          onChange={(projectId) => pField.onChange(projectId || null)}
                           disabled={isSubmitting}
                         />
                       )}
@@ -428,7 +428,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                       render={({ field: cField }) => (
                         <ClassSelector
                           value={cField.value || ''}
-                          onChange={cField.onChange}
+                          onChange={(classId) => cField.onChange(classId || null)}
                           disabled={isSubmitting}
                         />
                       )}
