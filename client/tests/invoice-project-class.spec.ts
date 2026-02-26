@@ -4,9 +4,9 @@ test.describe('Invoice Project/Class Tracking', () => {
   test('should display Project and Class selectors on new invoice form', async ({ page }) => {
     await page.goto('/invoices/new');
 
-    // Verify both header-level selectors are visible
-    await expect(page.getByPlaceholder('Select a project...')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByPlaceholder('Select a class...')).toBeVisible();
+    // Verify both header-level selectors are visible (use .first() since header + line both match)
+    await expect(page.getByPlaceholder('Select a project...').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByPlaceholder('Select a class...').first()).toBeVisible();
   });
 
   test('should display per-line Project and Class selectors', async ({ page }) => {
