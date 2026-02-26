@@ -242,7 +242,9 @@ jobs:
               AZURE_AD_ISSUER="https://login.microsoftonline.com/${{ secrets.AZURE_AD_TENANT_ID }}/v2.0" \
               AZURE_OPENAI_DEPLOYMENT="gpt-4o" \
               QBO_ENVIRONMENT="production" \
-              QBO_REDIRECT_URI="https://accounting.a-cto.com/api/qbo/oauth-callback"
+              QBO_REDIRECT_URI="https://accounting.a-cto.com/api/qbo/oauth-callback" \
+              QBO_MCP_URL="https://mcp-qbo-modern-accounting-prod.azurewebsites.net/mcp" \
+              DAB_MCP_URL="https://dab-modern-accounting-prod.azurewebsites.net/mcp"
 
           # Set Key Vault references (must be set individually due to = in values)
           az webapp config appsettings set \
