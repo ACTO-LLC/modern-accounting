@@ -176,3 +176,5 @@ cd ../modern-accounting-XXX && VITE_BYPASS_AUTH=true npm run dev
 7. **API Pagination:** Never just increase limits. Implement client-side pagination following OData nextLink.
 
 8. **DAB empty permissions:** Never leave `permissions: []`. Always include at least the `authenticated` role.
+
+9. **Navigate-to-edit pattern (no inline forms):** All list pages must use the navigate-to-edit pattern — clicking a row navigates to `/<entity>/:id/edit`, and a "New" button navigates to `/<entity>/new`. Never use inline forms that appear above the list. Reference: Invoices, Classes, Locations, Tax Rates.
