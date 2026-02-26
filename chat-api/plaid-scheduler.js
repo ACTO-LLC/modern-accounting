@@ -26,10 +26,15 @@ class PlaidScheduler {
             return;
         }
 
-        // Daily sync at 6 AM
-        this.scheduleJob('daily-sync', '0 6 * * *', async () => {
-            console.log('[Plaid Scheduler] Running daily sync...');
+        // Batched daily job at 9 AM PST — runs during business hours when the
+        // serverless DB is already awake, avoiding a costly off-hours resume.
+        // Runs: transaction sync → balance update → connection validation sequentially.
+        this.scheduleJob('daily-batch', '0 9 * * *', async () => {
+            console.log('[Plaid Scheduler] Starting daily batch...');
+
+            // 1. Transaction sync
             try {
+                console.log('[Plaid Scheduler] Running daily sync...');
                 const results = await plaidSync.syncAllConnections();
                 const successCount = results.filter(r => r.success).length;
                 const errorCount = results.filter(r => !r.success).length;
@@ -37,12 +42,10 @@ class PlaidScheduler {
             } catch (error) {
                 console.error('[Plaid Scheduler] Daily sync error:', error.message);
             }
-        });
 
-        // Balance update at 7 AM (after transactions sync)
-        this.scheduleJob('balance-update', '0 7 * * *', async () => {
-            console.log('[Plaid Scheduler] Updating account balances...');
+            // 2. Balance update
             try {
+                console.log('[Plaid Scheduler] Updating account balances...');
                 const connections = await plaidService.getActiveConnections();
                 for (const conn of connections) {
                     try {
@@ -55,12 +58,10 @@ class PlaidScheduler {
             } catch (error) {
                 console.error('[Plaid Scheduler] Balance update error:', error.message);
             }
-        });
 
-        // Connection validation every 12 hours
-        this.scheduleJob('validate-connections', '0 */12 * * *', async () => {
-            console.log('[Plaid Scheduler] Validating connections...');
+            // 3. Connection validation
             try {
+                console.log('[Plaid Scheduler] Validating connections...');
                 const connections = await plaidService.getActiveConnections();
                 let validCount = 0;
                 let invalidCount = 0;
@@ -79,13 +80,13 @@ class PlaidScheduler {
             } catch (error) {
                 console.error('[Plaid Scheduler] Validation error:', error.message);
             }
+
+            console.log('[Plaid Scheduler] Daily batch complete');
         });
 
         this.isRunning = true;
         console.log('[Plaid Scheduler] Started with scheduled jobs:');
-        console.log('  - Daily sync at 6:00 AM');
-        console.log('  - Balance update at 7:00 AM');
-        console.log('  - Connection validation every 12 hours');
+        console.log('  - Daily batch (sync + balances + validation) at 9:00 AM PST');
     }
 
     /**
@@ -100,7 +101,7 @@ class PlaidScheduler {
         }
 
         const job = cron.schedule(schedule, task, {
-            timezone: 'America/New_York', // Adjust based on your needs
+            timezone: 'America/Los_Angeles',
         });
 
         this.jobs.set(name, job);
@@ -135,28 +136,25 @@ class PlaidScheduler {
         // Note: node-cron doesn't expose the task directly, so we'll need to track tasks separately
         // For now, we'll handle common jobs directly
         switch (name) {
-            case 'daily-sync':
-                return await plaidSync.syncAllConnections();
-            case 'balance-update':
+            case 'daily-batch': {
+                const syncResults = await plaidSync.syncAllConnections();
                 const connections = await plaidService.getActiveConnections();
-                const results = [];
+                const balanceResults = [];
                 for (const conn of connections) {
                     try {
                         const result = await plaidSync.updateBalances(conn.ItemId);
-                        results.push({ itemId: conn.ItemId, ...result });
+                        balanceResults.push({ itemId: conn.ItemId, ...result });
                     } catch (error) {
-                        results.push({ itemId: conn.ItemId, success: false, error: error.message });
+                        balanceResults.push({ itemId: conn.ItemId, success: false, error: error.message });
                     }
                 }
-                return results;
-            case 'validate-connections':
-                const conns = await plaidService.getActiveConnections();
                 const validationResults = [];
-                for (const conn of conns) {
+                for (const conn of connections) {
                     const result = await plaidService.validateConnection(conn.ItemId);
                     validationResults.push({ itemId: conn.ItemId, ...result });
                 }
-                return validationResults;
+                return { sync: syncResults, balances: balanceResults, validation: validationResults };
+            }
             default:
                 throw new Error(`Unknown job: ${name}`);
         }
