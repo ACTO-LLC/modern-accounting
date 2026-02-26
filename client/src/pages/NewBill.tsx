@@ -27,7 +27,11 @@ export default function NewBill() {
     mutationFn: async (data: BillFormData) => {
       // Create the bill first
       const { Lines, ...billData } = data;
-      await api.post('/bills_write', billData);
+      await api.post('/bills_write', {
+        ...billData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedBillNumber = String(billData.BillNumber).replace(/'/g, "''");
@@ -49,6 +53,8 @@ export default function NewBill() {
               AccountId: line.AccountId,
               Description: line.Description || '',
               Amount: line.Amount,
+              ProjectId: line.ProjectId || null,
+              ClassId: line.ClassId || null,
             })
           )
         );
@@ -66,9 +72,13 @@ export default function NewBill() {
             Lines.map(line => ({
               AccountId: line.AccountId,
               Amount: line.Amount,
-              Description: line.Description || undefined
+              Description: line.Description || undefined,
+              ProjectId: line.ProjectId || null,
+              ClassId: line.ClassId || null,
             })),
-            user?.name || user?.username
+            user?.name || user?.username,
+            data.ProjectId || null,
+            data.ClassId || null
           );
         } catch (postingError) {
           console.warn('Auto-posting failed, bill still created:', postingError);

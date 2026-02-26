@@ -22,6 +22,8 @@ interface PurchaseOrder {
   Status: string;
   ConvertedToBillId: string | null;
   Notes: string | null;
+  ProjectId: string | null;
+  ClassId: string | null;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -34,6 +36,8 @@ interface PurchaseOrderLine {
   Quantity: number;
   UnitPrice: number;
   Amount?: number;
+  ProjectId?: string | null;
+  ClassId?: string | null;
 }
 
 interface Bill {
@@ -80,7 +84,7 @@ export default function PurchaseOrders() {
       // Generate bill number
       const billNumber = `BILL-${Date.now().toString().slice(-6)}`;
 
-      // Create the bill
+      // Create the bill (copy ProjectId/ClassId from purchase order)
       const billResponse = await api.post<Bill>('/bills_write', {
         BillNumber: billNumber,
         VendorId: purchaseOrder.VendorId,
@@ -91,6 +95,8 @@ export default function PurchaseOrders() {
         Status: 'Open',
         Terms: 'Net 30',
         Memo: `Converted from PO ${purchaseOrder.PONumber}`,
+        ProjectId: purchaseOrder.ProjectId || null,
+        ClassId: purchaseOrder.ClassId || null,
       });
       const bill = billResponse.data;
 
@@ -104,7 +110,7 @@ export default function PurchaseOrders() {
         throw new Error('No expense account found for bill lines');
       }
 
-      // Create bill lines from purchase order lines
+      // Create bill lines from purchase order lines (copy ProjectId/ClassId)
       await Promise.all(
         lines.map((line: PurchaseOrderLine) =>
           api.post('/billlines', {
@@ -112,6 +118,8 @@ export default function PurchaseOrders() {
             AccountId: defaultAccountId, // Use default expense account
             Description: line.Description,
             Amount: (line.Quantity || 0) * (line.UnitPrice || 0),
+            ProjectId: line.ProjectId || null,
+            ClassId: line.ClassId || null,
           })
         )
       );

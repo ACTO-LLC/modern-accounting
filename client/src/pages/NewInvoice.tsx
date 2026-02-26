@@ -24,8 +24,12 @@ export default function NewInvoice() {
       // Separate lines from invoice data
       const { Lines, ...invoiceData } = data;
 
-      // Create the invoice first
-      await api.post('/invoices_write', invoiceData);
+      // Create the invoice first (include ProjectId/ClassId)
+      await api.post('/invoices_write', {
+        ...invoiceData,
+        ProjectId: invoiceData.ProjectId || null,
+        ClassId: invoiceData.ClassId || null,
+      });
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedInvoiceNumber = String(invoiceData.InvoiceNumber).replace(/'/g, "''");
@@ -48,6 +52,8 @@ export default function NewInvoice() {
               Quantity: line.Quantity,
               UnitPrice: line.UnitPrice,
               ProductServiceId: line.ProductServiceId || null,
+              ProjectId: line.ProjectId || null,
+              ClassId: line.ClassId || null,
             })
           )
         );
@@ -63,7 +69,9 @@ export default function NewInvoice() {
             invoiceData.InvoiceNumber,
             invoice.CustomerName || 'Customer',
             invoiceData.IssueDate,
-            user?.name || user?.username
+            user?.name || user?.username,
+            data.ProjectId || null,
+            data.ClassId || null
           );
         } catch (postingError) {
           console.warn('Auto-posting failed, invoice still created:', postingError);

@@ -12,6 +12,8 @@ CREATE TABLE [dbo].[Bills]
     [Memo] NVARCHAR(500),
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    [ProjectId] UNIQUEIDENTIFIER NULL,
+    [ClassId] UNIQUEIDENTIFIER NULL,
     -- Additional columns from database
 [TenantId] UNIQUEIDENTIFIER NULL,
     [JournalEntryId] UNIQUEIDENTIFIER NULL,
@@ -22,7 +24,9 @@ CREATE TABLE [dbo].[Bills]
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
-    CONSTRAINT [FK_Bills_Vendors] FOREIGN KEY ([VendorId]) REFERENCES [dbo].[Vendors]([Id])
+    CONSTRAINT [FK_Bills_Vendors] FOREIGN KEY ([VendorId]) REFERENCES [dbo].[Vendors]([Id]),
+    CONSTRAINT [FK_Bills_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
+    CONSTRAINT [FK_Bills_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[Bills_History]))
 GO
@@ -47,4 +51,10 @@ GO
 
 CREATE INDEX [IX_Bills_Source] ON [dbo].[Bills]([SourceSystem], [SourceId])
 WHERE [SourceSystem] IS NOT NULL
+GO
+
+CREATE INDEX [IX_Bills_ProjectId] ON [dbo].[Bills]([ProjectId]) WHERE ProjectId IS NOT NULL
+GO
+
+CREATE INDEX [IX_Bills_ClassId] ON [dbo].[Bills]([ClassId]) WHERE ClassId IS NOT NULL
 GO

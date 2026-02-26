@@ -196,16 +196,19 @@ class JournalEntryService {
         });
 
         // Create journal entry lines
-        // DR: Accounts Receivable for total amount
+        // DR: Accounts Receivable for total amount (use header-level project/class)
         await axios.post(`${DAB_API_URL}/journalentrylines`, {
             JournalEntryId: journalEntryId,
             AccountId: arDefault.accountId,
             Description: `AR - Invoice ${invoice.InvoiceNumber}`,
             Debit: invoice.TotalAmount,
-            Credit: 0
+            Credit: 0,
+            ProjectId: invoice.ProjectId || null,
+            ClassId: invoice.ClassId || null
         });
 
         // CR: Revenue accounts per line - batch create for performance
+        // Line-level project/class overrides header; falls back to header; falls back to null
         const revenueLinePromises = lines.map((line) => {
             const revenueAccountId = line.RevenueAccountId || revenueDefault.accountId;
             return axios.post(`${DAB_API_URL}/journalentrylines`, {
@@ -213,7 +216,9 @@ class JournalEntryService {
                 AccountId: revenueAccountId,
                 Description: line.Description || `Invoice line`,
                 Debit: 0,
-                Credit: line.Amount
+                Credit: line.Amount,
+                ProjectId: line.ProjectId || invoice.ProjectId || null,
+                ClassId: line.ClassId || invoice.ClassId || null
             });
         });
         await Promise.all(revenueLinePromises);
@@ -287,14 +292,16 @@ class JournalEntryService {
             PostedBy: userId
         });
 
-        // Create reversing lines (swap debits and credits) - batch create for performance
+        // Create reversing lines (swap debits and credits, preserve project/class) - batch create for performance
         const reversingLinePromises = originalLines.map((line) =>
             axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: reversingJeId,
                 AccountId: line.AccountId,
                 Description: `VOID: ${line.Description || ''}`,
                 Debit: line.Credit,  // Swap
-                Credit: line.Debit   // Swap
+                Credit: line.Debit,  // Swap
+                ProjectId: line.ProjectId || null,
+                ClassId: line.ClassId || null
             })
         );
         await Promise.all(reversingLinePromises);
@@ -387,24 +394,29 @@ class JournalEntryService {
         }
 
         // DR: Expense accounts per line (bill lines already have AccountId) - batch create for performance
+        // Line-level project/class overrides header; falls back to header; falls back to null
         const expenseLinePromises = lines.map((line) =>
             axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: journalEntryId,
                 AccountId: line.AccountId,
                 Description: line.Description || `Bill expense`,
                 Debit: line.Amount,
-                Credit: 0
+                Credit: 0,
+                ProjectId: line.ProjectId || bill.ProjectId || null,
+                ClassId: line.ClassId || bill.ClassId || null
             })
         );
         await Promise.all(expenseLinePromises);
 
-        // CR: Accounts Payable for total amount
+        // CR: Accounts Payable for total amount (use header-level project/class)
         await axios.post(`${DAB_API_URL}/journalentrylines`, {
             JournalEntryId: journalEntryId,
             AccountId: apDefault.accountId,
             Description: `AP - Bill ${bill.BillNumber || billId}`,
             Debit: 0,
-            Credit: bill.TotalAmount
+            Credit: bill.TotalAmount,
+            ProjectId: bill.ProjectId || null,
+            ClassId: bill.ClassId || null
         });
 
         // Update bill with journal entry link
@@ -476,14 +488,16 @@ class JournalEntryService {
             PostedBy: userId
         });
 
-        // Create reversing lines (swap debits and credits) - batch create for performance
+        // Create reversing lines (swap debits and credits, preserve project/class) - batch create for performance
         const reversingLinePromises = originalLines.map((line) =>
             axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: reversingJeId,
                 AccountId: line.AccountId,
                 Description: `VOID: ${line.Description || ''}`,
                 Debit: line.Credit,
-                Credit: line.Debit
+                Credit: line.Debit,
+                ProjectId: line.ProjectId || null,
+                ClassId: line.ClassId || null
             })
         );
         await Promise.all(reversingLinePromises);

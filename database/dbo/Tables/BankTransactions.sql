@@ -58,6 +58,7 @@ CREATE TABLE [dbo].[BankTransactions]
     [VendorId] UNIQUEIDENTIFIER NULL,
     [CustomerId] UNIQUEIDENTIFIER NULL,
     [ClassId] UNIQUEIDENTIFIER NULL,
+    [ProjectId] UNIQUEIDENTIFIER NULL,
     [Payee] NVARCHAR(255) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
@@ -69,6 +70,11 @@ CREATE TABLE [dbo].[BankTransactions]
     CONSTRAINT [FK_BankTransactions_JournalEntry] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id]),
     CONSTRAINT [FK_BankTransactions_Vendors] FOREIGN KEY ([VendorId]) REFERENCES [dbo].[Vendors]([Id]),
     CONSTRAINT [FK_BankTransactions_Customers] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers]([Id]),
-    CONSTRAINT [FK_BankTransactions_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
+    CONSTRAINT [FK_BankTransactions_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
+    CONSTRAINT [FK_BankTransactions_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[BankTransactions_History]));
+GO
+
+CREATE INDEX [IX_BankTransactions_ProjectId] ON [dbo].[BankTransactions] ([ProjectId]) WHERE ProjectId IS NOT NULL;
+GO

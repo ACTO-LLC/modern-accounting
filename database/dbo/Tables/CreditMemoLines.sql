@@ -8,6 +8,8 @@ CREATE TABLE [dbo].[CreditMemoLines]
     [UnitPrice] DECIMAL(19,4) NOT NULL DEFAULT 0,
     [Amount] DECIMAL(19,4) NOT NULL DEFAULT 0,
     [AccountId] UNIQUEIDENTIFIER NULL,
+    [ProjectId] UNIQUEIDENTIFIER NULL,
+    [ClassId] UNIQUEIDENTIFIER NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
@@ -17,7 +19,9 @@ CREATE TABLE [dbo].[CreditMemoLines]
 
     CONSTRAINT [FK_CreditMemoLines_CreditMemos] FOREIGN KEY ([CreditMemoId]) REFERENCES [dbo].[CreditMemos]([Id]) ON DELETE CASCADE,
     CONSTRAINT [FK_CreditMemoLines_ProductsServices] FOREIGN KEY ([ProductServiceId]) REFERENCES [dbo].[ProductsServices]([Id]),
-    CONSTRAINT [FK_CreditMemoLines_Accounts] FOREIGN KEY ([AccountId]) REFERENCES [dbo].[Accounts]([Id])
+    CONSTRAINT [FK_CreditMemoLines_Accounts] FOREIGN KEY ([AccountId]) REFERENCES [dbo].[Accounts]([Id]),
+    CONSTRAINT [FK_CreditMemoLines_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
+    CONSTRAINT [FK_CreditMemoLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[CreditMemoLines_History]))
 GO
@@ -26,4 +30,10 @@ CREATE INDEX [IX_CreditMemoLines_CreditMemoId] ON [dbo].[CreditMemoLines]([Credi
 GO
 
 CREATE INDEX [IX_CreditMemoLines_AccountId] ON [dbo].[CreditMemoLines]([AccountId])
+GO
+
+CREATE INDEX [IX_CreditMemoLines_ProjectId] ON [dbo].[CreditMemoLines]([ProjectId]) WHERE ProjectId IS NOT NULL
+GO
+
+CREATE INDEX [IX_CreditMemoLines_ClassId] ON [dbo].[CreditMemoLines]([ClassId]) WHERE ClassId IS NOT NULL
 GO

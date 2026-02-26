@@ -17,9 +17,15 @@ SELECT
     END AS Status,
     b.[Terms],
     b.[Memo],
+    b.[ProjectId],
+    p.[Name] AS ProjectName,
+    b.[ClassId],
+    cl.[Name] AS ClassName,
     b.[CreatedAt],
     b.[UpdatedAt]
 FROM
     [dbo].[Bills] b
-    LEFT JOIN [dbo].[Vendors] v ON b.[VendorId] = v.[Id];
+    LEFT JOIN [dbo].[Vendors] v ON b.[VendorId] = v.[Id]
+    LEFT JOIN [dbo].[Projects] p ON b.[ProjectId] = p.[Id]
+    LEFT JOIN [dbo].[Classes] cl ON b.[ClassId] = cl.[Id];
 GO

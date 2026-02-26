@@ -22,6 +22,8 @@ interface Estimate {
   Status: string;
   ConvertedToInvoiceId: string | null;
   Notes: string | null;
+  ProjectId: string | null;
+  ClassId: string | null;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -33,6 +35,8 @@ interface EstimateLine {
   Quantity: number;
   UnitPrice: number;
   Amount?: number;
+  ProjectId?: string | null;
+  ClassId?: string | null;
 }
 
 
@@ -72,7 +76,7 @@ export default function Estimates() {
       const allInvoices = allInvoicesResponse.data.value;
       const invoiceNumber = generateNextInvoiceNumber(allInvoices);
 
-      // Create the invoice
+      // Create the invoice (copy ProjectId/ClassId from estimate)
       await api.post('/invoices_write', {
         InvoiceNumber: invoiceNumber,
         CustomerId: estimate.CustomerId,
@@ -80,6 +84,8 @@ export default function Estimates() {
         DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         TotalAmount: estimate.TotalAmount,
         Status: 'Draft',
+        ProjectId: estimate.ProjectId || null,
+        ClassId: estimate.ClassId || null,
       });
 
       // DAB doesn't return the created entity, so query for it by InvoiceNumber
@@ -99,6 +105,8 @@ export default function Estimates() {
             Description: line.Description,
             Quantity: line.Quantity,
             UnitPrice: line.UnitPrice,
+            ProjectId: line.ProjectId || null,
+            ClassId: line.ClassId || null,
           })
         )
       );

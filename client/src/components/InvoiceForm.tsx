@@ -13,6 +13,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import CustomerSelector from './CustomerSelector';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
+import ProjectSelector from './ProjectSelector';
+import ClassSelector from './ClassSelector';
 import api from '../lib/api';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 
@@ -54,6 +56,8 @@ export const invoiceSchema = z.object({
   TaxAmount: z.number().min(0, 'Tax amount must be positive'),
   TotalAmount: z.number().min(0, 'Amount must be positive'),
   Status: z.enum(['Draft', 'Sent', 'Paid', 'Overdue']),
+  ProjectId: z.string().uuid().nullish(),
+  ClassId: z.string().uuid().nullish(),
   Lines: z.array(z.object({
     Id: z.string().nullish(),
     ProductServiceId: z.string().nullish(),
@@ -61,7 +65,9 @@ export const invoiceSchema = z.object({
     Quantity: z.number().min(1, 'Quantity must be at least 1'),
     UnitPrice: z.number().min(0, 'Unit price must be positive'),
     Amount: z.number().nullish(),
-    IsTaxable: z.boolean().optional()
+    IsTaxable: z.boolean().optional(),
+    ProjectId: z.string().uuid().nullish(),
+    ClassId: z.string().uuid().nullish()
   })).min(1, 'At least one line item is required')
 });
 
@@ -166,11 +172,13 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       Status: 'Draft',
       IssueDate: new Date().toISOString().split('T')[0],
       DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true }],
+      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true, ProjectId: null, ClassId: null }],
       Subtotal: 0,
       TaxRateId: initialValues?.TaxRateId || null,
       TaxAmount: 0,
       TotalAmount: 0,
+      ProjectId: null,
+      ClassId: null,
       ...initialValues
     }
   });
@@ -393,6 +401,32 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
               </TextField>
             )}
           />
+
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <ProjectSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+                customerId={watch('CustomerId')}
+                className=""
+              />
+            )}
+          />
+
+          <Controller
+            name="ClassId"
+            control={control}
+            render={({ field }) => (
+              <ClassSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
         </div>
 
         {/* Line Items */}
@@ -405,7 +439,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
               size="small"
               startIcon={<Plus className="w-4 h-4" />}
               onClick={() => {
-                append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true });
+                append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true, ProjectId: null, ClassId: null });
                 // Set new line as taxable by default
                 setLineTaxableStatus(prev => ({ ...prev, [fields.length]: true }));
               }}
@@ -538,6 +572,35 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                     >
                       <Trash2 className="w-5 h-5" />
                     </IconButton>
+                  </div>
+                  <div className="flex gap-4 items-start mt-2">
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ProjectId`}
+                        control={control}
+                        render={({ field: pField }) => (
+                          <ProjectSelector
+                            value={pField.value || ''}
+                            onChange={pField.onChange}
+                            disabled={isSubmitting}
+                            customerId={watch('CustomerId')}
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ClassId`}
+                        control={control}
+                        render={({ field: cField }) => (
+                          <ClassSelector
+                            value={cField.value || ''}
+                            onChange={cField.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               );

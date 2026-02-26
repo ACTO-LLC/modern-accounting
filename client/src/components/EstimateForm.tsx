@@ -6,11 +6,15 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import CustomerSelector from './CustomerSelector';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
+import ProjectSelector from './ProjectSelector';
+import ClassSelector from './ClassSelector';
 
 // Line item schema with proper validation
 const lineItemSchema = z.object({
   Id: z.string().nullish(),
   ProductServiceId: z.string().nullish(),
+  ProjectId: z.string().uuid().nullish(),
+  ClassId: z.string().uuid().nullish(),
   Description: z.string().min(1, 'Description is required'),
   Quantity: z.number().min(0.0001, 'Quantity must be positive'),
   UnitPrice: z.number().min(0, 'Unit price must be zero or positive'),
@@ -21,6 +25,8 @@ const lineItemSchema = z.object({
 export const estimateSchema = z.object({
   EstimateNumber: z.string().min(1, 'Estimate number is required'),
   CustomerId: z.string().uuid('Please select a valid customer'),
+  ProjectId: z.string().uuid().nullish(),
+  ClassId: z.string().uuid().nullish(),
   IssueDate: z.string().min(1, 'Issue date is required'),
   ExpirationDate: z.string().optional(),
   TotalAmount: z.number().min(0, 'Amount must be zero or positive'),
@@ -59,13 +65,15 @@ interface EstimateFormProps {
 
 export default function EstimateForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Estimate' }: EstimateFormProps) {
   const navigate = useNavigate();
-  const { register, control, handleSubmit, setValue, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<EstimateFormData>({
+  const { register, control, handleSubmit, setValue, watch, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<EstimateFormData>({
     resolver: zodResolver(estimateSchema),
     defaultValues: {
       Status: 'Draft',
       IssueDate: new Date().toISOString().split('T')[0],
       ExpirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 }],
+      ProjectId: null,
+      ClassId: null,
+      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, ClassId: null }],
       TotalAmount: 0,
       Notes: '',
       ...initialValues
@@ -176,6 +184,31 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
             </select>
             {errors.Status && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.Status.message}</p>}
           </div>
+
+          <Controller
+            name="ProjectId"
+            control={control}
+            render={({ field }) => (
+              <ProjectSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+                customerId={watch('CustomerId')}
+              />
+            )}
+          />
+
+          <Controller
+            name="ClassId"
+            control={control}
+            render={({ field }) => (
+              <ClassSelector
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
+            )}
+          />
         </div>
 
         {/* Notes */}
@@ -198,7 +231,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
             </h3>
             <button
               type="button"
-              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0 })}
+              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, ClassId: null })}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/50"
             >
               <Plus className="w-4 h-4 mr-1" />
@@ -297,6 +330,34 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
+                  </div>
+                  <div className="flex gap-4 items-start mt-2">
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ProjectId`}
+                        control={control}
+                        render={({ field: pField }) => (
+                          <ProjectSelector
+                            value={pField.value || ''}
+                            onChange={pField.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.ClassId`}
+                        control={control}
+                        render={({ field: cField }) => (
+                          <ClassSelector
+                            value={cField.value || ''}
+                            onChange={cField.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               );

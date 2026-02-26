@@ -24,10 +24,16 @@ SELECT
     i.[SourceId],
     i.[ClaimId],
     i.[IsPersonal],
+    i.[ProjectId],
+    p.[Name] AS ProjectName,
+    i.[ClassId],
+    cl.[Name] AS ClassName,
     i.[CreatedAt],
     i.[UpdatedAt]
 FROM
     [dbo].[Invoices] i
     LEFT JOIN [dbo].[Customers] c ON i.[CustomerId] = c.[Id]
     LEFT JOIN [dbo].[TaxRates] tr ON i.[TaxRateId] = tr.[Id]
+    LEFT JOIN [dbo].[Projects] p ON i.[ProjectId] = p.[Id]
+    LEFT JOIN [dbo].[Classes] cl ON i.[ClassId] = cl.[Id]
 GO

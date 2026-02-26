@@ -6,6 +6,8 @@ CREATE TABLE [dbo].[PurchaseOrderLines] (
     [Quantity] DECIMAL(18, 4) NOT NULL DEFAULT 1,
     [UnitPrice] DECIMAL(18, 2) NOT NULL DEFAULT 0,
     [Amount] DECIMAL(18, 2) NOT NULL DEFAULT 0,
+    [ProjectId] UNIQUEIDENTIFIER NULL,
+    [ClassId] UNIQUEIDENTIFIER NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
@@ -17,7 +19,9 @@ CREATE TABLE [dbo].[PurchaseOrderLines] (
     CONSTRAINT [FK_PurchaseOrderLines_PurchaseOrders] FOREIGN KEY ([PurchaseOrderId])
         REFERENCES [dbo].[PurchaseOrders] ([Id]) ON DELETE CASCADE,
     CONSTRAINT [FK_PurchaseOrderLines_ProductsServices] FOREIGN KEY ([ProductServiceId])
-        REFERENCES [dbo].[ProductsServices] ([Id])
+        REFERENCES [dbo].[ProductsServices] ([Id]),
+    CONSTRAINT [FK_PurchaseOrderLines_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
+    CONSTRAINT [FK_PurchaseOrderLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[PurchaseOrderLines_History]));
 GO
@@ -26,4 +30,10 @@ CREATE INDEX [IX_PurchaseOrderLines_PurchaseOrderId] ON [dbo].[PurchaseOrderLine
 GO
 
 CREATE INDEX [IX_PurchaseOrderLines_ProductServiceId] ON [dbo].[PurchaseOrderLines] ([ProductServiceId]);
+GO
+
+CREATE INDEX [IX_PurchaseOrderLines_ProjectId] ON [dbo].[PurchaseOrderLines] ([ProjectId]) WHERE ProjectId IS NOT NULL;
+GO
+
+CREATE INDEX [IX_PurchaseOrderLines_ClassId] ON [dbo].[PurchaseOrderLines] ([ClassId]) WHERE ClassId IS NOT NULL;
 GO

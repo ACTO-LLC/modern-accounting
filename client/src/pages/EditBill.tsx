@@ -20,6 +20,8 @@ interface BillLine {
   AccountId: string;
   Description: string;
   Amount: number;
+  ProjectId?: string | null;
+  ClassId?: string | null;
 }
 
 interface Bill {
@@ -34,6 +36,8 @@ interface Bill {
   Status: 'Draft' | 'Open' | 'Paid' | 'Partial' | 'Overdue';
   Terms: string;
   Memo: string;
+  ProjectId?: string | null;
+  ClassId?: string | null;
   JournalEntryId?: string | null;
   Lines?: BillLine[];
 }
@@ -82,7 +86,11 @@ export default function EditBill() {
 
       // 1. Update Bill (exclude Lines)
       const { Lines, ...billData } = data;
-      await api.patch(`/bills_write/Id/${id}`, billData);
+      await api.patch(`/bills_write/Id/${id}`, {
+        ...billData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // 2. Handle Lines Reconciliation
       // Use unquoted GUIDs in OData filter for DAB
@@ -104,13 +112,17 @@ export default function EditBill() {
         ...toUpdate.map(l => api.patch(`/billlines/Id/${l.Id}`, {
           AccountId: l.AccountId,
           Description: l.Description || '',
-          Amount: l.Amount
+          Amount: l.Amount,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/billlines', {
           BillId: id,
           AccountId: l.AccountId,
           Description: l.Description || '',
-          Amount: l.Amount
+          Amount: l.Amount,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         }))
       ];
 
@@ -128,9 +140,13 @@ export default function EditBill() {
             incomingLines.map(line => ({
               AccountId: line.AccountId,
               Amount: line.Amount,
-              Description: line.Description || undefined
+              Description: line.Description || undefined,
+              ProjectId: line.ProjectId || null,
+              ClassId: line.ClassId || null,
             })),
-            user?.name || user?.username
+            user?.name || user?.username,
+            data.ProjectId || null,
+            data.ClassId || null
           );
         } catch (postingError) {
           console.warn('Auto-posting failed, bill still updated:', postingError);

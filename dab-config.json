@@ -206,7 +206,8 @@
                 "VendorId": "VendorId",
                 "CustomerId": "CustomerId",
                 "ClassId": "ClassId",
-                "Payee": "Payee"
+                "Payee": "Payee",
+                "ProjectId": "ProjectId"
             },
             "key-fields": [
                 "Id"
@@ -531,7 +532,11 @@
                 "Status": "Status",
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
-                "ClaimId": "ClaimId"
+                "ClaimId": "ClaimId",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
             },
             "cache": {
                 "enabled": true,
@@ -577,7 +582,9 @@
                 "ClaimId": "ClaimId",
                 "JournalEntryId": "JournalEntryId",
                 "PostedAt": "PostedAt",
-                "PostedBy": "PostedBy"
+                "PostedBy": "PostedBy",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -621,7 +628,9 @@
                 "Amount": "Amount",
                 "RevenueAccountId": "RevenueAccountId",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -651,6 +660,17 @@
                     ]
                 }
             ],
+            "mappings": {
+                "Id": "Id",
+                "JournalEntryId": "JournalEntryId",
+                "AccountId": "AccountId",
+                "Description": "Description",
+                "Debit": "Debit",
+                "Credit": "Credit",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId",
+                "CreatedAt": "CreatedAt"
+            },
             "key-fields": [
                 "Id"
             ],
@@ -1328,7 +1348,11 @@
                 "Terms": "Terms",
                 "Memo": "Memo",
                 "SourceSystem": "SourceSystem",
-                "SourceId": "SourceId"
+                "SourceId": "SourceId",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
             },
             "cache": {
                 "enabled": true,
@@ -1372,7 +1396,9 @@
                 "SourceId": "SourceId",
                 "JournalEntryId": "JournalEntryId",
                 "PostedAt": "PostedAt",
-                "PostedBy": "PostedBy"
+                "PostedBy": "PostedBy",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -1412,7 +1438,9 @@
                 "Description": "Description",
                 "Amount": "Amount",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -1463,7 +1491,11 @@
                 "ConvertedToInvoiceId": "ConvertedToInvoiceId",
                 "Notes": "Notes",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
             },
             "cache": {
                 "enabled": true,
@@ -1504,7 +1536,9 @@
                 "TotalAmount": "TotalAmount",
                 "Status": "Status",
                 "ConvertedToInvoiceId": "ConvertedToInvoiceId",
-                "Notes": "Notes"
+                "Notes": "Notes",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "cache": {
                 "enabled": false
@@ -1543,7 +1577,9 @@
                 "UnitPrice": "UnitPrice",
                 "Amount": "Amount",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -1595,7 +1631,11 @@
                 "Total": "Total",
                 "ConvertedToBillId": "ConvertedToBillId",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
             },
             "cache": {
                 "enabled": true,
@@ -1637,7 +1677,9 @@
                 "Notes": "Notes",
                 "Subtotal": "Subtotal",
                 "Total": "Total",
-                "ConvertedToBillId": "ConvertedToBillId"
+                "ConvertedToBillId": "ConvertedToBillId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "cache": {
                 "enabled": false
@@ -1676,7 +1718,9 @@
                 "UnitPrice": "UnitPrice",
                 "Amount": "Amount",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -3758,7 +3802,11 @@
                 "SourceSystem": "SourceSystem",
                 "SourceId": "SourceId",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
             }
         },
         "vendorcredits_write": {
@@ -3796,7 +3844,9 @@
                 "Status": "Status",
                 "JournalEntryId": "JournalEntryId",
                 "SourceSystem": "SourceSystem",
-                "SourceId": "SourceId"
+                "SourceId": "SourceId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -3839,7 +3889,9 @@
                 "Amount": "Amount",
                 "AccountId": "AccountId",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -4613,7 +4665,11 @@
                 "JournalEntryId": "JournalEntryId",
                 "JournalEntryReference": "JournalEntryReference",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
             },
             "cache": {
                 "enabled": true,
@@ -4654,7 +4710,9 @@
                 "AmountApplied": "AmountApplied",
                 "AmountRefunded": "AmountRefunded",
                 "Status": "Status",
-                "JournalEntryId": "JournalEntryId"
+                "JournalEntryId": "JournalEntryId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
             "key-fields": [
                 "Id"
@@ -4709,7 +4767,11 @@
                 "AccountId": "AccountId",
                 "AccountName": "AccountName",
                 "CreatedAt": "CreatedAt",
-                "UpdatedAt": "UpdatedAt"
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
             }
         },
         "creditmemolines_write": {

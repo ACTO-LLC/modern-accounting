@@ -18,7 +18,11 @@ export default function NewCreditMemo() {
     mutationFn: async (data: CreditMemoFormData) => {
       // Create the credit memo first
       const { Lines, ...creditData } = data;
-      await api.post('/creditmemos_write', creditData);
+      await api.post('/creditmemos_write', {
+        ...creditData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // DAB doesn't return the created entity, so we need to query for it
       const escapedNumber = String(creditData.CreditMemoNumber).replace(/'/g, "''");
@@ -43,6 +47,8 @@ export default function NewCreditMemo() {
               Quantity: line.Quantity,
               UnitPrice: line.UnitPrice,
               Amount: line.Amount,
+              ProjectId: line.ProjectId || null,
+              ClassId: line.ClassId || null,
             })
           )
         );

@@ -20,6 +20,8 @@ interface VendorCreditLine {
   Quantity: number;
   UnitPrice: number;
   Amount: number;
+  ProjectId?: string | null;
+  ClassId?: string | null;
 }
 
 interface VendorCredit {
@@ -33,6 +35,8 @@ interface VendorCredit {
   TotalAmount: number;
   AmountApplied: number;
   Status: 'Open' | 'Applied' | 'Partial' | 'Voided';
+  ProjectId?: string | null;
+  ClassId?: string | null;
   Lines?: VendorCreditLine[];
 }
 
@@ -74,7 +78,11 @@ export default function EditVendorCredit() {
 
       // 1. Update Vendor Credit (exclude Lines)
       const { Lines, ...creditData } = data;
-      await api.patch(`/vendorcredits_write/Id/${id}`, creditData);
+      await api.patch(`/vendorcredits_write/Id/${id}`, {
+        ...creditData,
+        ProjectId: data.ProjectId || null,
+        ClassId: data.ClassId || null,
+      });
 
       // 2. Handle Lines Reconciliation
       // Use unquoted GUIDs in OData filter for DAB
@@ -99,7 +107,9 @@ export default function EditVendorCredit() {
           Description: l.Description || '',
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
-          Amount: l.Amount
+          Amount: l.Amount,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/vendorcreditlines', {
           VendorCreditId: id,
@@ -108,7 +118,9 @@ export default function EditVendorCredit() {
           Description: l.Description || '',
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
-          Amount: l.Amount
+          Amount: l.Amount,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         }))
       ];
 

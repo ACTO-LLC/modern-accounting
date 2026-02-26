@@ -37,6 +37,8 @@ interface InvoiceWithLines {
   TaxAmount: number;
   TotalAmount: number;
   Status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+  ProjectId?: string | null;
+  ClassId?: string | null;
   JournalEntryId?: string | null;
   Lines?: InvoiceLine[];
 }
@@ -86,9 +88,13 @@ export default function EditInvoice() {
       const wasNotPosted = !invoice?.JournalEntryId;
       const isNowPosted = data.Status !== 'Draft';
 
-      // 1. Update Invoice (exclude Lines)
+      // 1. Update Invoice (exclude Lines, include ProjectId/ClassId)
       const { Lines, ...invoiceData } = data;
-      await api.patch(`/invoices_write/Id/${id}`, invoiceData);
+      await api.patch(`/invoices_write/Id/${id}`, {
+        ...invoiceData,
+        ProjectId: invoiceData.ProjectId || null,
+        ClassId: invoiceData.ClassId || null,
+      });
 
       // 2. Handle Lines Reconciliation
       // Fetch current lines from DB to know what to delete
@@ -110,13 +116,17 @@ export default function EditInvoice() {
         ...toUpdate.map(l => api.patch(`/invoicelines/Id/${l.Id}`, {
           Description: l.Description,
           Quantity: l.Quantity,
-          UnitPrice: l.UnitPrice
+          UnitPrice: l.UnitPrice,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/invoicelines', {
           InvoiceId: id,
           Description: l.Description,
           Quantity: l.Quantity,
-          UnitPrice: l.UnitPrice
+          UnitPrice: l.UnitPrice,
+          ProjectId: l.ProjectId || null,
+          ClassId: l.ClassId || null,
         }))
       ]);
 
@@ -130,7 +140,9 @@ export default function EditInvoice() {
             invoiceData.InvoiceNumber,
             invoice?.CustomerName || 'Customer',
             invoiceData.IssueDate,
-            user?.name || user?.username
+            user?.name || user?.username,
+            data.ProjectId || null,
+            data.ClassId || null
           );
         } catch (postingError) {
           console.warn('Auto-posting failed, invoice still updated:', postingError);
@@ -183,6 +195,8 @@ export default function EditInvoice() {
         TaxRateId: invoice.TaxRateId || null,
         TaxAmount: invoice.TaxAmount || 0,
         TotalAmount: invoice.TotalAmount || totalAmount,
+        ProjectId: invoice.ProjectId || null,
+        ClassId: invoice.ClassId || null,
         Status: 'Draft'
       };
 
