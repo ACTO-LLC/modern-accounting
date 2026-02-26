@@ -74,7 +74,7 @@ export default function Estimates() {
       const lines = linesResponse.data.value;
 
       // Fetch existing invoices to generate next invoice number
-      const allInvoicesResponse = await api.get<{ value: Invoice[] }>('/invoices');
+      const allInvoicesResponse = await api.get<{ value: Invoice[] }>('/invoices?$select=InvoiceNumber');
       const allInvoices = allInvoicesResponse.data.value;
       const invoiceNumber = generateNextInvoiceNumber(allInvoices, settings.invoiceNumberPrefix);
 

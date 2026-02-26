@@ -19,7 +19,7 @@ export default function NewInvoice() {
   const { user } = useAuth();
 
   // Fetch existing invoices to generate the next invoice number
-  const { data: allInvoices } = useQuery({
+  const { data: allInvoices, isLoading: isLoadingInvoices } = useQuery({
     queryKey: ['invoices-for-numbering'],
     queryFn: async () => {
       const response = await api.get<{ value: Invoice[] }>('/invoices?$select=InvoiceNumber');
@@ -98,12 +98,17 @@ export default function NewInvoice() {
     }
   };
 
+  if (isLoadingInvoices) {
+    return null;
+  }
+
   return (
     <InvoiceForm
       title="New Invoice"
       initialValues={nextInvoiceNumber ? { InvoiceNumber: nextInvoiceNumber } : undefined}
       onSubmit={onSubmit}
       submitButtonText="Create Invoice"
+      isAutoNumbered={!!nextInvoiceNumber}
     />
   );
 }

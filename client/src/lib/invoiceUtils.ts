@@ -46,7 +46,7 @@ export function generateNextInvoiceNumber(
     })
     .filter(n => n > 0);
 
-  const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+  const maxNumber = existingNumbers.reduce((max, n) => n > max ? n : max, 0);
   return prefix + String(maxNumber + 1).padStart(padding, '0');
 }
 
