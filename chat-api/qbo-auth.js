@@ -20,6 +20,17 @@ import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
 
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
+
+// MSSQL DATETIME2 strips the 'Z' suffix from ISO strings, so DAB returns
+// timestamps without timezone info. JavaScript's Date() interprets these as
+// local time instead of UTC. This helper ensures UTC parsing.
+function parseUtcDate(dateStr) {
+    if (!dateStr) return new Date(0);
+    if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+    }
+    return new Date(dateStr);
+}
 const DAB_AUDIENCE = process.env.AZURE_AD_AUDIENCE || process.env.AZURE_AD_CLIENT_ID;
 
 // Azure credential for DAB authentication (uses Managed Identity in production, Azure CLI locally)
@@ -327,7 +338,7 @@ class QBOAuth {
                 oauthClient,
                 accessToken: dbConnection.AccessToken,
                 refreshToken: dbConnection.RefreshToken,
-                tokenExpiry: new Date(dbConnection.TokenExpiry),
+                tokenExpiry: parseUtcDate(dbConnection.TokenExpiry),
                 companyName: dbConnection.CompanyName
             };
 
@@ -400,7 +411,7 @@ class QBOAuth {
 
             // Check if refresh token is expired
             if (connection.RefreshTokenExpiry) {
-                const refreshExpiry = new Date(connection.RefreshTokenExpiry);
+                const refreshExpiry = parseUtcDate(connection.RefreshTokenExpiry);
                 if (refreshExpiry < new Date()) {
                     return {
                         connected: false,
@@ -478,7 +489,7 @@ class QBOAuth {
                     oauthClient,
                     accessToken: conn.AccessToken,
                     refreshToken: conn.RefreshToken,
-                    tokenExpiry: new Date(conn.TokenExpiry),
+                    tokenExpiry: parseUtcDate(conn.TokenExpiry),
                     companyName: conn.CompanyName
                 });
 
