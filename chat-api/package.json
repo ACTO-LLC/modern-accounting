@@ -5,8 +5,8 @@
     "main": "server.js",
     "type": "module",
     "scripts": {
-        "start": "node server.js",
-        "dev": "node server.js",
+        "start": "node --max-old-space-size=2048 server.js",
+        "dev": "node --max-old-space-size=2048 server.js",
         "test": "vitest run",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage"

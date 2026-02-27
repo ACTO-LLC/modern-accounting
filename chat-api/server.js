@@ -496,6 +496,18 @@ let dynamicTools = [];
 
 // File storage map for tracking uploaded files (fileId -> file metadata)
 const fileStorage = new Map();
+const FILE_STORAGE_MAX_SIZE = 50;
+const FILE_STORAGE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+// Periodic sweep of stale file entries
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of fileStorage) {
+        if (now - entry.createdAt.getTime() > FILE_STORAGE_TTL_MS) {
+            fileStorage.delete(key);
+        }
+    }
+}, 60000); // Sweep every 60s
 
 // ============================================================================
 // REST Client for DAB (used for onboarding tools - more reliable than MCP)
@@ -670,6 +682,16 @@ class DabMcpClient {
         // Response cache for frequently accessed data
         this.responseCache = new Map();
         this.responseCacheTtlMs = 5000;   // 5 second cache TTL for read queries
+
+        // Periodic cache sweep to prevent unbounded growth
+        this.cacheSweepInterval = setInterval(() => {
+            const now = Date.now();
+            for (const [key, entry] of this.responseCache) {
+                if (now - entry.timestamp > this.responseCacheTtlMs) {
+                    this.responseCache.delete(key);
+                }
+            }
+        }, 30000); // Sweep every 30s
     }
 
     /**
@@ -703,6 +725,11 @@ class DabMcpClient {
             clearInterval(this.keepAliveInterval);
             this.keepAliveInterval = null;
         }
+        if (this.cacheSweepInterval) {
+            clearInterval(this.cacheSweepInterval);
+            this.cacheSweepInterval = null;
+        }
+        this.responseCache.clear();
     }
 
     /**
@@ -5809,7 +5836,8 @@ function getAllTools() {
             t.function.name.startsWith('generate_') ||
             t.function.name.startsWith('diagnose_') ||
             t.function.name.startsWith('find_unbalanced') ||
-            t.function.name.startsWith('fetch_')
+            t.function.name.startsWith('fetch_') ||
+            t.function.name.startsWith('qbo_')
         );
         // Put essential static tools FIRST so AI prefers them for migration tasks
         return [...essentialStaticTools, ...filteredDynamicTools];
@@ -5830,7 +5858,12 @@ async function executeFunction(name, args, authToken = null) {
                 const connection = await qboAuth.getActiveConnection();
                 if (connection && connection.AccessToken && connection.RealmId) {
                     // Refresh token if needed before passing to MCP
-                    const tokenExpiry = new Date(connection.TokenExpiry);
+                    // MSSQL DATETIME2 strips 'Z' suffix — append it to ensure UTC parsing
+                    const rawExpiry = connection.TokenExpiry;
+                    const tokenExpiry = new Date(
+                        typeof rawExpiry === 'string' && !rawExpiry.endsWith('Z') && !rawExpiry.includes('+')
+                            ? rawExpiry + 'Z' : rawExpiry
+                    );
                     if (tokenExpiry < new Date(Date.now() + 5 * 60 * 1000)) {
                         console.log('[QBO MCP] Token near expiry, refreshing...');
                         await qboAuth.refreshTokenIfNeeded(connection.RealmId);
@@ -6073,6 +6106,17 @@ async function processUploadedFile(file) {
         result.base64Data = fileBuffer.toString('base64');
     }
 
+    // Evict oldest entries if at capacity
+    if (fileStorage.size >= FILE_STORAGE_MAX_SIZE) {
+        let oldestKey = null;
+        let oldestTime = Infinity;
+        for (const [key, entry] of fileStorage) {
+            const t = entry.createdAt.getTime();
+            if (t < oldestTime) { oldestTime = t; oldestKey = key; }
+        }
+        if (oldestKey) fileStorage.delete(oldestKey);
+    }
+
     // Store file info for later retrieval by tools
     fileStorage.set(fileId, {
         filePath: file.path,
@@ -6097,6 +6141,17 @@ async function processUploadedFile(file) {
 
 // Store for QBO sessions (in production, use database)
 const qboSessions = new Map();
+const QBO_SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// Periodic sweep of expired OAuth state entries
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of qboSessions) {
+        if (now - entry.createdAt.getTime() > QBO_SESSION_TTL_MS) {
+            qboSessions.delete(key);
+        }
+    }
+}, 60000); // Sweep every 60s
 
 // Generate or get QBO session ID from request
 function getQboSessionId(req) {
