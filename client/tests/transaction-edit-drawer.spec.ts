@@ -12,13 +12,13 @@ test.describe('Transaction Edit Drawer', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeAll(async ({ request }) => {
-    // Get a bank/asset account
-    const accountsResp = await request.get(
-      `${DAB}/accounts?$filter=Type eq 'Asset' and IsActive eq true&$top=1`,
-      { headers: ADMIN }
-    );
+    // Get a bank/asset account (fetch all and filter client-side to avoid OData encoding issues)
+    const accountsResp = await request.get(`${DAB}/accounts`, { headers: ADMIN });
     const accountsBody = await accountsResp.json();
-    sourceAccountId = accountsBody.value?.[0]?.Id;
+    const assetAccount = (accountsBody.value || []).find(
+      (a: any) => a.Type === 'Asset' && a.IsActive === true
+    );
+    sourceAccountId = assetAccount?.Id;
     if (!sourceAccountId) throw new Error('No active Asset account found — seed data required');
 
     // Create a pending bank transaction for testing
@@ -70,11 +70,12 @@ test.describe('Transaction Edit Drawer', () => {
     await row.locator('button[title="Edit"]').click();
     await expect(page.getByText('Edit Transaction')).toBeVisible({ timeout: 5000 });
 
-    // Verify context fields
-    await expect(page.getByText('$42.50')).toBeVisible();
-    await expect(page.getByText(TEST_DESCRIPTION)).toBeVisible();
-    await expect(page.getByText('Test Merchant')).toBeVisible();
-    await expect(page.getByText('E2E Test Bank')).toBeVisible();
+    // Verify context fields within the drawer
+    const drawer = page.getByRole('dialog');
+    await expect(drawer.getByText('$42.50').first()).toBeVisible();
+    await expect(drawer.getByText(TEST_DESCRIPTION)).toBeVisible();
+    await expect(drawer.getByText('Test Merchant')).toBeVisible();
+    await expect(drawer.getByText('E2E Test Bank')).toBeVisible();
   });
 
   test('All form fields are present', async ({ page }) => {

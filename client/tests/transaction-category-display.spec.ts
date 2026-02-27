@@ -51,7 +51,7 @@ test.describe('Transaction Category Display (#432)', () => {
     }
   });
 
-  test('should show account dropdown in edit mode with matching account names', async ({ page }) => {
+  test('should show account dropdown in drawer with matching account names', async ({ page }) => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
@@ -62,7 +62,7 @@ test.describe('Transaction Category Display (#432)', () => {
     const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 10000 }).catch(() => false);
     test.skip(!hasRows, 'No pending transactions available to test edit mode');
 
-    // Get the displayed category text from the first row before entering edit mode
+    // Get the displayed category text from the first row before opening drawer
     const firstCategoryCell = page.locator('.MuiDataGrid-row').first().locator('[data-field="SuggestedCategory"] .font-medium');
     const displayedCategory = await firstCategoryCell.textContent();
 
@@ -70,17 +70,26 @@ test.describe('Transaction Category Display (#432)', () => {
     const editButton = page.locator('.MuiDataGrid-row').first().locator('button[title="Edit"]');
     await editButton.click();
 
-    // Verify the edit dropdown (select element) appears in the Category column
-    const editSelect = page.locator('.MuiDataGrid-row').first().locator('[data-field="SuggestedCategory"] select');
-    await expect(editSelect).toBeVisible();
+    // Verify the drawer opens
+    await expect(page.getByText('Edit Transaction')).toBeVisible({ timeout: 5000 });
 
-    // Verify the dropdown has account options (more than just the "Select..." placeholder)
-    const options = editSelect.locator('option');
+    // Verify the account Autocomplete field appears in the drawer
+    const accountInput = page.getByPlaceholder('Select account...');
+    await expect(accountInput).toBeVisible();
+
+    // Click the autocomplete to open the options list
+    await accountInput.click();
+
+    // Wait for the MUI Autocomplete listbox to appear
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 5000 });
+
+    // Verify there are account options
+    const options = page.locator('.MuiAutocomplete-listbox [role="option"]');
     const optionCount = await options.count();
-    expect(optionCount).toBeGreaterThan(1); // At least "Select..." + one account
+    expect(optionCount).toBeGreaterThan(0);
 
     // If the displayed category was a real account name (not '-'), it should appear
-    // as one of the dropdown options - this is the core of the #432 fix:
+    // as one of the autocomplete options - this is the core of the #432 fix:
     // the display and dropdown should use the same account names.
     if (displayedCategory && displayedCategory.trim() !== '-') {
       const optionTexts: string[] = [];
@@ -92,12 +101,11 @@ test.describe('Transaction Category Display (#432)', () => {
       expect(optionTexts).toContain(displayedCategory.trim());
     }
 
-    // Cancel the edit
-    const cancelButton = page.locator('.MuiDataGrid-row').first().locator('button[title="Cancel"]');
-    await cancelButton.click();
+    // Close the drawer
+    await page.getByRole('button', { name: 'Cancel' }).click();
 
-    // Verify we're back to display mode (select should no longer be visible)
-    await expect(editSelect).not.toBeVisible();
+    // Verify drawer is closed
+    await expect(page.getByText('Edit Transaction')).not.toBeVisible();
   });
 
   test('should filter transactions by resolved category name using search', async ({ page }) => {
@@ -162,7 +170,7 @@ test.describe('Transaction Category Display (#432)', () => {
     await expect(page.getByText('Review, categorize, and approve bank transactions')).toBeVisible();
   });
 
-  test('should show the edit form account dropdown populated with Chart of Accounts entries', async ({ page }) => {
+  test('should show the drawer account dropdown populated with Chart of Accounts entries', async ({ page }) => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
@@ -172,21 +180,28 @@ test.describe('Transaction Category Display (#432)', () => {
     const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 10000 }).catch(() => false);
     test.skip(!hasRows, 'No pending transactions to test');
 
-    // Enter edit mode on first row
+    // Open drawer on first row
     const editButton = page.locator('.MuiDataGrid-row').first().locator('button[title="Edit"]');
     await editButton.click();
 
-    // The edit dropdown should show accounts from the Chart of Accounts, not raw Plaid categories.
-    // Verify the dropdown has real account names by checking for typical account type names.
-    const editSelect = page.locator('.MuiDataGrid-row').first().locator('[data-field="SuggestedCategory"] select');
-    await expect(editSelect).toBeVisible();
+    // Verify drawer opens
+    await expect(page.getByText('Edit Transaction')).toBeVisible({ timeout: 5000 });
 
-    const optionCount = await editSelect.locator('option').count();
+    // The account Autocomplete should show accounts from the Chart of Accounts, not raw Plaid categories.
+    const accountInput = page.getByPlaceholder('Select account...');
+    await expect(accountInput).toBeVisible();
+
+    // Click to open autocomplete options
+    await accountInput.click();
+    await expect(page.locator('.MuiAutocomplete-listbox')).toBeVisible({ timeout: 5000 });
+
+    const options = page.locator('.MuiAutocomplete-listbox [role="option"]');
+    const optionCount = await options.count();
     // There should be a reasonable number of accounts (Chart of Accounts typically has many)
     expect(optionCount).toBeGreaterThan(2);
 
-    // Verify the first non-placeholder option has a meaningful name (not just a GUID or short code)
-    const firstAccountOption = editSelect.locator('option').nth(1); // skip "Select..."
+    // Verify the first option has a meaningful name (not just a GUID or short code)
+    const firstAccountOption = options.first();
     const accountName = await firstAccountOption.textContent();
     expect(accountName).toBeTruthy();
     expect(accountName!.length).toBeGreaterThan(2); // Real account names are longer than abbreviations

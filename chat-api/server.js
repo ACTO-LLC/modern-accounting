@@ -253,6 +253,7 @@ app.patch('/api/companies/Id/:id', async (req, res) => {
         const response = await axios.patch(dabUrl, req.body, {
             headers: {
                 'Content-Type': 'application/json',
+                ...(req.headers['x-ms-api-role'] && { 'X-MS-API-ROLE': req.headers['x-ms-api-role'] }),
                 ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
             }
         });
@@ -279,6 +280,7 @@ app.post('/api/companies', async (req, res) => {
         const response = await axios.post(dabUrl, req.body, {
             headers: {
                 'Content-Type': 'application/json',
+                ...(req.headers['x-ms-api-role'] && { 'X-MS-API-ROLE': req.headers['x-ms-api-role'] }),
                 ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
             }
         });

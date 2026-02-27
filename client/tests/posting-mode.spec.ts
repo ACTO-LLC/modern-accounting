@@ -1,5 +1,8 @@
 import { test, expect } from './coverage.fixture';
 
+// All tests in this file share company settings state and must run serially
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Invoice Posting Mode Settings', () => {
   test.beforeEach(async ({ page }) => {
     // Clear localStorage to ensure fresh settings
@@ -61,11 +64,17 @@ test.describe('Invoice Posting Mode Settings', () => {
   test('posting mode persists after page reload', async ({ page }) => {
     await page.goto('/settings');
 
-    // Wait for form to load
+    // Wait for form to load from DB
     await expect(page.getByText('Transaction Posting Mode')).toBeVisible();
+
+    // Wait for the form to fully hydrate by checking that one of the radios is checked
+    await page.locator('input[name="invoicePostingMode"]:checked').waitFor({ timeout: 10000 });
 
     // Switch to Advanced Mode
     await page.locator('label:has-text("Advanced Mode")').first().click();
+
+    // Verify the radio is checked before saving
+    await expect(page.locator('input[value="advanced"]')).toBeChecked();
 
     // Save and verify the API response succeeded
     const saveResponsePromise = page.waitForResponse(
@@ -93,8 +102,11 @@ test.describe('Invoice Posting Mode Settings', () => {
       test.skip(true, 'Settings were modified by a parallel test worker between save and reload');
     }
 
-    // Verify Advanced Mode is still selected in the UI
+    // Wait for the form to fully hydrate after reload
     await expect(page.getByText('Transaction Posting Mode')).toBeVisible();
+    await page.locator('input[name="invoicePostingMode"]:checked').waitFor({ timeout: 10000 });
+
+    // Verify Advanced Mode is still selected in the UI
     const advancedRadio = page.locator('input[value="advanced"]');
     await expect(advancedRadio).toBeChecked({ timeout: 10000 });
   });

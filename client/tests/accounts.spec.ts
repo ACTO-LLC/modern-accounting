@@ -100,7 +100,8 @@ test.describe('Chart of Accounts', () => {
     test.skip(!hasRows, 'No account data to filter');
 
     const typeHeader = page.locator('.MuiDataGrid-columnHeader[data-field="Type"]');
-    await typeHeader.hover();
+    await typeHeader.hover({ force: true });
+    await page.waitForTimeout(500);
     const menuButton = typeHeader.locator('.MuiDataGrid-menuIcon button');
     await expect(menuButton).toBeVisible({ timeout: 5000 });
     await menuButton.click();
@@ -113,6 +114,7 @@ test.describe('Chart of Accounts', () => {
     await page.keyboard.press('Enter');
 
     const rows = page.locator('.MuiDataGrid-row');
-    await expect(rows.first().getByText('Expense')).toBeVisible({ timeout: 10000 });
+    // Verify filtered results by checking the Type column specifically
+    await expect(rows.first().locator('[data-field="Type"]')).toContainText('Expense', { timeout: 10000 });
   });
 });

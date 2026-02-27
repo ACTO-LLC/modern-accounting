@@ -133,8 +133,8 @@ test.describe('Bank Import History', () => {
   test('can navigate to new import', async ({ page }) => {
     await page.getByRole('link', { name: /New Import/i }).click();
 
-    // Should navigate to bank import page
-    await expect(page).toHaveURL('/bank-import');
+    // Should navigate to import page with bank-import tab
+    await expect(page).toHaveURL(/\/import\?tab=bank-import/);
   });
 
   test('can navigate to review matches', async ({ page }) => {
