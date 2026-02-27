@@ -2375,9 +2375,14 @@ async function executeQboQuery(params) {
         const result = await qboAuth.query(params.query);
 
         // QBO returns results keyed by entity type (e.g., { Invoice: [...], Customer: [...] })
+        // For COUNT(*) queries, QBO only returns { totalCount: N } with no entity array
         const entityTypes = Object.keys(result || {}).filter(k => k !== 'startPosition' && k !== 'maxResults' && k !== 'totalCount');
 
         if (entityTypes.length === 0) {
+            // COUNT(*) query — return totalCount directly
+            if (result?.totalCount !== undefined) {
+                return { success: true, count: result.totalCount, data: [] };
+            }
             return { success: true, count: 0, data: [] };
         }
 
