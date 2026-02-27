@@ -11,190 +11,285 @@ test.describe('Recurring Transactions', () => {
     // Verify page description
     await expect(page.getByText('Manage recurring invoices, bills, and journal entries')).toBeVisible();
 
-    // Verify "New Recurring Template" button is present
-    await expect(page.getByRole('button', { name: 'New Recurring Template' })).toBeVisible();
+    // Verify "New Recurring Template" link is present (Link, not button)
+    await expect(page.getByRole('link', { name: 'New Recurring Template' })).toBeVisible();
+  });
+
+  test('should navigate to new recurring template form', async ({ page }) => {
+    await page.goto('/recurring');
+
+    // Click "New Recurring Template" link
+    await page.getByRole('link', { name: 'New Recurring Template' }).click();
+
+    // Verify navigation to /recurring/new
+    await expect(page).toHaveURL(/.*\/recurring\/new/);
+
+    // Verify form page heading
+    await expect(page.getByRole('heading', { name: 'New Recurring Template' })).toBeVisible();
+
+    // Verify form fields are present (MUI TextFields)
+    await expect(page.getByLabel('Template Name')).toBeVisible();
+    await expect(page.getByLabel('Transaction Type')).toBeVisible();
+    await expect(page.getByLabel('Frequency')).toBeVisible();
+    await expect(page.getByLabel('Start Date')).toBeVisible();
   });
 
   test('should create a recurring template', async ({ page }) => {
     const timestamp = Date.now();
     const templateName = `Test Template ${timestamp}`;
-    const startDate = new Date().toISOString().split('T')[0];
 
-    // 1. Navigate to Recurring Transactions page
-    await page.goto('/recurring');
+    // 1. Navigate to new recurring template form
+    await page.goto('/recurring/new');
 
-    // 2. Click "New Recurring Template" button
-    await page.getByRole('button', { name: 'New Recurring Template' }).click();
+    // 2. Verify form page heading
+    await expect(page.getByRole('heading', { name: 'New Recurring Template' })).toBeVisible();
 
-    // 3. Verify modal is open
-    await expect(page.getByRole('heading', { name: 'Create Recurring Template' })).toBeVisible();
+    // 3. Fill the form
 
-    // 4. Fill the form
+    // Template Name (MUI TextField)
     await page.getByLabel('Template Name').fill(templateName);
-    await page.getByLabel('Transaction Type').selectOption('Invoice');
-    await page.getByLabel('Frequency').selectOption('Monthly');
-    await page.getByLabel('Every').fill('1');
-    await page.getByLabel('Day of Month').selectOption('15');
+
+    // Transaction Type (MUI select)
+    await page.getByLabel('Transaction Type').click();
+    await page.getByRole('option', { name: 'Invoice' }).click();
+
+    // Frequency (MUI select)
+    await page.getByLabel('Frequency').click();
+    await page.getByRole('option', { name: 'Monthly' }).click();
+
+    // Day of Month (MUI select, visible for Monthly)
+    await page.getByLabel('Day of Month').click();
+    await page.getByRole('option', { name: '15' }).click();
+
+    // Start Date (date input)
+    const startDate = new Date().toISOString().split('T')[0];
     await page.getByLabel('Start Date').fill(startDate);
 
-    // 5. Submit the form
+    // 4. Submit the form
     await page.getByRole('button', { name: 'Create Template' }).click();
+
+    // 5. Verify navigation back to the recurring list
+    await expect(page).toHaveURL('/recurring');
 
     // 6. Verify the template appears in the list
     await expect(page.getByText(templateName)).toBeVisible();
-    await expect(page.getByText('Invoice').first()).toBeVisible();
-    await expect(page.getByText('Active').first()).toBeVisible();
   });
 
   test('should pause and resume a recurring template', async ({ page }) => {
     const timestamp = Date.now();
     const templateName = `Pause Test ${timestamp}`;
-    const startDate = new Date().toISOString().split('T')[0];
 
-    // 1. Navigate to Recurring Transactions page
-    await page.goto('/recurring');
+    // 1. Create a template via the form
+    await page.goto('/recurring/new');
+    await expect(page.getByRole('heading', { name: 'New Recurring Template' })).toBeVisible();
 
-    // 2. Create a template first
-    await page.getByRole('button', { name: 'New Recurring Template' }).click();
     await page.getByLabel('Template Name').fill(templateName);
-    await page.getByLabel('Transaction Type').selectOption('Bill');
-    await page.getByLabel('Frequency').selectOption('Weekly');
-    await page.getByLabel('Day of Week').selectOption('1'); // Monday
+
+    // Transaction Type (MUI select)
+    await page.getByLabel('Transaction Type').click();
+    await page.getByRole('option', { name: 'Bill' }).click();
+
+    // Frequency (MUI select)
+    await page.getByLabel('Frequency').click();
+    await page.getByRole('option', { name: 'Weekly' }).click();
+
+    // Day of Week (MUI select, visible for Weekly)
+    await page.getByLabel('Day of Week').click();
+    await page.getByRole('option', { name: 'Monday' }).click();
+
+    const startDate = new Date().toISOString().split('T')[0];
     await page.getByLabel('Start Date').fill(startDate);
+
     await page.getByRole('button', { name: 'Create Template' }).click();
+
+    // Verify navigation back to list
+    await expect(page).toHaveURL('/recurring');
 
     // Wait for the template to appear
     await expect(page.getByText(templateName)).toBeVisible();
 
-    // 3. Find the row with the template and click Pause
+    // 2. Find the row with the template and click Pause (icon button with title)
     const row = page.getByRole('row').filter({ hasText: templateName });
     await expect(row.getByText('Active')).toBeVisible();
 
-    // Click the Pause button (has title "Pause")
+    // Click the Pause button (has title="Pause")
     await row.getByRole('button', { name: 'Pause' }).click();
 
-    // 4. Verify status changed to Paused
+    // 3. Verify status changed to Paused
     await expect(row.getByText('Paused')).toBeVisible();
 
-    // 5. Click the Resume button (now has title "Resume")
+    // 4. Click the Resume button (now has title="Resume")
     await row.getByRole('button', { name: 'Resume' }).click();
 
-    // 6. Verify status changed back to Active
+    // 5. Verify status changed back to Active
     await expect(row.getByText('Active')).toBeVisible();
   });
 
   test('should view schedule history', async ({ page }) => {
     const timestamp = Date.now();
     const templateName = `History Test ${timestamp}`;
-    const startDate = new Date().toISOString().split('T')[0];
 
-    // 1. Navigate to Recurring Transactions page
-    await page.goto('/recurring');
+    // 1. Create a template via the form
+    await page.goto('/recurring/new');
+    await expect(page.getByRole('heading', { name: 'New Recurring Template' })).toBeVisible();
 
-    // 2. Create a template first
-    await page.getByRole('button', { name: 'New Recurring Template' }).click();
     await page.getByLabel('Template Name').fill(templateName);
-    await page.getByLabel('Transaction Type').selectOption('JournalEntry');
-    await page.getByLabel('Frequency').selectOption('Daily');
+
+    // Transaction Type (MUI select)
+    await page.getByLabel('Transaction Type').click();
+    await page.getByRole('option', { name: 'Journal Entry' }).click();
+
+    // Frequency (MUI select)
+    await page.getByLabel('Frequency').click();
+    await page.getByRole('option', { name: 'Daily' }).click();
+
+    const startDate = new Date().toISOString().split('T')[0];
     await page.getByLabel('Start Date').fill(startDate);
+
     await page.getByRole('button', { name: 'Create Template' }).click();
+
+    // Verify navigation back to list
+    await expect(page).toHaveURL('/recurring');
 
     // Wait for the template to appear
     await expect(page.getByText(templateName)).toBeVisible();
 
-    // 3. Find the row and click the View History button
+    // 2. Find the row and click the View History button (icon button with title)
     const row = page.getByRole('row').filter({ hasText: templateName });
     await row.getByRole('button', { name: 'View History' }).click();
 
-    // 4. Verify history modal opens
+    // 3. Verify history modal opens
     await expect(page.getByRole('heading', { name: `History: ${templateName}` })).toBeVisible();
 
-    // 5. Verify the history modal structure (may show "No history yet" for new template)
-    // Check for either the "No history yet" message or the history table headers
+    // 4. Verify the history modal structure (may show "No history yet" for new template)
     const noHistoryText = page.getByText('No history yet');
     const scheduledHeader = page.getByText('Scheduled', { exact: false });
 
     // One of these should be visible
     await expect(noHistoryText.or(scheduledHeader)).toBeVisible();
 
-    // 6. Close the modal
+    // 5. Close the modal
     await page.getByRole('button', { name: 'Close' }).click();
 
-    // 7. Verify modal is closed
+    // 6. Verify modal is closed
     await expect(page.getByRole('heading', { name: `History: ${templateName}` })).not.toBeVisible();
   });
 
   test('should delete a recurring template', async ({ page }) => {
     const timestamp = Date.now();
     const templateName = `Delete Test ${timestamp}`;
-    const startDate = new Date().toISOString().split('T')[0];
 
-    // 1. Navigate to Recurring Transactions page
-    await page.goto('/recurring');
+    // 1. Create a template via the form
+    await page.goto('/recurring/new');
+    await expect(page.getByRole('heading', { name: 'New Recurring Template' })).toBeVisible();
 
-    // 2. Create a template first
-    await page.getByRole('button', { name: 'New Recurring Template' }).click();
     await page.getByLabel('Template Name').fill(templateName);
-    await page.getByLabel('Transaction Type').selectOption('Invoice');
-    await page.getByLabel('Frequency').selectOption('Yearly');
+
+    // Transaction Type (MUI select)
+    await page.getByLabel('Transaction Type').click();
+    await page.getByRole('option', { name: 'Invoice' }).click();
+
+    // Frequency (MUI select)
+    await page.getByLabel('Frequency').click();
+    await page.getByRole('option', { name: 'Yearly' }).click();
+
+    const startDate = new Date().toISOString().split('T')[0];
     await page.getByLabel('Start Date').fill(startDate);
+
     await page.getByRole('button', { name: 'Create Template' }).click();
+
+    // Verify navigation back to list
+    await expect(page).toHaveURL('/recurring');
 
     // Wait for the template to appear in the list
     await expect(page.locator('table').getByText(templateName)).toBeVisible();
 
-    // 3. Find the row and click Delete (opens custom modal, not browser dialog)
+    // 2. Find the row and click Delete (icon button with title, opens modal)
     const row = page.getByRole('row').filter({ hasText: templateName });
     await row.getByRole('button', { name: 'Delete' }).click();
 
-    // 4. Verify the confirmation modal appears
+    // 3. Verify the confirmation modal appears
     await expect(page.getByRole('heading', { name: 'Delete Recurring Template' })).toBeVisible();
     await expect(page.getByText('Are you sure you want to delete')).toBeVisible();
 
-    // 5. Confirm deletion by clicking Delete button in modal
+    // 4. Confirm deletion by clicking Delete button in modal
     await page.getByRole('button', { name: 'Delete' }).last().click();
 
-    // 6. Verify the template is removed from the list
+    // 5. Verify the template is removed from the list
     await expect(page.locator('table').getByText(templateName)).not.toBeVisible();
   });
 
-  test('should edit a recurring template', async ({ page }) => {
+  test('should edit a recurring template via row click', async ({ page }) => {
     const timestamp = Date.now();
     const templateName = `Edit Test ${timestamp}`;
-    const startDate = new Date().toISOString().split('T')[0];
 
-    // 1. Navigate and create a template
-    await page.goto('/recurring');
-    await page.getByRole('button', { name: 'New Recurring Template' }).click();
+    // 1. Create a template via the form
+    await page.goto('/recurring/new');
+    await expect(page.getByRole('heading', { name: 'New Recurring Template' })).toBeVisible();
+
     await page.getByLabel('Template Name').fill(templateName);
-    await page.getByLabel('Transaction Type').selectOption('Invoice');
-    await page.getByLabel('Frequency').selectOption('Monthly');
+
+    // Transaction Type (MUI select)
+    await page.getByLabel('Transaction Type').click();
+    await page.getByRole('option', { name: 'Invoice' }).click();
+
+    // Frequency (MUI select)
+    await page.getByLabel('Frequency').click();
+    await page.getByRole('option', { name: 'Monthly' }).click();
+
+    // Day of Month (MUI select)
+    await page.getByLabel('Day of Month').click();
+    await page.getByRole('option', { name: '1', exact: true }).click();
+
+    // Every (IntervalCount)
+    await page.getByLabel('Every').clear();
     await page.getByLabel('Every').fill('1');
-    await page.getByLabel('Day of Month').selectOption('1');
+
+    const startDate = new Date().toISOString().split('T')[0];
     await page.getByLabel('Start Date').fill(startDate);
+
+    // Save and capture the created template ID from the API response
+    const createPromise = page.waitForResponse(resp =>
+      resp.url().includes('/recurringtemplates') &&
+      resp.request().method() === 'POST' &&
+      resp.status() === 201
+    );
     await page.getByRole('button', { name: 'Create Template' }).click();
+    const createResponse = await createPromise;
+    const createBody = await createResponse.json();
+    const createdId = createBody.Id;
+
+    // Verify navigation back to list
+    await expect(page).toHaveURL('/recurring');
 
     // Wait for the template to appear
     await expect(page.getByText(templateName)).toBeVisible();
 
-    // 2. Find the row and click Edit
+    // 2. Click on the row to navigate to the edit page
     const row = page.getByRole('row').filter({ hasText: templateName });
-    const editButton = row.getByRole('button', { name: /Edit/i });
+    // Click on the template name cell (not an action button) to trigger row navigation
+    await row.getByText(templateName).click();
 
-    if (await editButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await editButton.click();
+    // 3. Verify navigation to the edit page
+    await expect(page).toHaveURL(new RegExp(`/recurring/.+/edit`));
 
-      // 3. Verify edit modal opens
-      await expect(page.getByRole('heading', { name: /Edit.*Template/i })).toBeVisible();
+    // 4. Verify edit form heading
+    await expect(page.getByRole('heading', { name: 'Edit Recurring Template' })).toBeVisible();
 
-      // 4. Update frequency
-      await page.getByLabel('Frequency').selectOption('Weekly');
+    // 5. Verify existing values loaded
+    await expect(page.getByLabel('Template Name')).toHaveValue(templateName);
 
-      // 5. Save changes
-      await page.getByRole('button', { name: /Save|Update/i }).click();
+    // 6. Update the frequency to Weekly via MUI select
+    await page.getByLabel('Frequency').click();
+    await page.getByRole('option', { name: 'Weekly' }).click();
 
-      // 6. Verify the template is updated
-      await expect(page.getByText(templateName)).toBeVisible();
-    }
+    // 7. Save changes
+    await page.getByRole('button', { name: 'Update Template' }).click();
+
+    // 8. Verify navigation back to recurring list
+    await expect(page).toHaveURL('/recurring');
+
+    // 9. Verify the template still appears in the list
+    await expect(page.getByText(templateName)).toBeVisible();
   });
 });

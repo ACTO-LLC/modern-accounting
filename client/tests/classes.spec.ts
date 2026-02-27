@@ -9,10 +9,11 @@ test.describe('Classes Management', () => {
     await page.goto('/classes');
     await expect(page.getByRole('heading', { name: 'Classes' })).toBeVisible();
 
-    // 2. Click "New Class" button
-    await page.getByRole('button', { name: 'New Class' }).click();
+    // 2. Click "New Class" link (it's a <Link>, not a button)
+    await page.getByRole('link', { name: 'New Class' }).click();
 
-    // 3. Verify form appears
+    // 3. Wait for navigation and verify form page loads
+    await expect(page).toHaveURL(/\/classes\/new/);
     await expect(page.getByRole('heading', { name: 'New Class' })).toBeVisible();
 
     // 4. Fill Form
@@ -22,7 +23,8 @@ test.describe('Classes Management', () => {
     // 5. Save
     await page.getByRole('button', { name: 'Create Class' }).click();
 
-    // 6. Verify class appears in list
+    // 6. Wait for navigation back to list and verify class appears
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: className })).toBeVisible();
   });
 
@@ -35,18 +37,26 @@ test.describe('Classes Management', () => {
     await page.goto('/classes');
 
     // 2. Create parent class first
-    await page.getByRole('button', { name: 'New Class' }).click();
+    await page.getByRole('link', { name: 'New Class' }).click();
+    await expect(page).toHaveURL(/\/classes\/new/);
     await page.getByLabel('Name *').fill(parentClassName);
     await page.getByRole('button', { name: 'Create Class' }).click();
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: parentClassName })).toBeVisible();
 
     // 3. Create child class with parent
-    await page.getByRole('button', { name: 'New Class' }).click();
+    await page.getByRole('link', { name: 'New Class' }).click();
+    await expect(page).toHaveURL(/\/classes\/new/);
     await page.getByLabel('Name *').fill(childClassName);
-    await page.getByLabel('Parent Class').selectOption({ label: parentClassName });
+
+    // Select parent class via MUI Select (TextField with select prop)
+    await page.getByLabel('Parent Class').click();
+    await page.getByRole('option', { name: parentClassName }).click();
+
     await page.getByRole('button', { name: 'Create Class' }).click();
 
-    // 4. Verify child class appears with parent reference
+    // 4. Wait for navigation back and verify child class appears with parent reference
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: childClassName })).toBeVisible();
     // Verify parent name is shown in the Parent column
     const childRow = page.getByRole('row').filter({ hasText: childClassName });
@@ -62,23 +72,28 @@ test.describe('Classes Management', () => {
     await page.goto('/classes');
 
     // 2. Create a class to edit
-    await page.getByRole('button', { name: 'New Class' }).click();
+    await page.getByRole('link', { name: 'New Class' }).click();
+    await expect(page).toHaveURL(/\/classes\/new/);
     await page.getByLabel('Name *').fill(className);
     await page.getByRole('button', { name: 'Create Class' }).click();
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: className })).toBeVisible();
 
-    // 3. Click Edit button on the class row
+    // 3. Click the row to navigate to edit page (rows are clickable, no Edit button)
     const row = page.getByRole('row').filter({ hasText: className });
-    await row.getByRole('button', { name: 'Edit' }).click();
+    await row.click();
 
-    // 4. Verify edit form appears
+    // 4. Wait for navigation and verify edit form appears
+    await expect(page).toHaveURL(/\/classes\/.*\/edit/);
     await expect(page.getByRole('heading', { name: 'Edit Class' })).toBeVisible();
 
-    // 5. Update the name
+    // 5. Wait for form data to load, then update the name
+    await expect(page.getByLabel('Name *')).not.toHaveValue('', { timeout: 10000 });
     await page.getByLabel('Name *').fill(updatedName);
     await page.getByRole('button', { name: 'Update Class' }).click();
 
-    // 6. Verify updated name appears in list
+    // 6. Wait for navigation back and verify updated name appears in list
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: updatedName })).toBeVisible();
     await expect(page.getByRole('cell', { name: className, exact: true })).not.toBeVisible();
   });
@@ -93,26 +108,30 @@ test.describe('Classes Management', () => {
     await page.goto('/classes');
 
     // 2. Create an Active class
-    await page.getByRole('button', { name: 'New Class' }).click();
+    await page.getByRole('link', { name: 'New Class' }).click();
+    await expect(page).toHaveURL(/\/classes\/new/);
     await page.getByLabel('Name *').fill(activeClassName);
-    // Form status dropdown (not the filter)
-    await page.locator('form').getByLabel('Status').selectOption('Active');
+    // Status defaults to Active via MUI Select - click to open, then select option
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Active', exact: true }).click();
     await page.getByRole('button', { name: 'Create Class' }).click();
-    // Verify class was created
+    // Wait for navigation back to list
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: activeClassName, exact: true })).toBeVisible();
 
     // 3. Create an Inactive class
-    await page.getByRole('button', { name: 'New Class' }).click();
+    await page.getByRole('link', { name: 'New Class' }).click();
+    await expect(page).toHaveURL(/\/classes\/new/);
     await page.getByLabel('Name *').fill(inactiveClassName);
-    await page.locator('form').getByLabel('Status').selectOption('Inactive');
+    // Change status to Inactive via MUI Select
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Inactive' }).click();
     await page.getByRole('button', { name: 'Create Class' }).click();
-    // Verify class was created
+    // Wait for navigation back to list
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: inactiveClassName, exact: true })).toBeVisible();
 
-    // Wait for form to close (form should not be visible after successful creation)
-    await expect(page.getByRole('heading', { name: 'New Class' })).not.toBeVisible();
-
-    // 4. Filter by Active status - use the status filter dropdown
+    // 4. Filter by Active status - use the native status filter dropdown on the list page
     const statusFilter = page.getByTestId('status-filter');
     await statusFilter.selectOption('Active');
     await expect(statusFilter).toHaveValue('Active');
@@ -143,15 +162,17 @@ test.describe('Classes Management', () => {
     await page.goto('/classes');
 
     // 2. Create a class to delete
-    await page.getByRole('button', { name: 'New Class' }).click();
+    await page.getByRole('link', { name: 'New Class' }).click();
+    await expect(page).toHaveURL(/\/classes\/new/);
     await page.getByLabel('Name *').fill(className);
     await page.getByRole('button', { name: 'Create Class' }).click();
+    await expect(page).toHaveURL(/\/classes$/, { timeout: 15000 });
     await expect(page.getByRole('cell', { name: className })).toBeVisible();
 
     // 3. Set up dialog handler to accept the confirmation
     page.on('dialog', dialog => dialog.accept());
 
-    // 4. Click Delete button on the class row
+    // 4. Click Delete button on the class row (Delete is still a button in the row)
     const row = page.getByRole('row').filter({ hasText: className });
     await row.getByRole('button', { name: 'Delete' }).click();
 

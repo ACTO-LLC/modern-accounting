@@ -6,7 +6,6 @@ import * as z from 'zod';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import api from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
@@ -208,6 +207,7 @@ export default function EditSubmission() {
           render={({ field, fieldState }) => (
             <TextField
               {...field}
+              id="Title"
               label="Title"
               required
               error={!!fieldState.error}
@@ -227,7 +227,9 @@ export default function EditSubmission() {
               <TextField
                 {...field}
                 value={field.value ?? ''}
+                id="Type"
                 select
+                SelectProps={{ native: true }}
                 label="Type"
                 required
                 error={!!fieldState.error}
@@ -235,9 +237,9 @@ export default function EditSubmission() {
                 size="small"
                 fullWidth
               >
-                <MenuItem value="Bug">Bug</MenuItem>
-                <MenuItem value="Enhancement">Enhancement</MenuItem>
-                <MenuItem value="Question">Question</MenuItem>
+                <option value="Bug">Bug</option>
+                <option value="Enhancement">Enhancement</option>
+                <option value="Question">Question</option>
               </TextField>
             )}
           />
@@ -249,17 +251,19 @@ export default function EditSubmission() {
               <TextField
                 {...field}
                 value={field.value ?? ''}
+                id="Priority"
                 select
+                SelectProps={{ native: true }}
                 label="Priority"
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
                 size="small"
                 fullWidth
               >
-                <MenuItem value="Low">Low</MenuItem>
-                <MenuItem value="Medium">Medium</MenuItem>
-                <MenuItem value="High">High</MenuItem>
-                <MenuItem value="Critical">Critical</MenuItem>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
               </TextField>
             )}
           />
@@ -271,17 +275,19 @@ export default function EditSubmission() {
               <TextField
                 {...field}
                 value={field.value ?? ''}
+                id="Status"
                 select
+                SelectProps={{ native: true }}
                 label="Status"
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
                 size="small"
                 fullWidth
               >
-                <MenuItem value="Open">Open</MenuItem>
-                <MenuItem value="InProgress">In Progress</MenuItem>
-                <MenuItem value="Resolved">Resolved</MenuItem>
-                <MenuItem value="Closed">Closed</MenuItem>
+                <option value="Open">Open</option>
+                <option value="InProgress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
               </TextField>
             )}
           />
@@ -295,6 +301,7 @@ export default function EditSubmission() {
             <TextField
               {...field}
               value={field.value ?? ''}
+              id="Description"
               label="Description"
               multiline
               rows={4}
@@ -317,6 +324,7 @@ export default function EditSubmission() {
                 <TextField
                   {...field}
                   value={field.value ?? ''}
+                  id="StepsToReproduce"
                   label="Steps to Reproduce"
                   multiline
                   rows={4}
@@ -337,6 +345,7 @@ export default function EditSubmission() {
                   <TextField
                     {...field}
                     value={field.value ?? ''}
+                    id="ExpectedBehavior"
                     label="Expected Behavior"
                     multiline
                     rows={3}
@@ -356,6 +365,7 @@ export default function EditSubmission() {
                   <TextField
                     {...field}
                     value={field.value ?? ''}
+                    id="ActualBehavior"
                     label="Actual Behavior"
                     multiline
                     rows={3}

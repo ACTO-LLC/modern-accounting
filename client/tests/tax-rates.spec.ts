@@ -15,7 +15,7 @@ test.describe('Tax Rates Management', () => {
     await page.goto('/tax-rates');
     await expect(page.getByRole('heading', { name: 'Tax Rates' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'New Tax Rate' }).click();
+    await page.getByRole('link', { name: 'New Tax Rate' }).click();
     await expect(page.getByRole('heading', { name: 'New Tax Rate' })).toBeVisible();
 
     await page.getByLabel('Name *').fill(taxRateName);
@@ -34,13 +34,13 @@ test.describe('Tax Rates Management', () => {
     await page.goto('/tax-rates');
     await expect(page.getByRole('heading', { name: 'Tax Rates' })).toBeVisible();
 
-    // Check if any rows exist with Edit buttons
-    const editButtons = page.getByRole('button', { name: 'Edit' });
-    const count = await editButtons.count();
+    // Check if any data rows exist (skip header row)
+    const dataRows = page.locator('tbody tr').filter({ hasNot: page.locator('td[colspan]') });
+    const count = await dataRows.count();
     test.skip(count === 0, 'No tax rates available to edit');
 
-    // Click first Edit button
-    await editButtons.first().click();
+    // Click first data row (rows are clickable and navigate to edit page)
+    await dataRows.first().click();
     await expect(page.getByRole('heading', { name: 'Edit Tax Rate' })).toBeVisible();
 
     // Verify form fields are populated

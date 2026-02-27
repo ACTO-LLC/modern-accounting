@@ -21,13 +21,21 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npx cross-env VITE_BYPASS_AUTH=true npm run dev',
-    url: process.env.BASE_URL || 'http://localhost:5173',
-    reuseExistingServer: true,
-    timeout: 120000,
-    env: {
-      VITE_BYPASS_AUTH: 'true',
+  webServer: [
+    {
+      command: 'cd ../chat-api && node server.js',
+      url: 'http://localhost:8080/api/health',
+      reuseExistingServer: true,
+      timeout: 30000,
     },
-  },
+    {
+      command: 'npx cross-env VITE_BYPASS_AUTH=true npm run dev',
+      url: process.env.BASE_URL || 'http://localhost:5173',
+      reuseExistingServer: true,
+      timeout: 120000,
+      env: {
+        VITE_BYPASS_AUTH: 'true',
+      },
+    },
+  ],
 });

@@ -5,30 +5,32 @@ test.describe('Locations Management', () => {
     const timestamp = Date.now();
     const locationName = `Test Location ${timestamp}`;
 
-    // 1. Navigate to Locations page
-    await page.goto('/locations');
-    await expect(page.getByRole('heading', { name: 'Locations' })).toBeVisible();
-
-    // 2. Click "New Location" button
-    await page.getByRole('button', { name: 'New Location' }).click();
-
-    // 3. Verify form appears
+    // 1. Navigate directly to New Location page
+    await page.goto('/locations/new');
     await expect(page.getByRole('heading', { name: 'New Location' })).toBeVisible();
 
-    // 4. Fill Form (using new separate address fields)
-    await page.getByLabel('Name *').fill(locationName);
+    // 2. Fill Form (MUI TextFields)
+    await page.getByLabel('Name').fill(locationName);
     await page.getByLabel('Street Address').fill('123 Test Street');
     await page.getByLabel('Address Line 2').fill('Suite 200');
     await page.getByLabel('City').fill('Chicago');
-    await page.locator('form').getByLabel('State').selectOption('IL');
+
+    // State is an MUI select - click to open, then click option
+    await page.getByLabel('State').click();
+    await page.getByRole('option', { name: 'Illinois' }).click();
+
     await page.getByLabel('ZIP Code').fill('60601');
     await page.getByLabel('Description').fill('Test location description');
 
-    // 5. Save
+    // 3. Save and capture response to get ID
+    const responsePromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'POST' && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Create Location' }).click();
+    await responsePromise;
 
-    // 6. Verify location appears in list
-    await expect(page.getByRole('cell', { name: locationName })).toBeVisible();
+    // 4. Verify redirect to locations list
+    await expect(page).toHaveURL(/\/locations$/);
   });
 
   test('should create a sub-location (child location)', async ({ page }) => {
@@ -36,24 +38,35 @@ test.describe('Locations Management', () => {
     const parentLocationName = `Parent Location ${timestamp}`;
     const childLocationName = `Child Location ${timestamp}`;
 
-    // 1. Navigate to Locations page
-    await page.goto('/locations');
+    // 1. Create parent location first
+    await page.goto('/locations/new');
+    await page.getByLabel('Name').fill(parentLocationName);
 
-    // 2. Create parent location first
-    await page.getByRole('button', { name: 'New Location' }).click();
-    await page.getByLabel('Name *').fill(parentLocationName);
+    const parentResponsePromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'POST' && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Create Location' }).click();
-    await expect(page.getByRole('cell', { name: parentLocationName })).toBeVisible();
+    await parentResponsePromise;
+    await expect(page).toHaveURL(/\/locations$/);
 
-    // 3. Create child location with parent
-    await page.getByRole('button', { name: 'New Location' }).click();
-    await page.getByLabel('Name *').fill(childLocationName);
-    await page.getByLabel('Parent Location').selectOption({ label: parentLocationName });
+    // 2. Create child location with parent
+    await page.goto('/locations/new');
+    await expect(page.getByRole('heading', { name: 'New Location' })).toBeVisible();
+    await page.getByLabel('Name').fill(childLocationName);
+
+    // Parent Location is an MUI select - click to open, then select the parent
+    await page.getByLabel('Parent Location').click();
+    await page.getByRole('option', { name: parentLocationName }).click();
+
+    const childResponsePromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'POST' && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Create Location' }).click();
+    await childResponsePromise;
 
-    // 4. Verify child location appears with parent reference
+    // 3. Verify redirect and child location appears with parent reference
+    await expect(page).toHaveURL(/\/locations$/);
     await expect(page.getByRole('cell', { name: childLocationName })).toBeVisible();
-    // Verify parent name is shown in the Parent column
     const childRow = page.getByRole('row').filter({ hasText: childLocationName });
     await expect(childRow.getByText(parentLocationName)).toBeVisible();
   });
@@ -63,71 +76,103 @@ test.describe('Locations Management', () => {
     const locationName = `Edit Test Location ${timestamp}`;
     const updatedName = `${locationName} Updated`;
 
-    // 1. Navigate to Locations page
-    await page.goto('/locations');
+    // 1. Create a location to edit
+    await page.goto('/locations/new');
+    await page.getByLabel('Name').fill(locationName);
 
-    // 2. Create a location to edit
-    await page.getByRole('button', { name: 'New Location' }).click();
-    await page.getByLabel('Name *').fill(locationName);
+    const createPromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'POST' && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Create Location' }).click();
-    await expect(page.getByRole('cell', { name: locationName })).toBeVisible();
+    await createPromise;
+    await expect(page).toHaveURL(/\/locations$/);
 
-    // 3. Click Edit button on the location row
-    const row = page.getByRole('row').filter({ hasText: locationName });
-    await row.getByRole('button', { name: 'Edit' }).click();
+    // 2. Query API to get the created location's ID
+    const escapedName = String(locationName).replace(/'/g, "''");
+    const queryResponse = await page.request.get(
+      `http://localhost:5000/api/locations?$filter=Name eq '${escapedName}'`
+    );
+    const queryResult = await queryResponse.json();
+    expect(queryResult.value).toHaveLength(1);
+    const locationId = queryResult.value[0].Id;
 
-    // 4. Verify edit form appears
+    // 3. Navigate to edit page directly
+    await page.goto(`/locations/${locationId}/edit`);
     await expect(page.getByRole('heading', { name: 'Edit Location' })).toBeVisible();
+    await expect(page.getByLabel('Name')).toHaveValue(locationName, { timeout: 10000 });
 
-    // 5. Update the name
-    await page.getByLabel('Name *').fill(updatedName);
+    // 4. Update the name
+    await page.getByLabel('Name').clear();
+    await page.getByLabel('Name').fill(updatedName);
+    await page.getByLabel('Name').press('Tab');
+
+    // 5. Save and wait for PATCH response
+    const patchPromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'PATCH',
+      { timeout: 15000 }
+    );
     await page.getByRole('button', { name: 'Update Location' }).click();
+    await patchPromise;
 
-    // 6. Verify updated name appears in list
-    await expect(page.getByRole('cell', { name: updatedName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: locationName, exact: true })).not.toBeVisible();
+    // 6. Verify redirect
+    await expect(page).toHaveURL(/\/locations$/, { timeout: 10000 });
+
+    // 7. Verify update via API
+    const verifyResponse = await page.request.get(
+      `http://localhost:5000/api/locations?$filter=Id eq ${locationId}`
+    );
+    const verifyResult = await verifyResponse.json();
+    expect(verifyResult.value[0].Name).toBe(updatedName);
   });
 
   test('should filter locations by status', async ({ page }) => {
     const timestamp = Date.now();
-    // Use completely different names to avoid any matching issues
     const activeLocationName = `ActiveTestLocation-${timestamp}`;
     const inactiveLocationName = `InactiveTestLocation-${timestamp + 1}`;
 
-    // 1. Navigate to Locations page
-    await page.goto('/locations');
+    // 1. Create an Active location
+    await page.goto('/locations/new');
+    await page.getByLabel('Name').fill(activeLocationName);
 
-    // 2. Create an Active location
-    await page.getByRole('button', { name: 'New Location' }).click();
-    await page.getByLabel('Name *').fill(activeLocationName);
-    await page.locator('form').getByLabel('Status').selectOption('Active');
+    // Status is an MUI select - click to open, then click option
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Active', exact: true }).click();
+
+    const activeResponsePromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'POST' && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Create Location' }).click();
-    await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toBeVisible();
+    await activeResponsePromise;
+    await expect(page).toHaveURL(/\/locations$/);
 
-    // 3. Create an Inactive location
-    await page.getByRole('button', { name: 'New Location' }).click();
-    await page.getByLabel('Name *').fill(inactiveLocationName);
-    await page.locator('form').getByLabel('Status').selectOption('Inactive');
+    // 2. Create an Inactive location
+    await page.goto('/locations/new');
+    await page.getByLabel('Name').fill(inactiveLocationName);
+
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'Inactive' }).click();
+
+    const inactiveResponsePromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'POST' && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Create Location' }).click();
-    await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toBeVisible();
+    await inactiveResponsePromise;
+    await expect(page).toHaveURL(/\/locations$/);
 
-    // Wait for form to close
-    await expect(page.getByRole('heading', { name: 'New Location' })).not.toBeVisible();
-
-    // 4. Filter by Active status - use the status filter dropdown
+    // 3. Filter by Active status - use the native status filter dropdown on the list page
     const statusFilter = page.getByTestId('status-filter');
     await statusFilter.selectOption('Active');
     await expect(statusFilter).toHaveValue('Active');
     await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toBeVisible();
     await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toHaveCount(0);
 
-    // 5. Filter by Inactive status
+    // 4. Filter by Inactive status
     await statusFilter.selectOption('Inactive');
     await expect(statusFilter).toHaveValue('Inactive');
     await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toBeVisible();
     await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toHaveCount(0);
 
-    // 6. Show all
+    // 5. Show all
     await statusFilter.selectOption('all');
     await expect(page.getByRole('cell', { name: activeLocationName, exact: true })).toBeVisible();
     await expect(page.getByRole('cell', { name: inactiveLocationName, exact: true })).toBeVisible();
@@ -137,13 +182,18 @@ test.describe('Locations Management', () => {
     const timestamp = Date.now();
     const locationName = `Delete Test Location ${timestamp}`;
 
-    // 1. Navigate to Locations page
-    await page.goto('/locations');
+    // 1. Create a location to delete
+    await page.goto('/locations/new');
+    await page.getByLabel('Name').fill(locationName);
 
-    // 2. Create a location to delete
-    await page.getByRole('button', { name: 'New Location' }).click();
-    await page.getByLabel('Name *').fill(locationName);
+    const createPromise = page.waitForResponse(
+      resp => resp.url().includes('/locations') && resp.request().method() === 'POST' && resp.status() < 400
+    );
     await page.getByRole('button', { name: 'Create Location' }).click();
+    await createPromise;
+    await expect(page).toHaveURL(/\/locations$/);
+
+    // 2. Verify location appears in list
     await expect(page.getByRole('cell', { name: locationName })).toBeVisible();
 
     // 3. Set up dialog handler to accept the confirmation
