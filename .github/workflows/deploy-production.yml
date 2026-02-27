@@ -270,7 +270,7 @@ jobs:
           az webapp config set \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --startup-file "node server.js"
+            --startup-file "node --max-old-space-size=2048 server.js"
 
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
