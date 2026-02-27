@@ -244,7 +244,8 @@ jobs:
               QBO_ENVIRONMENT="production" \
               QBO_REDIRECT_URI="https://accounting.a-cto.com/api/qbo/oauth-callback" \
               QBO_MCP_URL="https://mcp-qbo-modern-accounting-prod.azurewebsites.net/mcp" \
-              DAB_MCP_URL="https://dab-modern-accounting-prod.azurewebsites.net/mcp"
+              DAB_MCP_URL="https://dab-modern-accounting-prod.azurewebsites.net/mcp" \
+              PLAID_ENV="sandbox"
 
           # Set Key Vault references (must be set individually due to = in values)
           az webapp config appsettings set \
@@ -263,6 +264,14 @@ jobs:
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
             --settings 'QBO_CLIENT_SECRET=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/qbo-client-secret)'
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings 'PLAID_CLIENT_ID=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/plaid-client-id)'
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings 'PLAID_SECRET=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/plaid-secret)'
 
           # CRITICAL: Set custom startup command to bypass Oryx's npm install
           # Without this, Oryx runs "npm install && npm start" at container runtime
