@@ -7402,6 +7402,36 @@ app.get('/api/banktransactions', async (req, res) => {
     }
 });
 
+// Create bank transaction (proxy to DAB with proper headers)
+app.post('/api/banktransactions', async (req, res) => {
+    try {
+        const authToken = extractAuthToken(req);
+        console.log('[Bank Transaction] Creating new transaction');
+
+        const result = await dab.create('banktransactions', req.body, authToken);
+
+        if (!result.success) {
+            console.error(`[Bank Transaction] Create failed: ${result.error}`);
+            return res.status(500).json({ error: result.error });
+        }
+
+        logAuditEvent({
+            action: 'Create',
+            entityType: 'BankTransaction',
+            entityId: result.value?.Id || 'unknown',
+            entityDescription: `Create BankTransaction`,
+            newValues: req.body,
+            req,
+            source: 'API',
+        });
+
+        res.status(201).json(result.value);
+    } catch (error) {
+        console.error('Bank transaction create error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to create transaction' });
+    }
+});
+
 // Get single bank transaction by ID
 app.get('/api/banktransactions/Id/:id', async (req, res) => {
     try {
