@@ -174,7 +174,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
         ...(customer.City && { city: customer.City }),
       });
 
-      const taxResponse = await api.get(`/api/tax/rate?${params}`);
+      const taxResponse = await api.get(`/tax/rate?${params}`);
       const taxData = taxResponse.data;
 
       if (taxData.rate !== undefined) {
