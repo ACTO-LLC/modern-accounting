@@ -72,3 +72,6 @@ infra/azure/*.json
 
 # Local logs
 logs/
+
+# Migration output (contains production data)
+scripts/output/
