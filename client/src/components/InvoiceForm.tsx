@@ -87,8 +87,33 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
 
-  // Track taxable status for each line item (keyed by ProductServiceId)
+  // Track taxable status for each line item (keyed by line index)
   const [lineTaxableStatus, setLineTaxableStatus] = useState<Record<number, boolean>>({});
+  const [taxableInitialized, setTaxableInitialized] = useState(false);
+
+  // Fetch products to initialize taxable status for existing lines
+  const { data: productsServices } = useQuery({
+    queryKey: ['productsservices-active'],
+    queryFn: async (): Promise<ProductService[]> => {
+      const response = await api.get('/productsservices?$filter=Status eq \'Active\'&$orderby=Name');
+      return response.data.value;
+    },
+  });
+
+  // Initialize taxable status from product data when editing existing invoices
+  useEffect(() => {
+    if (taxableInitialized || !productsServices || !initialValues?.Lines?.length) return;
+    const status: Record<number, boolean> = {};
+    for (let i = 0; i < initialValues.Lines.length; i++) {
+      const line = initialValues.Lines[i];
+      const product = line.ProductServiceId
+        ? productsServices.find(ps => ps.Id === line.ProductServiceId)
+        : null;
+      status[i] = product ? product.Taxable : false;
+    }
+    setLineTaxableStatus(status);
+    setTaxableInitialized(true);
+  }, [productsServices, initialValues?.Lines, taxableInitialized]);
 
   // Track auto-calculated tax rate
   const [autoTaxRate, setAutoTaxRate] = useState<AutoTaxRate | null>(null);
@@ -223,7 +248,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       subtotal += lineAmount;
 
       // Check if this line is taxable
-      const isTaxable = lineTaxableStatus[index] ?? true; // Default to taxable
+      const isTaxable = lineTaxableStatus[index] ?? false; // Default to taxable
       if (isTaxable) {
         taxableAmount += lineAmount;
       }
@@ -467,7 +492,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
               };
 
               const lineAmount = (lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0);
-              const isTaxable = lineTaxableStatus[index] ?? true;
+              const isTaxable = lineTaxableStatus[index] ?? false;
 
               const { ref: descRef, ...descRest } = register(`Lines.${index}.Description`);
               const { ref: qtyRef, ...qtyRest } = register(`Lines.${index}.Quantity`, { valueAsNumber: true });
