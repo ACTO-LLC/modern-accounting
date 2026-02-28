@@ -108,7 +108,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     queryKey: ['tax-calculation-settings'],
     queryFn: async (): Promise<TaxCalculationSettings | null> => {
       try {
-        const response = await api.get('/api/tax/settings');
+        const response = await api.get('/tax/settings');
         return response.data;
       } catch {
         // If settings don't exist, default to manual

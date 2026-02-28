@@ -36,7 +36,7 @@ export default function ProjectSelector({
     queryFn: async (): Promise<ProjectItem[]> => {
       let url = "/projects?$filter=Status eq 'Active'&$orderby=Name";
       if (customerId) {
-        url = `/projects?$filter=Status eq 'Active' and (CustomerId eq '${customerId}' or CustomerId eq null)&$orderby=Name`;
+        url = `/projects?$filter=Status eq 'Active' and CustomerId eq '${customerId}'&$orderby=Name`;
       }
       const response = await api.get(url);
       return response.data.value;
