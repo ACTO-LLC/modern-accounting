@@ -443,6 +443,21 @@ async function phase2b_products(pool, missingInvoices, qboItems) {
 
     // Exclude "Sales Tax" items — they are tax line items, not products
     const salesTaxItemIds = new Set();
+    // Items that actually get taxed in QBO (identified by having "Sales Tax" line items on their invoices).
+    // QBO's own Taxable flag is unreliable when manual tax line items are used.
+    const taxedItemIds = new Set();
+    for (const inv of missingInvoices) {
+        const allLines = (inv.Line || []).filter(l => l.DetailType === 'SalesItemLineDetail');
+        const hasTaxLine = allLines.some(l => (l.SalesItemLineDetail?.ItemRef?.name || '').toLowerCase().includes('sales tax'));
+        if (hasTaxLine) {
+            for (const line of allLines) {
+                const itemName = line.SalesItemLineDetail?.ItemRef?.name || '';
+                if (!itemName.toLowerCase().includes('sales tax')) {
+                    taxedItemIds.add(line.SalesItemLineDetail?.ItemRef?.value);
+                }
+            }
+        }
+    }
     for (const [id, name] of itemRefs) {
         if (name && name.toLowerCase().includes('sales tax')) {
             salesTaxItemIds.add(id);
@@ -485,7 +500,7 @@ async function phase2b_products(pool, missingInvoices, qboItems) {
                 .input('type', sql.NVarChar(20), maType)
                 .input('description', sql.NVarChar(sql.MAX), item.Description || null)
                 .input('salesPrice', sql.Decimal(18, 2), item.UnitPrice || null)
-                .input('taxable', sql.Bit, item.Taxable ? 1 : 0)
+                .input('taxable', sql.Bit, taxedItemIds.has(qboId) ? 1 : 0)
                 .input('status', sql.NVarChar(20), item.Active !== false ? 'Active' : 'Inactive')
                 .input('sourceSystem', sql.NVarChar(50), 'QBO')
                 .input('sourceId', sql.NVarChar(100), String(qboId))
@@ -525,17 +540,19 @@ async function phase2c_taxRates(pool, missingInvoices) {
 
     // Known tax rates from analysis: 8.25% TX, 8.75% CA-Orange, 10.25% CA-LA
     // Parse rate from description like "8.25%" or "Sales Tax 8.25%"
+    // DB stores rates as decimal fractions (0.0825 not 8.25)
     const parsedRates = [];
     for (const desc of taxDescriptions) {
         const match = desc.match(/([\d.]+)%/);
         if (match) {
-            parsedRates.push({ description: desc, rate: parseFloat(match[1]) });
+            const pct = parseFloat(match[1]);
+            parsedRates.push({ description: desc, pct, rate: pct / 100 });
         } else {
             console.warn(`  WARN: Could not parse tax rate from description: "${desc}"`);
         }
     }
 
-    // Map known rates to state codes
+    // Map known percentage values to state codes
     const rateToState = {
         8.25: { name: 'TX Sales Tax (8.25%)', stateCode: 'TX' },
         8.75: { name: 'CA Orange County Sales Tax (8.75%)', stateCode: 'CA' },
@@ -544,26 +561,27 @@ async function phase2c_taxRates(pool, missingInvoices) {
 
     let created = 0, skipped = 0;
 
-    for (const { description, rate } of parsedRates) {
+    for (const { description, pct, rate } of parsedRates) {
         // Check if a tax rate with this Rate value already exists (with tolerance)
+        // Rate stored as decimal fraction (e.g., 0.0825 for 8.25%)
         const existingResult = await pool.request()
-            .input('rateLow', sql.Decimal(8, 6), rate - 0.01)
-            .input('rateHigh', sql.Decimal(8, 6), rate + 0.01)
+            .input('rateLow', sql.Decimal(8, 6), rate - 0.0001)
+            .input('rateHigh', sql.Decimal(8, 6), rate + 0.0001)
             .input('taxType', sql.NVarChar, 'Sales')
             .query(`SELECT Id, Name, Rate FROM TaxRates
                     WHERE TaxType = @taxType AND Rate BETWEEN @rateLow AND @rateHigh AND IsActive = 1`);
 
         if (existingResult.recordset.length > 0) {
             const existing = existingResult.recordset[0];
-            console.log(`  SKIP tax rate ${rate}% — already exists: ${existing.Name} (${existing.Id})`);
+            console.log(`  SKIP tax rate ${pct}% — already exists: ${existing.Name} (${existing.Id})`);
             skipped++;
             continue;
         }
 
-        const info = rateToState[rate] || { name: `Sales Tax (${rate}%)`, stateCode: null };
+        const info = rateToState[pct] || { name: `Sales Tax (${pct}%)`, stateCode: null };
         const maId = newId();
 
-        console.log(`  ${DRY_RUN ? 'DRY-RUN' : 'INSERT'} tax rate: ${info.name} (${rate}%) → ${maId}`);
+        console.log(`  ${DRY_RUN ? 'DRY-RUN' : 'INSERT'} tax rate: ${info.name} (${pct}%) → ${maId}`);
 
         if (!DRY_RUN) {
             await pool.request()
@@ -647,13 +665,13 @@ async function phase3_invoices(pool, missingInvoices) {
 
             if (taxLine) {
                 taxAmount = parseFloat(taxLine.Amount) || 0;
-                // Parse rate from description
+                // Parse rate from description (e.g., "8.25%") and convert to decimal fraction
                 const desc = taxLine.Description || '';
                 const rateMatch = desc.match(/([\d.]+)%/);
                 if (rateMatch) {
-                    const parsedRate = parseFloat(rateMatch[1]);
-                    // Look up matching tax rate with tolerance
-                    const match = taxRates.find(tr => Math.abs(parseFloat(tr.Rate) - parsedRate) < 0.01);
+                    const parsedRate = parseFloat(rateMatch[1]) / 100; // Convert to decimal fraction
+                    // Look up matching tax rate with tolerance (rates stored as decimal, e.g., 0.0825)
+                    const match = taxRates.find(tr => Math.abs(parseFloat(tr.Rate) - parsedRate) < 0.0001);
                     if (match) {
                         taxRateId = match.Id;
                     } else {
