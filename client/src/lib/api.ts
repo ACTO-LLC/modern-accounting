@@ -302,17 +302,17 @@ export const projectsApi = {
   },
 
   create: async (project: ProjectInput): Promise<Project> => {
-    const response = await api.post('/projects', project);
+    const response = await api.post('/projects_write', project);
     return response.data;
   },
 
   update: async (id: string, project: Partial<ProjectInput>): Promise<Project> => {
-    const response = await api.patch(`/projects/Id/${id}`, project);
+    const response = await api.patch(`/projects_write/Id/${id}`, project);
     return response.data;
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/projects/Id/${id}`);
+    await api.delete(`/projects_write/Id/${id}`);
   },
 };
 

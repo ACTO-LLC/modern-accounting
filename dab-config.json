@@ -1041,6 +1041,44 @@
                 "UpdatedAt": "UpdatedAt"
             }
         },
+        "projects_write": {
+            "source": "dbo.Projects",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "CustomerId": "CustomerId",
+                "Description": "Description",
+                "Status": "Status",
+                "StartDate": "StartDate",
+                "EndDate": "EndDate",
+                "BudgetedHours": "BudgetedHours",
+                "BudgetedAmount": "BudgetedAmount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
         "timeentries": {
             "source": {
                 "object": "dbo.v_TimeEntries",
