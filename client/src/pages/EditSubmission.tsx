@@ -77,6 +77,16 @@ export default function EditSubmission() {
 
   const { handleSubmit, watch, reset, control } = useForm<SubmissionFormData>({
     resolver: zodResolver(submissionSchema),
+    defaultValues: {
+      Title: '',
+      Type: 'Bug',
+      Priority: 'Medium',
+      Status: 'Open',
+      Description: '',
+      StepsToReproduce: '',
+      ExpectedBehavior: '',
+      ActualBehavior: '',
+    },
   });
 
   const submissionType = watch('Type');
