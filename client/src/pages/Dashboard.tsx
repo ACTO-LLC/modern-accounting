@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { formatDate, formatMonthShort } from '../lib/dateUtils';
 import { useOnboarding } from '../contexts/OnboardingContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import LearningChecklist from '../components/onboarding/LearningChecklist';
 import ErrorBoundary from '../components/ErrorBoundary';
 
@@ -87,6 +88,7 @@ interface Payment {
 }
 
 export default function Dashboard() {
+  const { formatCurrency } = useCurrency();
   const { status: onboardingStatus } = useOnboarding();
 
   // Show learning checklist for users in training mode
@@ -336,7 +338,7 @@ export default function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
-                  <dd className="text-lg font-medium text-gray-900">${totalRevenue.toLocaleString()}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{formatCurrency(totalRevenue)}</dd>
                 </dl>
               </div>
             </div>
@@ -352,7 +354,7 @@ export default function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Total Expenses</dt>
-                  <dd className="text-lg font-medium text-gray-900">${totalExpenses.toLocaleString()}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{formatCurrency(totalExpenses)}</dd>
                 </dl>
               </div>
             </div>
@@ -369,7 +371,7 @@ export default function Dashboard() {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Net Income</dt>
                   <dd className={`text-lg font-medium ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${netIncome.toLocaleString()}
+                    {formatCurrency(netIncome)}
                   </dd>
                 </dl>
               </div>
@@ -386,7 +388,7 @@ export default function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Cash on Hand</dt>
-                  <dd className="text-lg font-medium text-gray-900">${cashOnHand.toLocaleString()}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{formatCurrency(cashOnHand)}</dd>
                 </dl>
               </div>
             </div>

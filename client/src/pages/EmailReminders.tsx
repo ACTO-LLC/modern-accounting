@@ -23,6 +23,7 @@ import {
   ReminderSetting,
   OverdueInvoice,
 } from '../lib/emailApi';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDate } from '../lib/dateUtils';
 import ConfirmModal from '../components/ConfirmModal';
 import EmailTemplateEditor from '../components/EmailTemplateEditor';
@@ -374,7 +375,7 @@ export default function EmailReminders() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          ${invoice.AmountDue.toFixed(2)}
+                          {formatCurrencyStandalone(invoice.AmountDue)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {invoice.RemindersSent}

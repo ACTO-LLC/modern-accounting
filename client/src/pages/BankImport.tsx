@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Upload, FileText, CheckCircle, AlertCircle, ArrowRight, RefreshCw, Plus } from 'lucide-react';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDate } from '../lib/dateUtils';
 
 interface Account {
@@ -641,7 +642,7 @@ export default function BankImport() {
                       <td className={`px-4 py-3 text-sm font-medium text-right whitespace-nowrap ${
                         txn.amount >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {txn.amount >= 0 ? '+' : ''}${txn.amount.toFixed(2)}
+                        {formatCurrencyStandalone(txn.amount)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
                         {txn.transactionType || (txn.amount >= 0 ? 'Deposit' : 'Withdrawal')}

@@ -16,6 +16,7 @@ import appTheme from './theme';
 import { ChatProvider } from './contexts/ChatContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import { FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -374,13 +375,15 @@ function App() {
               <MuiThemeProvider theme={appTheme}>
                 <Toaster position="top-right" richColors />
                 <ToastProvider>
-                  <ChatProvider>
-                    <FeatureFlagsProvider>
-                      <OnboardingProvider>
-                        <AppContent />
-                      </OnboardingProvider>
-                    </FeatureFlagsProvider>
-                  </ChatProvider>
+                  <CurrencyProvider>
+                    <ChatProvider>
+                      <FeatureFlagsProvider>
+                        <OnboardingProvider>
+                          <AppContent />
+                        </OnboardingProvider>
+                      </FeatureFlagsProvider>
+                    </ChatProvider>
+                  </CurrencyProvider>
                 </ToastProvider>
               </MuiThemeProvider>
             </ThemeProvider>

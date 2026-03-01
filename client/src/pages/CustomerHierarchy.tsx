@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import {
   HierarchyView,
   HierarchyLevel,
@@ -144,7 +145,7 @@ export default function CustomerHierarchy() {
         amount: (line.Quantity || 0) * (line.UnitPrice || 0),
         metadata: [
           { label: 'Quantity', value: String(line.Quantity || 0) },
-          { label: 'Unit Price', value: `$${(line.UnitPrice || 0).toFixed(2)}` },
+          { label: 'Unit Price', value: formatCurrencyStandalone(line.UnitPrice || 0) },
         ],
       }))
     : (estimateLines || []).map((line): EntityCardData => ({
@@ -154,7 +155,7 @@ export default function CustomerHierarchy() {
         amount: line.Amount || (line.Quantity || 0) * (line.UnitPrice || 0),
         metadata: [
           { label: 'Quantity', value: String(line.Quantity || 0) },
-          { label: 'Unit Price', value: `$${(line.UnitPrice || 0).toFixed(2)}` },
+          { label: 'Unit Price', value: formatCurrencyStandalone(line.UnitPrice || 0) },
         ],
       }));
 

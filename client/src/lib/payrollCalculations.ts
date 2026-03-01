@@ -486,16 +486,9 @@ export function getDefaultHours(employee: Employee): number {
 }
 
 /**
- * Format currency for display
+ * Format currency for display (locale-aware)
  */
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
+export { formatCurrencyStandalone as formatCurrency } from '../contexts/CurrencyContext';
 
 /**
  * Generate a unique pay run number

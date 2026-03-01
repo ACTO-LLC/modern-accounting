@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Printer, Edit, Building2, Mail } from 'lucide-react';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import api from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
 import EmailInvoiceModal from '../components/EmailInvoiceModal';
@@ -44,6 +45,7 @@ export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { settings: company } = useCompanySettings();
+  const { formatCurrency } = useCurrency();
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailHistoryRefresh, setEmailHistoryRefresh] = useState(0);
 
@@ -276,10 +278,10 @@ export default function InvoiceView() {
                     {line.Quantity}
                   </td>
                   <td className="py-3 text-sm text-gray-900 text-right print:text-xs print:py-2">
-                    ${line.UnitPrice.toFixed(2)}
+                    {formatCurrency(line.UnitPrice)}
                   </td>
                   <td className="py-3 text-sm text-gray-900 text-right print:text-xs print:py-2">
-                    ${(line.Quantity * line.UnitPrice).toFixed(2)}
+                    {formatCurrency(line.Quantity * line.UnitPrice)}
                   </td>
                 </tr>
               ))}
@@ -291,11 +293,11 @@ export default function InvoiceView() {
             <div className="w-64">
               <div className="flex justify-between py-2 text-sm print:text-xs">
                 <span className="text-gray-600">Subtotal:</span>
-                <span className="text-gray-900 font-medium">${subtotal.toFixed(2)}</span>
+                <span className="text-gray-900 font-medium">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between py-3 border-t-2 border-gray-900 text-lg font-bold print:text-base print:py-2">
                 <span>Total:</span>
-                <span>${invoice.TotalAmount.toFixed(2)}</span>
+                <span>{formatCurrency(invoice.TotalAmount)}</span>
               </div>
             </div>
           </div>

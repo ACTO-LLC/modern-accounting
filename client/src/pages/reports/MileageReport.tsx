@@ -5,6 +5,7 @@ import api from '../../lib/api';
 import { formatDate } from '../../lib/dateUtils';
 import ReportHeader from '../../components/reports/ReportHeader';
 import DateRangePicker from '../../components/reports/DateRangePicker';
+import { formatCurrencyStandalone } from '../../contexts/CurrencyContext';
 
 interface MileageTrip {
   Id: string;
@@ -194,7 +195,7 @@ export default function MileageReport() {
         </div>
         <div className="bg-green-50 shadow rounded-lg p-4">
           <p className="text-sm font-medium text-green-600">Tax Deductible</p>
-          <p className="text-2xl font-bold text-green-700">${grandTotalDeductible.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-green-700">{formatCurrencyStandalone(grandTotalDeductible)}</p>
         </div>
       </div>
 
@@ -285,7 +286,7 @@ export default function MileageReport() {
                   <span className="font-semibold">{groupData.totalMiles.toFixed(1)} miles</span>
                   {groupData.totalDeductible > 0 && (
                     <span className="ml-4 font-semibold text-green-700">
-                      ${groupData.totalDeductible.toFixed(2)}
+                      {formatCurrencyStandalone(groupData.totalDeductible)}
                     </span>
                   )}
                 </div>
@@ -359,7 +360,7 @@ export default function MileageReport() {
                         <td className="px-6 py-2 whitespace-nowrap text-sm text-right">
                           {trip.DeductibleAmount ? (
                             <span className="text-green-600 font-medium">
-                              ${trip.DeductibleAmount.toFixed(2)}
+                              {formatCurrencyStandalone(trip.DeductibleAmount)}
                             </span>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -382,7 +383,7 @@ export default function MileageReport() {
                   {grandTotalMiles.toFixed(1)} miles
                 </span>
                 <span className="ml-6 text-xl font-bold text-green-700">
-                  ${grandTotalDeductible.toFixed(2)} deductible
+                  {formatCurrencyStandalone(grandTotalDeductible)} deductible
                 </span>
               </div>
             </div>

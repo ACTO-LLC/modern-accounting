@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Loader2, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { emailSettingsApi, emailSendApi, replaceTemplateVariables } from '../lib/emailApi';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDate } from '../lib/dateUtils';
 
 interface Customer {
@@ -65,8 +66,7 @@ export default function EmailStatementModal({
       setRecipientName(customer?.Name || '');
 
       // Build template variables
-      const formatAmount = (amount: number) =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+      const formatAmount = (amount: number) => formatCurrencyStandalone(amount);
 
       const templateVars = {
         CustomerName: customer?.Name || '',

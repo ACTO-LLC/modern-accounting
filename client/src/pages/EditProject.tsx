@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { projectsApi, timeEntriesApi, ProjectInput, Project, TimeEntry } from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
 import ProjectForm, { ProjectFormData } from '../components/ProjectForm';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 export default function EditProject() {
   const navigate = useNavigate();
@@ -70,12 +71,7 @@ export default function EditProject() {
   const hoursProgress = project.BudgetedHours ? (totalHours / project.BudgetedHours) * 100 : 0;
   const amountProgress = project.BudgetedAmount ? (totalAmount / project.BudgetedAmount) * 100 : 0;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrency();
 
   const initialValues: Partial<ProjectFormData> = {
     Name: project.Name,

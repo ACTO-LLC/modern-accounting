@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
@@ -568,7 +569,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                     </div>
                     <div className="w-32">
                       <div className="mt-1 py-2 px-3 text-sm text-gray-700 dark:text-gray-300 font-medium">
-                        ${lineAmount.toFixed(2)}
+                        {formatCurrencyStandalone(lineAmount)}
                         {!isTaxable && selectedTaxRate && (
                           <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">(no tax)</span>
                         )}
@@ -640,7 +641,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
             <div className="w-72 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">${calculations.subtotal.toFixed(2)}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrencyStandalone(calculations.subtotal)}</span>
               </div>
               {selectedTaxRate && (
                 <>
@@ -648,19 +649,19 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                     <span className="text-gray-600 dark:text-gray-400">
                       Tax ({selectedTaxRate.Name} - {formatTaxRate(selectedTaxRate.Rate)}):
                     </span>
-                    <span className="font-medium text-gray-900 dark:text-gray-100">${calculations.taxAmount.toFixed(2)}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrencyStandalone(calculations.taxAmount)}</span>
                   </div>
                   {calculations.taxableAmount !== calculations.subtotal && (
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                       <span>Taxable amount:</span>
-                      <span>${calculations.taxableAmount.toFixed(2)}</span>
+                      <span>{formatCurrencyStandalone(calculations.taxableAmount)}</span>
                     </div>
                   )}
                 </>
               )}
               <div className="flex justify-between text-lg font-bold border-t dark:border-gray-600 pt-2">
                 <span className="text-gray-900 dark:text-gray-100">Total:</span>
-                <span className="text-gray-900 dark:text-gray-100">${calculations.total.toFixed(2)}</span>
+                <span className="text-gray-900 dark:text-gray-100">{formatCurrencyStandalone(calculations.total)}</span>
               </div>
             </div>
           </div>

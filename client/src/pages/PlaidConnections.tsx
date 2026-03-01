@@ -16,6 +16,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDateTime } from '../lib/dateUtils';
 
 const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_URL || '';
@@ -548,7 +549,7 @@ export default function PlaidConnections() {
                             {account.accountSubtype || account.accountType}
                             {account.currentBalance != null && (
                               <span className="ml-2">
-                                Balance: ${account.currentBalance.toFixed(2)}
+                                Balance: {formatCurrencyStandalone(account.currentBalance)}
                               </span>
                             )}
                           </div>

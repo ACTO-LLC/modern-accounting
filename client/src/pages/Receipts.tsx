@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Upload, ArrowLeft, CheckCircle, Clock, AlertCircle, Trash2, Link2 } from 'lucide-react';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDate } from '../lib/dateUtils';
 
 interface Receipt {
@@ -216,7 +217,7 @@ export default function Receipts() {
                     )}
                     {receipt.ExtractedAmount && (
                       <p>
-                        <span className="font-medium">Amount:</span> ${receipt.ExtractedAmount.toFixed(2)}
+                        <span className="font-medium">Amount:</span> {formatCurrencyStandalone(receipt.ExtractedAmount)}
                       </p>
                     )}
                     {receipt.ExtractedDate && (
@@ -351,7 +352,7 @@ export default function Receipts() {
                       </p>
                     </div>
                     <p className="text-lg font-semibold text-gray-900">
-                      ${expense.Amount.toFixed(2)}
+                      {formatCurrencyStandalone(expense.Amount)}
                     </p>
                   </div>
                 </button>

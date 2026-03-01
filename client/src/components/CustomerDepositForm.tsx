@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import InputAdornment from '@mui/material/InputAdornment';
 import CustomerSelector from './CustomerSelector';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 // Payment methods available
 const PAYMENT_METHODS = [
@@ -351,7 +352,7 @@ export default function CustomerDepositForm({
                   <MenuItem value="">No estimate</MenuItem>
                   {estimates.map(estimate => (
                     <MenuItem key={estimate.Id} value={estimate.Id}>
-                      {estimate.EstimateNumber} (${estimate.TotalAmount.toFixed(2)})
+                      {estimate.EstimateNumber} ({formatCurrencyStandalone(estimate.TotalAmount)})
                     </MenuItem>
                   ))}
                 </TextField>

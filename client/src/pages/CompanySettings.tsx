@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail, AlertCircle, Zap, ClipboardCheck, HelpCircle } from 'lucide-react';
 import { useCompanySettings, InvoicePostingMode } from '../contexts/CompanySettingsContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
+import { useCurrency, CURRENCY_LOCALE_OPTIONS } from '../contexts/CurrencyContext';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 import EmailSettingsForm from '../components/EmailSettingsForm';
 import OnboardingSettings from '../components/onboarding/OnboardingSettings';
 import FeatureVisibilitySettings from '../components/FeatureVisibilitySettings';
@@ -10,6 +13,7 @@ import { validateEIN } from '../lib/taxForms';
 export default function CompanySettings() {
   const { settings, updateSettings, isLoaded } = useCompanySettings();
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale, formatCurrency } = useCurrency();
   const [formData, setFormData] = useState(settings);
   const [logoPreview, setLogoPreview] = useState(settings.logoUrl);
 
@@ -119,6 +123,33 @@ export default function CompanySettings() {
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Choose how the application appears. System will follow your device settings.
             </p>
+          </div>
+        </div>
+
+        {/* Currency Format Section */}
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Currency Format</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Choose how currency values are displayed throughout the application.
+            This setting is saved per-user in your browser.
+          </p>
+
+          <div className="max-w-sm">
+            <TextField
+              select
+              label="Locale / Currency"
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+              fullWidth
+              size="small"
+              helperText={`Preview: ${formatCurrency(1234.56)}`}
+            >
+              {CURRENCY_LOCALE_OPTIONS.map((option) => (
+                <MenuItem key={option.code} value={option.code}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
           </div>
         </div>
 
