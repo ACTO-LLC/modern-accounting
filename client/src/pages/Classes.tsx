@@ -77,7 +77,7 @@ export default function Classes() {
     return <div className="p-4 text-red-600">Error loading classes</div>;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Classes</h1>
         <Link

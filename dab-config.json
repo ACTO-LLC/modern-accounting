@@ -280,6 +280,7 @@
                 "State": "State",
                 "PostalCode": "PostalCode",
                 "Country": "Country",
+                "Status": "Status",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "SourceSystem": "SourceSystem",

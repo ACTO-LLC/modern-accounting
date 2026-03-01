@@ -94,7 +94,7 @@ export default function TaxRates() {
     return <div className="p-4 text-red-600 dark:text-red-400">Error loading tax rates</div>;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Tax Rates</h1>

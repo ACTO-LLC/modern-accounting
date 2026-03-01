@@ -10,6 +10,7 @@ interface Customer {
   Email: string;
   Phone: string;
   Address: string;
+  Status: string;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -22,6 +23,19 @@ export default function Customers() {
     { field: 'Email', headerName: 'Email', width: 200, filterable: true },
     { field: 'Phone', headerName: 'Phone', width: 150, filterable: true },
     { field: 'Address', headerName: 'Address', width: 250, filterable: true },
+    {
+      field: 'Status',
+      headerName: 'Status',
+      width: 100,
+      filterable: true,
+      renderCell: (params) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          params.value === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+        }`}>
+          {params.value}
+        </span>
+      ),
+    },
     ...getTimestampColumns(),
     {
       field: 'actions',
@@ -73,6 +87,7 @@ export default function Customers() {
         columns={columns}
         editPath="/customers/{id}/edit"
         initialPageSize={25}
+        baseFilter="Status eq 'Active'"
         emptyMessage="No customers found."
       />
     </div>

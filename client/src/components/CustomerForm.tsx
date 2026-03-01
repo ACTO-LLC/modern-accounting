@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import AddressFields, { AddressFieldValues } from './AddressFields';
 
@@ -21,6 +22,7 @@ export const customerSchema = z.object({
   Country: z.string().nullish(),
   // Legacy field for backward compatibility
   Address: z.string().nullish(),
+  Status: z.enum(['Active', 'Inactive']).nullish(),
 });
 
 export type CustomerFormData = z.infer<typeof customerSchema> & AddressFieldValues;
@@ -49,6 +51,7 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
       Country: '',
       Address: '',
       ...initialValues,
+      Status: initialValues?.Status ?? 'Active',
     }
   });
 
@@ -66,6 +69,7 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
         Country: '',
         Address: '',
         ...initialValues,
+        Status: initialValues?.Status ?? 'Active',
       });
     }
   }, [initialValues, reset]);
@@ -126,6 +130,26 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
               size="small"
               fullWidth
             />
+          )}
+        />
+
+        <Controller
+          name="Status"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              select
+              label="Status"
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="Active">Active</MenuItem>
+              <MenuItem value="Inactive">Inactive</MenuItem>
+            </TextField>
           )}
         />
 

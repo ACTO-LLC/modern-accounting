@@ -17,6 +17,7 @@ CREATE TABLE [dbo].[Customers]
     [State] NVARCHAR(50) NULL,
     [PostalCode] NVARCHAR(20) NULL,
     [Country] NVARCHAR(50) NULL DEFAULT ('US'),
+    [Status] NVARCHAR(20) NOT NULL DEFAULT ('Active'),
     [SourceSystem] NVARCHAR(50) NULL,
     [SourceId] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
@@ -33,4 +34,7 @@ GO
 
 CREATE INDEX [IX_Customers_Source] ON [dbo].[Customers]([SourceSystem], [SourceId])
 WHERE [SourceSystem] IS NOT NULL
+GO
+
+CREATE INDEX [IX_Customers_Status] ON [dbo].[Customers]([Status])
 GO

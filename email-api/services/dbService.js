@@ -18,8 +18,6 @@ export async function getEmailSettings() {
     } catch (error) {
         console.error('Error getting email settings:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -103,8 +101,6 @@ export async function saveEmailSettings(settings) {
     } catch (error) {
         console.error('Error saving email settings:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -123,8 +119,6 @@ export async function updateTestResult(settingsId, success, message) {
         `);
     } catch (error) {
         console.error('Error updating test result:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -151,8 +145,6 @@ export async function createEmailLog(logData) {
     } catch (error) {
         console.error('Error creating email log:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -173,8 +165,6 @@ export async function updateEmailLog(logId, status, errorMessage) {
     } catch (error) {
         console.error('Error updating email log:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -194,8 +184,6 @@ export async function getEmailLogs(invoiceId) {
         return result.recordset;
     } catch (error) {
         console.error('Error getting email logs:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -221,8 +209,6 @@ export async function getEmailTemplates(type = null) {
     } catch (error) {
         console.error('Error getting email templates:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -236,8 +222,6 @@ export async function getEmailTemplateById(id) {
         return result.recordset[0] || null;
     } catch (error) {
         console.error('Error getting email template:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -305,8 +289,6 @@ export async function saveEmailTemplate(template) {
     } catch (error) {
         console.error('Error saving email template:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -320,8 +302,6 @@ export async function deleteEmailTemplate(id) {
         await request.query('UPDATE EmailTemplates SET IsActive = 0, UpdatedAt = SYSDATETIME() WHERE Id = @Id');
     } catch (error) {
         console.error('Error deleting email template:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -343,8 +323,6 @@ export async function getReminderSettings() {
     } catch (error) {
         console.error('Error getting reminder settings:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -363,8 +341,6 @@ export async function getReminderSettingById(id) {
         return result.recordset[0] || null;
     } catch (error) {
         console.error('Error getting reminder setting:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -420,8 +396,6 @@ export async function saveReminderSetting(setting) {
     } catch (error) {
         console.error('Error saving reminder setting:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -434,8 +408,6 @@ export async function deleteReminderSetting(id) {
         await request.query('DELETE FROM EmailReminderSettings WHERE Id = @Id');
     } catch (error) {
         console.error('Error deleting reminder setting:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -454,8 +426,6 @@ export async function getOverdueInvoicesForReminder() {
         return result.recordset;
     } catch (error) {
         console.error('Error getting overdue invoices:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -477,8 +447,6 @@ export async function getInvoicesForReminderSetting(reminderDays) {
         return result.recordset;
     } catch (error) {
         console.error('Error getting invoices for reminder:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
@@ -510,8 +478,6 @@ export async function createReminderLog(logData) {
     } catch (error) {
         console.error('Error creating reminder log:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -534,8 +500,6 @@ export async function getLastReminderForInvoice(invoiceId, reminderSettingId) {
     } catch (error) {
         console.error('Error getting last reminder:', error);
         throw error;
-    } catch (error) {
-        throw error;
     }
 }
 
@@ -557,8 +521,6 @@ export async function getReminderCountForInvoice(invoiceId, reminderSettingId) {
         return result.recordset[0]?.ReminderCount || 0;
     } catch (error) {
         console.error('Error getting reminder count:', error);
-        throw error;
-    } catch (error) {
         throw error;
     }
 }
