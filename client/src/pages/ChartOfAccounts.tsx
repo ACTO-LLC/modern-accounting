@@ -70,6 +70,7 @@ export default function ChartOfAccounts() {
       </div>
 
       <RestDataGrid<Account>
+        gridKey="accounts-grid"
         endpoint="/accounts"
         columns={columns}
         editPath="/accounts/{id}/edit"

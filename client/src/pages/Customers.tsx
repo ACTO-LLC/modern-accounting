@@ -69,6 +69,7 @@ export default function Customers() {
       </div>
 
       <RestDataGrid<Customer>
+        gridKey="customers-grid"
         endpoint="/customers"
         columns={columns}
         editPath="/customers/{id}/edit"

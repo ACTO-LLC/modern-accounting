@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import api, { customersApi, Customer, BankTransaction } from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
+import useDataGridState from '../hooks/useDataGridState';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
 import BulkActionsBar, { BULK_ACTIONS_BAR_HEIGHT } from '../components/transactions/BulkActionsBar';
 import PlaidLinkButton from '../components/PlaidLinkButton';
@@ -61,6 +62,12 @@ export default function UnifiedTransactions() {
 
   const [selectedIds, setSelectedIds] = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
   const [drawerTransaction, setDrawerTransaction] = useState<BankTransaction | null>(null);
+
+  // Persisted grid state
+  const gridState = useDataGridState({
+    gridKey: 'unified-transactions-grid',
+    defaultSortModel: [{ field: 'TransactionDate', sort: 'desc' }],
+  });
   const [showPostConfirm, setShowPostConfirm] = useState(false);
   const [matchingTransaction, setMatchingTransaction] = useState<BankTransaction | null>(null);
 
@@ -698,10 +705,12 @@ export default function UnifiedTransactions() {
           rowSelectionModel={selectedIds}
           onRowSelectionModelChange={setSelectedIds}
           pageSizeOptions={[10, 25, 50, 100]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 25 } },
-            sorting: { sortModel: [{ field: 'TransactionDate', sort: 'desc' }] },
-          }}
+          paginationModel={gridState.paginationModel}
+          onPaginationModelChange={gridState.onPaginationModelChange}
+          sortModel={gridState.sortModel}
+          onSortModelChange={gridState.onSortModelChange}
+          filterModel={gridState.filterModel}
+          onFilterModelChange={gridState.onFilterModelChange}
           localeText={{
             noRowsLabel: 'No transactions found. Sync your bank feed or import a CSV to get started.',
           }}

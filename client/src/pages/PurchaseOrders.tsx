@@ -10,6 +10,7 @@ import { formatDate } from '../lib/dateUtils';
 import { getTimestampColumns } from '../lib/gridColumns';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface PurchaseOrder {
   Id: string;
@@ -177,7 +178,7 @@ export default function PurchaseOrders() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'Status',
@@ -254,6 +255,7 @@ export default function PurchaseOrders() {
 
       <RestDataGrid<PurchaseOrder>
         key={refreshKey}
+        gridKey="purchaseorders-grid"
         endpoint="/purchaseorders"
         columns={columns}
         editPath="/purchase-orders/{id}/edit"

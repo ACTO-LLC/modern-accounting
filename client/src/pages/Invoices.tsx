@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import {
   generateNextInvoiceNumber,
   calculateInvoiceTotal,
@@ -145,7 +146,7 @@ export default function Invoices() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'Status',
@@ -215,6 +216,7 @@ export default function Invoices() {
 
       <RestDataGrid<Invoice>
         key={refreshKey}
+        gridKey="invoices-grid"
         endpoint="/invoices"
         columns={columns}
         editPath="/invoices/{id}/edit"
