@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { RefreshCw, Download, CheckCircle, Clock, Settings } from 'lucide-react';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import PlaidLinkButton from '../components/PlaidLinkButton';
 
 interface BankTransaction {
@@ -121,7 +122,7 @@ export default function Banking() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tx.Description}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.Category}</td>
                   <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${tx.Amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {tx.Amount < 0 ? '-' : '+'}${Math.abs(tx.Amount).toFixed(2)}
+                    {formatCurrencyStandalone(tx.Amount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="flex items-center text-xs leading-5 font-semibold text-green-800">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation } from '@tanstack/react-query';
 import { X, Send, Loader2, CheckCircle, Eye } from 'lucide-react';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import {
   overdueInvoicesApi,
   emailTemplatesApi,
@@ -51,9 +52,7 @@ export default function SendReminderModal({
       InvoiceNumber: invoice.InvoiceNumber,
       InvoiceDate: formatDateShort(invoice.IssueDate),
       DueDate: formatDateShort(invoice.DueDate),
-      AmountDue: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-        invoice.AmountDue
-      ),
+      AmountDue: formatCurrencyStandalone(invoice.AmountDue),
       DaysOverdue: invoice.DaysOverdue.toString(),
       PaymentLink: `${window.location.origin}/pay/${invoice.InvoiceId}`,
       CompanyName: companySettings.name || '',
@@ -227,7 +226,7 @@ export default function SendReminderModal({
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">Amount Due:</span>{' '}
                       <span className="font-medium text-gray-900 dark:text-white">
-                        ${invoice.AmountDue.toFixed(2)}
+                        {formatCurrencyStandalone(invoice.AmountDue)}
                       </span>
                     </div>
                     <div>

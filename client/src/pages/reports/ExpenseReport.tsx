@@ -5,6 +5,7 @@ import api from '../../lib/api';
 import { formatDate } from '../../lib/dateUtils';
 import ReportHeader from '../../components/reports/ReportHeader';
 import DateRangePicker from '../../components/reports/DateRangePicker';
+import { formatCurrencyStandalone } from '../../contexts/CurrencyContext';
 
 interface Expense {
   Id: string;
@@ -206,7 +207,7 @@ export default function ExpenseReport() {
               <div className="bg-gray-50 px-6 py-3 flex justify-between items-center">
                 <h3 className="font-medium text-gray-900">{groupName}</h3>
                 <span className="font-semibold text-gray-900">
-                  ${groupData.total.toFixed(2)}
+                  {formatCurrencyStandalone(groupData.total)}
                 </span>
               </div>
               <table className="min-w-full divide-y divide-gray-200">
@@ -253,7 +254,7 @@ export default function ExpenseReport() {
                         {expense.Description || '-'}
                       </td>
                       <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
-                        ${expense.Amount.toFixed(2)}
+                        {formatCurrencyStandalone(expense.Amount)}
                       </td>
                     </tr>
                   ))}
@@ -266,7 +267,7 @@ export default function ExpenseReport() {
           <div className="bg-indigo-50 px-6 py-4 flex justify-between items-center">
             <span className="font-semibold text-indigo-900">Grand Total</span>
             <span className="text-xl font-bold text-indigo-900">
-              ${grandTotal.toFixed(2)}
+              {formatCurrencyStandalone(grandTotal)}
             </span>
           </div>
         </div>

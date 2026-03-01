@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, FileText, Users, Truck, Receipt, Package, X, Command, AlertCircle } from 'lucide-react';
 import { graphql } from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import clsx from 'clsx';
 
 // Search result types - used in GraphQL response parsing
@@ -218,7 +219,7 @@ export default function GlobalSearch() {
           id: inv.Id,
           type: 'invoice' as const,
           title: `Invoice ${inv.InvoiceNumber}`,
-          subtitle: inv.Customer?.Name || `$${inv.TotalAmount?.toFixed(2) || '0.00'}`,
+          subtitle: inv.Customer?.Name || formatCurrencyStandalone(inv.TotalAmount || 0),
           path: `/invoices/${inv.Id}/edit`,
         }));
 
@@ -248,7 +249,7 @@ export default function GlobalSearch() {
           id: bill.Id,
           type: 'bill' as const,
           title: `Bill ${bill.BillNumber || 'N/A'}`,
-          subtitle: bill.Vendor?.Name || `$${bill.TotalAmount?.toFixed(2) || '0.00'}`,
+          subtitle: bill.Vendor?.Name || formatCurrencyStandalone(bill.TotalAmount || 0),
           path: `/bills/${bill.Id}/edit`,
         }));
 

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -308,11 +309,11 @@ export default function NewJournalEntry() {
         <div className="border-t dark:border-gray-600 pt-4 flex justify-end space-x-8 text-sm font-medium">
           <div>
             <span className="text-gray-500 dark:text-gray-400">Total Debit:</span>
-            <span className="ml-2 text-gray-900 dark:text-gray-100">${totalDebit.toFixed(2)}</span>
+            <span className="ml-2 text-gray-900 dark:text-gray-100">{formatCurrencyStandalone(totalDebit)}</span>
           </div>
           <div>
             <span className="text-gray-500 dark:text-gray-400">Total Credit:</span>
-            <span className="ml-2 text-gray-900 dark:text-gray-100">${totalCredit.toFixed(2)}</span>
+            <span className="ml-2 text-gray-900 dark:text-gray-100">{formatCurrencyStandalone(totalCredit)}</span>
           </div>
           <div className={isBalanced ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
             {isBalanced ? "Balanced" : "Unbalanced"}

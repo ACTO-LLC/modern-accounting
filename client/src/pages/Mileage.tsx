@@ -5,6 +5,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
 import { getTimestampColumns } from '../lib/gridColumns';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface MileageTrip {
   Id: string;
@@ -180,7 +181,7 @@ export default function Mileage() {
       renderCell: (params) =>
         params.value ? (
           <span className="text-green-600 font-medium">
-            ${params.value.toFixed(2)}
+            {formatCurrencyStandalone(params.value)}
           </span>
         ) : (
           <span className="text-gray-400">-</span>

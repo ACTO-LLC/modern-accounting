@@ -11,6 +11,7 @@ import { RefreshCw, Upload, Settings, CheckCircle, XCircle, Edit2, MinusCircle, 
 import { toast } from 'sonner';
 import api, { customersApi, Customer, BankTransaction } from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import useGridHeight from '../hooks/useGridHeight';
 import useDataGridState from '../hooks/useDataGridState';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
@@ -483,7 +484,7 @@ export default function UnifiedTransactions() {
         return (
           <div className="flex flex-col items-end">
             <span className={amount < 0 ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
-              {amount < 0 ? '-' : '+'}${Math.abs(amount).toFixed(2)}
+              {formatCurrencyStandalone(amount)}
             </span>
             {params.row.IsPersonal && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">

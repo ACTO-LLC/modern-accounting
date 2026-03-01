@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface BankTransaction {
   Id: string;
@@ -350,7 +351,7 @@ export default function BankTransactions() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                       <span className={txn.Amount < 0 ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
-                        ${Math.abs(txn.Amount).toFixed(2)}
+                        {formatCurrencyStandalone(Math.abs(txn.Amount))}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">

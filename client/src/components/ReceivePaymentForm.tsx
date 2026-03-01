@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect, ReactNode, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
@@ -323,7 +324,7 @@ export default function ReceivePaymentForm({
           <div>
             <div className="text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Total Amount</div>
             <div className="block w-full rounded-md border-gray-300 bg-gray-50 p-2 text-lg font-semibold text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-              ${calculatedTotal.toFixed(2)}
+              {formatCurrencyStandalone(calculatedTotal)}
             </div>
             <input type="hidden" {...register('TotalAmount', { valueAsNumber: true })} />
           </div>
@@ -389,8 +390,8 @@ export default function ReceivePaymentForm({
                                 return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${aging.className}`}>{aging.label}</span>;
                               })()}
                             </td>
-                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 text-right">${invoice.TotalAmount.toFixed(2)}</td>
-                            <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">${invoice.BalanceDue.toFixed(2)}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 text-right">{formatCurrencyStandalone(invoice.TotalAmount)}</td>
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">{formatCurrencyStandalone(invoice.BalanceDue)}</td>
                             <td className="px-4 py-2 text-right">
                               <button
                                 type="button"
@@ -424,7 +425,7 @@ export default function ReceivePaymentForm({
                               Invoice #{field.InvoiceNumber}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Balance due: ${(field.InvoiceBalanceDue || 0).toFixed(2)}
+                              Balance due: {formatCurrencyStandalone(field.InvoiceBalanceDue || 0)}
                             </div>
                           </div>
                           <div className="w-40">
@@ -436,7 +437,7 @@ export default function ReceivePaymentForm({
                               size="small"
                               fullWidth
                               error={!!errors.Applications?.[index]?.AmountApplied || overpaymentErrors.some(e => e.index === index)}
-                              helperText={errors.Applications?.[index]?.AmountApplied?.message || (overpaymentErrors.find(e => e.index === index) ? `Amount exceeds balance due ($${(field.InvoiceBalanceDue || 0).toFixed(2)})` : undefined)}
+                              helperText={errors.Applications?.[index]?.AmountApplied?.message || (overpaymentErrors.find(e => e.index === index) ? `Amount exceeds balance due (${formatCurrencyStandalone(field.InvoiceBalanceDue || 0)})` : undefined)}
                               slotProps={{
                                 input: {
                                   startAdornment: <InputAdornment position="start">$</InputAdornment>
@@ -478,7 +479,7 @@ export default function ReceivePaymentForm({
             <div className="w-72 space-y-2">
               <div className="flex justify-between text-lg font-bold">
                 <span className="text-gray-900 dark:text-gray-100">Total Payment:</span>
-                <span className="text-gray-900 dark:text-gray-100">${calculatedTotal.toFixed(2)}</span>
+                <span className="text-gray-900 dark:text-gray-100">{formatCurrencyStandalone(calculatedTotal)}</span>
               </div>
             </div>
           </div>

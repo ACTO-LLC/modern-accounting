@@ -6,6 +6,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { Wrench, Box, Package } from 'lucide-react';
 import Fuse from 'fuse.js';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 export interface ProductService {
   Id: string;
@@ -32,7 +33,7 @@ export interface ProductServiceSelectorProps {
 
 const formatCurrency = (value: number | null) => {
   if (value === null || value === undefined) return '';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  return formatCurrencyStandalone(value);
 };
 
 const getTypeIcon = (type: string) => {
