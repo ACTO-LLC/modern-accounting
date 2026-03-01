@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { getTimestampColumns } from '../lib/gridColumns';
 
 interface CreditMemo {
@@ -43,7 +44,7 @@ export default function CreditMemos() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'AmountApplied',
@@ -51,7 +52,7 @@ export default function CreditMemos() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'BalanceRemaining',
@@ -59,7 +60,7 @@ export default function CreditMemos() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'Status',
@@ -111,6 +112,7 @@ export default function CreditMemos() {
       </div>
 
       <RestDataGrid<CreditMemo>
+        gridKey="creditmemos-grid"
         endpoint="/creditmemos"
         columns={columns}
         initialPageSize={25}

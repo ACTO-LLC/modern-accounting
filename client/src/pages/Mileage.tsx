@@ -256,6 +256,7 @@ export default function Mileage() {
 
       <RestDataGrid<MileageTrip>
         key={personalFilter}
+        gridKey="mileage-grid"
         endpoint={getEndpoint()}
         columns={columns}
         editPath="/mileage/{id}/edit"

@@ -117,6 +117,7 @@ export default function Employees() {
       </div>
 
       <RestDataGrid<Employee>
+        gridKey="employees-grid"
         endpoint="/employees"
         columns={columns}
         editPath="/employees/{id}/edit"

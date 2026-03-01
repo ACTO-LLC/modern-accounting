@@ -170,6 +170,7 @@ export default function BankImportHistory() {
       </div>
 
       <RestDataGrid<BankTransactionImport>
+        gridKey="bankimporthistory-grid"
         endpoint="/banktransactionimports"
         columns={columns}
         initialPageSize={25}

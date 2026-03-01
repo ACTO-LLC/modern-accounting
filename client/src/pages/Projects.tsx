@@ -4,6 +4,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
 import { getTimestampColumns } from '../lib/gridColumns';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface Project {
   Id: string;
@@ -31,7 +32,7 @@ const getStatusBadgeClass = (status: string) => {
 
 const formatCurrency = (amount?: number) => {
   if (amount === undefined || amount === null) return '-';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  return formatCurrencyStandalone(amount);
 };
 
 export default function Projects() {
@@ -107,6 +108,7 @@ export default function Projects() {
       </div>
 
       <RestDataGrid<Project>
+        gridKey="projects-grid"
         endpoint="/projects"
         columns={columns}
         editPath="/projects/{id}/edit"
