@@ -13,6 +13,10 @@ on:
         required: false
         default: false
         type: boolean
+      migration_file:
+        description: 'Run a single migration file (e.g. 023_AddAuthNAuthZSchema.sql). Leave empty to run all.'
+        required: false
+        type: string
 
 permissions:
   id-token: write
@@ -184,10 +188,21 @@ jobs:
             exit 0
           fi
 
-          MIGRATIONS=$(ls "$MIGRATION_DIR"/*.sql 2>/dev/null | sort)
-          if [ -z "$MIGRATIONS" ]; then
-            echo "No migration files found." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+          # If a specific migration file is provided, run only that one
+          SPECIFIC_FILE="${{ inputs.migration_file }}"
+          if [ -n "$SPECIFIC_FILE" ]; then
+            TARGET="$MIGRATION_DIR/$SPECIFIC_FILE"
+            if [ ! -f "$TARGET" ]; then
+              echo "Migration file not found: $TARGET" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            MIGRATIONS="$TARGET"
+          else
+            MIGRATIONS=$(ls "$MIGRATION_DIR"/*.sql 2>/dev/null | sort)
+            if [ -z "$MIGRATIONS" ]; then
+              echo "No migration files found." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
           fi
 
           # Install pinned dependencies (including mssql) for migration runner
