@@ -3,6 +3,10 @@ name: Deploy to Production
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Version number (e.g. 1.2.0). Bumps root package.json and bakes into client build.'
+        required: false
+        type: string
       skip_tests:
         description: 'Skip tests (not recommended)'
         required: false
@@ -94,6 +98,13 @@ jobs:
           cache-dependency-path: |
             chat-api/package-lock.json
             client/package-lock.json
+
+      # Bump version in package.json if provided (build-time only, not committed)
+      - name: Set version
+        if: ${{ github.event.inputs.version != '' }}
+        run: |
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+          echo "Version set to ${{ github.event.inputs.version }}"
 
       # Build client for production
       - name: Install client dependencies
