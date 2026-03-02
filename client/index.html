@@ -5,10 +5,16 @@
       // Apply theme before first render to avoid flash of wrong theme.
       // Must stay in sync with THEME_STORAGE_KEY in ThemeContext.tsx.
       (function() {
-        var stored = localStorage.getItem('theme-preference');
-        var isDark = stored === 'dark' ||
-          (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        if (isDark) document.documentElement.classList.add('dark');
+        try {
+          var stored = localStorage.getItem('theme-preference');
+          var isDark = stored === 'dark' ||
+            (stored !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) document.documentElement.classList.add('dark');
+        } catch (e) {
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          }
+        }
       })();
     </script>
     <meta charset="UTF-8" />
