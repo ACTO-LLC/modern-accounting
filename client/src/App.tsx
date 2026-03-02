@@ -372,7 +372,10 @@ function App() {
         <CompanySettingsProvider>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-              <MuiThemeProvider theme={appTheme}>
+              {/* Prevent MUI CssVarsProvider from managing .dark class on <html> —
+                  its colorSchemeSelector:'.dark' bug unconditionally adds the class.
+                  Our ThemeContext handles the .dark class exclusively. */}
+              <MuiThemeProvider theme={appTheme} {...({ colorSchemeNode: null } as Record<string, unknown>)}>
                 <Toaster position="top-right" richColors />
                 <ToastProvider>
                   <CurrencyProvider>
