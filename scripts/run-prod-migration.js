@@ -5,9 +5,10 @@
  * Requires SQL_CONNECTION_STRING environment variable or will prompt for connection details
  */
 
-const sql = require('mssql');
 const fs = require('fs');
 const path = require('path');
+// mssql is installed in database/node_modules (via database/package.json)
+const sql = require(require.resolve('mssql', { paths: [path.join(__dirname, '..', 'database')] }));
 const readline = require('readline');
 
 async function prompt(question) {
