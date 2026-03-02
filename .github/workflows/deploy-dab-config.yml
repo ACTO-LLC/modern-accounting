@@ -1,0 +1,71 @@
+name: Deploy DAB Config
+
+on:
+  workflow_dispatch:
+    inputs:
+      restart_only:
+        description: 'Only restart DAB (skip config upload)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy DAB Config
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Upload DAB config to Azure Files
+        if: ${{ github.event.inputs.restart_only != 'true' }}
+        run: |
+          echo "Uploading dab-config.json to Azure Files..."
+          az storage file upload \
+            --source ./dab-config.json \
+            --share-name dab-config \
+            --path dab-config.json \
+            --account-name stmodernaccountingprod \
+            --only-show-errors
+          echo "Config uploaded successfully."
+
+      - name: Restart DAB Container App
+        run: |
+          echo "Restarting DAB container app..."
+          az containerapp update \
+            --name dab-ca-modern-accounting \
+            --resource-group rg-modern-accounting-prod \
+            --set-env-vars "RESTART_TRIGGER=$(date +%s)" \
+            --only-show-errors
+          echo "DAB container app restarted."
+
+      - name: Health Check
+        run: |
+          DAB_URL="${{ vars.PROD_DAB_URL || 'https://dab-ca-modern-accounting.bravesky-c584bf83.westus2.azurecontainerapps.io' }}"
+          echo "Waiting for DAB to come up at $DAB_URL..."
+          sleep 15
+          for i in {1..10}; do
+            echo "Health check attempt $i..."
+            response=$(curl -s -o /dev/null -w "%{http_code}" "$DAB_URL/api" || echo "000")
+            if [ "$response" = "200" ] || [ "$response" = "404" ]; then
+              echo "DAB is responding (status: $response)"
+              exit 0
+            fi
+            echo "Got status $response, waiting..."
+            sleep 10
+          done
+          echo "::warning::DAB health check did not get a successful response after 10 attempts"

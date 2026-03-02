@@ -1,0 +1,11 @@
+{
+  "terminal.integrated.env.windows": {
+    "AZURE_CONFIG_DIR": "${env:USERPROFILE}/.azure-modern-accounting"
+  },
+  "terminal.integrated.env.linux": {
+    "AZURE_CONFIG_DIR": "${env:HOME}/.azure-modern-accounting"
+  },
+  "terminal.integrated.env.osx": {
+    "AZURE_CONFIG_DIR": "${env:HOME}/.azure-modern-accounting"
+  }
+}
