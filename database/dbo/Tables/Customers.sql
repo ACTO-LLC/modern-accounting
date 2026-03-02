@@ -17,7 +17,7 @@ CREATE TABLE [dbo].[Customers]
     [State] NVARCHAR(50) NULL,
     [PostalCode] NVARCHAR(20) NULL,
     [Country] NVARCHAR(50) NULL DEFAULT ('US'),
-    [Status] NVARCHAR(20) NOT NULL DEFAULT ('Active'),
+    [Status] NVARCHAR(20) NOT NULL DEFAULT ('Active') CHECK ([Status] IN ('Active', 'Inactive')),
     [SourceSystem] NVARCHAR(50) NULL,
     [SourceId] NVARCHAR(100) NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,

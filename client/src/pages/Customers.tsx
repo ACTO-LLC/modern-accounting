@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, GitBranch } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 import RestDataGrid from '../components/RestDataGrid';
 import { getTimestampColumns } from '../lib/gridColumns';
 
@@ -17,6 +20,7 @@ interface Customer {
 
 export default function Customers() {
   const navigate = useNavigate();
+  const [showInactive, setShowInactive] = useState(false);
 
   const columns: GridColDef[] = [
     { field: 'Name', headerName: 'Name', width: 200, filterable: true },
@@ -73,13 +77,19 @@ export default function Customers() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
-        <Link
-          to="/customers/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Customer
-        </Link>
+        <div className="flex items-center gap-4">
+          <FormControlLabel
+            control={<Switch checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} size="small" />}
+            label="Show Inactive"
+          />
+          <Link
+            to="/customers/new"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Customer
+          </Link>
+        </div>
       </div>
 
       <RestDataGrid<Customer>
@@ -87,7 +97,7 @@ export default function Customers() {
         columns={columns}
         editPath="/customers/{id}/edit"
         initialPageSize={25}
-        baseFilter="Status eq 'Active'"
+        baseFilter={showInactive ? undefined : "Status eq 'Active'"}
         emptyMessage="No customers found."
       />
     </div>
