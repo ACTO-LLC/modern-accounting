@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
@@ -384,7 +385,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                     </div>
                     <div className="w-32">
                       <div className="mt-1 py-2 px-3 text-sm text-gray-700 font-medium dark:text-gray-300">
-                        ${((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0)).toFixed(2)}
+                        {formatCurrencyStandalone((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0))}
                       </div>
                     </div>
                     <IconButton
@@ -436,7 +437,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
 
         <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
-            Total: ${lines.reduce((sum, line) => sum + (line.Quantity || 0) * (line.UnitPrice || 0), 0).toFixed(2)}
+            Total: {formatCurrencyStandalone(lines.reduce((sum, line) => sum + (line.Quantity || 0) * (line.UnitPrice || 0), 0))}
           </div>
           <Button
             variant="outlined"

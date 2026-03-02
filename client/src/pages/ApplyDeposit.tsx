@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface CustomerDeposit {
   Id: string;
@@ -301,11 +302,11 @@ export default function ApplyDeposit() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Original Amount</p>
-            <p className="text-lg font-medium text-gray-900">${deposit.Amount.toFixed(2)}</p>
+            <p className="text-lg font-medium text-gray-900">{formatCurrencyStandalone(deposit.Amount)}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Available Balance</p>
-            <p className="text-lg font-medium text-green-600">${deposit.BalanceRemaining.toFixed(2)}</p>
+            <p className="text-lg font-medium text-green-600">{formatCurrencyStandalone(deposit.BalanceRemaining)}</p>
           </div>
         </div>
       </div>
@@ -364,8 +365,8 @@ export default function ApplyDeposit() {
                       <tr key={invoice.Id}>
                         <td className="px-4 py-2 text-sm text-gray-900">{invoice.InvoiceNumber}</td>
                         <td className="px-4 py-2 text-sm text-gray-600">{formatDate(invoice.DueDate)}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 text-right">${invoice.TotalAmount.toFixed(2)}</td>
-                        <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">${balanceDue.toFixed(2)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 text-right">{formatCurrencyStandalone(invoice.TotalAmount)}</td>
+                        <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">{formatCurrencyStandalone(balanceDue)}</td>
                         <td className="px-4 py-2 text-right">
                           <button
                             type="button"
@@ -397,7 +398,7 @@ export default function ApplyDeposit() {
                       Invoice #{app.InvoiceNumber}
                     </div>
                     <div className="text-xs text-gray-500">
-                      Balance due: ${app.InvoiceBalanceDue.toFixed(2)}
+                      Balance due: {formatCurrencyStandalone(app.InvoiceBalanceDue)}
                     </div>
                   </div>
                   <div className="w-40">
@@ -442,12 +443,12 @@ export default function ApplyDeposit() {
             <div className="w-72 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Total to Apply:</span>
-                <span className="font-medium text-gray-900">${totalToApply.toFixed(2)}</span>
+                <span className="font-medium text-gray-900">{formatCurrencyStandalone(totalToApply)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Remaining Balance:</span>
                 <span className={`font-medium ${remainingBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  ${remainingBalance.toFixed(2)}
+                  {formatCurrencyStandalone(remainingBalance)}
                 </span>
               </div>
             </div>

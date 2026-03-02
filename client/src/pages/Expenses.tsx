@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Plus, Receipt, FileText, User } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDate } from '../lib/dateUtils';
 import { getTimestampColumns } from '../lib/gridColumns';
 
@@ -92,7 +93,7 @@ export default function Expenses() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'PaymentMethod',
@@ -194,6 +195,7 @@ export default function Expenses() {
 
       <RestDataGrid<Expense>
         key={personalFilter}
+        gridKey="expenses-grid"
         endpoint={getEndpoint()}
         columns={columns}
         editPath="/expenses/{id}/edit"

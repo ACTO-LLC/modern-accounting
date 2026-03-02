@@ -66,6 +66,7 @@ export default function JournalEntries() {
       </div>
 
       <RestDataGrid<JournalEntry>
+        gridKey="journalentries-grid"
         endpoint="/journalentries"
         columns={columns}
         editPath="/journal-entries/{id}/edit"

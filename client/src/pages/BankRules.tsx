@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, X, ArrowUpDown, Play, Pause, Trash2, Pencil, FlaskConical } from 'lucide-react';
 import { useState } from 'react';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { useToast } from '../hooks/useToast';
 
 interface BankRule {
@@ -867,7 +868,7 @@ export default function BankRules() {
                             {tx.Description}
                           </td>
                           <td className={`px-4 py-2 text-sm text-right font-mono ${tx.Amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ${Math.abs(tx.Amount).toFixed(2)}
+                            {formatCurrencyStandalone(Math.abs(tx.Amount))}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
                             {tx.Amount < 0 ? 'Debit' : 'Credit'}

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Search, Filter, ArrowLeft, FileText, RefreshCw } from 'lucide-react';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDate } from '../lib/dateUtils';
 
 interface BankTransactionMatch {
@@ -393,7 +394,7 @@ export default function BankImportMatches() {
                         {match.TransactionDescription}
                       </p>
                       <p className="text-lg font-semibold text-green-600 mt-1">
-                        +${match.TransactionAmount.toFixed(2)}
+                        {formatCurrencyStandalone(match.TransactionAmount)}
                       </p>
                     </div>
 
@@ -406,11 +407,11 @@ export default function BankImportMatches() {
                       <p className="text-sm text-gray-700">{match.CustomerName}</p>
                       <div className="flex justify-between mt-1">
                         <span className="text-xs text-gray-500">Balance Due:</span>
-                        <span className="text-sm font-medium text-gray-900">${match.InvoiceBalanceDue.toFixed(2)}</span>
+                        <span className="text-sm font-medium text-gray-900">{formatCurrencyStandalone(match.InvoiceBalanceDue)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-xs text-gray-500">Apply Amount:</span>
-                        <span className="text-sm font-semibold text-indigo-600">${match.SuggestedAmount.toFixed(2)}</span>
+                        <span className="text-sm font-semibold text-indigo-600">{formatCurrencyStandalone(match.SuggestedAmount)}</span>
                       </div>
                     </div>
                   </div>
@@ -485,10 +486,9 @@ export default function BankImportMatches() {
             </div>
             <div>
               <p className="text-2xl font-bold text-indigo-600">
-                ${matches
+                {formatCurrencyStandalone(matches
                   .filter(m => m.Status === 'Accepted')
-                  .reduce((sum, m) => sum + m.SuggestedAmount, 0)
-                  .toFixed(2)}
+                  .reduce((sum, m) => sum + m.SuggestedAmount, 0))}
               </p>
               <p className="text-sm text-gray-500">Total Applied</p>
             </div>
@@ -513,7 +513,7 @@ export default function BankImportMatches() {
               <option value="">Select an invoice...</option>
               {unpaidInvoices?.map(invoice => (
                 <option key={invoice.Id} value={invoice.Id}>
-                  #{invoice.InvoiceNumber} - {invoice.CustomerName} - ${invoice.BalanceDue.toFixed(2)} due
+                  #{invoice.InvoiceNumber} - {invoice.CustomerName} - {formatCurrencyStandalone(invoice.BalanceDue)} due
                 </option>
               ))}
             </select>

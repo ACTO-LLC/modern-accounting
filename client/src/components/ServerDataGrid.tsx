@@ -12,6 +12,7 @@ import {
 import { graphql } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import useGridHeight from '../hooks/useGridHeight';
+import useDataGridState from '../hooks/useDataGridState';
 
 // DAB GraphQL filter operators
 type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'startsWith' | 'endsWith';
@@ -65,6 +66,8 @@ interface ServerDataGridProps<T extends GridValidRowModel> {
   disableRowSelectionOnClick?: boolean;
   // Custom empty state message
   emptyMessage?: string;
+  // Unique key for persisting grid state (sort, filter, page size) to localStorage
+  gridKey?: string;
 }
 
 interface GraphQLResponse<T> {
@@ -95,6 +98,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   checkboxSelection = false,
   disableRowSelectionOnClick = true,
   emptyMessage = 'No data found.',
+  gridKey,
 }: ServerDataGridProps<T>) {
   const navigate = useNavigate();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -106,22 +110,43 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
   const [error, setError] = useState<string | null>(null);
   const [totalRows, setTotalRows] = useState(0);
 
-  // Pagination state with cursor tracking
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: initialPageSize,
+  // Persisted grid state (sort, filter, page size) when gridKey is provided
+  const persistedState = useDataGridState({
+    gridKey: gridKey || '__server-no-persist__',
+    defaultPaginationModel: { page: 0, pageSize: initialPageSize },
   });
+
+  // Pagination state with cursor tracking
+  // For server-side pagination, we only persist pageSize (not page number, since cursors are ephemeral)
+  const [paginationModel, setPaginationModelRaw] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: gridKey ? persistedState.paginationModel.pageSize : initialPageSize,
+  });
+  const setPaginationModel = useCallback((modelOrUpdater: GridPaginationModel | ((prev: GridPaginationModel) => GridPaginationModel)) => {
+    setPaginationModelRaw((prev) => {
+      const newModel = typeof modelOrUpdater === 'function' ? modelOrUpdater(prev) : modelOrUpdater;
+      if (gridKey) {
+        // Only persist pageSize for server-side grids (page depends on cursors)
+        persistedState.onPaginationModelChange({ page: 0, pageSize: newModel.pageSize });
+      }
+      return newModel;
+    });
+  }, [gridKey, persistedState]);
   const [paginationState, setPaginationState] = useState<PaginationState>({
     cursors: [null], // First page has no cursor
     currentPage: 0,
   });
   const [, setHasNextPage] = useState(false);
 
-  // Sorting state
-  const [sortModel, setSortModel] = useState<GridSortModel>([]);
+  // Sorting state - use persisted if gridKey provided
+  const [localSortModel, setLocalSortModel] = useState<GridSortModel>([]);
+  const sortModel = gridKey ? persistedState.sortModel : localSortModel;
+  const setSortModel = gridKey ? persistedState.onSortModelChange : setLocalSortModel;
 
-  // Filter state
-  const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
+  // Filter state - use persisted if gridKey provided
+  const [localFilterModel, setLocalFilterModel] = useState<GridFilterModel>({ items: [] });
+  const filterModel = gridKey ? persistedState.filterModel : localFilterModel;
+  const setFilterModel = gridKey ? persistedState.onFilterModelChange : setLocalFilterModel;
 
   // Build the GraphQL orderBy parameter
   const buildOrderBy = useCallback((sort: GridSortModel): string | null => {
@@ -258,7 +283,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
     } else {
       setPaginationModel(newModel);
     }
-  }, [paginationModel.pageSize]);
+  }, [paginationModel.pageSize, setPaginationModel]);
 
   // Handle sort changes
   const handleSortModelChange = useCallback((newSortModel: GridSortModel) => {
@@ -266,7 +291,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
     setPaginationState({ cursors: [null], currentPage: 0 });
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
     setSortModel(newSortModel);
-  }, []);
+  }, [setSortModel, setPaginationModel]);
 
   // Handle filter changes
   const handleFilterModelChange = useCallback((newFilterModel: GridFilterModel) => {
@@ -274,7 +299,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
     setPaginationState({ cursors: [null], currentPage: 0 });
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
     setFilterModel(newFilterModel);
-  }, []);
+  }, [setFilterModel, setPaginationModel]);
 
   // Handle row click
   const handleRowClick = useCallback((params: GridRowParams<T>) => {

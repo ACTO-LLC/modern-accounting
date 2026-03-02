@@ -4,6 +4,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
 import { getTimestampColumns } from '../lib/gridColumns';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface Bill {
   Id: string;
@@ -45,7 +46,7 @@ export default function Bills() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'BalanceDue',
@@ -53,7 +54,7 @@ export default function Bills() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'Status',
@@ -83,6 +84,7 @@ export default function Bills() {
       </div>
 
       <RestDataGrid<Bill>
+        gridKey="bills-grid"
         endpoint="/bills"
         columns={columns}
         editPath="/bills/{id}/edit"

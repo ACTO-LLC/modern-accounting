@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react';
 import { EntityCardData, CardState } from './types';
+import { formatCurrencyStandalone } from '../../contexts/CurrencyContext';
 
 interface EntityCardProps {
   data: EntityCardData;
@@ -131,7 +132,7 @@ export default function EntityCard({
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500">Amount</span>
               <span className="text-sm font-semibold text-gray-900">
-                ${data.amount.toFixed(2)}
+                {formatCurrencyStandalone(data.amount)}
               </span>
             </div>
           </div>

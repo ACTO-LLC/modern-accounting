@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
@@ -409,7 +410,7 @@ export default function MileageForm({
                   </p>
                 </div>
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  ${((isRoundTrip ? (distance || 0) * 2 : distance || 0) * (applicableRate?.RatePerMile || 0)).toFixed(2)}
+                  {formatCurrencyStandalone((isRoundTrip ? (distance || 0) * 2 : distance || 0) * (applicableRate?.RatePerMile || 0))}
                 </div>
               </div>
             </div>

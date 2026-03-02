@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDate } from '../lib/dateUtils';
 import { createPaymentJournalEntry } from '../lib/autoPostingService';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
@@ -228,7 +229,7 @@ export default function MatchToInvoiceDialog({
                 <div className="text-right">
                   <div className="text-xs text-gray-500 dark:text-gray-400">Amount</div>
                   <div className="text-lg font-semibold text-green-600">
-                    +${bankTransaction.Amount.toFixed(2)}
+                    {formatCurrencyStandalone(bankTransaction.Amount)}
                   </div>
                 </div>
               </div>
@@ -301,11 +302,11 @@ export default function MatchToInvoiceDialog({
                               {formatDate(invoice.DueDate)}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 text-right">
-                              ${invoice.TotalAmount.toFixed(2)}
+                              {formatCurrencyStandalone(invoice.TotalAmount)}
                             </td>
                             <td className="px-4 py-2 text-sm font-medium text-right">
                               <span className={isExactMatch(invoice.BalanceDue) ? 'text-green-600 font-bold' : 'text-gray-900 dark:text-gray-100'}>
-                                ${invoice.BalanceDue.toFixed(2)}
+                                {formatCurrencyStandalone(invoice.BalanceDue)}
                               </span>
                               {isExactMatch(invoice.BalanceDue) && (
                                 <CheckCircle className="inline-block w-4 h-4 ml-1 text-green-600" />
@@ -340,7 +341,7 @@ export default function MatchToInvoiceDialog({
                 </div>
                 {selectedInvoice && amountToApply > selectedInvoice.BalanceDue && (
                   <p className="mt-1 text-sm text-red-600">
-                    Amount exceeds invoice balance due (${selectedInvoice.BalanceDue.toFixed(2)})
+                    Amount exceeds invoice balance due ({formatCurrencyStandalone(selectedInvoice.BalanceDue)})
                   </p>
                 )}
               </div>

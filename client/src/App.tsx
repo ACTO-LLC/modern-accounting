@@ -16,6 +16,7 @@ import appTheme from './theme';
 import { ChatProvider } from './contexts/ChatContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import { FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -371,16 +372,21 @@ function App() {
         <CompanySettingsProvider>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-              <MuiThemeProvider theme={appTheme}>
+              {/* Prevent MUI CssVarsProvider from managing .dark class on <html> —
+                  its colorSchemeSelector:'.dark' bug unconditionally adds the class.
+                  Our ThemeContext handles the .dark class exclusively. */}
+              <MuiThemeProvider theme={appTheme} {...({ colorSchemeNode: null } as Record<string, unknown>)}>
                 <Toaster position="top-right" richColors />
                 <ToastProvider>
-                  <ChatProvider>
-                    <FeatureFlagsProvider>
-                      <OnboardingProvider>
-                        <AppContent />
-                      </OnboardingProvider>
-                    </FeatureFlagsProvider>
-                  </ChatProvider>
+                  <CurrencyProvider>
+                    <ChatProvider>
+                      <FeatureFlagsProvider>
+                        <OnboardingProvider>
+                          <AppContent />
+                        </OnboardingProvider>
+                      </FeatureFlagsProvider>
+                    </ChatProvider>
+                  </CurrencyProvider>
                 </ToastProvider>
               </MuiThemeProvider>
             </ThemeProvider>

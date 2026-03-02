@@ -12,6 +12,7 @@ import {
 import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import useGridHeight from '../hooks/useGridHeight';
+import useDataGridState from '../hooks/useDataGridState';
 
 interface RestDataGridProps<T extends GridValidRowModel> {
   // The REST API endpoint (e.g., '/invoices', '/customers')
@@ -44,6 +45,8 @@ interface RestDataGridProps<T extends GridValidRowModel> {
   headerActions?: React.ReactNode;
   // Refresh key to force reload
   refreshKey?: number;
+  // Unique key for persisting grid state (sort, filter, pagination) to localStorage
+  gridKey?: string;
 }
 
 export default function RestDataGrid<T extends GridValidRowModel>({
@@ -62,6 +65,7 @@ export default function RestDataGrid<T extends GridValidRowModel>({
   emptyMessage = 'No data found.',
   headerActions,
   refreshKey = 0,
+  gridKey,
 }: RestDataGridProps<T>) {
   const navigate = useNavigate();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -72,17 +76,27 @@ export default function RestDataGrid<T extends GridValidRowModel>({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pagination state (client-side)
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+  // Persisted grid state (sort, filter, pagination) when gridKey is provided
+  const persistedState = useDataGridState({
+    gridKey: gridKey || '__rest-no-persist__',
+    defaultPaginationModel: { page: 0, pageSize: initialPageSize },
+  });
+
+  // Fallback local state when gridKey is not provided
+  const [localPaginationModel, setLocalPaginationModel] = useState<GridPaginationModel>({
     page: 0,
     pageSize: initialPageSize,
   });
+  const [localSortModel, setLocalSortModel] = useState<GridSortModel>([]);
+  const [localFilterModel, setLocalFilterModel] = useState<GridFilterModel>({ items: [] });
 
-  // Sorting state (client-side)
-  const [sortModel, setSortModel] = useState<GridSortModel>([]);
-
-  // Filter state (client-side)
-  const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
+  // Use persisted state when gridKey is provided, otherwise use local state
+  const paginationModel = gridKey ? persistedState.paginationModel : localPaginationModel;
+  const sortModel = gridKey ? persistedState.sortModel : localSortModel;
+  const filterModel = gridKey ? persistedState.filterModel : localFilterModel;
+  const setPaginationModel = gridKey ? persistedState.onPaginationModelChange : setLocalPaginationModel;
+  const setSortModel = gridKey ? persistedState.onSortModelChange : setLocalSortModel;
+  const setFilterModel = gridKey ? persistedState.onFilterModelChange : setLocalFilterModel;
 
   // Fetch data from REST API
   const fetchData = useCallback(async () => {

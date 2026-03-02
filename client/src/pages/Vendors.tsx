@@ -105,6 +105,7 @@ export default function Vendors() {
       </div>
 
       <RestDataGrid<Vendor>
+        gridKey="vendors-grid"
         endpoint="/vendors"
         columns={columns}
         editPath="/vendors/{id}/edit"

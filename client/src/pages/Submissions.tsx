@@ -126,6 +126,7 @@ export default function Submissions() {
       </div>
 
       <RestDataGrid<Submission>
+        gridKey="submissions-grid"
         endpoint="/submissions"
         columns={columns}
         editPath="/submissions/{id}/edit"
