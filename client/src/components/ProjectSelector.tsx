@@ -4,6 +4,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import api from '../lib/api';
+import { formatGuidForOData } from '../lib/validation';
 
 interface ProjectItem {
   Id: string;
@@ -36,7 +37,7 @@ export default function ProjectSelector({
     queryFn: async (): Promise<ProjectItem[]> => {
       let url = "/projects?$filter=Status eq 'Active'&$orderby=Name";
       if (customerId) {
-        url = `/projects?$filter=Status eq 'Active' and CustomerId eq '${customerId}'&$orderby=Name`;
+        url = `/projects?$filter=Status eq 'Active' and CustomerId eq ${formatGuidForOData(customerId, 'Customer Id')}&$orderby=Name`;
       }
       const response = await api.get(url);
       return response.data.value;

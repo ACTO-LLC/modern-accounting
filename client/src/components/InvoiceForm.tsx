@@ -244,7 +244,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     let subtotal = 0;
     let taxableAmount = 0;
 
-    lines.forEach((line, index) => {
+    (lines || []).forEach((line, index) => {
       const lineAmount = (line.Quantity || 0) * (line.UnitPrice || 0);
       subtotal += lineAmount;
 
