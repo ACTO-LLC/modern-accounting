@@ -32,9 +32,13 @@ const DEFAULT_CURRENCY = 'USD';
 
 function getStoredLocale(): string {
   if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (stored && CURRENCY_LOCALE_OPTIONS.some(opt => opt.code === stored)) {
-      return stored;
+    try {
+      const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+      if (stored && CURRENCY_LOCALE_OPTIONS.some(opt => opt.code === stored)) {
+        return stored;
+      }
+    } catch {
+      // localStorage unavailable (e.g., Safari private mode)
     }
   }
   return DEFAULT_LOCALE;
@@ -78,7 +82,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((newLocale: string) => {
     setLocaleState(newLocale);
-    localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
+    try {
+      localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
+    } catch {
+      // Ignore storage errors (quota exceeded, storage blocked)
+    }
   }, []);
 
   const value = useMemo(
@@ -105,6 +113,27 @@ export function useCurrency() {
 }
 
 /**
+ * Cached Intl.NumberFormat instances keyed by "locale:currency".
+ * Avoids creating a new formatter on every call (expensive in DataGrid renderers).
+ */
+const formatterCache = new Map<string, Intl.NumberFormat>();
+
+function getFormatter(locale: string, currency: string): Intl.NumberFormat {
+  const key = `${locale}:${currency}`;
+  let fmt = formatterCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: currency === 'JPY' ? 0 : 2,
+      maximumFractionDigits: currency === 'JPY' ? 0 : 2,
+    });
+    formatterCache.set(key, fmt);
+  }
+  return fmt;
+}
+
+/**
  * Standalone formatCurrency for use outside of React components.
  * Reads the locale from localStorage directly.
  * Prefer useCurrency().formatCurrency inside React components.
@@ -112,10 +141,6 @@ export function useCurrency() {
 export function formatCurrencyStandalone(amount: number): string {
   const locale = getStoredLocale();
   const currency = getCurrencyForLocale(locale);
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: currency === 'JPY' ? 0 : 2,
-    maximumFractionDigits: currency === 'JPY' ? 0 : 2,
-  }).format(amount ?? 0);
+  const safeAmount = amount == null || isNaN(amount as number) ? 0 : amount;
+  return getFormatter(locale, currency).format(safeAmount);
 }
