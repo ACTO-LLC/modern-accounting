@@ -320,6 +320,10 @@ export async function resolveTenant(req, res, next) {
         }
 
         if (!tenant) {
+            console.error('[Tenant] Resolution failed for', req.path, '— tried:',
+                tenantIdHeader ? `header=${tenantIdHeader}` : 'no header,',
+                req.user?.tenantId ? `jwt-tid=${req.user.tenantId}` : 'no jwt-tid,',
+                'slug=default. Tenants table may be empty — run migration 023.');
             return res.status(400).json({
                 error: 'TenantNotFound',
                 message: 'Could not resolve tenant. Please provide X-Tenant-Id header or register your organization.',
