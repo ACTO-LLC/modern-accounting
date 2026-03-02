@@ -43,76 +43,25 @@
         }
     },
     "entities": {
-        "customers": {
-            "source": "dbo.Customers",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
-            }
-        },
-        "vendors": {
-            "source": "dbo.Vendors",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
-            }
-        },
         "accounts": {
             "source": "dbo.Accounts",
-            "rest": true,
-            "graphql": true,
             "permissions": [
                 {
                     "role": "authenticated",
                     "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "create",
                         "read"
                     ]
                 },
@@ -122,172 +71,18 @@
                         "create",
                         "read",
                         "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
                     ]
                 }
             ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
-            }
-        },
-        "invoices": {
-            "source": "dbo.Invoices",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
-            }
-        },
-        "invoicelines": {
-            "source": "dbo.InvoiceLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "bills": {
-            "source": "dbo.Bills",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
-            }
-        },
-        "billlines": {
-            "source": "dbo.BillLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "journalentries": {
-            "source": "dbo.JournalEntries",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "journalentrylines": {
-            "source": "dbo.JournalEntryLines",
-            "rest": true,
-            "graphql": true,
+        "bankrules": {
+            "source": "dbo.BankRules",
             "permissions": [
                 {
                     "role": "authenticated",
@@ -296,20 +91,42 @@
                     ]
                 },
                 {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
                     "role": "Admin",
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "BankAccountId": "BankAccountId",
+                "MatchField": "MatchField",
+                "MatchType": "MatchType",
+                "MatchValue": "MatchValue",
+                "MinAmount": "MinAmount",
+                "MaxAmount": "MaxAmount",
+                "TransactionType": "TransactionType",
+                "AssignAccountId": "AssignAccountId",
+                "AssignVendorId": "AssignVendorId",
+                "AssignCustomerId": "AssignCustomerId",
+                "AssignClassId": "AssignClassId",
+                "AssignMemo": "AssignMemo",
+                "Priority": "Priority",
+                "IsEnabled": "IsEnabled",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
@@ -317,13 +134,17 @@
         },
         "banktransactions": {
             "source": "dbo.BankTransactions",
-            "rest": true,
-            "graphql": true,
             "permissions": [
                 {
                     "role": "authenticated",
                     "actions": [
                         "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
                     ]
                 },
                 {
@@ -335,438 +156,62 @@
                     ]
                 },
                 {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "productsservices": {
-            "source": "dbo.ProductsServices",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
+                    "role": "Service",
                     "actions": [
                         "create",
                         "read",
                         "update"
                     ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
                 }
             ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
-            }
-        },
-        "projects": {
-            "source": "dbo.Projects",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "timeentries": {
-            "source": "dbo.TimeEntries",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Employee",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ],
-                    "fields": {
-                        "include": [
-                            "*"
-                        ],
-                        "exclude": []
-                    }
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
-            }
-        },
-        "payments": {
-            "source": "dbo.Payments",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "billpayments": {
-            "source": "dbo.BillPayments",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
-            }
-        },
-        "tenants": {
-            "source": "dbo.Tenants",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "read"
-                    ]
-                }
-            ]
-        },
-        "users": {
-            "source": "dbo.Users",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "roles": {
-            "source": "dbo.Roles",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "userroles": {
-            "source": "dbo.UserRoles",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "enhancements": {
-            "source": "dbo.Enhancements",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "deployments": {
-            "source": "dbo.Deployments",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "salesreceipts": {
-            "source": "dbo.SalesReceipts",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "read"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
-            }
-        },
-        "salesreceipts_write": {
-            "source": "dbo.SalesReceipts",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "salesreceiptlines": {
-            "source": "dbo.SalesReceiptLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "emailtemplates": {
-            "source": "dbo.EmailTemplates",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
-            }
-        },
-        "emailremindersettings": {
-            "source": "dbo.EmailReminderSettings",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
-            }
-        },
-        "auditlog": {
-            "source": "dbo.AuditLog",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "read"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "expenses": {
-            "source": {
-                "object": "dbo.v_Expenses",
-                "type": "view",
-                "key-fields": [
-                    "Id"
-                ]
+            "mappings": {
+                "Id": "Id",
+                "SourceType": "SourceType",
+                "SourceName": "SourceName",
+                "SourceAccountId": "SourceAccountId",
+                "TransactionDate": "TransactionDate",
+                "PostDate": "PostDate",
+                "Amount": "Amount",
+                "Description": "Description",
+                "Merchant": "Merchant",
+                "OriginalCategory": "OriginalCategory",
+                "TransactionType": "TransactionType",
+                "CardNumber": "CardNumber",
+                "RawCSVLine": "RawCSVLine",
+                "SuggestedAccountId": "SuggestedAccountId",
+                "SuggestedCategory": "SuggestedCategory",
+                "SuggestedMemo": "SuggestedMemo",
+                "ConfidenceScore": "ConfidenceScore",
+                "Status": "Status",
+                "ReviewedBy": "ReviewedBy",
+                "ReviewedDate": "ReviewedDate",
+                "ApprovedAccountId": "ApprovedAccountId",
+                "ApprovedCategory": "ApprovedCategory",
+                "ApprovedMemo": "ApprovedMemo",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedDate": "CreatedDate",
+                "IsPersonal": "IsPersonal",
+                "PlaidTransactionId": "PlaidTransactionId",
+                "PlaidAccountId": "PlaidAccountId",
+                "ImportId": "ImportId",
+                "BankTransactionId": "BankTransactionId",
+                "CheckNumber": "CheckNumber",
+                "ReferenceNumber": "ReferenceNumber",
+                "MatchConfidence": "MatchConfidence",
+                "MatchedPaymentId": "MatchedPaymentId",
+                "MatchedAt": "MatchedAt",
+                "VendorId": "VendorId",
+                "CustomerId": "CustomerId",
+                "ClassId": "ClassId",
+                "Payee": "Payee",
+                "ProjectId": "ProjectId"
             },
-            "rest": true,
-            "graphql": true,
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "journalentries": {
+            "source": "dbo.JournalEntries",
             "permissions": [
                 {
                     "role": "authenticated",
@@ -775,28 +220,11 @@
                     ]
                 },
                 {
-                    "role": "Accountant",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
                     ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
-            }
-        },
-        "expenses_write": {
-            "source": "dbo.Expenses",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
+                },
                 {
                     "role": "Accountant",
                     "actions": [
@@ -804,22 +232,17 @@
                         "read",
                         "update"
                     ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
                 }
+            ],
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "companyfeatureflags": {
-            "source": "dbo.CompanyFeatureFlags",
-            "rest": true,
-            "graphql": true,
+        "customers": {
+            "source": "dbo.Customers",
             "permissions": [
                 {
                     "role": "authenticated",
@@ -832,97 +255,40 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
             ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
-            }
-        },
-        "onboardingprogress": {
-            "source": "dbo.OnboardingProgress",
-            "rest": true,
-            "graphql": true,
-            "permissions": [],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "estimates": {
-            "source": {
-                "object": "dbo.v_Estimates",
-                "type": "view",
-                "key-fields": [
-                    "Id"
-                ]
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Email": "Email",
+                "Phone": "Phone",
+                "Address": "Address",
+                "AddressLine1": "AddressLine1",
+                "AddressLine2": "AddressLine2",
+                "City": "City",
+                "State": "State",
+                "PostalCode": "PostalCode",
+                "Country": "Country",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
             },
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "read"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
-            }
-        },
-        "estimates_write": {
-            "source": "dbo.Estimates",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
-        },
-        "estimatelines": {
-            "source": "dbo.EstimateLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
         },
         "customerdeposits": {
             "source": {
@@ -932,35 +298,11 @@
                     "Id"
                 ]
             },
-            "rest": true,
-            "graphql": true,
             "permissions": [
                 {
                     "role": "authenticated",
                     "actions": [
                         "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "read"
-                    ]
-                }
-            ]
-        },
-        "customerdeposits_write": {
-            "source": "dbo.CustomerDeposits",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
                     ]
                 },
                 {
@@ -968,22 +310,100 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "DepositNumber": "DepositNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "DepositDate": "DepositDate",
+                "Amount": "Amount",
+                "AmountApplied": "AmountApplied",
+                "BalanceRemaining": "BalanceRemaining",
+                "DepositAccountId": "DepositAccountId",
+                "DepositAccountName": "DepositAccountName",
+                "LiabilityAccountId": "LiabilityAccountId",
+                "LiabilityAccountName": "LiabilityAccountName",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "EstimateId": "EstimateId",
+                "EstimateNumber": "EstimateNumber",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "customerdeposits_write": {
+            "source": "dbo.CustomerDeposits",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "DepositNumber": "DepositNumber",
+                "CustomerId": "CustomerId",
+                "DepositDate": "DepositDate",
+                "Amount": "Amount",
+                "AmountApplied": "AmountApplied",
+                "DepositAccountId": "DepositAccountId",
+                "LiabilityAccountId": "LiabilityAccountId",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ProjectId": "ProjectId",
+                "EstimateId": "EstimateId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "creditmemos": {
+        "depositapplications": {
             "source": {
-                "object": "dbo.v_CreditMemos",
+                "object": "dbo.v_DepositApplications",
                 "type": "view",
                 "key-fields": [
                     "Id"
                 ]
             },
-            "rest": true,
-            "graphql": true,
             "permissions": [
                 {
                     "role": "authenticated",
@@ -994,27 +414,140 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
                     ]
                 }
             ],
+            "mappings": {
+                "Id": "Id",
+                "CustomerDepositId": "CustomerDepositId",
+                "DepositNumber": "DepositNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "InvoiceId": "InvoiceId",
+                "InvoiceNumber": "InvoiceNumber",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId",
+                "Memo": "Memo",
+                "CreatedAt": "CreatedAt"
+            }
+        },
+        "depositapplications_write": {
+            "source": "dbo.DepositApplications",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CustomerDepositId": "CustomerDepositId",
+                "InvoiceId": "InvoiceId",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId",
+                "Memo": "Memo"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "invoices": {
+            "source": {
+                "object": "dbo.v_Invoices",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "InvoiceNumber": "InvoiceNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "IssueDate": "IssueDate",
+                "DueDate": "DueDate",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxRateName": "TaxRateName",
+                "TaxRate": "TaxRate",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
+                "BalanceDue": "BalanceDue",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "ClaimId": "ClaimId",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
+            },
             "cache": {
                 "enabled": true,
                 "ttl-seconds": 5
             }
         },
-        "creditmemos_write": {
-            "source": "dbo.CreditMemos",
-            "rest": true,
-            "graphql": true,
+        "invoices_write": {
+            "source": "dbo.Invoices",
             "permissions": [
                 {
-                    "role": "Accountant",
+                    "role": "authenticated",
                     "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
+                        "*"
                     ]
                 },
                 {
@@ -1022,22 +555,87 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "InvoiceNumber": "InvoiceNumber",
+                "CustomerId": "CustomerId",
+                "IssueDate": "IssueDate",
+                "DueDate": "DueDate",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "ClaimId": "ClaimId",
+                "JournalEntryId": "JournalEntryId",
+                "PostedAt": "PostedAt",
+                "PostedBy": "PostedBy",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "creditmemolines": {
-            "source": {
-                "object": "dbo.v_CreditMemoLines",
-                "type": "view",
-                "key-fields": [
-                    "Id"
-                ]
+        "invoicelines": {
+            "source": "dbo.InvoiceLines",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "create",
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "InvoiceId": "InvoiceId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "RevenueAccountId": "RevenueAccountId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
             },
-            "rest": true,
-            "graphql": true,
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "journalentrylines": {
+            "source": "dbo.JournalEntryLines",
             "permissions": [
                 {
                     "role": "authenticated",
@@ -1048,23 +646,43 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
                     ]
-                }
-            ]
-        },
-        "creditmemolines_write": {
-            "source": "dbo.CreditMemoLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
+                },
                 {
                     "role": "Accountant",
                     "actions": [
                         "create",
                         "read",
-                        "update",
-                        "delete"
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "JournalEntryId": "JournalEntryId",
+                "AccountId": "AccountId",
+                "Description": "Description",
+                "Debit": "Debit",
+                "Credit": "Credit",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "productsservices": {
+            "source": "dbo.ProductsServices",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
                     ]
                 },
                 {
@@ -1072,11 +690,936 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "SKU": "SKU",
+                "Type": "Type",
+                "Description": "Description",
+                "SalesPrice": "SalesPrice",
+                "PurchaseCost": "PurchaseCost",
+                "IncomeAccountId": "IncomeAccountId",
+                "ExpenseAccountId": "ExpenseAccountId",
+                "InventoryAssetAccountId": "InventoryAssetAccountId",
+                "Category": "Category",
+                "Taxable": "Taxable",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
+        },
+        "bankreconciliations": {
+            "source": "dbo.BankReconciliations",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankAccountId": "BankAccountId",
+                "StatementDate": "StatementDate",
+                "StatementEndingBalance": "StatementEndingBalance",
+                "BeginningBalance": "BeginningBalance",
+                "ClearedDeposits": "ClearedDeposits",
+                "ClearedPayments": "ClearedPayments",
+                "Status": "Status",
+                "CompletedAt": "CompletedAt",
+                "CompletedBy": "CompletedBy",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "reconciliationitems": {
+            "source": "dbo.ReconciliationItems",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ReconciliationId": "ReconciliationId",
+                "TransactionType": "TransactionType",
+                "TransactionId": "TransactionId",
+                "TransactionDate": "TransactionDate",
+                "Description": "Description",
+                "Amount": "Amount",
+                "IsCleared": "IsCleared",
+                "ClearedAt": "ClearedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "vendors": {
+            "source": "dbo.Vendors",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Email": "Email",
+                "Phone": "Phone",
+                "Address": "Address",
+                "PaymentTerms": "PaymentTerms",
+                "TaxId": "TaxId",
+                "Is1099Vendor": "Is1099Vendor",
+                "DefaultExpenseAccountId": "DefaultExpenseAccountId",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "taxrates": {
+            "source": "dbo.TaxRates",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "TaxType": "TaxType",
+                "StateCode": "StateCode",
+                "FilingStatus": "FilingStatus",
+                "BracketMin": "BracketMin",
+                "BracketMax": "BracketMax",
+                "Rate": "Rate",
+                "FlatAmount": "FlatAmount",
+                "EffectiveYear": "EffectiveYear",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "taxcalculationsettings": {
+            "source": "dbo.TaxCalculationSettings",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "CalculationMethod": "CalculationMethod",
+                "PaidApiProvider": "PaidApiProvider",
+                "ApiKeyEncrypted": "ApiKeyEncrypted",
+                "ApiSecretEncrypted": "ApiSecretEncrypted",
+                "AvalaraAccountId": "AvalaraAccountId",
+                "AvalaraCompanyCode": "AvalaraCompanyCode",
+                "AvalaraEnvironment": "AvalaraEnvironment",
+                "FallbackTaxRateId": "FallbackTaxRateId",
+                "CacheDurationMinutes": "CacheDurationMinutes",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "taxratecache": {
+            "source": "dbo.TaxRateCache",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "LocationKey": "LocationKey",
+                "PostalCode": "PostalCode",
+                "StateCode": "StateCode",
+                "City": "City",
+                "CombinedRate": "CombinedRate",
+                "StateRate": "StateRate",
+                "CountyRate": "CountyRate",
+                "CityRate": "CityRate",
+                "SpecialRate": "SpecialRate",
+                "Source": "Source",
+                "CachedAt": "CachedAt",
+                "ExpiresAt": "ExpiresAt",
+                "RawResponse": "RawResponse"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "projects": {
+            "source": {
+                "object": "dbo.v_Projects",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "Description": "Description",
+                "Status": "Status",
+                "StartDate": "StartDate",
+                "EndDate": "EndDate",
+                "BudgetedHours": "BudgetedHours",
+                "BudgetedAmount": "BudgetedAmount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "projects_write": {
+            "source": "dbo.Projects",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "CustomerId": "CustomerId",
+                "Description": "Description",
+                "Status": "Status",
+                "StartDate": "StartDate",
+                "EndDate": "EndDate",
+                "BudgetedHours": "BudgetedHours",
+                "BudgetedAmount": "BudgetedAmount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "timeentries": {
+            "source": {
+                "object": "dbo.v_TimeEntries",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "CustomerId": "CustomerId",
+                "EmployeeName": "EmployeeName",
+                "EntryDate": "EntryDate",
+                "Hours": "Hours",
+                "HourlyRate": "HourlyRate",
+                "Description": "Description",
+                "IsBillable": "IsBillable",
+                "Status": "Status",
+                "InvoiceLineId": "InvoiceLineId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
+        },
+        "timeentries_write": {
+            "source": "dbo.TimeEntries",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProjectId": "ProjectId",
+                "CustomerId": "CustomerId",
+                "EmployeeName": "EmployeeName",
+                "EntryDate": "EntryDate",
+                "Hours": "Hours",
+                "HourlyRate": "HourlyRate",
+                "Description": "Description",
+                "IsBillable": "IsBillable",
+                "Status": "Status",
+                "InvoiceLineId": "InvoiceLineId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "classes": {
+            "source": "dbo.Classes",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "ParentClassId": "ParentClassId",
+                "Description": "Description",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "locations": {
+            "source": "dbo.Locations",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "ParentLocationId": "ParentLocationId",
+                "Address": "Address",
+                "Description": "Description",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "inventorylocations": {
+            "source": "dbo.InventoryLocations",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Code": "Code",
+                "Description": "Description",
+                "Address": "Address",
+                "IsDefault": "IsDefault",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "inventorytransactions": {
+            "source": "dbo.InventoryTransactions",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProductId": "ProductId",
+                "LocationId": "LocationId",
+                "TransactionType": "TransactionType",
+                "Quantity": "Quantity",
+                "UnitCost": "UnitCost",
+                "TotalCost": "TotalCost",
+                "ReferenceType": "ReferenceType",
+                "ReferenceId": "ReferenceId",
+                "Notes": "Notes",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "bills": {
+            "source": {
+                "object": "dbo.v_Bills",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "BillNumber": "BillNumber",
+                "BillDate": "BillDate",
+                "DueDate": "DueDate",
+                "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
+                "BalanceDue": "BalanceDue",
+                "Status": "Status",
+                "Terms": "Terms",
+                "Memo": "Memo",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
+        },
+        "bills_write": {
+            "source": "dbo.Bills",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "BillNumber": "BillNumber",
+                "BillDate": "BillDate",
+                "DueDate": "DueDate",
+                "TotalAmount": "TotalAmount",
+                "AmountPaid": "AmountPaid",
+                "Status": "Status",
+                "Terms": "Terms",
+                "Memo": "Memo",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "JournalEntryId": "JournalEntryId",
+                "PostedAt": "PostedAt",
+                "PostedBy": "PostedBy",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "billlines": {
+            "source": "dbo.BillLines",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BillId": "BillId",
+                "AccountId": "AccountId",
+                "Description": "Description",
+                "Amount": "Amount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "estimates": {
+            "source": {
+                "object": "dbo.v_Estimates",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EstimateNumber": "EstimateNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "IssueDate": "IssueDate",
+                "ExpirationDate": "ExpirationDate",
+                "TotalAmount": "TotalAmount",
+                "Status": "Status",
+                "ConvertedToInvoiceId": "ConvertedToInvoiceId",
+                "Notes": "Notes",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
+        },
+        "estimates_write": {
+            "source": "dbo.Estimates",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "key-fields": [
+                "Id"
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EstimateNumber": "EstimateNumber",
+                "CustomerId": "CustomerId",
+                "IssueDate": "IssueDate",
+                "ExpirationDate": "ExpirationDate",
+                "TotalAmount": "TotalAmount",
+                "Status": "Status",
+                "ConvertedToInvoiceId": "ConvertedToInvoiceId",
+                "Notes": "Notes",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
+        "estimatelines": {
+            "source": "dbo.EstimateLines",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EstimateId": "EstimateId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
+            ]
         },
         "purchaseorders": {
             "source": {
@@ -1086,8 +1629,9 @@
                     "Id"
                 ]
             },
-            "rest": true,
-            "graphql": true,
+            "graphql": {
+                "enabled": true
+            },
             "permissions": [
                 {
                     "role": "authenticated",
@@ -1098,10 +1642,37 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
                     ]
                 }
             ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "PONumber": "PONumber",
+                "PODate": "PODate",
+                "ExpectedDate": "ExpectedDate",
+                "Status": "Status",
+                "Notes": "Notes",
+                "Subtotal": "Subtotal",
+                "Total": "Total",
+                "ConvertedToBillId": "ConvertedToBillId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
+            },
             "cache": {
                 "enabled": true,
                 "ttl-seconds": 5
@@ -1109,16 +1680,11 @@
         },
         "purchaseorders_write": {
             "source": "dbo.PurchaseOrders",
-            "rest": true,
-            "graphql": true,
             "permissions": [
                 {
-                    "role": "Accountant",
+                    "role": "authenticated",
                     "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
+                        "*"
                     ]
                 },
                 {
@@ -1126,44 +1692,37 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
                 }
             ],
+            "key-fields": [
+                "Id"
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorId": "VendorId",
+                "PONumber": "PONumber",
+                "PODate": "PODate",
+                "ExpectedDate": "ExpectedDate",
+                "Status": "Status",
+                "Notes": "Notes",
+                "Subtotal": "Subtotal",
+                "Total": "Total",
+                "ConvertedToBillId": "ConvertedToBillId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
             "cache": {
                 "enabled": false
             }
         },
         "purchaseorderlines": {
             "source": "dbo.PurchaseOrderLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "vendorcredits": {
-            "source": {
-                "object": "dbo.v_VendorCredits",
-                "type": "view",
-                "key-fields": [
-                    "Id"
-                ]
-            },
-            "rest": true,
-            "graphql": true,
             "permissions": [
                 {
                     "role": "authenticated",
@@ -1174,23 +1733,42 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
                     ]
-                }
-            ]
-        },
-        "vendorcredits_write": {
-            "source": "dbo.VendorCredits",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
+                },
                 {
                     "role": "Accountant",
                     "actions": [
                         "create",
                         "read",
-                        "update",
-                        "delete"
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PurchaseOrderId": "PurchaseOrderId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "recurringtemplates": {
+            "source": "dbo.RecurringTemplates",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
                     ]
                 },
                 {
@@ -1198,44 +1776,46 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "TemplateName": "TemplateName",
+                "TransactionType": "TransactionType",
+                "TemplateData": "TemplateData",
+                "Frequency": "Frequency",
+                "IntervalCount": "IntervalCount",
+                "DayOfMonth": "DayOfMonth",
+                "DayOfWeek": "DayOfWeek",
+                "StartDate": "StartDate",
+                "EndDate": "EndDate",
+                "MaxOccurrences": "MaxOccurrences",
+                "OccurrencesCreated": "OccurrencesCreated",
+                "AutoCreate": "AutoCreate",
+                "AutoSend": "AutoSend",
+                "ReminderDays": "ReminderDays",
+                "NextScheduledDate": "NextScheduledDate",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "vendorcreditlines": {
-            "source": "dbo.VendorCreditLines",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ]
-        },
-        "mileagetrips": {
-            "source": {
-                "object": "dbo.v_MileageTrips",
-                "type": "view",
-                "key-fields": [
-                    "Id"
-                ]
-            },
-            "rest": true,
-            "graphql": true,
+        "recurringschedules": {
+            "source": "dbo.RecurringSchedules",
             "permissions": [
                 {
                     "role": "authenticated",
@@ -1246,23 +1826,40 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
                     ]
-                }
-            ]
-        },
-        "mileagetrips_write": {
-            "source": "dbo.MileageTrips",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
+                },
                 {
                     "role": "Accountant",
                     "actions": [
                         "create",
                         "read",
-                        "update",
-                        "delete"
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RecurringTemplateId": "RecurringTemplateId",
+                "CreatedTransactionId": "CreatedTransactionId",
+                "TransactionType": "TransactionType",
+                "ScheduledDate": "ScheduledDate",
+                "ActualDate": "ActualDate",
+                "Status": "Status",
+                "ErrorMessage": "ErrorMessage",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "submissions": {
+            "source": "dbo.Submissions",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
                     ]
                 },
                 {
@@ -1270,7 +1867,943 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Title": "Title",
+                "Type": "Type",
+                "Priority": "Priority",
+                "Status": "Status",
+                "Description": "Description",
+                "StepsToReproduce": "StepsToReproduce",
+                "ExpectedBehavior": "ExpectedBehavior",
+                "ActualBehavior": "ActualBehavior",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "CreatedBy": "CreatedBy"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "submissionattachments": {
+            "source": "dbo.SubmissionAttachments",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SubmissionId": "SubmissionId",
+                "FileName": "FileName",
+                "ContentType": "ContentType",
+                "FileData": "FileData",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "migrationfieldmaps": {
+            "source": "dbo.MigrationFieldMaps",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "EntityType": "EntityType",
+                "SourceField": "SourceField",
+                "TargetField": "TargetField",
+                "Transform": "Transform",
+                "DefaultValue": "DefaultValue",
+                "IsRequired": "IsRequired",
+                "SortOrder": "SortOrder",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "migrationtypemaps": {
+            "source": "dbo.MigrationTypeMaps",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "Category": "Category",
+                "SourceValue": "SourceValue",
+                "TargetValue": "TargetValue",
+                "IsDefault": "IsDefault",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "migrationentitymaps": {
+            "source": "dbo.MigrationEntityMaps",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "EntityType": "EntityType",
+                "SourceId": "SourceId",
+                "TargetId": "TargetId",
+                "SourceData": "SourceData",
+                "MigratedAt": "MigratedAt",
+                "MigratedBy": "MigratedBy"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "migrationconfigs": {
+            "source": "dbo.MigrationConfigs",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SourceSystem": "SourceSystem",
+                "ConfigKey": "ConfigKey",
+                "ConfigValue": "ConfigValue",
+                "Description": "Description",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "qboconnections": {
+            "source": "dbo.QBOConnections",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RealmId": "RealmId",
+                "CompanyName": "CompanyName",
+                "AccessToken": "AccessToken",
+                "RefreshToken": "RefreshToken",
+                "TokenExpiry": "TokenExpiry",
+                "RefreshTokenExpiry": "RefreshTokenExpiry",
+                "Environment": "Environment",
+                "IsActive": "IsActive",
+                "LastUsedAt": "LastUsedAt",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "plaidconnections": {
+            "source": "dbo.PlaidConnections",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ItemId": "ItemId",
+                "InstitutionId": "InstitutionId",
+                "InstitutionName": "InstitutionName",
+                "AccessToken": "AccessToken",
+                "LastSyncCursor": "LastSyncCursor",
+                "LastSyncAt": "LastSyncAt",
+                "SyncStatus": "SyncStatus",
+                "SyncErrorMessage": "SyncErrorMessage",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "plaidaccounts": {
+            "source": "dbo.PlaidAccounts",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PlaidConnectionId": "PlaidConnectionId",
+                "PlaidAccountId": "PlaidAccountId",
+                "AccountName": "AccountName",
+                "OfficialName": "OfficialName",
+                "AccountType": "AccountType",
+                "AccountSubtype": "AccountSubtype",
+                "Mask": "Mask",
+                "LinkedAccountId": "LinkedAccountId",
+                "CurrentBalance": "CurrentBalance",
+                "AvailableBalance": "AvailableBalance",
+                "CurrencyCode": "CurrencyCode",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "payments": {
+            "source": {
+                "object": "dbo.v_Payments",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "ReferenceNumber": "ReferenceNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "DepositAccountId": "DepositAccountId",
+                "DepositAccountName": "DepositAccountName",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
+        "payments_write": {
+            "source": "dbo.Payments",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "ReferenceNumber": "ReferenceNumber",
+                "CustomerId": "CustomerId",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "DepositAccountId": "DepositAccountId",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "JournalEntryId": "JournalEntryId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "paymentapplications": {
+            "source": "dbo.PaymentApplications",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentId": "PaymentId",
+                "InvoiceId": "InvoiceId",
+                "AmountApplied": "AmountApplied",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "billpayments": {
+            "source": {
+                "object": "dbo.v_BillPayments",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentAccountName": "PaymentAccountName",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
+        },
+        "billpayments_write": {
+            "source": "dbo.BillPayments",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PaymentNumber": "PaymentNumber",
+                "VendorId": "VendorId",
+                "PaymentDate": "PaymentDate",
+                "TotalAmount": "TotalAmount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "Memo": "Memo",
+                "Status": "Status",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "JournalEntryId": "JournalEntryId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "billpaymentapplications": {
+            "source": "dbo.BillPaymentApplications",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BillPaymentId": "BillPaymentId",
+                "BillId": "BillId",
+                "AmountApplied": "AmountApplied",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "companies": {
+            "source": "dbo.Companies",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "LegalName": "LegalName",
+                "Industry": "Industry",
+                "BusinessType": "BusinessType",
+                "FiscalYearStart": "FiscalYearStart",
+                "TaxId": "TaxId",
+                "Address": "Address",
+                "City": "City",
+                "State": "State",
+                "ZipCode": "ZipCode",
+                "Country": "Country",
+                "Phone": "Phone",
+                "Email": "Email",
+                "Website": "Website",
+                "LogoUrl": "LogoUrl",
+                "OnboardingStatus": "OnboardingStatus",
+                "OnboardingCompletedAt": "OnboardingCompletedAt",
+                "FeatureFlags": "FeatureFlags",
+                "Settings": "Settings",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "companyfeatureflags": {
+            "source": "dbo.CompanyFeatureFlags",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "SalesReceiptsEnabled": "SalesReceiptsEnabled",
+                "MileageTrackingEnabled": "MileageTrackingEnabled",
+                "InventoryManagementEnabled": "InventoryManagementEnabled",
+                "PayrollEnabled": "PayrollEnabled",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "UpdatedBy": "UpdatedBy"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "onboardingprogress": {
+            "source": "dbo.OnboardingProgress",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "StepCode": "StepCode",
+                "StepName": "StepName",
+                "StepOrder": "StepOrder",
+                "Status": "Status",
+                "StartedAt": "StartedAt",
+                "CompletedAt": "CompletedAt",
+                "SkippedAt": "SkippedAt",
+                "SkipReason": "SkipReason",
+                "StepData": "StepData",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "industrytemplates": {
+            "source": "dbo.IndustryTemplates",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Code": "Code",
+                "Name": "Name",
+                "Description": "Description",
+                "Category": "Category",
+                "COATemplate": "COATemplate",
+                "DefaultSettings": "DefaultSettings",
+                "FeatureFlags": "FeatureFlags",
+                "SortOrder": "SortOrder",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "onboardingconversations": {
+            "source": "dbo.OnboardingConversations",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CompanyId": "CompanyId",
+                "SessionId": "SessionId",
+                "Messages": "Messages",
+                "CurrentStep": "CurrentStep",
+                "LastActivityAt": "LastActivityAt",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "enhancements": {
+            "source": "dbo.Enhancements",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RequestorName": "RequestorName",
+                "Description": "Description",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "BranchName": "BranchName",
+                "PrNumber": "PrNumber",
+                "Notes": "Notes"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "deployments": {
+            "source": "dbo.Deployments",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EnhancementId": "EnhancementId",
+                "ScheduledDate": "ScheduledDate",
+                "Status": "Status",
+                "DeployedAt": "DeployedAt",
+                "Notes": "Notes"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
@@ -1284,8 +2817,9 @@
                     "Id"
                 ]
             },
-            "rest": true,
-            "graphql": true,
+            "graphql": {
+                "enabled": true
+            },
             "permissions": [
                 {
                     "role": "authenticated",
@@ -1296,27 +2830,65 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
                     ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
-            }
-        },
-        "employees_write": {
-            "source": "dbo.Employees",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
+                },
                 {
                     "role": "Accountant",
                     "actions": [
                         "create",
                         "read",
-                        "update",
-                        "delete"
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeNumber": "EmployeeNumber",
+                "FirstName": "FirstName",
+                "LastName": "LastName",
+                "FullName": "FullName",
+                "Email": "Email",
+                "Phone": "Phone",
+                "SSNMasked": "SSNMasked",
+                "DateOfBirth": "DateOfBirth",
+                "HireDate": "HireDate",
+                "TerminationDate": "TerminationDate",
+                "PayType": "PayType",
+                "PayRate": "PayRate",
+                "PayFrequency": "PayFrequency",
+                "FederalFilingStatus": "FederalFilingStatus",
+                "FederalAllowances": "FederalAllowances",
+                "StateCode": "StateCode",
+                "StateFilingStatus": "StateFilingStatus",
+                "StateAllowances": "StateAllowances",
+                "Address": "Address",
+                "City": "City",
+                "State": "State",
+                "ZipCode": "ZipCode",
+                "Status": "Status",
+                "BankRoutingNumber": "BankRoutingNumber",
+                "BankAccountNumberMasked": "BankAccountNumberMasked",
+                "BankAccountType": "BankAccountType",
+                "PlaidItemId": "PlaidItemId",
+                "PlaidAccountId": "PlaidAccountId",
+                "BankVerificationStatus": "BankVerificationStatus",
+                "BankVerifiedAt": "BankVerifiedAt",
+                "BankInstitutionName": "BankInstitutionName",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
+        "employees_write": {
+            "source": "dbo.Employees",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
                     ]
                 },
                 {
@@ -1324,7 +2896,49 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeNumber": "EmployeeNumber",
+                "FirstName": "FirstName",
+                "LastName": "LastName",
+                "Email": "Email",
+                "Phone": "Phone",
+                "SSNLast4": "SSNLast4",
+                "DateOfBirth": "DateOfBirth",
+                "HireDate": "HireDate",
+                "TerminationDate": "TerminationDate",
+                "PayType": "PayType",
+                "PayRate": "PayRate",
+                "PayFrequency": "PayFrequency",
+                "FederalFilingStatus": "FederalFilingStatus",
+                "FederalAllowances": "FederalAllowances",
+                "StateCode": "StateCode",
+                "StateFilingStatus": "StateFilingStatus",
+                "StateAllowances": "StateAllowances",
+                "BankRoutingNumber": "BankRoutingNumber",
+                "BankAccountNumber": "BankAccountNumber",
+                "BankAccountType": "BankAccountType",
+                "Address": "Address",
+                "City": "City",
+                "State": "State",
+                "ZipCode": "ZipCode",
+                "Status": "Status",
+                "PlaidItemId": "PlaidItemId",
+                "PlaidAccountId": "PlaidAccountId",
+                "BankVerificationStatus": "BankVerificationStatus",
+                "BankVerifiedAt": "BankVerifiedAt",
+                "BankInstitutionName": "BankInstitutionName"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
@@ -1338,8 +2952,9 @@
                     "Id"
                 ]
             },
-            "rest": true,
-            "graphql": true,
+            "graphql": {
+                "enabled": true
+            },
             "permissions": [
                 {
                     "role": "authenticated",
@@ -1350,23 +2965,44 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "read"
+                        "*"
                     ]
-                }
-            ]
-        },
-        "payruns_write": {
-            "source": "dbo.PayRuns",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
+                },
                 {
                     "role": "Accountant",
                     "actions": [
                         "create",
                         "read",
-                        "update",
-                        "delete"
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunNumber": "PayRunNumber",
+                "PayPeriodStart": "PayPeriodStart",
+                "PayPeriodEnd": "PayPeriodEnd",
+                "PayDate": "PayDate",
+                "Status": "Status",
+                "TotalGrossPay": "TotalGrossPay",
+                "TotalDeductions": "TotalDeductions",
+                "TotalNetPay": "TotalNetPay",
+                "EmployeeCount": "EmployeeCount",
+                "ProcessedAt": "ProcessedAt",
+                "ProcessedBy": "ProcessedBy",
+                "ApprovedAt": "ApprovedAt",
+                "ApprovedBy": "ApprovedBy",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "payruns_write": {
+            "source": "dbo.PayRuns",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
                     ]
                 },
                 {
@@ -1374,7 +3010,32 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunNumber": "PayRunNumber",
+                "PayPeriodStart": "PayPeriodStart",
+                "PayPeriodEnd": "PayPeriodEnd",
+                "PayDate": "PayDate",
+                "Status": "Status",
+                "TotalGrossPay": "TotalGrossPay",
+                "TotalDeductions": "TotalDeductions",
+                "TotalNetPay": "TotalNetPay",
+                "EmployeeCount": "EmployeeCount",
+                "ProcessedAt": "ProcessedAt",
+                "ProcessedBy": "ProcessedBy",
+                "ApprovedAt": "ApprovedAt",
+                "ApprovedBy": "ApprovedBy"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
@@ -1388,89 +3049,20 @@
                     "Id"
                 ]
             },
-            "rest": true,
-            "graphql": true,
+            "graphql": {
+                "enabled": true
+            },
             "permissions": [
                 {
                     "role": "authenticated",
                     "actions": [
                         "read"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "read"
-                    ]
-                }
-            ]
-        },
-        "paystubs_write": {
-            "source": "dbo.PayStubs",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
                     ]
                 },
                 {
                     "role": "Admin",
                     "actions": [
                         "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "bankrules": {
-            "source": "dbo.BankRules",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
-                    ]
-                },
-                {
-                    "role": "Accountant",
-                    "actions": [
-                        "create",
-                        "read",
-                        "update",
-                        "delete"
-                    ]
-                },
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                }
-            ],
-            "cache": {
-                "enabled": true,
-                "ttl-seconds": 30
-            }
-        },
-        "classes": {
-            "source": "dbo.Classes",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "authenticated",
-                    "actions": [
-                        "read"
                     ]
                 },
                 {
@@ -1480,23 +3072,102 @@
                         "read",
                         "update"
                     ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunId": "PayRunId",
+                "EmployeeId": "EmployeeId",
+                "EmployeeNumber": "EmployeeNumber",
+                "EmployeeName": "EmployeeName",
+                "PayRunNumber": "PayRunNumber",
+                "PayPeriodStart": "PayPeriodStart",
+                "PayPeriodEnd": "PayPeriodEnd",
+                "PayDate": "PayDate",
+                "RegularHours": "RegularHours",
+                "OvertimeHours": "OvertimeHours",
+                "RegularPay": "RegularPay",
+                "OvertimePay": "OvertimePay",
+                "OtherEarnings": "OtherEarnings",
+                "GrossPay": "GrossPay",
+                "FederalWithholding": "FederalWithholding",
+                "StateWithholding": "StateWithholding",
+                "SocialSecurity": "SocialSecurity",
+                "Medicare": "Medicare",
+                "OtherDeductions": "OtherDeductions",
+                "TotalDeductions": "TotalDeductions",
+                "NetPay": "NetPay",
+                "YTDGrossPay": "YTDGrossPay",
+                "YTDFederalWithholding": "YTDFederalWithholding",
+                "YTDStateWithholding": "YTDStateWithholding",
+                "YTDSocialSecurity": "YTDSocialSecurity",
+                "YTDMedicare": "YTDMedicare",
+                "YTDNetPay": "YTDNetPay",
+                "PaymentMethod": "PaymentMethod",
+                "CheckNumber": "CheckNumber",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "paystubs_write": {
+            "source": "dbo.PayStubs",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
                 },
                 {
                     "role": "Admin",
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
                 }
             ],
+            "mappings": {
+                "Id": "Id",
+                "PayRunId": "PayRunId",
+                "EmployeeId": "EmployeeId",
+                "RegularHours": "RegularHours",
+                "OvertimeHours": "OvertimeHours",
+                "RegularPay": "RegularPay",
+                "OvertimePay": "OvertimePay",
+                "OtherEarnings": "OtherEarnings",
+                "GrossPay": "GrossPay",
+                "FederalWithholding": "FederalWithholding",
+                "StateWithholding": "StateWithholding",
+                "SocialSecurity": "SocialSecurity",
+                "Medicare": "Medicare",
+                "OtherDeductions": "OtherDeductions",
+                "TotalDeductions": "TotalDeductions",
+                "NetPay": "NetPay",
+                "YTDGrossPay": "YTDGrossPay",
+                "YTDFederalWithholding": "YTDFederalWithholding",
+                "YTDStateWithholding": "YTDStateWithholding",
+                "YTDSocialSecurity": "YTDSocialSecurity",
+                "YTDMedicare": "YTDMedicare",
+                "YTDNetPay": "YTDNetPay",
+                "PaymentMethod": "PaymentMethod",
+                "CheckNumber": "CheckNumber",
+                "Status": "Status"
+            },
+            "key-fields": [
+                "Id"
+            ],
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 120
+                "enabled": false
             }
         },
-        "taxrates": {
-            "source": "dbo.TaxRates",
-            "rest": true,
-            "graphql": true,
+        "accountdefaults": {
+            "source": "dbo.AccountDefaults",
             "permissions": [
                 {
                     "role": "authenticated",
@@ -1509,47 +3180,1113 @@
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
             ],
+            "mappings": {
+                "Id": "Id",
+                "AccountType": "AccountType",
+                "AccountId": "AccountId",
+                "Description": "Description",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "expenses": {
+            "source": {
+                "object": "dbo.v_Expenses",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseNumber": "ExpenseNumber",
+                "ExpenseDate": "ExpenseDate",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "AccountId": "AccountId",
+                "AccountName": "AccountName",
+                "AccountType": "AccountType",
+                "Amount": "Amount",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentAccountName": "PaymentAccountName",
+                "PaymentMethod": "PaymentMethod",
+                "Description": "Description",
+                "Reference": "Reference",
+                "IsReimbursable": "IsReimbursable",
+                "ReimbursedDate": "ReimbursedDate",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName",
+                "BankTransactionId": "BankTransactionId",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ReceiptCount": "ReceiptCount"
+            },
             "cache": {
                 "enabled": true,
-                "ttl-seconds": 120
+                "ttl-seconds": 5
             }
         },
-        "companies": {
-            "source": "dbo.Companies",
-            "rest": true,
-            "graphql": true,
-            "permissions": [],
+        "expenses_write": {
+            "source": "dbo.Expenses",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseNumber": "ExpenseNumber",
+                "ExpenseDate": "ExpenseDate",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "AccountId": "AccountId",
+                "Amount": "Amount",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentMethod": "PaymentMethod",
+                "Description": "Description",
+                "Reference": "Reference",
+                "IsReimbursable": "IsReimbursable",
+                "ReimbursedDate": "ReimbursedDate",
+                "CustomerId": "CustomerId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId",
+                "BankTransactionId": "BankTransactionId",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedBy": "CreatedBy"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "receipts": {
+            "source": {
+                "object": "dbo.v_Receipts",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseId": "ExpenseId",
+                "ExpenseNumber": "ExpenseNumber",
+                "ExpenseDate": "ExpenseDate",
+                "BankTransactionId": "BankTransactionId",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "FileSize": "FileSize",
+                "ExtractedVendor": "ExtractedVendor",
+                "ExtractedAmount": "ExtractedAmount",
+                "ExtractedDate": "ExtractedDate",
+                "OcrConfidence": "OcrConfidence",
+                "OcrStatus": "OcrStatus",
+                "OcrErrorMessage": "OcrErrorMessage",
+                "UploadedBy": "UploadedBy",
+                "UploadedAt": "UploadedAt",
+                "IsMatched": "IsMatched"
+            }
+        },
+        "receipts_write": {
+            "source": "dbo.Receipts",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ExpenseId": "ExpenseId",
+                "BankTransactionId": "BankTransactionId",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "FileSize": "FileSize",
+                "FileData": "FileData",
+                "ThumbnailData": "ThumbnailData",
+                "ExtractedVendor": "ExtractedVendor",
+                "ExtractedAmount": "ExtractedAmount",
+                "ExtractedDate": "ExtractedDate",
+                "ExtractedLineItems": "ExtractedLineItems",
+                "OcrConfidence": "OcrConfidence",
+                "OcrStatus": "OcrStatus",
+                "OcrErrorMessage": "OcrErrorMessage",
+                "UploadedBy": "UploadedBy"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "employeeworkstates": {
+            "source": {
+                "object": "dbo.v_EmployeeWorkStates",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeId": "EmployeeId",
+                "EmployeeName": "EmployeeName",
+                "EmployeeNumber": "EmployeeNumber",
+                "StateCode": "StateCode",
+                "Percentage": "Percentage",
+                "EffectiveDate": "EffectiveDate",
+                "EndDate": "EndDate",
+                "IsPrimary": "IsPrimary",
+                "Notes": "Notes",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "employeeworkstates_write": {
+            "source": "dbo.EmployeeWorkStates",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EmployeeId": "EmployeeId",
+                "StateCode": "StateCode",
+                "Percentage": "Percentage",
+                "EffectiveDate": "EffectiveDate",
+                "EndDate": "EndDate",
+                "IsPrimary": "IsPrimary",
+                "Notes": "Notes"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "statetaxreciprocity": {
+            "source": "dbo.StateTaxReciprocity",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ResidentState": "ResidentState",
+                "WorkState": "WorkState",
+                "ReciprocityType": "ReciprocityType",
+                "Description": "Description",
+                "EffectiveDate": "EffectiveDate",
+                "EndDate": "EndDate",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "paystubstatewitholdings": {
+            "source": "dbo.PayStubStateWithholdings",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "PayStubId": "PayStubId",
+                "StateCode": "StateCode",
+                "GrossWages": "GrossWages",
+                "Percentage": "Percentage",
+                "StateWithholding": "StateWithholding",
+                "ReciprocityApplied": "ReciprocityApplied",
+                "ReciprocityStateCode": "ReciprocityStateCode",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "banktransactionimports": {
+            "source": {
+                "object": "dbo.v_BankTransactionImports",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankAccountId": "BankAccountId",
+                "BankAccountName": "BankAccountName",
+                "BankAccountNumber": "BankAccountNumber",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "ImportDate": "ImportDate",
+                "TransactionCount": "TransactionCount",
+                "MatchedCount": "MatchedCount",
+                "Status": "Status",
+                "ImportedBy": "ImportedBy",
+                "ErrorMessage": "ErrorMessage",
+                "CreatedAt": "CreatedAt"
+            },
             "cache": {
                 "enabled": true,
-                "ttl-seconds": 30
+                "ttl-seconds": 5
             }
         },
-        "industrytemplates": {
-            "source": "dbo.IndustryTemplates",
-            "rest": true,
-            "graphql": true,
-            "permissions": [],
+        "banktransactionimports_write": {
+            "source": "dbo.BankTransactionImports",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankAccountId": "BankAccountId",
+                "FileName": "FileName",
+                "FileType": "FileType",
+                "ImportDate": "ImportDate",
+                "TransactionCount": "TransactionCount",
+                "MatchedCount": "MatchedCount",
+                "Status": "Status",
+                "ImportedBy": "ImportedBy",
+                "ErrorMessage": "ErrorMessage"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "banktransactionmatches": {
+            "source": {
+                "object": "dbo.v_BankTransactionMatches",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankTransactionId": "BankTransactionId",
+                "TransactionDate": "TransactionDate",
+                "TransactionDescription": "TransactionDescription",
+                "TransactionAmount": "TransactionAmount",
+                "InvoiceId": "InvoiceId",
+                "InvoiceNumber": "InvoiceNumber",
+                "InvoiceTotalAmount": "InvoiceTotalAmount",
+                "InvoiceAmountPaid": "InvoiceAmountPaid",
+                "InvoiceBalanceDue": "InvoiceBalanceDue",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "SuggestedAmount": "SuggestedAmount",
+                "Confidence": "Confidence",
+                "MatchReason": "MatchReason",
+                "Status": "Status",
+                "AcceptedAt": "AcceptedAt",
+                "AcceptedBy": "AcceptedBy",
+                "CreatedAt": "CreatedAt"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
+        "banktransactionmatches_write": {
+            "source": "dbo.BankTransactionMatches",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "BankTransactionId": "BankTransactionId",
+                "InvoiceId": "InvoiceId",
+                "SuggestedAmount": "SuggestedAmount",
+                "Confidence": "Confidence",
+                "MatchReason": "MatchReason",
+                "Status": "Status",
+                "AcceptedAt": "AcceptedAt",
+                "AcceptedBy": "AcceptedBy"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "vendorcredits": {
+            "source": {
+                "object": "dbo.v_VendorCredits",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditNumber": "CreditNumber",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "BalanceRemaining": "BalanceRemaining",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
+            }
+        },
+        "vendorcredits_write": {
+            "source": "dbo.VendorCredits",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditNumber": "CreditNumber",
+                "VendorId": "VendorId",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "vendorcreditlines": {
+            "source": "dbo.VendorCreditLines",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorCreditId": "VendorCreditId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "vendorcreditapplications": {
+            "source": {
+                "object": "dbo.v_VendorCreditApplications",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorCreditId": "VendorCreditId",
+                "CreditNumber": "CreditNumber",
+                "BillId": "BillId",
+                "BillNumber": "BillNumber",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "CreatedAt": "CreatedAt",
+                "VendorId": "VendorId",
+                "VendorName": "VendorName"
+            }
+        },
+        "vendorcreditapplications_write": {
+            "source": "dbo.VendorCreditApplications",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VendorCreditId": "VendorCreditId",
+                "BillId": "BillId",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "vehicles": {
+            "source": "dbo.Vehicles",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Make": "Make",
+                "Model": "Model",
+                "Year": "Year",
+                "LicensePlate": "LicensePlate",
+                "OdometerStart": "OdometerStart",
+                "OdometerCurrent": "OdometerCurrent",
+                "IsDefault": "IsDefault",
+                "Status": "Status",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "mileagerates": {
+            "source": "dbo.MileageRates",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "EffectiveDate": "EffectiveDate",
+                "Category": "Category",
+                "RatePerMile": "RatePerMile",
+                "Description": "Description",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "mileagetrips": {
+            "source": {
+                "object": "dbo.v_MileageTrips",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VehicleId": "VehicleId",
+                "VehicleName": "VehicleName",
+                "VehicleDescription": "VehicleDescription",
+                "TripDate": "TripDate",
+                "StartLocation": "StartLocation",
+                "EndLocation": "EndLocation",
+                "StartOdometer": "StartOdometer",
+                "EndOdometer": "EndOdometer",
+                "Distance": "Distance",
+                "Purpose": "Purpose",
+                "Category": "Category",
+                "RatePerMile": "RatePerMile",
+                "DeductibleAmount": "DeductibleAmount",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "Notes": "Notes",
+                "IsRoundTrip": "IsRoundTrip",
+                "Status": "Status",
+                "IsPersonal": "IsPersonal",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "mileagetrips_write": {
+            "source": "dbo.MileageTrips",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "VehicleId": "VehicleId",
+                "TripDate": "TripDate",
+                "StartLocation": "StartLocation",
+                "EndLocation": "EndLocation",
+                "StartOdometer": "StartOdometer",
+                "EndOdometer": "EndOdometer",
+                "Distance": "Distance",
+                "Purpose": "Purpose",
+                "Category": "Category",
+                "RatePerMile": "RatePerMile",
+                "DeductibleAmount": "DeductibleAmount",
+                "CustomerId": "CustomerId",
+                "ProjectId": "ProjectId",
+                "Notes": "Notes",
+                "IsRoundTrip": "IsRoundTrip",
+                "Status": "Status",
+                "CreatedBy": "CreatedBy"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "salesreceipts": {
+            "source": {
+                "object": "dbo.v_SalesReceipts",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SalesReceiptNumber": "SalesReceiptNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "SaleDate": "SaleDate",
+                "DepositAccountId": "DepositAccountId",
+                "DepositAccountName": "DepositAccountName",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxRateName": "TaxRateName",
+                "TaxRate": "TaxRate",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName",
+                "LocationId": "LocationId",
+                "LocationName": "LocationName",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "TenantId": "TenantId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
             "cache": {
                 "enabled": true,
-                "ttl-seconds": 120
+                "ttl-seconds": 5
             }
         },
-        "onboardingconversations": {
-            "source": "dbo.OnboardingConversations",
-            "rest": true,
-            "graphql": true,
-            "permissions": [],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "migrationfieldmaps": {
-            "source": "dbo.MigrationFieldMaps",
-            "rest": true,
-            "graphql": true,
+        "salesreceipts_write": {
+            "source": "dbo.SalesReceipts",
             "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
                 {
                     "role": "Admin",
                     "actions": [
@@ -1557,43 +4294,48 @@
                     ]
                 },
                 {
-                    "role": "Service",
+                    "role": "Accountant",
                     "actions": [
                         "*"
                     ]
                 }
             ],
-            "cache": {
-                "enabled": false
-            }
-        },
-        "migrationtypemaps": {
-            "source": "dbo.MigrationTypeMaps",
-            "rest": true,
-            "graphql": true,
-            "permissions": [
-                {
-                    "role": "Admin",
-                    "actions": [
-                        "*"
-                    ]
-                },
-                {
-                    "role": "Service",
-                    "actions": [
-                        "*"
-                    ]
-                }
+            "mappings": {
+                "Id": "Id",
+                "SalesReceiptNumber": "SalesReceiptNumber",
+                "CustomerId": "CustomerId",
+                "SaleDate": "SaleDate",
+                "DepositAccountId": "DepositAccountId",
+                "PaymentMethod": "PaymentMethod",
+                "Reference": "Reference",
+                "Subtotal": "Subtotal",
+                "TaxRateId": "TaxRateId",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ClassId": "ClassId",
+                "LocationId": "LocationId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "migrationentitymaps": {
-            "source": "dbo.MigrationEntityMaps",
-            "rest": true,
-            "graphql": true,
+        "salesreceiptlines": {
+            "source": "dbo.SalesReceiptLines",
             "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
                 {
                     "role": "Admin",
                     "actions": [
@@ -1601,21 +4343,84 @@
                     ]
                 },
                 {
-                    "role": "Service",
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "SalesReceiptId": "SalesReceiptId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId",
+                "TaxRateId": "TaxRateId",
+                "ClassId": "ClassId",
+                "SortOrder": "SortOrder",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ]
+        },
+        "emailtemplates": {
+            "source": "dbo.EmailTemplates",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
                     "actions": [
                         "*"
                     ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "Type": "Type",
+                "Subject": "Subject",
+                "Body": "Body",
+                "IsDefault": "IsDefault",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "migrationconfigs": {
-            "source": "dbo.MigrationConfigs",
-            "rest": true,
-            "graphql": true,
+        "emailremindersettings": {
+            "source": "dbo.EmailReminderSettings",
             "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
                 {
                     "role": "Admin",
                     "actions": [
@@ -1623,21 +4428,42 @@
                     ]
                 },
                 {
-                    "role": "Service",
+                    "role": "Accountant",
                     "actions": [
-                        "*"
+                        "create",
+                        "read",
+                        "update"
                     ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "ReminderDays": "ReminderDays",
+                "TemplateId": "TemplateId",
+                "IsEnabled": "IsEnabled",
+                "SendTime": "SendTime",
+                "CooldownDays": "CooldownDays",
+                "MaxReminders": "MaxReminders",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false
             }
         },
-        "qboconnections": {
-            "source": "dbo.QBOConnections",
-            "rest": true,
-            "graphql": true,
+        "auditlog": {
+            "source": "dbo.AuditLog",
             "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
                 {
                     "role": "Admin",
                     "actions": [
@@ -1645,11 +4471,556 @@
                     ]
                 },
                 {
-                    "role": "Service",
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Timestamp": "Timestamp",
+                "UserId": "UserId",
+                "UserName": "UserName",
+                "UserEmail": "UserEmail",
+                "Action": "Action",
+                "EntityType": "EntityType",
+                "EntityId": "EntityId",
+                "EntityDescription": "EntityDescription",
+                "OldValues": "OldValues",
+                "NewValues": "NewValues",
+                "Changes": "Changes",
+                "IpAddress": "IpAddress",
+                "UserAgent": "UserAgent",
+                "SessionId": "SessionId",
+                "TenantId": "TenantId",
+                "RequestId": "RequestId",
+                "Source": "Source"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "accountingperiods": {
+            "source": "dbo.AccountingPeriods",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "FiscalYearStart": "FiscalYearStart",
+                "FiscalYearEnd": "FiscalYearEnd",
+                "ClosingDate": "ClosingDate",
+                "ClosingPassword": "ClosingPassword",
+                "IsLocked": "IsLocked",
+                "ClosedBy": "ClosedBy",
+                "ClosedAt": "ClosedAt",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "TenantId": "TenantId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "yearendcloseentries": {
+            "source": {
+                "object": "dbo.v_YearEndCloseEntries",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "AccountingPeriodId": "AccountingPeriodId",
+                "FiscalYear": "FiscalYear",
+                "CloseDate": "CloseDate",
+                "RetainedEarningsAccountId": "RetainedEarningsAccountId",
+                "RetainedEarningsAccountName": "RetainedEarningsAccountName",
+                "RetainedEarningsAccountCode": "RetainedEarningsAccountCode",
+                "JournalEntryId": "JournalEntryId",
+                "JournalEntryReference": "JournalEntryReference",
+                "NetIncome": "NetIncome",
+                "TotalRevenue": "TotalRevenue",
+                "TotalExpenses": "TotalExpenses",
+                "Status": "Status",
+                "CreatedBy": "CreatedBy",
+                "CreatedAt": "CreatedAt",
+                "TenantId": "TenantId",
+                "FiscalYearStart": "FiscalYearStart",
+                "FiscalYearEnd": "FiscalYearEnd",
+                "PeriodIsLocked": "PeriodIsLocked"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
+        "yearendcloseentries_write": {
+            "source": "dbo.YearEndCloseEntries",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
                     "actions": [
                         "*"
                     ]
                 }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "AccountingPeriodId": "AccountingPeriodId",
+                "FiscalYear": "FiscalYear",
+                "CloseDate": "CloseDate",
+                "RetainedEarningsAccountId": "RetainedEarningsAccountId",
+                "JournalEntryId": "JournalEntryId",
+                "NetIncome": "NetIncome",
+                "TotalRevenue": "TotalRevenue",
+                "TotalExpenses": "TotalExpenses",
+                "Status": "Status",
+                "CreatedBy": "CreatedBy",
+                "TenantId": "TenantId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "creditmemos": {
+            "source": {
+                "object": "dbo.v_CreditMemos",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "AmountRefunded": "AmountRefunded",
+                "BalanceRemaining": "BalanceRemaining",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "JournalEntryReference": "JournalEntryReference",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
+            },
+            "cache": {
+                "enabled": true,
+                "ttl-seconds": 5
+            }
+        },
+        "creditmemos_write": {
+            "source": "dbo.CreditMemos",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "CustomerId": "CustomerId",
+                "CreditDate": "CreditDate",
+                "Reason": "Reason",
+                "Subtotal": "Subtotal",
+                "TaxAmount": "TaxAmount",
+                "TotalAmount": "TotalAmount",
+                "AmountApplied": "AmountApplied",
+                "AmountRefunded": "AmountRefunded",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "ProjectId": "ProjectId",
+                "ClassId": "ClassId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "creditmemolines": {
+            "source": {
+                "object": "dbo.v_CreditMemoLines",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "ProductServiceId": "ProductServiceId",
+                "ProductServiceName": "ProductServiceName",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId",
+                "AccountName": "AccountName",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "ClassId": "ClassId",
+                "ClassName": "ClassName"
+            }
+        },
+        "creditmemolines_write": {
+            "source": "dbo.CreditMemoLines",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "ProductServiceId": "ProductServiceId",
+                "Description": "Description",
+                "Quantity": "Quantity",
+                "UnitPrice": "UnitPrice",
+                "Amount": "Amount",
+                "AccountId": "AccountId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "creditapplications": {
+            "source": {
+                "object": "dbo.v_CreditApplications",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "InvoiceId": "InvoiceId",
+                "InvoiceNumber": "InvoiceNumber",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedAt": "CreatedAt",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName"
+            }
+        },
+        "creditapplications_write": {
+            "source": "dbo.CreditApplications",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "CreditMemoId": "CreditMemoId",
+                "InvoiceId": "InvoiceId",
+                "AmountApplied": "AmountApplied",
+                "ApplicationDate": "ApplicationDate",
+                "JournalEntryId": "JournalEntryId"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "refunds": {
+            "source": {
+                "object": "dbo.v_Refunds",
+                "type": "view",
+                "key-fields": [
+                    "Id"
+                ]
+            },
+            "graphql": {
+                "enabled": true
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RefundNumber": "RefundNumber",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "CreditMemoId": "CreditMemoId",
+                "CreditMemoNumber": "CreditMemoNumber",
+                "RefundDate": "RefundDate",
+                "Amount": "Amount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "PaymentAccountName": "PaymentAccountName",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId",
+                "CreatedAt": "CreatedAt"
+            }
+        },
+        "refunds_write": {
+            "source": "dbo.Refunds",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "*"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RefundNumber": "RefundNumber",
+                "CustomerId": "CustomerId",
+                "CreditMemoId": "CreditMemoId",
+                "RefundDate": "RefundDate",
+                "Amount": "Amount",
+                "PaymentMethod": "PaymentMethod",
+                "PaymentAccountId": "PaymentAccountId",
+                "Memo": "Memo",
+                "Status": "Status",
+                "JournalEntryId": "JournalEntryId"
+            },
+            "key-fields": [
+                "Id"
             ],
             "cache": {
                 "enabled": false

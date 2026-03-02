@@ -34,9 +34,9 @@ jobs:
       - name: Upload DAB config to Azure Files
         if: ${{ github.event.inputs.restart_only != 'true' }}
         run: |
-          echo "Uploading dab-config.json to Azure Files..."
+          echo "Uploading dab-config.production.json to Azure Files..."
           az storage file upload \
-            --source ./dab-config.json \
+            --source ./dab-config.production.json \
             --share-name dab-config \
             --path dab-config.json \
             --account-name stmodernaccountingprod \
