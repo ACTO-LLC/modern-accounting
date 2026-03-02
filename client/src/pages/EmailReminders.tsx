@@ -132,7 +132,7 @@ export default function EmailReminders() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div>
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Email Reminders</h1>

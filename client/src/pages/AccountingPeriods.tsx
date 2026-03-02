@@ -77,7 +77,7 @@ export default function AccountingPeriods() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>

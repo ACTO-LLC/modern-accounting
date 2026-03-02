@@ -6,7 +6,7 @@ import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Plus } from 'lucide-react';
-import { customersApi, Customer } from '../lib/api';
+import api, { Customer } from '../lib/api';
 import QuickAddCustomerModal from './QuickAddCustomerModal';
 
 export interface CustomerSelectorProps {
@@ -29,8 +29,11 @@ export default function CustomerSelector({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const { data: customers, isLoading } = useQuery({
-    queryKey: ['customers'],
-    queryFn: customersApi.getAll,
+    queryKey: ['customers', 'active'],
+    queryFn: async (): Promise<Customer[]> => {
+      const response = await api.get("/customers?$filter=Status eq 'Active'&$orderby=Name");
+      return response.data.value;
+    },
   });
 
   const selectedCustomer = useMemo(() => {
