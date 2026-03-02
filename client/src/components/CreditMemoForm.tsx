@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
@@ -498,7 +499,7 @@ export default function CreditMemoForm({ initialValues, onSubmit, title, isSubmi
 
         <div className="flex justify-end items-center border-t pt-4 dark:border-gray-600">
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
-            Total Credit: ${lines.reduce((sum, line) => sum + (line.Amount || 0), 0).toFixed(2)}
+            Total Credit: {formatCurrencyStandalone(lines.reduce((sum, line) => sum + (line.Amount || 0), 0))}
           </div>
           <Button
             variant="outlined"

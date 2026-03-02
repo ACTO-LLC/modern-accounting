@@ -20,8 +20,9 @@ import {
   Info
 } from 'lucide-react';
 import { GridColDef, GridRowParams } from '@mui/x-data-grid';
-import { DataGrid, GridPaginationModel } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
 import api from '../lib/api';
+import useDataGridState from '../hooks/useDataGridState';
 import { formatDate, formatTime, formatDateTime } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
 
@@ -256,11 +257,8 @@ export default function AuditLog() {
   // Selected entry for detail panel
   const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null);
 
-  // Pagination
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 25,
-  });
+  // Persisted grid state
+  const gridState = useDataGridState({ gridKey: 'auditlog-grid' });
 
   // Fetch audit log entries
   const { data: auditLogData, isLoading, error } = useQuery({
@@ -658,8 +656,12 @@ export default function AuditLog() {
           rows={filteredData}
           columns={columns}
           loading={isLoading}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
+          paginationModel={gridState.paginationModel}
+          onPaginationModelChange={gridState.onPaginationModelChange}
+          sortModel={gridState.sortModel}
+          onSortModelChange={gridState.onSortModelChange}
+          filterModel={gridState.filterModel}
+          onFilterModelChange={gridState.onFilterModelChange}
           pageSizeOptions={[10, 25, 50, 100]}
           disableRowSelectionOnClick
           getRowId={(row) => row.Id}

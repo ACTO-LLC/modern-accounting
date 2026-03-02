@@ -4,6 +4,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { getTimestampColumns } from '../lib/gridColumns';
 import { formatDateShort } from '../lib/dateUtils';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface Employee {
   Id: string;
@@ -37,7 +38,7 @@ export default function Employees() {
       width: 120,
       valueFormatter: (params) => {
         const value = params as number;
-        return value ? `$${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '';
+        return value ? formatCurrencyStandalone(value) : '';
       }
     },
     { field: 'PayFrequency', headerName: 'Frequency', width: 110, filterable: true },
@@ -117,6 +118,7 @@ export default function Employees() {
       </div>
 
       <RestDataGrid<Employee>
+        gridKey="employees-grid"
         endpoint="/employees"
         columns={columns}
         editPath="/employees/{id}/edit"

@@ -6,6 +6,8 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import api from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import useGridHeight from '../hooks/useGridHeight';
+import useDataGridState from '../hooks/useDataGridState';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 // Security: Validation utilities for input sanitization
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -83,7 +85,7 @@ type StockFilter = 'All' | 'LowStock' | 'OutOfStock' | 'InStock';
 
 const formatCurrency = (value: number | null) => {
   if (value === null || value === undefined) return '-';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  return formatCurrencyStandalone(value);
 };
 
 const formatNumber = (value: number | null) => {
@@ -103,6 +105,11 @@ export default function Inventory() {
   const queryClient = useQueryClient();
   const gridRef = useRef<HTMLDivElement>(null);
   const gridHeight = useGridHeight(gridRef);
+
+  // Persisted grid state for each tab
+  const inventoryGridState = useDataGridState({ gridKey: 'inventory-items-grid' });
+  const transactionsGridState = useDataGridState({ gridKey: 'inventory-transactions-grid' });
+  const locationsGridState = useDataGridState({ gridKey: 'inventory-locations-grid' });
 
   // Fetch inventory items (only Type = 'Inventory')
   const { data: inventoryItems, isLoading: loadingInventory, error: inventoryError } = useQuery({
@@ -650,9 +657,12 @@ export default function Inventory() {
               getRowId={(row) => row.Id}
               loading={loadingInventory}
               pageSizeOptions={[10, 25, 50, 100]}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 25 } },
-              }}
+              paginationModel={inventoryGridState.paginationModel}
+              onPaginationModelChange={inventoryGridState.onPaginationModelChange}
+              sortModel={inventoryGridState.sortModel}
+              onSortModelChange={inventoryGridState.onSortModelChange}
+              filterModel={inventoryGridState.filterModel}
+              onFilterModelChange={inventoryGridState.onFilterModelChange}
               disableRowSelectionOnClick
               localeText={{
                 noRowsLabel: 'No inventory items found.',
@@ -671,9 +681,12 @@ export default function Inventory() {
             getRowId={(row) => row.Id}
             loading={loadingTransactions}
             pageSizeOptions={[10, 25, 50, 100]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 25 } },
-            }}
+            paginationModel={transactionsGridState.paginationModel}
+            onPaginationModelChange={transactionsGridState.onPaginationModelChange}
+            sortModel={transactionsGridState.sortModel}
+            onSortModelChange={transactionsGridState.onSortModelChange}
+            filterModel={transactionsGridState.filterModel}
+            onFilterModelChange={transactionsGridState.onFilterModelChange}
             disableRowSelectionOnClick
             localeText={{
               noRowsLabel: 'No inventory transactions found.',
@@ -691,9 +704,12 @@ export default function Inventory() {
             getRowId={(row) => row.Id}
             loading={loadingLocations}
             pageSizeOptions={[10, 25, 50]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 25 } },
-            }}
+            paginationModel={locationsGridState.paginationModel}
+            onPaginationModelChange={locationsGridState.onPaginationModelChange}
+            sortModel={locationsGridState.sortModel}
+            onSortModelChange={locationsGridState.onSortModelChange}
+            filterModel={locationsGridState.filterModel}
+            onFilterModelChange={locationsGridState.onFilterModelChange}
             disableRowSelectionOnClick
             localeText={{
               noRowsLabel: 'No inventory locations found.',

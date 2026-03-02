@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { getTimestampColumns } from '../lib/gridColumns';
 
 interface BillPayment {
@@ -37,7 +38,7 @@ export default function BillPayments() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     { field: 'PaymentMethod', headerName: 'Method', width: 130, filterable: true },
     { field: 'PaymentAccountName', headerName: 'From Account', width: 160, filterable: true },
@@ -69,6 +70,7 @@ export default function BillPayments() {
       </div>
 
       <RestDataGrid<BillPayment>
+        gridKey="billpayments-grid"
         endpoint="/billpayments"
         columns={columns}
         initialPageSize={25}

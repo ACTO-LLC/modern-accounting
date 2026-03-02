@@ -4,6 +4,7 @@ import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import CustomerSelector from './CustomerSelector';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
 import ProjectSelector from './ProjectSelector';
@@ -318,7 +319,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
                     <div className="w-32">
                       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Amount</label>
                       <div className="mt-1 py-2 px-3 text-sm text-gray-700 dark:text-gray-300 font-medium">
-                        ${((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0)).toFixed(2)}
+                        {formatCurrencyStandalone((lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0))}
                       </div>
                     </div>
                     <button
@@ -370,7 +371,7 @@ export default function EstimateForm({ initialValues, onSubmit, title, isSubmitt
 
         <div className="flex justify-end items-center border-t pt-4">
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mr-6">
-            Total: ${lines.reduce((sum, line) => sum + (line.Quantity || 0) * (line.UnitPrice || 0), 0).toFixed(2)}
+            Total: {formatCurrencyStandalone(lines.reduce((sum, line) => sum + (line.Quantity || 0) * (line.UnitPrice || 0), 0))}
           </div>
           <button
             type="button"

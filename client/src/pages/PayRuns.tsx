@@ -139,6 +139,7 @@ export default function PayRuns() {
       </div>
 
       <RestDataGrid<PayRun>
+        gridKey="payruns-grid"
         endpoint="/payruns"
         columns={columns}
         editPath="/payruns/{id}"

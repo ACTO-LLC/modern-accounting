@@ -3,6 +3,7 @@ import { Plus, Wrench, Box, Package } from 'lucide-react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
 import { getTimestampColumns } from '../lib/gridColumns';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface ProductService {
   Id: string;
@@ -21,7 +22,7 @@ interface ProductService {
 
 const formatCurrency = (value: number | null) => {
   if (value === null || value === undefined) return '-';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  return formatCurrencyStandalone(value);
 };
 
 export default function ProductsServices() {
@@ -122,6 +123,7 @@ export default function ProductsServices() {
       </div>
 
       <RestDataGrid<ProductService>
+        gridKey="productsservices-grid"
         endpoint="/productsservices"
         columns={columns}
         editPath="/products-services/{id}/edit"

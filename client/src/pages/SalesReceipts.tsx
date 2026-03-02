@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { SalesReceipt } from '../lib/salesReceiptUtils';
 import { formatDate } from '../lib/dateUtils';
 import { getTimestampColumns } from '../lib/gridColumns';
@@ -25,7 +26,7 @@ export default function SalesReceipts() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'Status',
@@ -80,6 +81,7 @@ export default function SalesReceipts() {
       </div>
 
       <RestDataGrid<SalesReceipt>
+        gridKey="salesreceipts-grid"
         endpoint="/salesreceipts"
         columns={columns}
         editPath="/sales-receipts/{id}/edit"

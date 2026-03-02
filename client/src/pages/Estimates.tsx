@@ -12,6 +12,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../hooks/useToast';
 import { generateNextInvoiceNumber, type Invoice } from '../lib/invoiceUtils';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 
 interface Estimate {
   Id: string;
@@ -164,7 +165,7 @@ export default function Estimates() {
       width: 120,
       type: 'number',
       filterable: true,
-      renderCell: (params) => `$${(params.value || 0).toFixed(2)}`,
+      renderCell: (params) => formatCurrencyStandalone(params.value || 0),
     },
     {
       field: 'Status',
@@ -241,6 +242,7 @@ export default function Estimates() {
 
       <RestDataGrid<Estimate>
         key={refreshKey}
+        gridKey="estimates-grid"
         endpoint="/estimates"
         columns={columns}
         editPath="/estimates/{id}/edit"

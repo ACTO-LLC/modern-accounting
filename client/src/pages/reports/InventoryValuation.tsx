@@ -4,6 +4,7 @@ import { Package } from 'lucide-react';
 import api from '../../lib/api';
 import ReportHeader from '../../components/reports/ReportHeader';
 import { formatDateLong } from '../../lib/dateUtils';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 interface ProductService {
   Id: string;
@@ -49,9 +50,10 @@ export default function InventoryValuation() {
     },
   });
 
+  const { formatCurrency: formatCurrencyBase } = useCurrency();
   const formatCurrency = (value: number | null) => {
-    if (value === null || value === undefined) return '$0.00';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+    if (value === null || value === undefined) return formatCurrencyBase(0);
+    return formatCurrencyBase(value);
   };
 
   const formatNumber = (value: number | null) => {

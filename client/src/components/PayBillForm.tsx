@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useEffect, ReactNode, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
@@ -281,7 +282,7 @@ export default function PayBillForm({
           <div>
             <div className="text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Total Amount</div>
             <div className="block w-full rounded-md border-gray-300 bg-gray-50 p-2 text-lg font-semibold text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-              ${calculatedTotal.toFixed(2)}
+              {formatCurrencyStandalone(calculatedTotal)}
             </div>
             <input type="hidden" {...register('TotalAmount', { valueAsNumber: true })} />
           </div>
@@ -340,8 +341,8 @@ export default function PayBillForm({
                           <tr key={bill.Id}>
                             <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{bill.BillNumber}</td>
                             <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{formatDate(bill.DueDate)}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 text-right">${bill.TotalAmount.toFixed(2)}</td>
-                            <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">${bill.BalanceDue.toFixed(2)}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 text-right">{formatCurrencyStandalone(bill.TotalAmount)}</td>
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">{formatCurrencyStandalone(bill.BalanceDue)}</td>
                             <td className="px-4 py-2 text-right">
                               <button
                                 type="button"
@@ -374,7 +375,7 @@ export default function PayBillForm({
                               Bill #{field.BillNumber}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Balance due: ${(field.BillBalanceDue || 0).toFixed(2)}
+                              Balance due: {formatCurrencyStandalone(field.BillBalanceDue || 0)}
                             </div>
                           </div>
                           <div className="w-40">
@@ -426,7 +427,7 @@ export default function PayBillForm({
             <div className="w-72 space-y-2">
               <div className="flex justify-between text-lg font-bold">
                 <span className="text-gray-900 dark:text-gray-100">Total Payment:</span>
-                <span className="text-gray-900 dark:text-gray-100">${calculatedTotal.toFixed(2)}</span>
+                <span className="text-gray-900 dark:text-gray-100">{formatCurrencyStandalone(calculatedTotal)}</span>
               </div>
             </div>
           </div>
