@@ -125,6 +125,7 @@ For detailed technical guidance on specific topics, see these documents:
 | MUI DataGrid, Zod nullish, Express proxy, pagination | [docs/claude-frontend.md](docs/claude-frontend.md) |
 | Feature flags system, admin toggles, nav visibility | [docs/claude-feature-flags.md](docs/claude-feature-flags.md) |
 | Entra ID user management, roles, group sync | [docs/entra-id-user-management.md](docs/entra-id-user-management.md) |
+| MCP servers, local/prod switching, QBO token injection | [docs/claude-mcp.md](docs/claude-mcp.md) |
 
 ---
 

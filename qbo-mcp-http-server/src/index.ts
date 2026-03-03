@@ -247,6 +247,49 @@ app.post('/mcp', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// Token Injection (for switching between local/prod)
+// ============================================================================
+
+/**
+ * Inject OAuth tokens directly into a session.
+ * Used by scripts/switch-mcp.js to load tokens from a database
+ * without going through the OAuth flow.
+ */
+app.post('/auth/inject-tokens', async (req: Request, res: Response) => {
+    const { sessionId, accessToken, refreshToken, realmId, companyName, forceRefresh } = req.body;
+
+    if (!refreshToken || !realmId) {
+        return res.status(400).json({
+            error: 'refreshToken and realmId are required'
+        });
+    }
+
+    const effectiveSessionId = sessionId || DEFAULT_QBO_SESSION;
+
+    // Store tokens with expiresIn=0 so first query triggers a refresh
+    // unless forceRefresh is explicitly false and accessToken is provided
+    const tokenExpired = !accessToken || forceRefresh !== false;
+
+    sessionStore.setTokens(effectiveSessionId, {
+        accessToken: accessToken || 'expired-placeholder',
+        refreshToken,
+        realmId,
+        companyName,
+        expiresIn: tokenExpired ? 0 : 3600
+    });
+
+    console.log(`Tokens injected for session "${effectiveSessionId}", realmId: ${realmId}, willRefresh: ${tokenExpired}`);
+
+    res.json({
+        success: true,
+        sessionId: effectiveSessionId,
+        realmId,
+        companyName,
+        willRefreshOnFirstCall: tokenExpired
+    });
+});
+
+// ============================================================================
 // OAuth Endpoints (for chat-api to use)
 // ============================================================================
 
@@ -412,12 +455,13 @@ app.listen(PORT, () => {
     console.log(`QBO MCP HTTP Server running on http://localhost:${PORT}`);
     console.log('');
     console.log('Endpoints:');
-    console.log(`  POST /mcp              - MCP JSON-RPC endpoint`);
-    console.log(`  POST /oauth/connect    - Start OAuth flow`);
-    console.log(`  GET  /oauth/callback   - OAuth callback`);
-    console.log(`  GET  /oauth/status/:id - Check connection status`);
-    console.log(`  POST /oauth/disconnect - Disconnect session`);
-    console.log(`  GET  /health           - Health check`);
+    console.log(`  POST /mcp                - MCP JSON-RPC endpoint`);
+    console.log(`  POST /auth/inject-tokens - Inject OAuth tokens directly`);
+    console.log(`  POST /oauth/connect      - Start OAuth flow`);
+    console.log(`  GET  /oauth/callback     - OAuth callback`);
+    console.log(`  GET  /oauth/status/:id   - Check connection status`);
+    console.log(`  POST /oauth/disconnect   - Disconnect session`);
+    console.log(`  GET  /health             - Health check`);
     console.log('');
     console.log('Environment:', process.env.QBO_ENVIRONMENT || 'sandbox');
     console.log('Client ID set:', !!process.env.QBO_CLIENT_ID);

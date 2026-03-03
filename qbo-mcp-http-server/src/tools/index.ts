@@ -284,8 +284,13 @@ export const tools = [
 
                 return response;
             } catch (error: any) {
+                // node-quickbooks errors can be objects, arrays, or strings
+                const errMsg = error.message
+                    || (error.Fault ? JSON.stringify(error.Fault) : null)
+                    || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+                console.error(`[QBO Query] Error for ${args.params?.entity}:`, errMsg);
                 return {
-                    content: [{ type: 'text' as const, text: `Error querying ${args.params?.entity || 'entity'}: ${error.message}` }],
+                    content: [{ type: 'text' as const, text: `Error querying ${args.params?.entity || 'entity'}: ${errMsg}` }],
                     isError: true
                 };
             }

@@ -59,7 +59,7 @@ class SessionStore {
         session.refreshToken = tokens.refreshToken;
         session.realmId = tokens.realmId;
         session.companyName = tokens.companyName;
-        session.tokenExpiry = new Date(Date.now() + (tokens.expiresIn || 3600) * 1000);
+        session.tokenExpiry = new Date(Date.now() + (tokens.expiresIn ?? 3600) * 1000);
         session.lastUsedAt = new Date();
         return session;
     }
