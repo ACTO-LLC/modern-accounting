@@ -102,7 +102,7 @@ interface OnboardingContextType {
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 const MA_MCP_URL = import.meta.env.VITE_MA_MCP_URL || '';
-const MCP_ENABLED = MA_MCP_URL && !MA_MCP_URL.includes('localhost');
+const MCP_ENABLED = !!MA_MCP_URL;
 
 // MCP client for calling MA MCP server
 class MaMcpClient {

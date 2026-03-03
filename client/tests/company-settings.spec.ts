@@ -9,6 +9,33 @@ test.describe('Company Settings', () => {
     await expect(page.getByText('Company Name *')).toBeVisible();
   });
 
+  test('should display all settings sections including Onboarding', async ({ page }) => {
+    await page.goto('/settings');
+    await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
+
+    // Verify all section headings render (scroll to bottom)
+    await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Currency Format' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Transaction Posting Mode' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Invoice Numbering' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Company Logo' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Company Information' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tax Information' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Email Settings' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Feature Visibility' })).toBeVisible();
+
+    // The last section — Onboarding & Learning — must render (not be stuck loading)
+    const onboardingHeading = page.getByText('Onboarding & Learning');
+    await onboardingHeading.scrollIntoViewIfNeeded();
+    await expect(onboardingHeading).toBeVisible({ timeout: 5000 });
+
+    // Should show actual content, not a loading skeleton
+    // When MCP is configured, shows "Learning Progress"; otherwise shows fallback message
+    const hasProgress = page.getByText('Learning Progress');
+    const hasFallback = page.getByText('Onboarding features are not available');
+    await expect(hasProgress.or(hasFallback)).toBeVisible({ timeout: 5000 });
+  });
+
   test('should update company information', async ({ page }) => {
     const timestamp = Date.now();
 

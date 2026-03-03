@@ -42,13 +42,30 @@ export default function OnboardingSettings() {
     }
   };
 
-  if (isLoading || !status) {
+  if (isLoading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
         </div>
+      </div>
+    );
+  }
+
+  // MCP not configured or status unavailable — show section with a message
+  if (!status) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3">
+          <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Onboarding & Learning
+          </h3>
+        </div>
+        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+          Onboarding features are not available in this environment. Connect the MA MCP server to enable guided learning and progressive feature unlock.
+        </p>
       </div>
     );
   }
