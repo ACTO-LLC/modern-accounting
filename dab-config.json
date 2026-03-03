@@ -503,15 +503,13 @@
                 {
                     "role": "Admin",
                     "actions": [
-                        "*"
+                        "read"
                     ]
                 },
                 {
                     "role": "Accountant",
                     "actions": [
-                        "create",
-                        "read",
-                        "update"
+                        "read"
                     ]
                 }
             ],

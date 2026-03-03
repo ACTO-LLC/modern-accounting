@@ -36,9 +36,10 @@ export default function NewInvoice() {
       // Separate lines from invoice data
       const { Lines, ...invoiceData } = data;
 
-      // Create the invoice first (include ProjectId/ClassId)
+      // Create the invoice first (convert empty strings to null for DAB UUID columns)
       await api.post('/invoices_write', {
         ...invoiceData,
+        TaxRateId: invoiceData.TaxRateId || null,
         ProjectId: invoiceData.ProjectId || null,
         ClassId: invoiceData.ClassId || null,
       });

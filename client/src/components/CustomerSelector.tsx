@@ -51,6 +51,7 @@ export default function CustomerSelector({
         getOptionLabel={(option: Customer) =>
           option.Name + (option.Email ? ` (${option.Email})` : '')
         }
+        getOptionKey={(option: Customer) => option.Id}
         value={selectedCustomer}
         onChange={(_event, newValue: Customer | null) => {
           onChange(newValue?.Id ?? '');

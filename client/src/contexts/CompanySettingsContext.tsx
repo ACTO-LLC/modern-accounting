@@ -192,7 +192,8 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('[CompanySettings] Failed to save to database:', err);
       setError('Failed to save settings to server. Changes saved locally.');
-      // Settings are already in localStorage, so the UI will still work
+      // Re-throw so callers (e.g. CompanySettings form) can show the error
+      throw err;
     } finally {
       setIsSaving(false);
     }
