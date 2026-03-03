@@ -3,11 +3,13 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import AddressFields, { AddressFieldValues } from './AddressFields';
+import api from '../lib/api';
 
 export const customerSchema = z.object({
   Name: z.string().min(1, 'Name is required'),
@@ -23,6 +25,7 @@ export const customerSchema = z.object({
   // Legacy field for backward compatibility
   Address: z.string().nullish(),
   Status: z.enum(['Active', 'Inactive']).nullish(),
+  DefaultTermId: z.string().nullish(),
 });
 
 export type CustomerFormData = z.infer<typeof customerSchema> & AddressFieldValues;
@@ -35,8 +38,23 @@ interface CustomerFormProps {
   submitButtonText?: string;
 }
 
+interface Term {
+  Id: string;
+  Name: string;
+  DueDays: number;
+}
+
 export default function CustomerForm({ initialValues, onSubmit, title, isSubmitting, submitButtonText = 'Save Customer' }: CustomerFormProps) {
   const navigate = useNavigate();
+
+  const { data: terms } = useQuery({
+    queryKey: ['terms-active'],
+    queryFn: async (): Promise<Term[]> => {
+      const response = await api.get('/terms?$filter=IsActive eq true&$orderby=DueDays asc');
+      return response.data.value;
+    },
+  });
+
   const { control, register, handleSubmit, setValue, reset, formState: { errors } } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -50,6 +68,7 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
       PostalCode: '',
       Country: '',
       Address: '',
+      DefaultTermId: '',
       ...initialValues,
       Status: initialValues?.Status ?? 'Active',
     }
@@ -68,6 +87,7 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
         PostalCode: '',
         Country: '',
         Address: '',
+        DefaultTermId: '',
         ...initialValues,
         Status: initialValues?.Status ?? 'Active',
       });
@@ -149,6 +169,30 @@ export default function CustomerForm({ initialValues, onSubmit, title, isSubmitt
             >
               <MenuItem value="Active">Active</MenuItem>
               <MenuItem value="Inactive">Inactive</MenuItem>
+            </TextField>
+          )}
+        />
+
+        <Controller
+          name="DefaultTermId"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              select
+              label="Default Payment Terms"
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message || 'Overrides company default for this customer'}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="">Use Company Default</MenuItem>
+              {terms?.map((term) => (
+                <MenuItem key={term.Id} value={term.Id}>
+                  {term.Name} ({term.DueDays === 0 ? 'Immediate' : `${term.DueDays} days`})
+                </MenuItem>
+              ))}
             </TextField>
           )}
         />

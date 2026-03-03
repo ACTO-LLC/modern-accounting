@@ -3,18 +3,34 @@ import { Building2, Upload, Save, X, Sun, Moon, Monitor, Mail, AlertCircle, Zap,
 import { useCompanySettings, InvoicePostingMode } from '../contexts/CompanySettingsContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
 import { useCurrency, CURRENCY_LOCALE_OPTIONS } from '../contexts/CurrencyContext';
+import { useQuery } from '@tanstack/react-query';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import EmailSettingsForm from '../components/EmailSettingsForm';
 import OnboardingSettings from '../components/onboarding/OnboardingSettings';
 import FeatureVisibilitySettings from '../components/FeatureVisibilitySettings';
 import { validateEIN } from '../lib/taxForms';
+import api from '../lib/api';
+
+interface Term {
+  Id: string;
+  Name: string;
+  DueDays: number;
+}
 
 export default function CompanySettings() {
   const { settings, updateSettings, isLoaded } = useCompanySettings();
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, formatCurrency } = useCurrency();
   const [formData, setFormData] = useState(settings);
+
+  const { data: terms } = useQuery({
+    queryKey: ['terms-active'],
+    queryFn: async (): Promise<Term[]> => {
+      const response = await api.get('/terms?$filter=IsActive eq true&$orderby=DueDays asc');
+      return response.data.value;
+    },
+  });
   const [logoPreview, setLogoPreview] = useState(settings.logoUrl);
 
   // Sync formData when settings load from DB (initial load is async)
@@ -272,6 +288,33 @@ export default function CompanySettings() {
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               New invoices will be numbered as {formData.invoiceNumberPrefix || 'INV-'}0001, {formData.invoiceNumberPrefix || 'INV-'}0002, etc.
             </p>
+          </div>
+        </div>
+
+        {/* Default Payment Terms Section */}
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Default Payment Terms</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Set the default payment terms applied to new invoices. Can be overridden per customer or per invoice.
+          </p>
+
+          <div className="max-w-sm">
+            <TextField
+              select
+              label="Default Terms"
+              value={formData.defaultTermId || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, defaultTermId: e.target.value }))}
+              fullWidth
+              size="small"
+              helperText="Applied when creating new invoices (unless customer has specific terms)"
+            >
+              <MenuItem value="">None</MenuItem>
+              {terms?.map((term) => (
+                <MenuItem key={term.Id} value={term.Id}>
+                  {term.Name} ({term.DueDays === 0 ? 'Immediate' : `${term.DueDays} days`})
+                </MenuItem>
+              ))}
+            </TextField>
           </div>
         </div>
 

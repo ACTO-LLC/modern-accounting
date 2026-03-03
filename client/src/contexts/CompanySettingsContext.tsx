@@ -22,6 +22,8 @@ export interface CompanySettings {
   invoicePostingMode: InvoicePostingMode;
   // Configurable prefix for auto-generated invoice numbers (e.g., "INV-", "ACME-")
   invoiceNumberPrefix: string;
+  // Default payment term for new invoices (FK → Terms table)
+  defaultTermId: string;
 }
 
 const defaultSettings: CompanySettings = {
@@ -38,6 +40,7 @@ const defaultSettings: CompanySettings = {
   stateEmployerId: '',
   invoicePostingMode: 'simple', // Default to QBO-like simple mode
   invoiceNumberPrefix: 'INV-',
+  defaultTermId: '',
 };
 
 interface CompanySettingsContextType {
@@ -79,6 +82,7 @@ function mapDbToSettings(dbRecord: Record<string, unknown>): CompanySettings {
     stateEmployerId: (extraSettings.stateEmployerId as string) || '',
     invoicePostingMode: (extraSettings.invoicePostingMode as InvoicePostingMode) || 'simple',
     invoiceNumberPrefix: (extraSettings.invoiceNumberPrefix as string) || 'INV-',
+    defaultTermId: (dbRecord.DefaultTermId as string) || '',
   };
 }
 
@@ -102,6 +106,7 @@ function mapSettingsToDb(settings: CompanySettings): Record<string, unknown> {
     Email: settings.email || null,
     Website: settings.website || null,
     TaxId: settings.taxId || null,
+    DefaultTermId: settings.defaultTermId || null,
     Settings: extraSettings,
     UpdatedAt: new Date().toISOString(),
   };

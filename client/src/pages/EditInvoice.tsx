@@ -39,6 +39,7 @@ interface InvoiceWithLines {
   Status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
   ProjectId?: string | null;
   ClassId?: string | null;
+  TermId?: string | null;
   JournalEntryId?: string | null;
   Lines?: InvoiceLine[];
 }
@@ -94,6 +95,7 @@ export default function EditInvoice() {
         ...invoiceData,
         ProjectId: invoiceData.ProjectId || null,
         ClassId: invoiceData.ClassId || null,
+        TermId: invoiceData.TermId || null,
       });
 
       // 2. Handle Lines Reconciliation

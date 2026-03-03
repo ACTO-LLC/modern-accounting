@@ -281,6 +281,7 @@
                 "PostalCode": "PostalCode",
                 "Country": "Country",
                 "Status": "Status",
+                "DefaultTermId": "DefaultTermId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "SourceSystem": "SourceSystem",
@@ -537,7 +538,10 @@
                 "ProjectId": "ProjectId",
                 "ProjectName": "ProjectName",
                 "ClassId": "ClassId",
-                "ClassName": "ClassName"
+                "ClassName": "ClassName",
+                "TermId": "TermId",
+                "TermName": "TermName",
+                "TermDueDays": "TermDueDays"
             },
             "cache": {
                 "enabled": true,
@@ -585,7 +589,8 @@
                 "PostedAt": "PostedAt",
                 "PostedBy": "PostedBy",
                 "ProjectId": "ProjectId",
-                "ClassId": "ClassId"
+                "ClassId": "ClassId",
+                "TermId": "TermId"
             },
             "key-fields": [
                 "Id"
@@ -894,6 +899,48 @@
                 "FlatAmount": "FlatAmount",
                 "EffectiveYear": "EffectiveYear",
                 "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "terms": {
+            "source": "dbo.Terms",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "DueDays": "DueDays",
+                "IsActive": "IsActive",
+                "CompanyId": "CompanyId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },
@@ -2547,6 +2594,7 @@
                 "FeatureFlags": "FeatureFlags",
                 "Settings": "Settings",
                 "IsActive": "IsActive",
+                "DefaultTermId": "DefaultTermId",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             },

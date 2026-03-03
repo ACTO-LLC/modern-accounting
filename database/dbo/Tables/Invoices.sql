@@ -18,6 +18,7 @@ CREATE TABLE [dbo].[Invoices]
     [IsPersonal] BIT NOT NULL DEFAULT 0, -- 0 = Business (default), 1 = Personal
     [ProjectId] UNIQUEIDENTIFIER NULL,
     [ClassId] UNIQUEIDENTIFIER NULL,
+    [TermId] UNIQUEIDENTIFIER NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
@@ -33,7 +34,8 @@ CREATE TABLE [dbo].[Invoices]
     CONSTRAINT [FK_Invoices_Customers] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers]([Id]),
     CONSTRAINT [FK_Invoices_TaxRates] FOREIGN KEY ([TaxRateId]) REFERENCES [dbo].[TaxRates]([Id]),
     CONSTRAINT [FK_Invoices_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
-    CONSTRAINT [FK_Invoices_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
+    CONSTRAINT [FK_Invoices_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
+    CONSTRAINT [FK_Invoices_Terms] FOREIGN KEY ([TermId]) REFERENCES [dbo].[Terms]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[Invoices_History]))
 GO
@@ -58,6 +60,9 @@ CREATE INDEX [IX_Invoices_ProjectId] ON [dbo].[Invoices]([ProjectId]) WHERE Proj
 GO
 
 CREATE INDEX [IX_Invoices_ClassId] ON [dbo].[Invoices]([ClassId]) WHERE ClassId IS NOT NULL
+GO
+
+CREATE INDEX [IX_Invoices_TermId] ON [dbo].[Invoices]([TermId]) WHERE TermId IS NOT NULL
 GO
 
 CREATE UNIQUE INDEX [UQ_Invoices_InvoiceNumber] ON [dbo].[Invoices]([InvoiceNumber])

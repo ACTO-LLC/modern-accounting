@@ -41,6 +41,7 @@ export default function NewInvoice() {
         ...invoiceData,
         ProjectId: invoiceData.ProjectId || null,
         ClassId: invoiceData.ClassId || null,
+        TermId: invoiceData.TermId || null,
       });
 
       // DAB doesn't return the created entity, so we need to query for it

@@ -47,6 +47,13 @@ interface TaxRate {
   IsActive: boolean;
 }
 
+// Payment term interface
+interface Term {
+  Id: string;
+  Name: string;
+  DueDays: number;
+}
+
 export const invoiceSchema = z.object({
   InvoiceNumber: z.string().min(1, 'Invoice number is required'),
   CustomerId: z.string().uuid('Please select a customer'),
@@ -59,6 +66,7 @@ export const invoiceSchema = z.object({
   Status: z.enum(['Draft', 'Sent', 'Paid', 'Overdue']),
   ProjectId: z.string().uuid().nullish(),
   ClassId: z.string().uuid().nullish(),
+  TermId: z.string().uuid().nullish(),
   Lines: z.array(z.object({
     Id: z.string().nullish(),
     ProductServiceId: z.string().nullish(),
@@ -125,6 +133,15 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     queryKey: ['taxrates-active'],
     queryFn: async (): Promise<TaxRate[]> => {
       const response = await api.get('/taxrates?$filter=IsActive eq true&$orderby=Name');
+      return response.data.value;
+    },
+  });
+
+  // Fetch active payment terms
+  const { data: terms } = useQuery({
+    queryKey: ['terms-active'],
+    queryFn: async (): Promise<Term[]> => {
+      const response = await api.get('/terms?$filter=IsActive eq true&$orderby=DueDays asc');
       return response.data.value;
     },
   });
@@ -206,6 +223,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       TotalAmount: 0,
       ProjectId: null,
       ClassId: null,
+      TermId: initialValues?.TermId || null,
       ...initialValues
     }
   });
@@ -229,6 +247,48 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
 
   const selectedTaxRateId = watch('TaxRateId');
   const watchedStatus = watch('Status');
+  const watchedTermId = watch('TermId');
+  const watchedIssueDate = watch('IssueDate');
+
+  // Set default term from company settings when terms load and no initial value
+  useEffect(() => {
+    if (terms && settings.defaultTermId && !initialValues?.TermId) {
+      const companyTerm = terms.find(t => t.Id === settings.defaultTermId);
+      if (companyTerm) {
+        setValue('TermId', companyTerm.Id);
+      }
+    }
+  }, [terms, settings.defaultTermId, initialValues?.TermId, setValue]);
+
+  // Auto-calculate DueDate when TermId or IssueDate changes
+  useEffect(() => {
+    if (!watchedTermId || !watchedIssueDate || !terms) return;
+    const selectedTerm = terms.find(t => t.Id === watchedTermId);
+    if (!selectedTerm) return;
+
+    const issueDate = new Date(watchedIssueDate + 'T00:00:00');
+    if (isNaN(issueDate.getTime())) return;
+
+    issueDate.setDate(issueDate.getDate() + selectedTerm.DueDays);
+    const dueDate = issueDate.toISOString().split('T')[0];
+    setValue('DueDate', dueDate);
+  }, [watchedTermId, watchedIssueDate, terms, setValue]);
+
+  // Resolve term from customer → company → blank when customer changes
+  const resolveCustomerTerm = useCallback(async (customerId: string) => {
+    if (!customerId || initialValues?.TermId) return;
+    try {
+      const response = await api.get(`/customers/Id/${customerId}`);
+      const customer = response.data.value?.[0] || response.data;
+      if (customer?.DefaultTermId) {
+        setValue('TermId', customer.DefaultTermId);
+      } else if (settings.defaultTermId) {
+        setValue('TermId', settings.defaultTermId);
+      }
+    } catch {
+      // Silently fail - term resolution is best-effort
+    }
+  }, [initialValues?.TermId, settings.defaultTermId, setValue]);
 
   // Determine if invoice will be auto-posted on save
   const willAutoPost = settings.invoicePostingMode === 'simple' && watchedStatus !== 'Draft';
@@ -326,6 +386,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                     field.onChange(customerId);
                     if (customerId) {
                       fetchAutoTaxRate(customerId);
+                      resolveCustomerTerm(customerId);
                     } else {
                       setAutoTaxRate(null);
                     }
@@ -402,6 +463,29 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                 <MenuItem value="Sent">Sent</MenuItem>
                 <MenuItem value="Paid">Paid</MenuItem>
                 <MenuItem value="Overdue">Overdue</MenuItem>
+              </TextField>
+            )}
+          />
+
+          <Controller
+            name="TermId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Payment Terms"
+                size="small"
+                fullWidth
+                helperText="Due date auto-calculates from issue date + term days"
+              >
+                <MenuItem value="">None</MenuItem>
+                {terms?.map((term) => (
+                  <MenuItem key={term.Id} value={term.Id}>
+                    {term.Name} ({term.DueDays === 0 ? 'Immediate' : `${term.DueDays} days`})
+                  </MenuItem>
+                ))}
               </TextField>
             )}
           />

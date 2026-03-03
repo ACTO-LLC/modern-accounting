@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileMinus, Car, ListFilter, Banknote, Mail, History, Calendar, PiggyBank, FileX } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, FileText, ClipboardList, Users, Package, Warehouse, Truck, UserCheck, DollarSign, Receipt, FolderOpen, Clock, Tag, MapPin, RefreshCw, Layers, Building2, BookOpen, Upload, Database, Scale, BarChart3, MessageSquare, Sparkles, Settings, ShoppingCart, Percent, CreditCard, FileMinus, Car, ListFilter, Banknote, Mail, History, Calendar, PiggyBank, FileX, FileCheck } from 'lucide-react';
 import { FeatureKey } from '../../contexts/FeatureFlagsContext';
 
 export interface NavItem {
@@ -140,6 +140,7 @@ export const navigationConfig: NavEntry[] = [
       { id: 'journal-entries', name: 'Journal Entries', href: '/journal-entries', icon: BookOpen, featureKey: 'journal_entries' },
       { id: 'tax-rates', name: 'Tax Rates', href: '/tax-rates', icon: Percent },
       { id: 'tax-settings', name: 'Tax Settings', href: '/tax-settings', icon: Settings },
+      { id: 'terms', name: 'Payment Terms', href: '/terms', icon: FileCheck },
       { id: 'classes', name: 'Classes', href: '/classes', icon: Tag },
       { id: 'locations', name: 'Locations', href: '/locations', icon: MapPin },
       { id: 'recurring', name: 'Recurring', href: '/recurring', icon: RefreshCw },
