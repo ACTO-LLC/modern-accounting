@@ -506,7 +506,7 @@ export class MigrationMapper {
             const dueDays = this.parseDueDays(normalizedName);
             const sourceId = sourceObj?.SalesTermRef?.value || null;
 
-            const createResult = await this.mcp.createRecord('terms', {
+            await this.mcp.createRecord('terms', {
                 Name: normalizedName,
                 DueDays: dueDays,
                 IsActive: true,
