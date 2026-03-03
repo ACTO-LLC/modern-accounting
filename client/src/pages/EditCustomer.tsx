@@ -5,6 +5,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import Button from '@mui/material/Button';
 import { FileText } from 'lucide-react';
 import api from '../lib/api';
+import { formatGuidForOData } from '../lib/validation';
 import CustomerForm, { CustomerFormData } from '../components/CustomerForm';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
@@ -52,7 +53,7 @@ export default function EditCustomer() {
   const { data: customer, isLoading, error } = useQuery({
     queryKey: ['customer', id],
     queryFn: async () => {
-      const response = await api.get<{ value: any[] }>(`/customers?$filter=Id eq ${id}`);
+      const response = await api.get<{ value: any[] }>(`/customers?$filter=Id eq ${formatGuidForOData(id, 'Customer Id')}`);
       return response.data.value[0];
     },
     enabled: !!id
@@ -96,7 +97,7 @@ export default function EditCustomer() {
             endpoint="/invoices"
             columns={invoiceColumns}
             editPath="/invoices/{id}/edit"
-            baseFilter={`CustomerId eq ${id}`}
+            baseFilter={`CustomerId eq ${formatGuidForOData(id, 'Customer Id')}`}
             initialPageSize={10}
             emptyMessage="No invoices for this customer."
           />
