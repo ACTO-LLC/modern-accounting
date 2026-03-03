@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
 import { formatDateLong } from '../../lib/dateUtils';
+import api from '../../lib/api';
 
 interface Customer {
   Id: string;
@@ -73,12 +74,8 @@ export default function ARAgingSummary() {
   } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      const r = await fetch('/api/customers');
-      if (!r.ok) {
-        throw new Error('Failed to load customers');
-      }
-      const d = await r.json();
-      return d.value as Customer[];
+      const r = await api.get('/customers');
+      return r.data.value as Customer[];
     },
   });
 
@@ -89,12 +86,8 @@ export default function ARAgingSummary() {
   } = useQuery({
     queryKey: ['invoices'],
     queryFn: async () => {
-      const r = await fetch('/api/invoices');
-      if (!r.ok) {
-        throw new Error('Failed to load invoices');
-      }
-      const d = await r.json();
-      return d.value as Invoice[];
+      const r = await api.get('/invoices');
+      return r.data.value as Invoice[];
     },
   });
 

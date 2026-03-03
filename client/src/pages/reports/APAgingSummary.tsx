@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
 import { formatDateLong } from '../../lib/dateUtils';
+import api from '../../lib/api';
 
 interface Vendor {
   Id: string;
@@ -73,12 +74,8 @@ export default function APAgingSummary() {
   } = useQuery({
     queryKey: ['vendors'],
     queryFn: async () => {
-      const r = await fetch('/api/vendors');
-      if (!r.ok) {
-        throw new Error('Failed to load vendors');
-      }
-      const d = await r.json();
-      return d.value as Vendor[];
+      const r = await api.get('/vendors');
+      return r.data.value as Vendor[];
     },
   });
 
@@ -89,12 +86,8 @@ export default function APAgingSummary() {
   } = useQuery({
     queryKey: ['bills'],
     queryFn: async () => {
-      const r = await fetch('/api/bills');
-      if (!r.ok) {
-        throw new Error('Failed to load bills');
-      }
-      const d = await r.json();
-      return d.value as Bill[];
+      const r = await api.get('/bills');
+      return r.data.value as Bill[];
     },
   });
 

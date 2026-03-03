@@ -18,6 +18,7 @@ import {
   Activity,
   ArrowRight
 } from 'lucide-react';
+import api from '../lib/api';
 import { formatDate, formatMonthShort } from '../lib/dateUtils';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -101,15 +102,8 @@ export default function Dashboard() {
   const { data: journalEntries } = useQuery({
     queryKey: ['journal-entries'],
     queryFn: async () => {
-      const response = await fetch('/api/journalentries?$orderby=TransactionDate desc');
-      if (!response.ok) throw new Error('Failed to fetch journal entries');
-      const data = await response.json();
-      // We need to fetch lines for calculation. 
-      // Ideally DAB would support $expand, but we know it might not.
-      // For dashboard summary, we might need a dedicated endpoint or fetch all lines.
-      // For now, let's assume we can fetch lines or use a separate query if needed.
-      // Actually, let's fetch lines separately to be safe, like we did for Invoices.
-      return data.value as JournalEntry[];
+      const response = await api.get('/journalentries?$orderby=TransactionDate desc');
+      return response.data.value as JournalEntry[];
     }
   });
 
@@ -117,10 +111,8 @@ export default function Dashboard() {
   const { data: allLines } = useQuery({
     queryKey: ['journal-entry-lines'],
     queryFn: async () => {
-      const response = await fetch('/api/journalentrylines');
-      if (!response.ok) throw new Error('Failed to fetch lines');
-      const data = await response.json();
-      return data.value as JournalEntryLine[];
+      const response = await api.get('/journalentrylines');
+      return response.data.value as JournalEntryLine[];
     }
   });
 
@@ -128,10 +120,8 @@ export default function Dashboard() {
   const { data: accounts } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('/api/accounts');
-      if (!response.ok) throw new Error('Failed to fetch accounts');
-      const data = await response.json();
-      return data.value as Account[];
+      const response = await api.get('/accounts');
+      return response.data.value as Account[];
     }
   });
 
@@ -139,10 +129,8 @@ export default function Dashboard() {
   const { data: bankTransactions } = useQuery({
     queryKey: ['banktransactions'],
     queryFn: async () => {
-      const response = await fetch('/api/banktransactions');
-      if (!response.ok) throw new Error('Failed to fetch bank transactions');
-      const data = await response.json();
-      return data.value as BankTransaction[];
+      const response = await api.get('/banktransactions');
+      return response.data.value as BankTransaction[];
     }
   });
 
@@ -150,10 +138,8 @@ export default function Dashboard() {
   const { data: invoices } = useQuery({
     queryKey: ['invoices-dashboard'],
     queryFn: async () => {
-      const response = await fetch('/api/invoices');
-      if (!response.ok) throw new Error('Failed to fetch invoices');
-      const data = await response.json();
-      return data.value as Invoice[];
+      const response = await api.get('/invoices');
+      return response.data.value as Invoice[];
     }
   });
 
@@ -161,10 +147,8 @@ export default function Dashboard() {
   const { data: bills } = useQuery({
     queryKey: ['bills-dashboard'],
     queryFn: async () => {
-      const response = await fetch('/api/bills');
-      if (!response.ok) throw new Error('Failed to fetch bills');
-      const data = await response.json();
-      return data.value as Bill[];
+      const response = await api.get('/bills');
+      return response.data.value as Bill[];
     }
   });
 
@@ -172,10 +156,8 @@ export default function Dashboard() {
   const { data: expenses } = useQuery({
     queryKey: ['expenses-dashboard'],
     queryFn: async () => {
-      const response = await fetch('/api/expenses');
-      if (!response.ok) throw new Error('Failed to fetch expenses');
-      const data = await response.json();
-      return data.value as Expense[];
+      const response = await api.get('/expenses');
+      return response.data.value as Expense[];
     }
   });
 
@@ -183,10 +165,8 @@ export default function Dashboard() {
   const { data: payments } = useQuery({
     queryKey: ['payments-dashboard'],
     queryFn: async () => {
-      const response = await fetch('/api/payments');
-      if (!response.ok) throw new Error('Failed to fetch payments');
-      const data = await response.json();
-      return data.value as Payment[];
+      const response = await api.get('/payments');
+      return response.data.value as Payment[];
     }
   });
 

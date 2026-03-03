@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import AddAccountModal from '../components/AddAccountModal';
+import api from '../lib/api';
 
 interface Account {
   Id: string;
@@ -37,10 +38,8 @@ export default function ImportTransactions() {
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('/api/accounts');
-      if (!response.ok) throw new Error('Failed to fetch accounts');
-      const data = await response.json();
-      return data.value as Account[];
+      const response = await api.get('/accounts');
+      return response.data.value as Account[];
     }
   });
 
@@ -67,17 +66,11 @@ export default function ImportTransactions() {
       formData.append('sourceType', sourceType);
       formData.append('sourceName', selectedAccount?.Name || '');
 
-      const response = await fetch('http://localhost:7072/api/import-csv', {
-        method: 'POST',
-        body: formData
+      const response = await api.post('/import-csv', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.details || 'Import failed');
-      }
-
-      const result = await response.json();
+      const result = response.data;
       setImportedTransactions(result.transactions);
       const accountsMsg = result.sourceAccountsCreated || result.categoryAccountsCreated
         ? `\nAccounts created: ${result.sourceAccountsCreated || 0} source, ${result.categoryAccountsCreated || 0} category`
@@ -96,16 +89,9 @@ export default function ImportTransactions() {
     if (!confirm('Are you sure you want to delete ALL transactions? This cannot be undone.')) return;
     
     try {
-      const response = await fetch('http://localhost:7072/api/reset-db', {
-        method: 'POST'
-      });
-      
-      if (response.ok) {
-        alert('Database reset successfully');
-        setImportedTransactions([]);
-      } else {
-        alert('Failed to reset database');
-      }
+      await api.post('/reset-db');
+      alert('Database reset successfully');
+      setImportedTransactions([]);
     } catch (err) {
       console.error('Reset error:', err);
       alert('Failed to reset database');
