@@ -42,35 +42,113 @@ test.describe('Company Settings', () => {
     await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
 
-    // Wait for settings to load
-    await page.waitForTimeout(1000);
+    // Wait for settings to load from the database
+    const nameInput = page.locator('input[name="name"]');
+    await expect(nameInput).toBeVisible();
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector('input[name="name"]') as HTMLInputElement;
+        return input && input.value.length > 0;
+      },
+      { timeout: 10000 }
+    );
 
-    // Update company name
-    const nameInput = page.locator('#name, input[name="name"]');
-    if (await nameInput.isVisible()) {
-      const currentName = await nameInput.inputValue();
-      await nameInput.clear();
-      await nameInput.fill(`Test Company ${timestamp}`);
+    const currentName = await nameInput.inputValue();
+    await nameInput.clear();
+    await nameInput.fill(`Test Company ${timestamp}`);
 
-      // Update address
-      const addressInput = page.locator('#address, input[name="address"]');
-      if (await addressInput.isVisible()) {
-        await addressInput.clear();
-        await addressInput.fill('456 Test Blvd');
-      }
+    // Update address
+    const addressInput = page.locator('input[name="address"]');
+    await expect(addressInput).toBeVisible();
+    await addressInput.clear();
+    await addressInput.fill('456 Test Blvd');
 
-      // Save (first button is the company info section save)
-      await page.getByRole('button', { name: /Save Settings/i }).first().click();
+    // Save and wait for the PATCH API response
+    const savePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/companies') &&
+              (resp.status() === 200 || resp.status() === 201)
+    );
+    await page.getByRole('button', { name: /Save Settings/i }).first().click();
+    await savePromise;
 
-      // Verify save success message
-      await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
+    // Verify save success message
+    await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
 
-      // Restore original name
-      await nameInput.clear();
-      await nameInput.fill(currentName || 'Modern Accounting');
-      await page.getByRole('button', { name: /Save Settings/i }).first().click();
-      await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
-    }
+    // Restore original name
+    await nameInput.clear();
+    await nameInput.fill(currentName || 'Modern Accounting');
+    const restorePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/companies') &&
+              (resp.status() === 200 || resp.status() === 201)
+    );
+    await page.getByRole('button', { name: /Save Settings/i }).first().click();
+    await restorePromise;
+    await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should persist company address after page reload', async ({ page }) => {
+    const testAddress = `${Date.now()} Persistence Ave`;
+
+    await page.goto('/settings');
+    await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
+
+    // Wait for settings to load from the database
+    const addressInput = page.locator('input[name="address"]');
+    await expect(addressInput).toBeVisible();
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector('input[name="name"]') as HTMLInputElement;
+        return el && el.value.length > 0;
+      },
+      { timeout: 10000 }
+    );
+
+    // Remember original address for cleanup
+    const originalAddress = await addressInput.inputValue();
+
+    // Update address to a unique test value
+    await addressInput.clear();
+    await addressInput.fill(testAddress);
+
+    // Save and wait for the API response
+    const savePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/companies') &&
+              (resp.status() === 200 || resp.status() === 201)
+    );
+    await page.getByRole('button', { name: /Save Settings/i }).first().click();
+    await savePromise;
+    await expect(page.getByText(/saved successfully/i)).toBeVisible({ timeout: 10000 });
+
+    // Clear localStorage so reload must fetch from DB, not cache
+    await page.evaluate(() => localStorage.removeItem('company-settings'));
+
+    // Reload the page
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Company Settings' })).toBeVisible();
+
+    // Wait for settings to load from the database again
+    const reloadedAddressInput = page.locator('input[name="address"]');
+    await expect(reloadedAddressInput).toBeVisible();
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector('input[name="name"]') as HTMLInputElement;
+        return el && el.value.length > 0;
+      },
+      { timeout: 10000 }
+    );
+
+    // Verify the address persisted
+    await expect(reloadedAddressInput).toHaveValue(testAddress);
+
+    // Cleanup: restore original address
+    await reloadedAddressInput.clear();
+    await reloadedAddressInput.fill(originalAddress || '');
+    const cleanupPromise = page.waitForResponse(
+      resp => resp.url().includes('/api/companies') &&
+              (resp.status() === 200 || resp.status() === 201)
+    );
+    await page.getByRole('button', { name: /Save Settings/i }).first().click();
+    await cleanupPromise;
   });
 
   test('should update tax information', async ({ page }) => {
