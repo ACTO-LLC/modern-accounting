@@ -35,9 +35,9 @@ export default function TermForm({ initialValues, onSubmit, title, isSubmitting 
   const navigate = useNavigate();
 
   const { data: allTerms } = useQuery({
-    queryKey: ['terms'],
+    queryKey: ['terms-names'],
     queryFn: async () => {
-      const response = await api.get<{ value: TermItem[] }>('/terms?$select=Id,Name');
+      const response = await api.get<{ value: TermItem[] }>('/terms?$filter=IsActive eq true&$select=Id,Name');
       return response.data.value;
     },
   });
