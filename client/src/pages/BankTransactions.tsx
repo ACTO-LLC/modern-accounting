@@ -133,7 +133,7 @@ export default function BankTransactions() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<BankTransaction> }) => {
-      const response = await api.patch(`/banktransactions/${id}`, data);
+      const response = await api.patch(`/banktransactions/Id/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -147,7 +147,7 @@ export default function BankTransactions() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.delete(`/banktransactions/${id}`);
+      const response = await api.delete(`/banktransactions/Id/${id}`);
       return response.data;
     },
     onSuccess: () => {

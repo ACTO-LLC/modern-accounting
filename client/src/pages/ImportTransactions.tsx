@@ -66,11 +66,17 @@ export default function ImportTransactions() {
       formData.append('sourceType', sourceType);
       formData.append('sourceName', selectedAccount?.Name || '');
 
-      const response = await api.post('/import-csv', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const response = await fetch('http://localhost:7072/api/import-csv', {
+        method: 'POST',
+        body: formData
       });
 
-      const result = response.data;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || 'Import failed');
+      }
+
+      const result = await response.json();
       setImportedTransactions(result.transactions);
       const accountsMsg = result.sourceAccountsCreated || result.categoryAccountsCreated
         ? `\nAccounts created: ${result.sourceAccountsCreated || 0} source, ${result.categoryAccountsCreated || 0} category`
@@ -89,7 +95,10 @@ export default function ImportTransactions() {
     if (!confirm('Are you sure you want to delete ALL transactions? This cannot be undone.')) return;
     
     try {
-      await api.post('/reset-db');
+      const response = await fetch('http://localhost:7072/api/reset-db', {
+        method: 'POST'
+      });
+      if (!response.ok) throw new Error('Reset failed');
       alert('Database reset successfully');
       setImportedTransactions([]);
     } catch (err) {
