@@ -15,7 +15,7 @@ CREATE TABLE [dbo].[Companies]
     [Phone] NVARCHAR(50) NULL,
     [Email] NVARCHAR(200) NULL,
     [Website] NVARCHAR(300) NULL,
-    [LogoUrl] NVARCHAR(500) NULL,
+    [LogoUrl] NVARCHAR(MAX) NULL,
     [OnboardingStatus] NVARCHAR(50) NOT NULL DEFAULT 'NotStarted',
     [OnboardingCompletedAt] DATETIME2 NULL,
     [FeatureFlags] NVARCHAR(MAX) NULL,
