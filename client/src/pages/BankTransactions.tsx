@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
 import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
+import api from '../lib/api';
 
 interface BankTransaction {
   Id: string;
@@ -71,14 +72,12 @@ export default function BankTransactions() {
       }
       
       const filterString = filters.length > 0 ? `$filter=${filters.join(' and ')}&` : '';
-      const url = `/api/banktransactions?${filterString}$top=${pageSize}&$skip=${page * pageSize}&$count=true`;
-      
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch transactions');
-      const data = await response.json();
+      const url = `/banktransactions?${filterString}$top=${pageSize}&$skip=${page * pageSize}&$count=true`;
+
+      const response = await api.get(url);
       return {
-        transactions: data.value as BankTransaction[],
-        totalCount: data['@odata.count'] || 0
+        transactions: response.data.value as BankTransaction[],
+        totalCount: response.data['@odata.count'] || 0
       };
     }
   });
@@ -87,10 +86,8 @@ export default function BankTransactions() {
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('/api/accounts');
-      if (!response.ok) throw new Error('Failed to fetch accounts');
-      const data = await response.json();
-      return data.value as Account[];
+      const response = await api.get('/accounts');
+      return response.data.value as Account[];
     }
   });
 
@@ -113,23 +110,18 @@ export default function BankTransactions() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
-      const response = await fetch('/api/banktransactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          Id: crypto.randomUUID(),
-          SourceType: 'Manual',
-          SourceName: accounts.find(a => a.Id === data.SourceAccountId)?.Name || 'Manual Entry',
-          Status: 'Pending',
-          SuggestedCategory: 'Uncategorized',
-          SuggestedMemo: data.Description,
-          ConfidenceScore: 0,
-          TransactionDate: new Date(data.TransactionDate).toISOString(),
-        })
+      const response = await api.post('/banktransactions', {
+        ...data,
+        Id: crypto.randomUUID(),
+        SourceType: 'Manual',
+        SourceName: accounts.find(a => a.Id === data.SourceAccountId)?.Name || 'Manual Entry',
+        Status: 'Pending',
+        SuggestedCategory: 'Uncategorized',
+        SuggestedMemo: data.Description,
+        ConfidenceScore: 0,
+        TransactionDate: new Date(data.TransactionDate).toISOString(),
       });
-      if (!response.ok) throw new Error('Failed to create transaction');
-      return response.json();
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
@@ -141,13 +133,8 @@ export default function BankTransactions() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<BankTransaction> }) => {
-      const response = await fetch(`/api/banktransactions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error('Failed to update transaction');
-      return response.json();
+      const response = await api.patch(`/banktransactions/Id/${id}`, data);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banktransactions'] });
@@ -160,11 +147,8 @@ export default function BankTransactions() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/banktransactions/${id}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to delete transaction');
-      return response.json();
+      const response = await api.delete(`/banktransactions/Id/${id}`);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banktransactions'] });

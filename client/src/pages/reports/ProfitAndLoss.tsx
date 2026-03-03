@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { DateRangePicker, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
 import type { ReportColumn, ReportRow } from '../../components/reports';
 import { formatDateLong } from '../../lib/dateUtils';
+import api from '../../lib/api';
 
 interface Account { Id: string; Name: string; Type: string; Subtype: string | null; }
 interface JournalEntry { Id: string; TransactionDate: string; }
@@ -23,12 +24,8 @@ export default function ProfitAndLoss() {
   } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const r = await fetch('/api/accounts');
-      if (!r.ok) {
-        throw new Error('Failed to load accounts');
-      }
-      const d = await r.json();
-      return d.value as Account[];
+      const r = await api.get('/accounts');
+      return r.data.value as Account[];
     },
   });
 
@@ -39,12 +36,8 @@ export default function ProfitAndLoss() {
   } = useQuery({
     queryKey: ['journal-entries'],
     queryFn: async () => {
-      const r = await fetch('/api/journalentries');
-      if (!r.ok) {
-        throw new Error('Failed to load journal entries');
-      }
-      const d = await r.json();
-      return d.value as JournalEntry[];
+      const r = await api.get('/journalentries');
+      return r.data.value as JournalEntry[];
     },
   });
 
@@ -55,12 +48,8 @@ export default function ProfitAndLoss() {
   } = useQuery({
     queryKey: ['journal-entry-lines'],
     queryFn: async () => {
-      const r = await fetch('/api/journalentrylines');
-      if (!r.ok) {
-        throw new Error('Failed to load journal entry lines');
-      }
-      const d = await r.json();
-      return d.value as JournalEntryLine[];
+      const r = await api.get('/journalentrylines');
+      return r.data.value as JournalEntryLine[];
     },
   });
 

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, AlertCircle, Building2 } from 'lucide-rea
 import clsx from 'clsx';
 import { formatDate } from '../lib/dateUtils';
 import { useCurrency } from '../contexts/CurrencyContext';
+import api from '../lib/api';
 
 interface Account {
   Id: string;
@@ -78,9 +79,8 @@ export default function NewReconciliation() {
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('/api/accounts?$filter=Type eq \'Asset\'');
-      if (!response.ok) throw new Error('Failed to fetch accounts');
-      return (await response.json()).value as Account[];
+      const response = await api.get('/accounts?$filter=Type eq \'Asset\'');
+      return response.data.value as Account[];
     }
   });
 
@@ -89,9 +89,8 @@ export default function NewReconciliation() {
     queryKey: ['reconciliation', id],
     queryFn: async () => {
       if (!id) return null;
-      const response = await fetch(`/api/bankreconciliations/Id/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch reconciliation');
-      return await response.json() as BankReconciliation;
+      const response = await api.get(`/bankreconciliations/Id/${id}`);
+      return response.data as BankReconciliation;
     },
     enabled: !!id
   });
@@ -101,9 +100,8 @@ export default function NewReconciliation() {
     queryKey: ['reconciliation-items', id],
     queryFn: async () => {
       if (!id) return [];
-      const response = await fetch(`/api/reconciliationitems?$filter=ReconciliationId eq ${id}`);
-      if (!response.ok) throw new Error('Failed to fetch items');
-      return (await response.json()).value as ReconciliationItem[];
+      const response = await api.get(`/reconciliationitems?$filter=ReconciliationId eq ${id}`);
+      return response.data.value as ReconciliationItem[];
     },
     enabled: !!id
   });
@@ -131,9 +129,8 @@ export default function NewReconciliation() {
     queryKey: ['banktransactions', selectedAccountId],
     queryFn: async () => {
       if (!selectedAccountId) return [];
-      const response = await fetch(`/api/banktransactions?$filter=SourceAccountId eq ${selectedAccountId} and Status eq 'Approved'&$orderby=TransactionDate`);
-      if (!response.ok) throw new Error('Failed to fetch transactions');
-      return (await response.json()).value as BankTransaction[];
+      const response = await api.get(`/banktransactions?$filter=SourceAccountId eq ${selectedAccountId} and Status eq 'Approved'&$orderby=TransactionDate`);
+      return response.data.value as BankTransaction[];
     },
     enabled: !!selectedAccountId
   });
@@ -143,9 +140,8 @@ export default function NewReconciliation() {
     queryKey: ['journal-lines', selectedAccountId],
     queryFn: async () => {
       if (!selectedAccountId) return [];
-      const response = await fetch(`/api/journalentrylines?$filter=AccountId eq ${selectedAccountId}&$orderby=CreatedAt`);
-      if (!response.ok) throw new Error('Failed to fetch journal lines');
-      return (await response.json()).value as JournalEntryLine[];
+      const response = await api.get(`/journalentrylines?$filter=AccountId eq ${selectedAccountId}&$orderby=CreatedAt`);
+      return response.data.value as JournalEntryLine[];
     },
     enabled: !!selectedAccountId
   });
@@ -190,21 +186,16 @@ export default function NewReconciliation() {
   // Create reconciliation mutation
   const createReconciliation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/bankreconciliations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          BankAccountId: selectedAccountId,
-          StatementDate: statementDate,
-          StatementEndingBalance: statementEndingBalance,
-          BeginningBalance: beginningBalance,
-          ClearedDeposits: 0,
-          ClearedPayments: 0,
-          Status: 'InProgress'
-        })
+      const response = await api.post('/bankreconciliations', {
+        BankAccountId: selectedAccountId,
+        StatementDate: statementDate,
+        StatementEndingBalance: statementEndingBalance,
+        BeginningBalance: beginningBalance,
+        ClearedDeposits: 0,
+        ClearedPayments: 0,
+        Status: 'InProgress'
       });
-      if (!response.ok) throw new Error('Failed to create reconciliation');
-      return await response.json();
+      return response.data;
     },
     onSuccess: (data) => {
       setReconciliationId(data.Id);
@@ -216,18 +207,13 @@ export default function NewReconciliation() {
   const updateReconciliation = useMutation({
     mutationFn: async () => {
       if (!reconciliationId) return;
-      const response = await fetch(`/api/bankreconciliations/Id/${reconciliationId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ClearedDeposits: clearedDeposits,
-          ClearedPayments: clearedPayments,
-          Status: isBalanced ? 'Completed' : 'InProgress',
-          CompletedAt: isBalanced ? new Date().toISOString() : null
-        })
+      const response = await api.patch(`/bankreconciliations/Id/${reconciliationId}`, {
+        ClearedDeposits: clearedDeposits,
+        ClearedPayments: clearedPayments,
+        Status: isBalanced ? 'Completed' : 'InProgress',
+        CompletedAt: isBalanced ? new Date().toISOString() : null
       });
-      if (!response.ok) throw new Error('Failed to update reconciliation');
-      return await response.json();
+      return response.data;
     }
   });
 
@@ -237,46 +223,29 @@ export default function NewReconciliation() {
       if (!reconciliationId) return;
 
       // Check if item already exists
-      const existingResponse = await fetch(
-        `/api/reconciliationitems?$filter=ReconciliationId eq ${reconciliationId} and TransactionId eq ${item.transactionId}`
+      const existingResponse = await api.get(
+        `/reconciliationitems?$filter=ReconciliationId eq ${reconciliationId} and TransactionId eq ${item.transactionId}`
       );
-      if (!existingResponse.ok) {
-        throw new Error('Failed to fetch existing reconciliation items');
-      }
-      const existing = (await existingResponse.json()).value as ReconciliationItem[];
+      const existing = existingResponse.data.value as ReconciliationItem[];
 
       if (existing.length > 0) {
         // Update existing
-        const updateResponse = await fetch(`/api/reconciliationitems/Id/${existing[0].Id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            IsCleared: isCleared,
-            ClearedAt: isCleared ? new Date().toISOString() : null
-          })
+        await api.patch(`/reconciliationitems/Id/${existing[0].Id}`, {
+          IsCleared: isCleared,
+          ClearedAt: isCleared ? new Date().toISOString() : null
         });
-        if (!updateResponse.ok) {
-          throw new Error('Failed to update reconciliation item');
-        }
       } else {
         // Create new
-        const createResponse = await fetch('/api/reconciliationitems', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ReconciliationId: reconciliationId,
-            TransactionType: item.type,
-            TransactionId: item.transactionId,
-            TransactionDate: item.date,
-            Description: item.description,
-            Amount: item.amount,
-            IsCleared: isCleared,
-            ClearedAt: isCleared ? new Date().toISOString() : null
-          })
+        await api.post('/reconciliationitems', {
+          ReconciliationId: reconciliationId,
+          TransactionType: item.type,
+          TransactionId: item.transactionId,
+          TransactionDate: item.date,
+          Description: item.description,
+          Amount: item.amount,
+          IsCleared: isCleared,
+          ClearedAt: isCleared ? new Date().toISOString() : null
         });
-        if (!createResponse.ok) {
-          throw new Error('Failed to create reconciliation item');
-        }
       }
     }
   });

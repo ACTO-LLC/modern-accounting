@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
+import api from '../lib/api';
 
 interface AddAccountModalProps {
   isOpen: boolean;
@@ -30,24 +31,16 @@ export default function AddAccountModal({ isOpen, onClose }: AddAccountModalProp
       const timestamp = Date.now().toString(36);
       const code = data.name.toUpperCase().replace(/\s+/g, '_').substring(0, 40) + '_' + timestamp;
 
-      const response = await fetch('/api/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          Name: data.name,
-          Type: typeMapping.type,
-          Subtype: typeMapping.subtype,
-          AccountNumber: data.accountNumber || null,
-          Description: data.description || null,
-          Code: code
-        })
+      const response = await api.post('/accounts', {
+        Name: data.name,
+        Type: typeMapping.type,
+        Subtype: typeMapping.subtype,
+        AccountNumber: data.accountNumber || null,
+        Description: data.description || null,
+        Code: code
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create account');
-      }
-      return response.json();
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });

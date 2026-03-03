@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, CheckCircle, Clock, Eye } from 'lucide-react';
 import { formatDate } from '../lib/dateUtils';
 import { useCurrency } from '../contexts/CurrencyContext';
+import api from '../lib/api';
 
 interface Account {
   Id: string;
@@ -28,18 +29,16 @@ export default function BankReconciliations() {
   const { data: reconciliationsData, isLoading } = useQuery({
     queryKey: ['bank-reconciliations'],
     queryFn: async () => {
-      const response = await fetch('/api/bankreconciliations?$orderby=CreatedAt desc');
-      if (!response.ok) throw new Error('Failed to fetch reconciliations');
-      return (await response.json()).value as BankReconciliation[];
+      const response = await api.get('/bankreconciliations?$orderby=CreatedAt desc');
+      return response.data.value as BankReconciliation[];
     }
   });
 
   const { data: accountsData } = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
-      const response = await fetch('/api/accounts');
-      if (!response.ok) throw new Error('Failed to fetch accounts');
-      return (await response.json()).value as Account[];
+      const response = await api.get('/accounts');
+      return response.data.value as Account[];
     }
   });
 
