@@ -94,6 +94,9 @@ import TaxRates from './pages/TaxRates';
 import NewTaxRate from './pages/NewTaxRate';
 import EditTaxRate from './pages/EditTaxRate';
 import TaxSettings from './pages/TaxSettings';
+import Terms from './pages/Terms';
+import NewTerm from './pages/NewTerm';
+import EditTerm from './pages/EditTerm';
 import PlaidConnections from './pages/PlaidConnections';
 import UnifiedTransactions from './pages/UnifiedTransactions';
 import Expenses from './pages/Expenses';
@@ -276,6 +279,9 @@ function AppContent() {
             <Route path="tax-rates" element={<TaxRates />} />
             <Route path="tax-rates/new" element={<NewTaxRate />} />
             <Route path="tax-rates/:id/edit" element={<EditTaxRate />} />
+            <Route path="terms" element={<Terms />} />
+            <Route path="terms/new" element={<NewTerm />} />
+            <Route path="terms/:id/edit" element={<EditTerm />} />
             <Route path="tax-settings" element={<TaxSettings />} />
             <Route path="admin/enhancements" element={<AdminEnhancements />} />
             <Route path="settings" element={<CompanySettings />} />

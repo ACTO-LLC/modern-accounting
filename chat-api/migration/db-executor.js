@@ -453,6 +453,7 @@ export async function migrateInvoices(sourceInvoices, mcp, sourceSystem = 'QBO',
                 DueDate: mappedInvoice.DueDate || mappedInvoice.IssueDate,
                 TotalAmount: mappedInvoice.TotalAmount || 0,
                 Status: mappedInvoice.Status || 'Sent',
+                TermId: mappedInvoice.TermId || null,
                 SourceSystem: sourceSystem,
                 SourceId: sourceId
             };

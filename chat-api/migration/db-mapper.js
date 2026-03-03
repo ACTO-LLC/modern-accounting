@@ -22,6 +22,8 @@ export class MigrationMapper {
         this.entityLookupCache = new Map();
         // Already-migrated cache - key: "EntityType:SourceId", value: TargetId or false
         this.migratedCache = new Map();
+        // Term name → TermId cache
+        this.termCache = new Map();
     }
 
     /**
@@ -91,6 +93,7 @@ export class MigrationMapper {
                 { SourceField: 'DueDate', TargetField: 'DueDate', Transform: 'date', DefaultValue: null, IsRequired: false, SortOrder: 4 },
                 { SourceField: 'TotalAmt', TargetField: 'TotalAmount', Transform: 'float', DefaultValue: '0', IsRequired: false, SortOrder: 5 },
                 { SourceField: 'Balance', TargetField: 'Status', Transform: 'invoicestatus', DefaultValue: 'Sent', IsRequired: false, SortOrder: 6 },
+                { SourceField: 'SalesTermRef.name', TargetField: 'TermId', Transform: 'term', DefaultValue: null, IsRequired: false, SortOrder: 7 },
             ],
             'Bill': [
                 { SourceField: 'DocNumber', TargetField: 'BillNumber', Transform: 'string', DefaultValue: null, IsRequired: false, SortOrder: 1 },
@@ -297,6 +300,10 @@ export class MigrationMapper {
                 // Special logic for bill status
                 return this.calculateBillStatus(sourceObj);
 
+            case 'term':
+                // Look up or create a payment term by name
+                return await this.lookupOrCreateTerm(value, sourceObj);
+
             default:
                 return value;
         }
@@ -442,6 +449,90 @@ export class MigrationMapper {
         if (balance < total && balance > 0) return 'Partial';
 
         return 'Open';
+    }
+
+    /**
+     * Parse due days from a QBO term name
+     * e.g., "Net 30" → 30, "Due on Receipt" → 0, "Net 60" → 60
+     */
+    parseDueDays(termName) {
+        if (!termName) return 30;
+        const lower = termName.toLowerCase().trim();
+
+        if (lower.includes('receipt') || lower.includes('due on') || lower === 'cod') return 0;
+
+        // Extract number from patterns like "Net 30", "Net-30", "N30"
+        const match = lower.match(/(\d+)/);
+        if (match) return parseInt(match[1], 10);
+
+        return 30; // Default fallback
+    }
+
+    /**
+     * Look up or create a payment term by name
+     * Returns the TermId (GUID)
+     */
+    async lookupOrCreateTerm(termName, sourceObj = null) {
+        if (!termName) return null;
+
+        const normalizedName = termName.trim();
+        if (!normalizedName) return null;
+
+        // Check cache first
+        if (this.termCache.has(normalizedName)) {
+            return this.termCache.get(normalizedName);
+        }
+
+        // Look up by name in Terms table
+        try {
+            const escapedName = normalizedName.replace(/'/g, "''");
+            const result = await this.mcp.readRecords('terms', {
+                filter: `Name eq '${escapedName}'`,
+                select: 'Id',
+                first: 1
+            });
+
+            if (result.result?.value?.length > 0) {
+                const termId = result.result.value[0].Id;
+                this.termCache.set(normalizedName, termId);
+                return termId;
+            }
+        } catch (e) {
+            console.warn(`[Migration] Failed to look up term "${normalizedName}":`, e.message);
+        }
+
+        // Not found - create it
+        try {
+            const dueDays = this.parseDueDays(normalizedName);
+            const sourceId = sourceObj?.SalesTermRef?.value || null;
+
+            await this.mcp.createRecord('terms', {
+                Name: normalizedName,
+                DueDays: dueDays,
+                IsActive: true,
+                SourceSystem: this.sourceSystem,
+                SourceId: sourceId ? String(sourceId) : null,
+            });
+
+            // Read back the created term to get its Id
+            const escapedName = normalizedName.replace(/'/g, "''");
+            const readResult = await this.mcp.readRecords('terms', {
+                filter: `Name eq '${escapedName}'`,
+                select: 'Id',
+                first: 1
+            });
+
+            if (readResult.result?.value?.length > 0) {
+                const termId = readResult.result.value[0].Id;
+                this.termCache.set(normalizedName, termId);
+                console.log(`[Migration] Created term "${normalizedName}" (${dueDays} days) → ${termId}`);
+                return termId;
+            }
+        } catch (e) {
+            console.warn(`[Migration] Failed to create term "${normalizedName}":`, e.message);
+        }
+
+        return null;
     }
 
     /**
@@ -596,6 +687,7 @@ export class MigrationMapper {
         this.configCache = null;
         this.entityLookupCache.clear();
         this.migratedCache.clear();
+        this.termCache.clear();
     }
 
     /**

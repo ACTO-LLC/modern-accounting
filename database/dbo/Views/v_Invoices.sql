@@ -28,6 +28,9 @@ SELECT
     p.[Name] AS ProjectName,
     i.[ClassId],
     cl.[Name] AS ClassName,
+    i.[TermId],
+    t.[Name] AS TermName,
+    t.[DueDays] AS TermDueDays,
     i.[CreatedAt],
     i.[UpdatedAt]
 FROM
@@ -36,4 +39,5 @@ FROM
     LEFT JOIN [dbo].[TaxRates] tr ON i.[TaxRateId] = tr.[Id]
     LEFT JOIN [dbo].[Projects] p ON i.[ProjectId] = p.[Id]
     LEFT JOIN [dbo].[Classes] cl ON i.[ClassId] = cl.[Id]
+    LEFT JOIN [dbo].[Terms] t ON i.[TermId] = t.[Id]
 GO

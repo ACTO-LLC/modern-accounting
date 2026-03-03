@@ -20,9 +20,12 @@ CREATE TABLE [dbo].[Customers]
     [Status] NVARCHAR(20) NOT NULL DEFAULT ('Active') CHECK ([Status] IN ('Active', 'Inactive')),
     [SourceSystem] NVARCHAR(50) NULL,
     [SourceId] NVARCHAR(100) NULL,
+    [DefaultTermId] UNIQUEIDENTIFIER NULL,
     [ValidFrom] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     [ValidTo] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
-    PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo])
+    PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
+
+    CONSTRAINT [FK_Customers_Terms] FOREIGN KEY ([DefaultTermId]) REFERENCES [dbo].[Terms]([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[Customers_History]))
 GO
