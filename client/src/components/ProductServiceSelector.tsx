@@ -97,6 +97,7 @@ export default function ProductServiceSelector({
       <Autocomplete
         options={productsServices ?? []}
         getOptionLabel={(option: ProductService) => option.Name}
+        getOptionKey={(option: ProductService) => option.Id}
         value={selectedProductService}
         onChange={(_event, newValue: ProductService | null) => {
           onChange(newValue?.Id ?? '', newValue ?? undefined);

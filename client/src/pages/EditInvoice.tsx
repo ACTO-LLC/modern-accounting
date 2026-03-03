@@ -93,6 +93,7 @@ export default function EditInvoice() {
       const { Lines, ...invoiceData } = data;
       await api.patch(`/invoices_write/Id/${id}`, {
         ...invoiceData,
+        TaxRateId: invoiceData.TaxRateId || null,
         ProjectId: invoiceData.ProjectId || null,
         ClassId: invoiceData.ClassId || null,
         TermId: invoiceData.TermId || null,

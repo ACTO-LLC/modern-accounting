@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GridColDef } from '@mui/x-data-grid';
+import Button from '@mui/material/Button';
+import { FileText } from 'lucide-react';
 import api from '../lib/api';
+import { formatGuidForOData } from '../lib/validation';
 import CustomerForm, { CustomerFormData } from '../components/CustomerForm';
 import RestDataGrid from '../components/RestDataGrid';
 import { formatDate } from '../lib/dateUtils';
@@ -44,11 +48,12 @@ export default function EditCustomer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showInvoices, setShowInvoices] = useState(false);
 
   const { data: customer, isLoading, error } = useQuery({
     queryKey: ['customer', id],
     queryFn: async () => {
-      const response = await api.get<{ value: any[] }>(`/customers?$filter=Id eq ${id}`);
+      const response = await api.get<{ value: any[] }>(`/customers?$filter=Id eq ${formatGuidForOData(id, 'Customer Id')}`);
       return response.data.value[0];
     },
     enabled: !!id
@@ -87,14 +92,24 @@ export default function EditCustomer() {
 
       <div className="max-w-2xl mx-auto mt-8">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Invoices</h2>
-        <RestDataGrid
-          endpoint="/invoices"
-          columns={invoiceColumns}
-          editPath="/invoices/{id}/edit"
-          baseFilter={`CustomerId eq ${id}`}
-          initialPageSize={10}
-          emptyMessage="No invoices for this customer."
-        />
+        {showInvoices ? (
+          <RestDataGrid
+            endpoint="/invoices"
+            columns={invoiceColumns}
+            editPath="/invoices/{id}/edit"
+            baseFilter={`CustomerId eq ${formatGuidForOData(id, 'Customer Id')}`}
+            initialPageSize={10}
+            emptyMessage="No invoices for this customer."
+          />
+        ) : (
+          <Button
+            variant="outlined"
+            startIcon={<FileText className="w-4 h-4" />}
+            onClick={() => setShowInvoices(true)}
+          >
+            View Invoices
+          </Button>
+        )}
       </div>
     </div>
   );
