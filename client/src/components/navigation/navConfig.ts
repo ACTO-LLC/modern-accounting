@@ -162,6 +162,7 @@ export const navigationConfig: NavEntry[] = [
     href: '/reports',
     icon: BarChart3,
     featureKey: 'reports',
+    alwaysVisible: true,
   },
 
   // Feedback - standalone (always visible)
