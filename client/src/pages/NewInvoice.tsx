@@ -65,6 +65,7 @@ export default function NewInvoice() {
               Description: line.Description,
               Quantity: line.Quantity,
               UnitPrice: line.UnitPrice,
+              IsTaxable: line.IsTaxable ?? true,
               ProductServiceId: line.ProductServiceId || null,
               ProjectId: line.ProjectId || null,
               ClassId: line.ClassId || null,

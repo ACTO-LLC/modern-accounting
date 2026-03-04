@@ -634,7 +634,8 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "ProjectId": "ProjectId",
-                "ClassId": "ClassId"
+                "ClassId": "ClassId",
+                "IsTaxable": "IsTaxable"
             },
             "key-fields": [
                 "Id"

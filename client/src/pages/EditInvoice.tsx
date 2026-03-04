@@ -23,6 +23,7 @@ interface InvoiceLine {
   Description: string;
   Quantity: number;
   UnitPrice: number;
+  IsTaxable?: boolean;
 }
 
 interface InvoiceWithLines {
@@ -120,6 +121,7 @@ export default function EditInvoice() {
           Description: l.Description,
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
+          IsTaxable: l.IsTaxable ?? true,
           ProjectId: l.ProjectId || null,
           ClassId: l.ClassId || null,
         })),
@@ -128,6 +130,7 @@ export default function EditInvoice() {
           Description: l.Description,
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
+          IsTaxable: l.IsTaxable ?? true,
           ProjectId: l.ProjectId || null,
           ClassId: l.ClassId || null,
         }))
@@ -223,7 +226,8 @@ export default function EditInvoice() {
             InvoiceId: createdInvoice.Id,
             Description: line.Description,
             Quantity: line.Quantity,
-            UnitPrice: line.UnitPrice
+            UnitPrice: line.UnitPrice,
+            IsTaxable: line.IsTaxable ?? true,
           })
         )
       );

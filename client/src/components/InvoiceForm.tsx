@@ -96,34 +96,6 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
 
-  // Track taxable status for each line item (keyed by line index)
-  const [lineTaxableStatus, setLineTaxableStatus] = useState<Record<number, boolean>>({});
-  const [taxableInitialized, setTaxableInitialized] = useState(false);
-
-  // Fetch products to initialize taxable status for existing lines
-  const { data: productsServices } = useQuery({
-    queryKey: ['productsservices-active'],
-    queryFn: async (): Promise<ProductService[]> => {
-      const response = await api.get('/productsservices?$filter=Status eq \'Active\'&$orderby=Name');
-      return response.data.value;
-    },
-  });
-
-  // Initialize taxable status from product data when editing existing invoices
-  useEffect(() => {
-    if (taxableInitialized || !productsServices || !initialValues?.Lines?.length) return;
-    const status: Record<number, boolean> = {};
-    for (let i = 0; i < initialValues.Lines.length; i++) {
-      const line = initialValues.Lines[i];
-      const product = line.ProductServiceId
-        ? productsServices.find(ps => ps.Id === line.ProductServiceId)
-        : null;
-      status[i] = product ? product.Taxable : false;
-    }
-    setLineTaxableStatus(status);
-    setTaxableInitialized(true);
-  }, [productsServices, initialValues?.Lines, taxableInitialized]);
-
   // Track auto-calculated tax rate
   const [autoTaxRate, setAutoTaxRate] = useState<AutoTaxRate | null>(null);
   const [isLoadingAutoTax, setIsLoadingAutoTax] = useState(false);
@@ -304,13 +276,12 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
     let subtotal = 0;
     let taxableAmount = 0;
 
-    (lines || []).forEach((line, index) => {
+    (lines || []).forEach((line) => {
       const lineAmount = (line.Quantity || 0) * (line.UnitPrice || 0);
       subtotal += lineAmount;
 
-      // Check if this line is taxable
-      const isTaxable = lineTaxableStatus[index] ?? false; // Default to taxable
-      if (isTaxable) {
+      // Check if this line is taxable (from form field)
+      if (line.IsTaxable) {
         taxableAmount += lineAmount;
       }
     });
@@ -328,7 +299,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       taxRate: taxRate,
       isAutoTax: !!autoTaxRate
     };
-  }, [lines, lineTaxableStatus, selectedTaxRate, autoTaxRate]);
+  }, [lines, selectedTaxRate, autoTaxRate]);
 
   // Update form values when calculations change
   useEffect(() => {
@@ -550,8 +521,6 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
               startIcon={<Plus className="w-4 h-4" />}
               onClick={() => {
                 append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true, ProjectId: null, ClassId: null });
-                // Set new line as taxable by default
-                setLineTaxableStatus(prev => ({ ...prev, [fields.length]: true }));
               }}
             >
               Add Item
@@ -569,15 +538,15 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                     setValue(`Lines.${index}.UnitPrice`, productService.SalesPrice);
                   }
                   // Set taxable status from product/service
-                  setLineTaxableStatus(prev => ({ ...prev, [index]: productService.Taxable }));
+                  setValue(`Lines.${index}.IsTaxable`, productService.Taxable);
                 } else {
                   // If cleared, default to taxable
-                  setLineTaxableStatus(prev => ({ ...prev, [index]: true }));
+                  setValue(`Lines.${index}.IsTaxable`, true);
                 }
               };
 
               const lineAmount = (lines[index]?.Quantity || 0) * (lines[index]?.UnitPrice || 0);
-              const isTaxable = lineTaxableStatus[index] ?? false;
+              const isTaxable = lines[index]?.IsTaxable ?? true;
 
               const { ref: descRef, ...descRest } = register(`Lines.${index}.Description`);
               const { ref: qtyRef, ...qtyRest } = register(`Lines.${index}.Quantity`, { valueAsNumber: true });
@@ -606,7 +575,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                           <Checkbox
                             checked={isTaxable}
                             onChange={(e) => {
-                              setLineTaxableStatus(prev => ({ ...prev, [index]: e.target.checked }));
+                              setValue(`Lines.${index}.IsTaxable`, e.target.checked);
                             }}
                             size="small"
                           />
@@ -660,22 +629,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
                       </div>
                     </div>
                     <IconButton
-                      onClick={() => {
-                        remove(index);
-                        // Update taxable status indices
-                        setLineTaxableStatus(prev => {
-                          const newStatus: Record<number, boolean> = {};
-                          Object.keys(prev).forEach(key => {
-                            const keyNum = parseInt(key);
-                            if (keyNum < index) {
-                              newStatus[keyNum] = prev[keyNum];
-                            } else if (keyNum > index) {
-                              newStatus[keyNum - 1] = prev[keyNum];
-                            }
-                          });
-                          return newStatus;
-                        });
-                      }}
+                      onClick={() => remove(index)}
                       color="error"
                       size="small"
                       sx={{ mt: 1 }}

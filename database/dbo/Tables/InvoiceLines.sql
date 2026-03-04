@@ -9,6 +9,7 @@ CREATE TABLE [dbo].[InvoiceLines] (
     [RevenueAccountId] UNIQUEIDENTIFIER NULL, -- FK to Accounts for revenue override
     [ProjectId] UNIQUEIDENTIFIER NULL,
     [ClassId] UNIQUEIDENTIFIER NULL,
+    [IsTaxable] BIT NOT NULL DEFAULT 1,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
