@@ -249,15 +249,22 @@ function startNativeQboMcp(envVars) {
 
     const logStream = fs.openSync(QBO_MCP_LOG, 'a');
 
-    const child = spawn('node', [QBO_MCP_ENTRY], {
+    const child = spawn(process.execPath, [QBO_MCP_ENTRY], {
         cwd: QBO_MCP_DIR,
         env: { ...process.env, ...envVars },
         detached: true,
         stdio: ['ignore', logStream, logStream]
     });
 
+    child.on('error', (err) => {
+        console.error(`  Failed to start QBO MCP: ${err.message}`);
+    });
+
     child.unref();
     const pid = child.pid;
+    if (!pid) {
+        throw new Error('Failed to start QBO MCP process (no PID returned)');
+    }
     writePidFile(pid);
     console.log(`  Started native QBO MCP (PID ${pid})`);
     console.log(`  Log: ${QBO_MCP_LOG}`);
@@ -503,10 +510,13 @@ async function switchToProd() {
     writeMcpJson(mcpConfig);
     console.log('  .mcp.json updated.\n');
 
-    // 4. Check current QBO MCP state
+    // 4. Check current QBO MCP state — only skip lifecycle if we're confident
+    //    it's our native process (PID file exists, Docker stopped, health=production)
     const health = await checkQboHealth();
-    if (health.running && health.environment === 'production') {
-        console.log('  QBO MCP is already running in production mode. Skipping lifecycle changes.\n');
+    const hasPidFile = readPidFile() !== null;
+    const dockerRunning = isDockerContainerRunning(QBO_DOCKER_CONTAINER);
+    if (health.running && health.environment === 'production' && hasPidFile && !dockerRunning) {
+        console.log('  QBO MCP is already running in production mode (native). Skipping lifecycle changes.\n');
     } else {
         // 5. Stop Docker container if running
         stopDockerContainer(QBO_DOCKER_CONTAINER);
@@ -579,16 +589,15 @@ async function showStatus() {
     if (health.running) {
         console.log(`  QBO MCP: RUNNING`);
         console.log(`    Environment: ${health.environment}`);
-        console.log(`    Mode: ${health.environment === 'production' ? 'Native process' : 'Docker container'}`);
 
-        // PID file info
+        // Determine mode from actual process state, not just environment
         const pid = readPidFile();
+        const dockerRunning = isDockerContainerRunning(QBO_DOCKER_CONTAINER);
+        const mode = pid ? 'Native process' : dockerRunning ? 'Docker container' : 'Unknown';
+        console.log(`    Mode: ${mode}`);
         if (pid) {
             console.log(`    PID: ${pid} (from .qbo-mcp.pid)`);
         }
-
-        // Docker container status
-        const dockerRunning = isDockerContainerRunning(QBO_DOCKER_CONTAINER);
         console.log(`    Docker (${QBO_DOCKER_CONTAINER}): ${dockerRunning ? 'running' : 'stopped'}`);
 
         // OAuth status
