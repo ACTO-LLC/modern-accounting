@@ -25,10 +25,23 @@
  */
 function normalizeDateString(date: string): string {
   let normalized = date.replace(/(\.\d{3})\d+/, '$1');
-  if (/T\d{2}:\d{2}:\d{2}/.test(normalized) && !/Z$|[+-]\d{2}:\d{2}$/.test(normalized)) {
+  // Date-only strings (YYYY-MM-DD) — explicitly mark as UTC midnight
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    normalized += 'T00:00:00Z';
+  }
+  // Datetime strings without timezone — append Z
+  else if (/T\d{2}:\d{2}:\d{2}/.test(normalized) && !/Z$|[+-]\d{2}:\d{2}$/.test(normalized)) {
     normalized += 'Z';
   }
   return normalized;
+}
+
+/**
+ * Returns true if the original date string was date-only (no time component).
+ * Used by display formatters to decide whether to render in UTC (date-only) or local time (datetime).
+ */
+function isDateOnly(date: string | Date | null | undefined): boolean {
+  return typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim());
 }
 
 /**
@@ -61,11 +74,13 @@ function parseDate(date: string | Date | null | undefined): Date | null {
 export function formatDate(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleDateString(getLocale(), {
+  const opts: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  });
+  };
+  if (isDateOnly(date)) opts.timeZone = 'UTC';
+  return d.toLocaleDateString(getLocale(), opts);
 }
 
 /**
@@ -93,7 +108,7 @@ export function formatDateTime(date: string | Date | null | undefined): string {
 export function formatDateShort(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleDateString(getLocale());
+  return d.toLocaleDateString(getLocale(), isDateOnly(date) ? { timeZone: 'UTC' } : undefined);
 }
 
 /**
@@ -104,11 +119,13 @@ export function formatDateShort(date: string | Date | null | undefined): string 
 export function formatDateLong(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleDateString(getLocale(), {
+  const opts: Intl.DateTimeFormatOptions = {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-  });
+  };
+  if (isDateOnly(date)) opts.timeZone = 'UTC';
+  return d.toLocaleDateString(getLocale(), opts);
 }
 
 /**
@@ -119,6 +136,7 @@ export function formatDateLong(date: string | Date | null | undefined): string {
 export function formatDateForInput(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
+  // toISOString() is always UTC, which is correct since we parse date-only as UTC
   return d.toISOString().split('T')[0];
 }
 
@@ -158,7 +176,9 @@ export function formatTimeCompact(date: string | Date | null | undefined): strin
 export function formatWeekday(date: string | Date | null | undefined, style: 'short' | 'long' = 'short'): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleDateString(getLocale(), { weekday: style });
+  const opts: Intl.DateTimeFormatOptions = { weekday: style };
+  if (isDateOnly(date)) opts.timeZone = 'UTC';
+  return d.toLocaleDateString(getLocale(), opts);
 }
 
 /**
@@ -169,11 +189,13 @@ export function formatWeekday(date: string | Date | null | undefined, style: 'sh
 export function formatDateWithWeekday(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleDateString(getLocale(), {
+  const opts: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  });
+  };
+  if (isDateOnly(date)) opts.timeZone = 'UTC';
+  return d.toLocaleDateString(getLocale(), opts);
 }
 
 /**
@@ -184,7 +206,9 @@ export function formatDateWithWeekday(date: string | Date | null | undefined): s
 export function formatMonthShort(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleString(getLocale(), { month: 'short' });
+  const opts: Intl.DateTimeFormatOptions = { month: 'short' };
+  if (isDateOnly(date)) opts.timeZone = 'UTC';
+  return d.toLocaleString(getLocale(), opts);
 }
 
 /**
@@ -195,7 +219,9 @@ export function formatMonthShort(date: string | Date | null | undefined): string
 export function formatDateMonthDay(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleDateString(getLocale(), { month: 'short', day: 'numeric' });
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  if (isDateOnly(date)) opts.timeZone = 'UTC';
+  return d.toLocaleDateString(getLocale(), opts);
 }
 
 /**
@@ -206,7 +232,9 @@ export function formatDateMonthDay(date: string | Date | null | undefined): stri
 export function formatDateMonthDayYear(date: string | Date | null | undefined): string {
   const d = parseDate(date);
   if (!d) return '';
-  return d.toLocaleDateString(getLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+  if (isDateOnly(date)) opts.timeZone = 'UTC';
+  return d.toLocaleDateString(getLocale(), opts);
 }
 
 /**
