@@ -74,5 +74,8 @@ infra/azure/*.json
 # Local logs
 logs/
 
+# QBO MCP native process PID file
+.qbo-mcp.pid
+
 # Migration output (contains production data)
 scripts/output/
