@@ -7,7 +7,7 @@ Claude Code uses two MCP servers for data access:
 | MCP Server | Type | Default (Local) | Production |
 |------------|------|-----------------|------------|
 | **MSSQL** | stdio | Docker SQL `localhost,14330` | Azure SQL `sql-modern-accounting-prod.database.windows.net` |
-| **QBO** | HTTP | `http://localhost:8001/mcp` | Same server, different OAuth tokens + `QBO_ENVIRONMENT=production` |
+| **QBO** | HTTP | `http://localhost:8001/mcp` (Docker container, sandbox) | Same URL, native process with prod OAuth creds |
 
 Configuration lives in `.mcp.json` (gitignored — safe to contain credentials).
 
@@ -16,10 +16,10 @@ Configuration lives in `.mcp.json` (gitignored — safe to contain credentials).
 ## Quick Start: Switching Environments
 
 ```bash
-# Switch to production
+# Switch to production (fully automated)
 node scripts/switch-mcp.js prod
 
-# Switch back to local
+# Switch back to local (fully automated)
 node scripts/switch-mcp.js local
 
 # Check current config
@@ -35,15 +35,30 @@ node scripts/switch-mcp.js status
 ### `switch-mcp.js prod`
 
 1. Fetches SQL connection string from Key Vault (`kv2suhqabgprod` / `SqlConnectionString`)
-2. Rewrites `.mcp.json` MSSQL section with Azure SQL credentials
-3. Connects to prod SQL, reads QBO OAuth tokens from `QBOConnections` table
-4. POSTs tokens to `http://localhost:8001/auth/inject-tokens` (QBO MCP)
-5. QBO MCP auto-refreshes expired access tokens on first query
+2. Fetches QBO OAuth credentials (`qbo-client-id`, `qbo-client-secret`) from Key Vault
+3. Rewrites `.mcp.json` MSSQL section with Azure SQL credentials
+4. Checks QBO MCP `/health` — if already `"production"`, skips to step 8
+5. Stops Docker container (`accounting-qbo-mcp`) if running
+6. Kills any existing native QBO MCP process (via PID file or port scan)
+7. Starts `node qbo-mcp-http-server/dist/index.js` as a detached background process with prod env vars, saves PID to `.qbo-mcp.pid`
+8. Polls `/health` until `environment: "production"`
+9. Connects to prod SQL, reads QBO OAuth tokens from `QBOConnections` table
+10. POSTs tokens to `/auth/inject-tokens` — QBO MCP auto-refreshes expired access tokens on first query
 
 ### `switch-mcp.js local`
 
 1. Rewrites `.mcp.json` MSSQL section with Docker SQL defaults (`sa` / `StrongPassword123`)
-2. Attempts to read QBO tokens from local SQL (skips if unavailable)
+2. Checks QBO MCP `/health` — if already `"sandbox"`, skips to step 5
+3. Kills native QBO MCP process (from PID file)
+4. Starts Docker container (`accounting-qbo-mcp`) back up, polls `/health`
+5. Attempts to read QBO tokens from local SQL and inject (skips if unavailable)
+
+### `switch-mcp.js status`
+
+Shows current state of both MSSQL and QBO MCP:
+- MSSQL target (local vs prod), host, database, user
+- QBO MCP running state, environment (sandbox/production), mode (Docker/native)
+- Docker container status, PID file info, OAuth connection status
 
 ---
 
@@ -82,24 +97,6 @@ az sql server firewall-rule create \
   --start-ip-address $MY_IP --end-ip-address $MY_IP
 ```
 
-### QBO MCP Server (Production Mode)
-
-The QBO MCP must be started with **production** OAuth credentials for token refresh to work. The sandbox client ID/secret cannot refresh production tokens.
-
-```bash
-# Fetch prod credentials and start QBO MCP in production mode
-PROD_CLIENT_ID=$(az keyvault secret show --vault-name kv2suhqabgprod --name qbo-client-id --query value -o tsv)
-PROD_CLIENT_SECRET=$(az keyvault secret show --vault-name kv2suhqabgprod --name qbo-client-secret --query value -o tsv)
-
-cd qbo-mcp-http-server
-QBO_CLIENT_ID="$PROD_CLIENT_ID" \
-QBO_CLIENT_SECRET="$PROD_CLIENT_SECRET" \
-QBO_ENVIRONMENT=production \
-node dist/index.js
-```
-
-Verify with `curl http://localhost:8001/health` — `environment` should say `"production"`.
-
 ---
 
 ## How It Works Under the Hood
@@ -116,6 +113,9 @@ Verify with `curl http://localhost:8001/health` — `environment` should say `"p
 - Node.js Express server at `http://localhost:8001/mcp`
 - Source: `qbo-mcp-http-server/`
 - Uses in-memory session store for OAuth tokens
+- **Two modes of operation:**
+  - **Sandbox (local):** Runs as Docker container `accounting-qbo-mcp` with sandbox OAuth creds from `.env`
+  - **Production:** Runs as native Node.js process with Key Vault OAuth creds passed as env vars. PID tracked in `.qbo-mcp.pid`, logs written to `logs/qbo-mcp-prod.log`
 - **Token injection endpoint:** `POST /auth/inject-tokens`
   - Accepts: `{ refreshToken, realmId, companyName }`
   - Sets `expiresIn: 0` to force token refresh on first query
@@ -129,6 +129,10 @@ Verify with `curl http://localhost:8001/health` — `environment` should say `"p
 4. Fresh access token is stored in memory, valid for ~1 hour
 5. Subsequent queries use the fresh token; auto-refresh repeats as needed
 
+### Why Native Process for Production?
+
+The Docker container has sandbox OAuth credentials baked into its image. Production tokens require production `QBO_CLIENT_ID` and `QBO_CLIENT_SECRET` for refresh to work. Running natively with env var overrides is faster than rebuilding the Docker image and avoids modifying the `.env` file (which is checked into git for local dev).
+
 ---
 
 ## Troubleshooting
@@ -137,7 +141,7 @@ Verify with `curl http://localhost:8001/health` — `environment` should say `"p
 
 The QBO API returned an error that node-quickbooks didn't surface properly. Since Mar 2026, the error handler extracts the Intuit `Fault` object. Common causes:
 
-- **AuthenticationFailed (3200):** Access token expired and refresh failed. Check that QBO MCP is running with **production** `QBO_CLIENT_ID`/`QBO_CLIENT_SECRET` (not sandbox).
+- **AuthenticationFailed (3200):** Access token expired and refresh failed. Run `node scripts/switch-mcp.js prod` to re-inject tokens and ensure QBO MCP is in production mode.
 - **Token not injected:** Run `node scripts/switch-mcp.js prod` to inject tokens.
 
 ### MSSQL MCP can't connect to Azure SQL
@@ -162,9 +166,18 @@ Claude Code inherits the Azure CLI session from the shell it was launched in. Fi
 az account set --subscription "a6f5a418-461f-42c0-a07a-90142521e5fb"
 ```
 
-### QBO MCP shows "sandbox" in health check
+### QBO MCP not starting in production mode
 
-The `.env` file in `qbo-mcp-http-server/` defaults to sandbox. For production, override with env vars at startup (see "QBO MCP Server (Production Mode)" above). Do not change `.env` — it's checked into git for local dev.
+Check the log file at `logs/qbo-mcp-prod.log`. Common issues:
+- Port 8001 still in use — the script should handle this, but if not, run `node scripts/switch-mcp.js prod` again (it kills orphaned processes)
+- Missing `dist/index.js` — rebuild: `cd qbo-mcp-http-server && npm run build`
+
+### Orphaned native process
+
+If you killed Claude Code without switching back to local, a native QBO MCP process may be orphaned. The switch script handles this:
+- First checks `.qbo-mcp.pid` file
+- Falls back to scanning port 8001 with `netstat`
+- Both `local` and `prod` commands clean up before starting
 
 ---
 
