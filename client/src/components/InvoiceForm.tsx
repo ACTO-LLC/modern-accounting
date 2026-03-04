@@ -280,8 +280,8 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
       const lineAmount = (line.Quantity || 0) * (line.UnitPrice || 0);
       subtotal += lineAmount;
 
-      // Check if this line is taxable (from form field)
-      if (line.IsTaxable) {
+      // Check if this line is taxable (from form field), defaulting undefined/null to true
+      if (line.IsTaxable ?? true) {
         taxableAmount += lineAmount;
       }
     });
