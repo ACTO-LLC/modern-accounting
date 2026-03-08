@@ -7,7 +7,7 @@ This guide covers deploying Modern Accounting to Azure for A CTO, LLC.
 | Setting | Value |
 |---------|-------|
 | Tenant | A CTO, LLC (`f8ac75ce-d250-407e-b8cb-e05f5b4cd913`) |
-| Subscription | MCPP Subscription (`a6f5a418-461f-42c0-a07a-90142521e5fb`) |
+| Subscription | Microsoft Partner Network (`243bc2e6-77b9-4b5c-9bd4-c8afddea58e0`) |
 | Environment | prod |
 | Region | East US |
 | Timezone | Pacific Time (America/Los_Angeles) |
@@ -40,7 +40,7 @@ This guide covers deploying Modern Accounting to Azure for A CTO, LLC.
 
 ```powershell
 az login --tenant f8ac75ce-d250-407e-b8cb-e05f5b4cd913
-az account set --subscription a6f5a418-461f-42c0-a07a-90142521e5fb
+az account set --subscription 243bc2e6-77b9-4b5c-9bd4-c8afddea58e0
 ```
 
 ### Step 2: Generate SQL Password

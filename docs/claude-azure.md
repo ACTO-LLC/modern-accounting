@@ -177,7 +177,7 @@ To add a new subdomain (e.g., `newservice.a-cto.com`):
 
 3. **Deploy hostname binding + managed cert** (switch back to app subscription):
    ```bash
-   az account set --subscription a6f5a418-461f-42c0-a07a-90142521e5fb
+   az account set --subscription 243bc2e6-77b9-4b5c-9bd4-c8afddea58e0
 
    az deployment group create \
      --resource-group rg-modern-accounting-prod \

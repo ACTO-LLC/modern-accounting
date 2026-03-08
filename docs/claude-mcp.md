@@ -163,7 +163,7 @@ The Python `mssql_mcp_server` uses the `SQL Server` ODBC driver by default, whic
 Claude Code inherits the Azure CLI session from the shell it was launched in. Fix without restarting:
 
 ```bash
-az account set --subscription "a6f5a418-461f-42c0-a07a-90142521e5fb"
+az account set --subscription "243bc2e6-77b9-4b5c-9bd4-c8afddea58e0"
 ```
 
 ### QBO MCP not starting in production mode
