@@ -22,7 +22,7 @@ export default function EmailHistory({ invoiceId, refreshTrigger }: EmailHistory
       setIsLoading(true);
       setError(null);
       const response = await emailSendApi.getLogs(invoiceId);
-      setLogs(response.logs);
+      setLogs(response.logs || []);
     } catch (err) {
       console.error('Failed to load email logs:', err);
       setError('Failed to load email history');
