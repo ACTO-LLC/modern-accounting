@@ -8398,6 +8398,51 @@ async function startServer() {
     }
 
     // ========================================================================
+    // Email API — start as child process and proxy /email-api/* to it
+    // ========================================================================
+    const emailApiDir = path.join(__dirname, 'email-api');
+    const EMAIL_API_PORT = 7073;
+    try {
+        const { existsSync } = await import('fs');
+        if (existsSync(path.join(emailApiDir, 'server.js'))) {
+            const { fork } = await import('child_process');
+            const emailProcess = fork(path.join(emailApiDir, 'server.js'), [], {
+                cwd: emailApiDir,
+                env: {
+                    ...process.env,
+                    EMAIL_API_PORT: String(EMAIL_API_PORT),
+                    PORT: String(EMAIL_API_PORT),
+                    DATABASE_URL: process.env.SQL_CONNECTION_STRING || process.env.DATABASE_URL,
+                    DB_CONNECTION_STRING: process.env.SQL_CONNECTION_STRING || process.env.DB_CONNECTION_STRING,
+                    DAB_API_URL: process.env.DAB_API_URL || process.env.DAB_REST_URL || `${DAB_PROXY_URL}/api`,
+                    APP_BASE_URL: 'https://accounting.a-cto.com',
+                },
+                stdio: 'pipe',
+            });
+            emailProcess.stdout?.on('data', (d) => console.log(`[email-api] ${d.toString().trim()}`));
+            emailProcess.stderr?.on('data', (d) => console.error(`[email-api] ${d.toString().trim()}`));
+            emailProcess.on('exit', (code) => console.warn(`[email-api] Process exited with code ${code}`));
+
+            // Proxy /email-api/* to the email-api child process
+            app.use('/email-api', createProxyMiddleware({
+                target: `http://localhost:${EMAIL_API_PORT}`,
+                changeOrigin: true,
+                onError: (err, req, res) => {
+                    console.error('[email-api proxy] Error:', err.message);
+                    if (!res.headersSent) {
+                        res.status(502).json({ error: 'Email service unavailable' });
+                    }
+                },
+            }));
+            console.log(`Email API started on port ${EMAIL_API_PORT} with proxy at /email-api`);
+        } else {
+            console.log('Email API not found in deploy package, skipping');
+        }
+    } catch (error) {
+        console.warn('Could not start email API:', error.message);
+    }
+
+    // ========================================================================
     // Static File Serving (Production)
     // ========================================================================
     // Serve client build from /public folder in production

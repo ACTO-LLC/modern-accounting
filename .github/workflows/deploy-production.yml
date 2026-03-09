@@ -127,6 +127,11 @@ jobs:
         run: npm ci --omit=dev
         working-directory: chat-api
 
+      # Build email-api with production dependencies
+      - name: Install email-api dependencies
+        run: npm ci --omit=dev
+        working-directory: email-api
+
       # Package everything together for Azure App Service
       - name: Package application
         run: |
@@ -148,6 +153,13 @@ jobs:
           cp -r chat-api/journal-entry-service.js deploy/ 2>/dev/null || true
           cp -r chat-api/mcp-client.js deploy/ 2>/dev/null || true
           cp -r chat-api/tools deploy/ 2>/dev/null || true
+
+          # Copy email-api as a subdirectory (started as child process by chat-api)
+          mkdir -p deploy/email-api
+          cp -r email-api/server.js deploy/email-api/
+          cp -r email-api/package.json deploy/email-api/
+          cp -r email-api/services deploy/email-api/
+          cp -r email-api/node_modules deploy/email-api/
 
           # Copy client build to public folder (for static serving)
           mkdir -p deploy/public
@@ -283,6 +295,10 @@ jobs:
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
             --settings 'PLAID_SECRET=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/plaid-secret)'
+          az webapp config appsettings set \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings 'EMAIL_ENCRYPTION_KEY=@Microsoft.KeyVault(SecretUri=${{ vars.KEY_VAULT_URI }}/secrets/email-encryption-key)'
 
           # CRITICAL: Set custom startup command to bypass Oryx's npm install
           # Without this, Oryx runs "npm install && npm start" at container runtime
