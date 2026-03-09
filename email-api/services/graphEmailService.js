@@ -67,7 +67,8 @@ export async function sendGraphEmail(options) {
 }
 
 /**
- * Test Microsoft Graph API connection by attempting to get the mailbox user profile.
+ * Test Microsoft Graph API connection by sending a test email from the shared mailbox.
+ * Uses the Mail.Send permission (no User.Read.All needed).
  */
 export async function testGraphConnection(config) {
     try {
@@ -83,15 +84,25 @@ export async function testGraphConnection(config) {
 
         const graphClient = Client.initWithMiddleware({ authProvider });
 
-        // Verify we can access the shared mailbox
-        const user = await graphClient
-            .api(`/users/${config.fromEmail}`)
-            .select('displayName,mail,userPrincipalName')
-            .get();
+        // Send a test email from the shared mailbox to itself
+        const message = {
+            subject: 'Modern Accounting - Email Configuration Test',
+            body: {
+                contentType: 'Text',
+                content: 'This is a test email to verify your email settings are configured correctly. You can safely delete this message.',
+            },
+            toRecipients: [
+                { emailAddress: { address: config.fromEmail } },
+            ],
+        };
+
+        await graphClient
+            .api(`/users/${config.fromEmail}/sendMail`)
+            .post({ message, saveToSentItems: false });
 
         return {
             success: true,
-            message: `Connected to mailbox: ${user.displayName} (${user.mail || user.userPrincipalName})`,
+            message: `Test email sent successfully from ${config.fromEmail}`,
         };
     } catch (error) {
         console.error('Graph connection test failed:', error);
