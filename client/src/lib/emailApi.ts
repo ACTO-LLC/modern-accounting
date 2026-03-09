@@ -7,12 +7,17 @@ const emailApi = axios.create({
   },
 });
 
+export type TransportType = 'smtp' | 'graph';
+
 export interface EmailSettings {
   Id?: string;
-  SmtpHost: string;
-  SmtpPort: number;
-  SmtpSecure: boolean;
-  SmtpUsername: string;
+  TransportType?: TransportType;
+  SmtpHost?: string;
+  SmtpPort?: number;
+  SmtpSecure?: boolean;
+  SmtpUsername?: string;
+  GraphTenantId?: string;
+  GraphClientId?: string;
   FromEmail: string;
   FromName: string;
   ReplyToEmail?: string;
@@ -112,7 +117,7 @@ export const emailSettingsApi = {
     return response.data;
   },
 
-  save: async (settings: EmailSettings & { SmtpPassword?: string }): Promise<{ success: boolean; message: string }> => {
+  save: async (settings: EmailSettings & { SmtpPassword?: string; GraphClientSecret?: string }): Promise<{ success: boolean; message: string }> => {
     const response = await emailApi.post('/settings', settings);
     return response.data;
   },

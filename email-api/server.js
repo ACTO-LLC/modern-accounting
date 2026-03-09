@@ -28,6 +28,7 @@ import {
 } from './services/dbService.js';
 import { encrypt, decrypt } from './services/encryptionService.js';
 import { sendEmail, testConnection } from './services/emailService.js';
+import { sendGraphEmail, testGraphConnection } from './services/graphEmailService.js';
 import { generateInvoicePdf } from './services/pdfService.js';
 
 dotenv.config();
@@ -38,6 +39,33 @@ app.use(express.json());
 
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
 const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:5173';
+
+// Helper: send email using the configured transport (Graph or SMTP)
+async function sendViaTransport(emailSettings, emailOptions) {
+    const transportType = emailSettings.TransportType || 'smtp';
+
+    if (transportType === 'graph') {
+        const decryptedSecret = safeDecrypt(emailSettings.GraphClientSecretEncrypted, 'Graph client secret');
+        return await sendGraphEmail({
+            ...emailOptions,
+            tenantId: emailSettings.GraphTenantId,
+            clientId: emailSettings.GraphClientId,
+            clientSecret: decryptedSecret,
+        });
+    } else {
+        const decryptedPassword = safeDecrypt(emailSettings.SmtpPasswordEncrypted, 'SMTP password');
+        return await sendEmail({
+            ...emailOptions,
+            host: emailSettings.SmtpHost,
+            port: emailSettings.SmtpPort,
+            secure: emailSettings.SmtpSecure,
+            auth: {
+                user: emailSettings.SmtpUsername,
+                pass: decryptedPassword,
+            },
+        });
+    }
+}
 
 // Helper to validate UUID before using in OData queries (prevents SQL injection)
 function validateUuid(id, paramName = 'id') {
@@ -74,8 +102,8 @@ app.get('/email-api/settings', async (req, res) => {
         if (!settings) {
             return res.json({ configured: false });
         }
-        // Don't return the encrypted password
-        const { SmtpPasswordEncrypted, ...safeSettings } = settings;
+        // Don't return encrypted secrets
+        const { SmtpPasswordEncrypted, GraphClientSecretEncrypted, ...safeSettings } = settings;
         res.json({ configured: true, settings: safeSettings });
     } catch (error) {
         console.error('Error getting settings:', error);
@@ -86,17 +114,24 @@ app.get('/email-api/settings', async (req, res) => {
 // Save email settings
 app.post('/email-api/settings', async (req, res) => {
     try {
-        const { SmtpPassword, ...otherSettings } = req.body;
+        const { SmtpPassword, GraphClientSecret, ...otherSettings } = req.body;
 
-        // Encrypt the password if provided
-        let encryptedPassword = null;
+        // Encrypt SMTP password if provided
+        let encryptedSmtpPassword = null;
         if (SmtpPassword) {
-            encryptedPassword = encrypt(SmtpPassword);
+            encryptedSmtpPassword = encrypt(SmtpPassword);
+        }
+
+        // Encrypt Graph client secret if provided
+        let encryptedGraphSecret = null;
+        if (GraphClientSecret) {
+            encryptedGraphSecret = encrypt(GraphClientSecret);
         }
 
         await saveEmailSettings({
             ...otherSettings,
-            SmtpPasswordEncrypted: encryptedPassword
+            SmtpPasswordEncrypted: encryptedSmtpPassword,
+            GraphClientSecretEncrypted: encryptedGraphSecret,
         });
 
         res.json({ success: true, message: 'Email settings saved' });
@@ -110,27 +145,45 @@ app.post('/email-api/settings', async (req, res) => {
 app.post('/email-api/settings/test', async (req, res) => {
     try {
         const settings = await getEmailSettings();
-        if (!settings || !settings.SmtpHost) {
+        if (!settings) {
             return res.status(400).json({ success: false, error: 'Email settings not configured' });
         }
 
-        const decryptedPassword = safeDecrypt(settings.SmtpPasswordEncrypted, 'SMTP password');
+        const transportType = settings.TransportType || 'smtp';
+        let result;
 
-        const result = await testConnection({
-            host: settings.SmtpHost,
-            port: settings.SmtpPort,
-            secure: settings.SmtpSecure,
-            auth: {
-                user: settings.SmtpUsername,
-                pass: decryptedPassword
+        if (transportType === 'graph') {
+            if (!settings.GraphTenantId || !settings.GraphClientId || !settings.GraphClientSecretEncrypted) {
+                return res.status(400).json({ success: false, error: 'Microsoft Graph settings not configured' });
             }
-        });
+            const decryptedSecret = safeDecrypt(settings.GraphClientSecretEncrypted, 'Graph client secret');
+            result = await testGraphConnection({
+                tenantId: settings.GraphTenantId,
+                clientId: settings.GraphClientId,
+                clientSecret: decryptedSecret,
+                fromEmail: settings.FromEmail,
+            });
+        } else {
+            if (!settings.SmtpHost) {
+                return res.status(400).json({ success: false, error: 'SMTP settings not configured' });
+            }
+            const decryptedPassword = safeDecrypt(settings.SmtpPasswordEncrypted, 'SMTP password');
+            result = await testConnection({
+                host: settings.SmtpHost,
+                port: settings.SmtpPort,
+                secure: settings.SmtpSecure,
+                auth: {
+                    user: settings.SmtpUsername,
+                    pass: decryptedPassword
+                }
+            });
+        }
 
         // Update test result in database
         await updateTestResult(settings.Id, result.success, result.message || result.error);
 
         if (result.success) {
-            res.json({ success: true, message: 'Connection successful' });
+            res.json({ success: true, message: result.message || 'Connection successful' });
         } else {
             res.status(400).json({ success: false, error: result.error });
         }
@@ -153,7 +206,7 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
 
         // Get email settings
         const settings = await getEmailSettings();
-        if (!settings || !settings.SmtpHost) {
+        if (!settings) {
             return res.status(400).json({ success: false, error: 'Email settings not configured' });
         }
 
@@ -178,19 +231,9 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
             const invoice = invoiceData.value?.[0];
             const invoiceNumber = invoice?.InvoiceNumber || invoiceId;
 
-            // Decrypt password
-            const decryptedPassword = safeDecrypt(settings.SmtpPasswordEncrypted, 'SMTP password');
-
-            // Send email
-            console.log(`Sending email to ${recipientEmail}...`);
-            await sendEmail({
-                host: settings.SmtpHost,
-                port: settings.SmtpPort,
-                secure: settings.SmtpSecure,
-                auth: {
-                    user: settings.SmtpUsername,
-                    pass: decryptedPassword
-                },
+            // Send via the configured transport
+            console.log(`Sending email to ${recipientEmail} via ${settings.TransportType || 'smtp'}...`);
+            await sendViaTransport(settings, {
                 from: {
                     name: settings.FromName,
                     email: settings.FromEmail
@@ -479,7 +522,7 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
 
         // Get email settings
         const settings = await getEmailSettings();
-        if (!settings || !settings.SmtpHost) {
+        if (!settings) {
             return res.status(400).json({ success: false, error: 'Email settings not configured' });
         }
 
@@ -556,23 +599,13 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
         }
 
         try {
-            // Decrypt password
-            const decryptedPassword = safeDecrypt(settings.SmtpPasswordEncrypted, 'SMTP password');
-
             // Generate PDF attachment
             console.log(`Generating PDF for reminder - invoice ${invoiceId}...`);
             const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL);
 
-            // Send email
+            // Send email via configured transport
             console.log(`Sending reminder to ${recipientEmail || customer?.Email}...`);
-            await sendEmail({
-                host: settings.SmtpHost,
-                port: settings.SmtpPort,
-                secure: settings.SmtpSecure,
-                auth: {
-                    user: settings.SmtpUsername,
-                    pass: decryptedPassword
-                },
+            await sendViaTransport(settings, {
                 from: {
                     name: settings.FromName,
                     email: settings.FromEmail
@@ -627,7 +660,7 @@ app.post('/email-api/process-reminders', async (req, res) => {
 
         // Get email settings
         const emailSettings = await getEmailSettings();
-        if (!emailSettings || !emailSettings.SmtpHost) {
+        if (!emailSettings) {
             return res.status(400).json({ error: 'Email settings not configured' });
         }
 
@@ -718,16 +751,8 @@ app.post('/email-api/process-reminders', async (req, res) => {
                         // Generate PDF
                         const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
 
-                        // Send email
-                        const decryptedPassword = safeDecrypt(emailSettings.SmtpPasswordEncrypted, 'SMTP password');
-                        await sendEmail({
-                            host: emailSettings.SmtpHost,
-                            port: emailSettings.SmtpPort,
-                            secure: emailSettings.SmtpSecure,
-                            auth: {
-                                user: emailSettings.SmtpUsername,
-                                pass: decryptedPassword
-                            },
+                        // Send email via configured transport
+                        await sendViaTransport(emailSettings, {
                             from: {
                                 name: emailSettings.FromName,
                                 email: emailSettings.FromEmail

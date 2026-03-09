@@ -11,8 +11,8 @@ export async function getEmailSettings() {
     try {
         await getConnection();
         const result = await sql.query`
-            SELECT TOP 1 * FROM EmailSettings WHERE IsActive = 1 OR SmtpHost != ''
-            ORDER BY IsActive DESC, UpdatedAt DESC
+            SELECT TOP 1 * FROM EmailSettings WHERE IsActive = 1
+            ORDER BY UpdatedAt DESC
         `;
         return result.recordset[0] || null;
     } catch (error) {
@@ -33,10 +33,13 @@ export async function saveEmailSettings(settings) {
             const id = existing.recordset[0].Id;
             const request = new sql.Request();
             request.input('Id', sql.UniqueIdentifier, id);
-            request.input('SmtpHost', sql.NVarChar, settings.SmtpHost);
-            request.input('SmtpPort', sql.Int, settings.SmtpPort);
+            request.input('TransportType', sql.NVarChar, settings.TransportType || 'smtp');
+            request.input('SmtpHost', sql.NVarChar, settings.SmtpHost || null);
+            request.input('SmtpPort', sql.Int, settings.SmtpPort || 587);
             request.input('SmtpSecure', sql.Bit, settings.SmtpSecure);
-            request.input('SmtpUsername', sql.NVarChar, settings.SmtpUsername);
+            request.input('SmtpUsername', sql.NVarChar, settings.SmtpUsername || null);
+            request.input('GraphTenantId', sql.NVarChar, settings.GraphTenantId || null);
+            request.input('GraphClientId', sql.NVarChar, settings.GraphClientId || null);
             request.input('FromEmail', sql.NVarChar, settings.FromEmail);
             request.input('FromName', sql.NVarChar, settings.FromName);
             request.input('ReplyToEmail', sql.NVarChar, settings.ReplyToEmail || null);
@@ -47,10 +50,13 @@ export async function saveEmailSettings(settings) {
 
             let query = `
                 UPDATE EmailSettings SET
+                    TransportType = @TransportType,
                     SmtpHost = @SmtpHost,
                     SmtpPort = @SmtpPort,
                     SmtpSecure = @SmtpSecure,
                     SmtpUsername = @SmtpUsername,
+                    GraphTenantId = @GraphTenantId,
+                    GraphClientId = @GraphClientId,
                     FromEmail = @FromEmail,
                     FromName = @FromName,
                     ReplyToEmail = @ReplyToEmail,
@@ -60,10 +66,14 @@ export async function saveEmailSettings(settings) {
                     UpdatedAt = @UpdatedAt
             `;
 
-            // Only update password if provided
+            // Only update secrets if provided
             if (settings.SmtpPasswordEncrypted) {
                 request.input('SmtpPasswordEncrypted', sql.NVarChar, settings.SmtpPasswordEncrypted);
                 query += `, SmtpPasswordEncrypted = @SmtpPasswordEncrypted`;
+            }
+            if (settings.GraphClientSecretEncrypted) {
+                request.input('GraphClientSecretEncrypted', sql.NVarChar, settings.GraphClientSecretEncrypted);
+                query += `, GraphClientSecretEncrypted = @GraphClientSecretEncrypted`;
             }
 
             query += ` WHERE Id = @Id`;
@@ -75,11 +85,15 @@ export async function saveEmailSettings(settings) {
             const newId = crypto.randomUUID();
             const request = new sql.Request();
             request.input('Id', sql.UniqueIdentifier, newId);
-            request.input('SmtpHost', sql.NVarChar, settings.SmtpHost);
-            request.input('SmtpPort', sql.Int, settings.SmtpPort);
+            request.input('TransportType', sql.NVarChar, settings.TransportType || 'smtp');
+            request.input('SmtpHost', sql.NVarChar, settings.SmtpHost || null);
+            request.input('SmtpPort', sql.Int, settings.SmtpPort || 587);
             request.input('SmtpSecure', sql.Bit, settings.SmtpSecure);
-            request.input('SmtpUsername', sql.NVarChar, settings.SmtpUsername);
-            request.input('SmtpPasswordEncrypted', sql.NVarChar, settings.SmtpPasswordEncrypted || '');
+            request.input('SmtpUsername', sql.NVarChar, settings.SmtpUsername || null);
+            request.input('SmtpPasswordEncrypted', sql.NVarChar, settings.SmtpPasswordEncrypted || null);
+            request.input('GraphTenantId', sql.NVarChar, settings.GraphTenantId || null);
+            request.input('GraphClientId', sql.NVarChar, settings.GraphClientId || null);
+            request.input('GraphClientSecretEncrypted', sql.NVarChar, settings.GraphClientSecretEncrypted || null);
             request.input('FromEmail', sql.NVarChar, settings.FromEmail);
             request.input('FromName', sql.NVarChar, settings.FromName);
             request.input('ReplyToEmail', sql.NVarChar, settings.ReplyToEmail || null);
@@ -89,10 +103,12 @@ export async function saveEmailSettings(settings) {
 
             await request.query(`
                 INSERT INTO EmailSettings (
-                    Id, SmtpHost, SmtpPort, SmtpSecure, SmtpUsername, SmtpPasswordEncrypted,
+                    Id, TransportType, SmtpHost, SmtpPort, SmtpSecure, SmtpUsername, SmtpPasswordEncrypted,
+                    GraphTenantId, GraphClientId, GraphClientSecretEncrypted,
                     FromEmail, FromName, ReplyToEmail, EmailSubjectTemplate, EmailBodyTemplate, IsActive
                 ) VALUES (
-                    @Id, @SmtpHost, @SmtpPort, @SmtpSecure, @SmtpUsername, @SmtpPasswordEncrypted,
+                    @Id, @TransportType, @SmtpHost, @SmtpPort, @SmtpSecure, @SmtpUsername, @SmtpPasswordEncrypted,
+                    @GraphTenantId, @GraphClientId, @GraphClientSecretEncrypted,
                     @FromEmail, @FromName, @ReplyToEmail, @EmailSubjectTemplate, @EmailBodyTemplate, @IsActive
                 )
             `);

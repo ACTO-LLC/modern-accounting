@@ -1,11 +1,15 @@
 CREATE TABLE [dbo].[EmailSettings]
 (
     [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
-    [SmtpHost] NVARCHAR(255) NOT NULL,
+    [TransportType] NVARCHAR(10) NOT NULL DEFAULT 'smtp',
+    [SmtpHost] NVARCHAR(255) NULL,
     [SmtpPort] INT NOT NULL DEFAULT 587,
     [SmtpSecure] BIT NOT NULL DEFAULT 1,
-    [SmtpUsername] NVARCHAR(255) NOT NULL,
-    [SmtpPasswordEncrypted] NVARCHAR(MAX) NOT NULL,
+    [SmtpUsername] NVARCHAR(255) NULL,
+    [SmtpPasswordEncrypted] NVARCHAR(MAX) NULL,
+    [GraphTenantId] NVARCHAR(255) NULL,
+    [GraphClientId] NVARCHAR(255) NULL,
+    [GraphClientSecretEncrypted] NVARCHAR(MAX) NULL,
     [FromEmail] NVARCHAR(255) NOT NULL,
     [FromName] NVARCHAR(255) NOT NULL,
     [ReplyToEmail] NVARCHAR(255) NULL,
