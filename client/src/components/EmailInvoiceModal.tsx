@@ -88,8 +88,8 @@ export default function EmailInvoiceModal({
       };
 
       // Replace template variables
-      const subjectWithVars = replaceTemplateVariables(response.settings.EmailSubjectTemplate, templateVars);
-      const bodyWithVars = replaceTemplateVariables(response.settings.EmailBodyTemplate, templateVars);
+      const subjectWithVars = replaceTemplateVariables(s!.EmailSubjectTemplate, templateVars);
+      const bodyWithVars = replaceTemplateVariables(s!.EmailBodyTemplate, templateVars);
 
       setSubject(subjectWithVars);
       setBody(bodyWithVars);
