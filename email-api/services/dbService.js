@@ -45,11 +45,24 @@ function parseConnectionString(connStr) {
 
 const dbConfig = connectionString ? parseConnectionString(connectionString) : null;
 
+if (dbConfig) {
+    console.log(`[email-api DB] Config: ${dbConfig.server}:${dbConfig.port}/${dbConfig.database} user=${dbConfig.user}`);
+} else {
+    console.error('[email-api DB] No connection string found in DATABASE_URL or DB_CONNECTION_STRING');
+}
+
+let pool = null;
+
 async function getConnection() {
     if (!dbConfig) {
         throw new Error('No database connection string configured (DATABASE_URL or DB_CONNECTION_STRING)');
     }
-    return await sql.connect(dbConfig);
+    if (!pool) {
+        console.log('[email-api DB] Connecting to database...');
+        pool = await sql.connect(dbConfig);
+        console.log('[email-api DB] Connected successfully');
+    }
+    return pool;
 }
 
 export async function getEmailSettings() {
