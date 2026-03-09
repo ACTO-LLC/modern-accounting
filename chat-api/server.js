@@ -184,6 +184,25 @@ function validateExtractedIntent(intent) {
 
 const app = express();
 app.use(cors());
+
+// ============================================================================
+// Email API Proxy — MUST be registered BEFORE express.json() so that
+// request bodies are forwarded as raw streams to the email-api child process.
+// express.json() consumes the body, making it unavailable for proxy piping.
+// ============================================================================
+const EMAIL_API_PORT = 7073;
+app.use('/email-api', createProxyMiddleware({
+    target: `http://localhost:${EMAIL_API_PORT}`,
+    changeOrigin: true,
+    pathRewrite: (path) => `/email-api${path}`,
+    onError: (err, req, res) => {
+        console.error('[email-api proxy] Error:', err.message);
+        if (!res.headersSent) {
+            res.status(502).json({ error: 'Email service unavailable' });
+        }
+    },
+}));
+
 app.use(express.json({ limit: '10mb' }));
 
 // ============================================================================
@@ -8401,7 +8420,6 @@ async function startServer() {
     // Email API — start as child process and proxy /email-api/* to it
     // ========================================================================
     const emailApiDir = path.join(__dirname, 'email-api');
-    const EMAIL_API_PORT = 7073;
     try {
         const { existsSync } = await import('fs');
         if (existsSync(path.join(emailApiDir, 'server.js'))) {
@@ -8422,22 +8440,7 @@ async function startServer() {
             emailProcess.stdout?.on('data', (d) => console.log(`[email-api] ${d.toString().trim()}`));
             emailProcess.stderr?.on('data', (d) => console.error(`[email-api] ${d.toString().trim()}`));
             emailProcess.on('exit', (code) => console.warn(`[email-api] Process exited with code ${code}`));
-
-            // Proxy /email-api/* to the email-api child process
-            // The email-api routes are defined as /email-api/*, so we forward
-            // with the full path intact (no prefix stripping).
-            app.use('/email-api', createProxyMiddleware({
-                target: `http://localhost:${EMAIL_API_PORT}`,
-                changeOrigin: true,
-                pathRewrite: (path) => `/email-api${path}`,
-                onError: (err, req, res) => {
-                    console.error('[email-api proxy] Error:', err.message);
-                    if (!res.headersSent) {
-                        res.status(502).json({ error: 'Email service unavailable' });
-                    }
-                },
-            }));
-            console.log(`Email API started on port ${EMAIL_API_PORT} with proxy at /email-api`);
+            console.log(`Email API started on port ${EMAIL_API_PORT} (proxy registered at startup)`);
         } else {
             console.log('Email API not found in deploy package, skipping');
         }
