@@ -53,9 +53,12 @@ export default function EmailStatementModal({
 
       const response = await emailSettingsApi.get();
 
-      if (!response.configured || !response.settings?.SmtpHost) {
+      const s = response.settings;
+      const isGraphConfigured = s?.TransportType === 'graph' && s?.GraphTenantId && s?.GraphClientId;
+      const isSmtpConfigured = s?.TransportType !== 'graph' && s?.SmtpHost;
+      if (!response.configured || (!isGraphConfigured && !isSmtpConfigured)) {
         setEmailConfigured(false);
-        setError('Email settings not configured. Please configure SMTP settings in Company Settings first.');
+        setError('Email settings not configured. Please configure email settings in Company Settings first.');
         return;
       }
 

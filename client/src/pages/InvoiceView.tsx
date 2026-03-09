@@ -172,8 +172,8 @@ export default function InvoiceView() {
         </div>
       </div>
 
-      {/* Invoice Document */}
-      <div className="bg-white shadow-lg rounded-lg print:shadow-none print:rounded-none">
+      {/* Invoice Document — always light theme for print/email consistency */}
+      <div className="bg-white text-gray-900 shadow-lg rounded-lg print:shadow-none print:rounded-none">
         <div className="p-8 print:p-6">
           {/* Header */}
           <div className="flex justify-between items-start mb-8 print:mb-6">
@@ -295,16 +295,16 @@ export default function InvoiceView() {
           <div className="flex justify-end">
             <div className="w-64">
               <div className="flex justify-between py-2 text-sm print:text-xs">
-                <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-                <span className="text-gray-900 dark:text-gray-100 font-medium">{formatCurrency(subtotal)}</span>
+                <span className="text-gray-600">Subtotal:</span>
+                <span className="text-gray-900 font-medium">{formatCurrency(subtotal)}</span>
               </div>
               {invoice.TaxAmount > 0 && (
                 <div className="flex justify-between py-2 text-sm print:text-xs">
-                  <span className="text-gray-600 dark:text-gray-400">Tax:</span>
-                  <span className="text-gray-900 dark:text-gray-100 font-medium">{formatCurrency(invoice.TaxAmount)}</span>
+                  <span className="text-gray-600">Tax:</span>
+                  <span className="text-gray-900 font-medium">{formatCurrency(invoice.TaxAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between py-3 border-t-2 border-gray-900 dark:border-gray-100 text-lg font-bold print:text-base print:py-2 text-gray-900 dark:text-gray-100">
+              <div className="flex justify-between py-3 border-t-2 border-gray-900 text-lg font-bold print:text-base print:py-2 text-gray-900">
                 <span>Total:</span>
                 <span>{formatCurrency(invoice.TotalAmount)}</span>
               </div>
