@@ -902,6 +902,48 @@
                 "enabled": false
             }
         },
+        "terms": {
+            "source": "dbo.Terms",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "DueDays": "DueDays",
+                "IsActive": "IsActive",
+                "CompanyId": "CompanyId",
+                "SourceSystem": "SourceSystem",
+                "SourceId": "SourceId",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
         "taxcalculationsettings": {
             "source": "dbo.TaxCalculationSettings",
             "permissions": [
