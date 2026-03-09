@@ -25,6 +25,9 @@ interface Invoice {
   CustomerName?: string;
   IssueDate: string;
   DueDate: string;
+  Subtotal: number;
+  TaxRateId?: string | null;
+  TaxAmount: number;
   TotalAmount: number;
   Status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
   Lines: InvoiceLine[];
@@ -295,6 +298,12 @@ export default function InvoiceView() {
                 <span className="text-gray-600">Subtotal:</span>
                 <span className="text-gray-900 font-medium">{formatCurrency(subtotal)}</span>
               </div>
+              {invoice.TaxAmount > 0 && (
+                <div className="flex justify-between py-2 text-sm print:text-xs">
+                  <span className="text-gray-600">Tax:</span>
+                  <span className="text-gray-900 font-medium">{formatCurrency(invoice.TaxAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between py-3 border-t-2 border-gray-900 text-lg font-bold print:text-base print:py-2">
                 <span>Total:</span>
                 <span>{formatCurrency(invoice.TotalAmount)}</span>
