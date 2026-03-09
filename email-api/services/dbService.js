@@ -3,8 +3,53 @@ import crypto from 'crypto';
 
 const connectionString = process.env.DATABASE_URL || process.env.DB_CONNECTION_STRING;
 
+/**
+ * Parse an ADO.NET connection string into mssql config object.
+ * Format: Server=tcp:host,port;Database=xxx;User ID=xxx;Password=xxx;...
+ */
+function parseConnectionString(connStr) {
+    const parts = {};
+    for (const part of connStr.split(';')) {
+        const [key, ...valueParts] = part.split('=');
+        if (key && valueParts.length > 0) {
+            parts[key.trim().toLowerCase()] = valueParts.join('=').trim();
+        }
+    }
+
+    let server = parts['server'] || parts['data source'] || 'localhost';
+    let port = 1433;
+
+    if (server.startsWith('tcp:')) {
+        server = server.substring(4);
+    }
+    if (server.includes(',')) {
+        const [host, portStr] = server.split(',');
+        server = host;
+        port = parseInt(portStr, 10);
+    }
+
+    return {
+        server,
+        port,
+        database: parts['database'] || parts['initial catalog'] || 'AccountingDB',
+        user: parts['user id'] || parts['uid'] || 'sa',
+        password: parts['password'] || parts['pwd'] || '',
+        options: {
+            encrypt: parts['encrypt'] !== 'False' && parts['encrypt'] !== 'false',
+            trustServerCertificate: parts['trustservercertificate'] === 'True' || parts['trustservercertificate'] === 'true',
+            enableArithAbort: true,
+        },
+        pool: { max: 5, min: 0, idleTimeoutMillis: 30000 },
+    };
+}
+
+const dbConfig = connectionString ? parseConnectionString(connectionString) : null;
+
 async function getConnection() {
-    return await sql.connect(connectionString);
+    if (!dbConfig) {
+        throw new Error('No database connection string configured (DATABASE_URL or DB_CONNECTION_STRING)');
+    }
+    return await sql.connect(dbConfig);
 }
 
 export async function getEmailSettings() {
