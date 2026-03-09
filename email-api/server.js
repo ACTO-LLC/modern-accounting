@@ -197,7 +197,7 @@ app.post('/email-api/settings/test', async (req, res) => {
 app.post('/email-api/send/invoice/:id', async (req, res) => {
     try {
         const invoiceId = validateUuid(req.params.id, 'invoiceId');
-        const { recipientEmail, recipientName, subject, body, companySettings } = req.body;
+        const { recipientEmail, recipientName, subject, body, cc, bcc, companySettings } = req.body;
 
         // Validate email format
         if (!recipientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
@@ -221,9 +221,9 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
         });
 
         try {
-            // Generate PDF
+            // Generate PDF using PDFKit (fetches data from DAB internally)
             console.log(`Generating PDF for invoice ${invoiceId}...`);
-            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL);
+            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL, DAB_API_URL);
 
             // Get invoice number for filename
             const invoiceResponse = await fetch(`${DAB_API_URL}/invoices?$filter=Id eq '${invoiceId}'`);
@@ -240,6 +240,8 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
                 },
                 replyTo: settings.ReplyToEmail,
                 to: recipientEmail,
+                cc: cc || undefined,
+                bcc: bcc || undefined,
                 subject: subject,
                 text: body,
                 attachments: [{
@@ -601,7 +603,7 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
         try {
             // Generate PDF attachment
             console.log(`Generating PDF for reminder - invoice ${invoiceId}...`);
-            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL);
+            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL, DAB_API_URL);
 
             // Send email via configured transport
             console.log(`Sending reminder to ${recipientEmail || customer?.Email}...`);
@@ -749,7 +751,7 @@ app.post('/email-api/process-reminders', async (req, res) => {
 
                     try {
                         // Generate PDF
-                        const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL);
+                        const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL, DAB_API_URL);
 
                         // Send email via configured transport
                         await sendViaTransport(emailSettings, {

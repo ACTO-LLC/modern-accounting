@@ -49,6 +49,8 @@ export interface EmailLog {
 export interface SendEmailRequest {
   recipientEmail: string;
   recipientName?: string;
+  cc?: string;
+  bcc?: string;
   subject: string;
   body: string;
   companySettings?: {

@@ -50,6 +50,12 @@ export async function sendEmail(options) {
     if (options.replyTo) {
         mailOptions.replyTo = options.replyTo;
     }
+    if (options.cc) {
+        mailOptions.cc = options.cc;
+    }
+    if (options.bcc) {
+        mailOptions.bcc = options.bcc;
+    }
 
     const result = await transporter.sendMail(mailOptions);
     return result;

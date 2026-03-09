@@ -39,6 +39,8 @@ export default function EmailInvoiceModal({
   const { settings: companySettings } = useCompanySettings();
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientName, setRecipientName] = useState('');
+  const [cc, setCc] = useState('');
+  const [bcc, setBcc] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -114,6 +116,8 @@ export default function EmailInvoiceModal({
       await emailSendApi.sendInvoice(invoice.Id, {
         recipientEmail,
         recipientName,
+        cc: cc || undefined,
+        bcc: bcc || undefined,
         subject,
         body,
         companySettings: {
@@ -141,6 +145,8 @@ export default function EmailInvoiceModal({
   const handleClose = () => {
     setRecipientEmail('');
     setRecipientName('');
+    setCc('');
+    setBcc('');
     setSubject('');
     setBody('');
     setError(null);
@@ -234,6 +240,36 @@ export default function EmailInvoiceModal({
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
                       placeholder="John Smith"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* CC / BCC */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="email-cc" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      CC
+                    </label>
+                    <input
+                      id="email-cc"
+                      type="text"
+                      value={cc}
+                      onChange={(e) => setCc(e.target.value)}
+                      placeholder="email1@example.com, email2@example.com"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email-bcc" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      BCC
+                    </label>
+                    <input
+                      id="email-bcc"
+                      type="text"
+                      value={bcc}
+                      onChange={(e) => setBcc(e.target.value)}
+                      placeholder="email1@example.com, email2@example.com"
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>

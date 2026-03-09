@@ -58,6 +58,18 @@ export async function sendGraphEmail(options) {
         ];
     }
 
+    // CC recipients
+    if (options.cc) {
+        const ccList = typeof options.cc === 'string' ? options.cc.split(',').map(e => e.trim()).filter(Boolean) : [options.cc];
+        message.ccRecipients = ccList.map(email => ({ emailAddress: { address: email } }));
+    }
+
+    // BCC recipients
+    if (options.bcc) {
+        const bccList = typeof options.bcc === 'string' ? options.bcc.split(',').map(e => e.trim()).filter(Boolean) : [options.bcc];
+        message.bccRecipients = bccList.map(email => ({ emailAddress: { address: email } }));
+    }
+
     // Send as the shared mailbox user
     await graphClient
         .api(`/users/${options.from.email}/sendMail`)
