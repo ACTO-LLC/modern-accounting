@@ -8424,9 +8424,12 @@ async function startServer() {
             emailProcess.on('exit', (code) => console.warn(`[email-api] Process exited with code ${code}`));
 
             // Proxy /email-api/* to the email-api child process
+            // The email-api routes are defined as /email-api/*, so we forward
+            // with the full path intact (no prefix stripping).
             app.use('/email-api', createProxyMiddleware({
                 target: `http://localhost:${EMAIL_API_PORT}`,
                 changeOrigin: true,
+                pathRewrite: (path) => `/email-api${path}`,
                 onError: (err, req, res) => {
                     console.error('[email-api proxy] Error:', err.message);
                     if (!res.headersSent) {
