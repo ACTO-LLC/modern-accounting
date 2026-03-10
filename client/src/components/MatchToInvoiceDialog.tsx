@@ -125,7 +125,8 @@ export default function MatchToInvoiceDialog({
             bankTransaction.SourceAccountId
           );
         } catch (postingError) {
-          console.warn('Auto-posting failed, payment still created:', postingError);
+          const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
+          toast.warning(`Payment created, but ${msg}`);
         }
       }
 

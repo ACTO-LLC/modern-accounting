@@ -39,8 +39,8 @@ interface JournalEntryLine {
 
 interface JournalEntry {
   Id: string;
-  EntryNumber: string;
-  EntryDate: string;
+  Reference: string;
+  TransactionDate: string;
   Description: string;
   Status: string;
 }
@@ -142,8 +142,8 @@ async function generateNextEntryNumber(): Promise<string> {
     const response = await api.get<{ value: JournalEntry[] }>('/journalentries?$orderby=CreatedAt desc&$top=1');
     const lastEntry = response.data.value[0];
 
-    if (lastEntry?.EntryNumber) {
-      const match = lastEntry.EntryNumber.match(/^JE-(\d+)$/);
+    if (lastEntry?.Reference) {
+      const match = lastEntry.Reference.match(/^JE-(\d+)$/);
       if (match) {
         const nextNum = parseInt(match[1], 10) + 1;
         return `JE-${nextNum.toString().padStart(5, '0')}`;
@@ -179,8 +179,7 @@ export async function createInvoiceJournalEntry(
     const revenueAccountId = await getRevenueAccountId();
 
     if (!arAccountId || !revenueAccountId) {
-      console.warn('Cannot auto-post invoice: Missing AR or Revenue account');
-      return null;
+      throw new Error('GL posting failed: Account Defaults not configured. Go to Company Settings to set up AR and Revenue accounts.');
     }
 
     const entryNumber = await generateNextEntryNumber();
@@ -225,10 +224,13 @@ export async function createInvoiceJournalEntry(
 
     // Create the journal entry
     const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
-      EntryNumber: entryNumber,
-      EntryDate: issueDate,
+      Reference: entryNumber,
+      TransactionDate: issueDate,
       Description: description,
-      Status: 'Posted'
+      Status: 'Posted',
+      CreatedBy: userName || 'System',
+      PostedAt: new Date().toISOString(),
+      PostedBy: userName || 'System'
     });
 
     const journalEntry = journalEntryResponse.data;
@@ -240,8 +242,8 @@ export async function createInvoiceJournalEntry(
           JournalEntryId: journalEntry.Id,
           AccountId: line.AccountId,
           Description: line.Description,
-          DebitAmount: line.DebitAmount,
-          CreditAmount: line.CreditAmount,
+          Debit: line.DebitAmount,
+          Credit: line.CreditAmount,
           ProjectId: line.ProjectId || null,
           ClassId: line.ClassId || null
         })
@@ -257,8 +259,8 @@ export async function createInvoiceJournalEntry(
 
     return { journalEntryId: journalEntry.Id };
   } catch (error) {
-    console.error('Failed to create invoice journal entry:', error);
-    return null;
+    const msg = error instanceof Error ? error.message : 'Unknown error creating journal entry';
+    throw new Error(`GL posting failed for invoice: ${msg}`);
   }
 }
 
@@ -280,8 +282,7 @@ export async function createPaymentJournalEntry(
     const arAccountId = await getARAccountId();
 
     if (!arAccountId) {
-      console.warn('Cannot auto-post payment: Missing AR account');
-      return null;
+      throw new Error('GL posting failed: Accounts Receivable default not configured. Go to Company Settings to set up account defaults.');
     }
 
     const entryNumber = await generateNextEntryNumber();
@@ -305,10 +306,13 @@ export async function createPaymentJournalEntry(
 
     // Create the journal entry
     const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
-      EntryNumber: entryNumber,
-      EntryDate: paymentDate,
+      Reference: entryNumber,
+      TransactionDate: paymentDate,
       Description: description,
-      Status: 'Posted'
+      Status: 'Posted',
+      CreatedBy: 'System',
+      PostedAt: new Date().toISOString(),
+      PostedBy: 'System'
     });
 
     const journalEntry = journalEntryResponse.data;
@@ -320,8 +324,8 @@ export async function createPaymentJournalEntry(
           JournalEntryId: journalEntry.Id,
           AccountId: line.AccountId,
           Description: line.Description,
-          DebitAmount: line.DebitAmount,
-          CreditAmount: line.CreditAmount,
+          Debit: line.DebitAmount,
+          Credit: line.CreditAmount,
           ProjectId: line.ProjectId || null,
           ClassId: line.ClassId || null
         })
@@ -335,8 +339,8 @@ export async function createPaymentJournalEntry(
 
     return { journalEntryId: journalEntry.Id };
   } catch (error) {
-    console.error('Failed to create payment journal entry:', error);
-    return null;
+    const msg = error instanceof Error ? error.message : 'Unknown error creating journal entry';
+    throw new Error(`GL posting failed for payment: ${msg}`);
   }
 }
 
@@ -361,8 +365,7 @@ export async function createBillJournalEntry(
     const apAccountId = await getAPAccountId();
 
     if (!apAccountId) {
-      console.warn('Cannot auto-post bill: Missing AP account');
-      return null;
+      throw new Error('GL posting failed: Accounts Payable default not configured. Go to Company Settings to set up account defaults.');
     }
 
     const entryNumber = await generateNextEntryNumber();
@@ -396,10 +399,13 @@ export async function createBillJournalEntry(
 
     // Create the journal entry
     const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
-      EntryNumber: entryNumber,
-      EntryDate: billDate,
+      Reference: entryNumber,
+      TransactionDate: billDate,
       Description: description,
-      Status: 'Posted'
+      Status: 'Posted',
+      CreatedBy: userName || 'System',
+      PostedAt: new Date().toISOString(),
+      PostedBy: userName || 'System'
     });
 
     const journalEntry = journalEntryResponse.data;
@@ -411,8 +417,8 @@ export async function createBillJournalEntry(
           JournalEntryId: journalEntry.Id,
           AccountId: line.AccountId,
           Description: line.Description,
-          DebitAmount: line.DebitAmount,
-          CreditAmount: line.CreditAmount,
+          Debit: line.DebitAmount,
+          Credit: line.CreditAmount,
           ProjectId: line.ProjectId || null,
           ClassId: line.ClassId || null
         })
@@ -428,8 +434,8 @@ export async function createBillJournalEntry(
 
     return { journalEntryId: journalEntry.Id };
   } catch (error) {
-    console.error('Failed to create bill journal entry:', error);
-    return null;
+    const msg = error instanceof Error ? error.message : 'Unknown error creating journal entry';
+    throw new Error(`GL posting failed for bill: ${msg}`);
   }
 }
 
@@ -445,7 +451,7 @@ export async function reverseInvoiceJournalEntry(
   try {
     // Fetch original journal entry lines
     const linesResponse = await api.get<{ value: Array<{
-      AccountId: string; Description: string; DebitAmount: number; CreditAmount: number;
+      AccountId: string; Description: string; Debit: number; Credit: number;
       ProjectId?: string | null; ClassId?: string | null;
     }> }>(`/journalentrylines?$filter=JournalEntryId eq '${journalEntryId}'`);
     const originalLines = linesResponse.data.value;
@@ -460,10 +466,13 @@ export async function reverseInvoiceJournalEntry(
 
     // Create reversing journal entry
     const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
-      EntryNumber: entryNumber,
-      EntryDate: new Date().toISOString().split('T')[0],
+      Reference: entryNumber,
+      TransactionDate: new Date().toISOString().split('T')[0],
       Description: description,
-      Status: 'Posted'
+      Status: 'Posted',
+      CreatedBy: userName || 'System',
+      PostedAt: new Date().toISOString(),
+      PostedBy: userName || 'System'
     });
 
     const reversalEntry = journalEntryResponse.data;
@@ -475,8 +484,8 @@ export async function reverseInvoiceJournalEntry(
           JournalEntryId: reversalEntry.Id,
           AccountId: line.AccountId,
           Description: `Reversal - ${line.Description}`,
-          DebitAmount: line.CreditAmount,
-          CreditAmount: line.DebitAmount,
+          Debit: line.Credit,
+          Credit: line.Debit,
           ProjectId: line.ProjectId || null,
           ClassId: line.ClassId || null
         })
@@ -490,8 +499,8 @@ export async function reverseInvoiceJournalEntry(
 
     return { journalEntryId: reversalEntry.Id };
   } catch (error) {
-    console.error('Failed to reverse journal entry:', error);
-    return null;
+    const msg = error instanceof Error ? error.message : 'Unknown error reversing journal entry';
+    throw new Error(`GL reversal failed: ${msg}`);
   }
 }
 

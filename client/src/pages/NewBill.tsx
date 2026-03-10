@@ -6,6 +6,7 @@ import BillForm, { BillFormData } from '../components/BillForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { createBillJournalEntry } from '../lib/autoPostingService';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../hooks/useToast';
 
 interface Bill {
   Id: string;
@@ -22,6 +23,7 @@ export default function NewBill() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { settings } = useCompanySettings();
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   const mutation = useMutation({
     mutationFn: async (data: BillFormData) => {
@@ -81,8 +83,8 @@ export default function NewBill() {
             data.ClassId || null
           );
         } catch (postingError) {
-          console.warn('Auto-posting failed, bill still created:', postingError);
-          // Don't fail the whole operation if posting fails
+          const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
+          showToast(`Bill created, but ${msg}`, 'warning');
         }
       }
 

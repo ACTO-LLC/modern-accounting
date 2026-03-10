@@ -5,6 +5,7 @@ import InvoiceForm, { InvoiceFormData } from '../components/InvoiceForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { createInvoiceJournalEntry } from '../lib/autoPostingService';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../hooks/useToast';
 import { generateNextInvoiceNumber, type Invoice } from '../lib/invoiceUtils';
 
 interface InvoiceWithCustomer {
@@ -17,6 +18,7 @@ export default function NewInvoice() {
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   // Fetch existing invoices to generate the next invoice number
   const { data: allInvoices, isLoading: isLoadingInvoices } = useQuery({
@@ -89,8 +91,8 @@ export default function NewInvoice() {
             data.ClassId || null
           );
         } catch (postingError) {
-          console.warn('Auto-posting failed, invoice still created:', postingError);
-          // Don't fail the whole operation if posting fails
+          const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
+          showToast(`Invoice created, but ${msg}`, 'warning');
         }
       }
 

@@ -5,6 +5,7 @@ import api from '../lib/api';
 import ReceivePaymentForm, { ReceivePaymentFormData } from '../components/ReceivePaymentForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { createPaymentJournalEntry } from '../lib/autoPostingService';
+import { useToast } from '../hooks/useToast';
 
 interface Payment {
   Id: string;
@@ -17,6 +18,7 @@ export default function NewPayment() {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { settings } = useCompanySettings();
+  const { showToast } = useToast();
 
   // Fetch existing payments to generate next payment number
   const { data: existingPayments } = useQuery({
@@ -100,7 +102,8 @@ export default function NewPayment() {
             paymentData.DepositAccountId
           );
         } catch (postingError) {
-          console.warn('Auto-posting failed, payment still created:', postingError);
+          const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
+          showToast(`Payment created, but ${msg}`, 'warning');
         }
       }
 

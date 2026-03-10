@@ -156,8 +156,8 @@ export default function EditInvoice() {
             data.ClassId || null
           );
         } catch (postingError) {
-          console.warn('Auto-posting failed, invoice still updated:', postingError);
-          // Don't fail the whole operation if posting fails
+          const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
+          showToast(`Invoice saved, but ${msg}`, 'warning');
         }
       }
     },
