@@ -326,7 +326,7 @@ export default function InvoiceView() {
       </div>
 
       {/* Email History - Hidden when printing */}
-      <div className="mt-6 bg-white shadow-lg rounded-lg p-6 print:hidden">
+      <div className="mt-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-lg rounded-lg p-6 print:hidden">
         <EmailHistory
           invoiceId={invoice.Id}
           refreshTrigger={emailHistoryRefresh}
