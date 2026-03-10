@@ -1,38 +1,22 @@
 import PDFDocument from 'pdfkit';
+import { getInvoiceById, getInvoiceLines, getCustomerById, getFirstCompany } from './dbService.js';
 
 /**
- * Generate an invoice PDF by fetching data from DAB and building with PDFKit.
+ * Generate an invoice PDF by querying the database directly and building with PDFKit.
  * No browser/Puppeteer required — works on Azure App Service.
  */
-export async function generateInvoicePdf(invoiceId, baseUrl, dabApiUrl) {
-    // Fetch invoice data from DAB
-    const [invoiceRes, linesRes] = await Promise.all([
-        fetch(`${dabApiUrl}/invoices?$filter=Id eq '${invoiceId}'`),
-        fetch(`${dabApiUrl}/invoicelines?$filter=InvoiceId eq '${invoiceId}'&$orderby=CreatedAt asc`),
+export async function generateInvoicePdf(invoiceId) {
+    const [invoice, lines, company] = await Promise.all([
+        getInvoiceById(invoiceId),
+        getInvoiceLines(invoiceId),
+        getFirstCompany(),
     ]);
 
-    const invoiceData = await invoiceRes.json();
-    const linesData = await linesRes.json();
-    const invoice = invoiceData.value?.[0];
     if (!invoice) throw new Error(`Invoice ${invoiceId} not found`);
-    const lines = linesData.value || [];
 
-    // Fetch customer
     let customer = null;
     if (invoice.CustomerId) {
-        const custRes = await fetch(`${dabApiUrl}/customers?$filter=Id eq '${invoice.CustomerId}'`);
-        const custData = await custRes.json();
-        customer = custData.value?.[0];
-    }
-
-    // Fetch company settings
-    let company = null;
-    try {
-        const compRes = await fetch(`${dabApiUrl}/companies?$orderby=CreatedAt desc&$first=1`);
-        const compData = await compRes.json();
-        company = compData.value?.[0];
-    } catch (e) {
-        console.warn('Could not fetch company settings for PDF:', e.message);
+        customer = await getCustomerById(invoice.CustomerId);
     }
 
     return buildPdf(invoice, lines, customer, company);
@@ -123,7 +107,9 @@ function buildPdf(invoice, lines, customer, company) {
 
         // Table rows
         doc.font('Helvetica').fontSize(9).fillColor('#1a202c');
-        for (const line of lines) {
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
             // Check for page overflow
             if (tableY > doc.page.height - 150) {
                 doc.addPage();
@@ -132,7 +118,7 @@ function buildPdf(invoice, lines, customer, company) {
 
             const rowH = 28;
             // Alternating row background
-            if (lines.indexOf(line) % 2 === 1) {
+            if (i % 2 === 1) {
                 doc.rect(50, tableY, pageWidth, rowH).fillColor('#fafafa').fill();
                 doc.fillColor('#1a202c');
             }

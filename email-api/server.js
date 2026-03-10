@@ -221,14 +221,13 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
         });
 
         try {
-            // Generate PDF using PDFKit (fetches data from DAB internally)
+            // Generate PDF using PDFKit (queries DB directly)
             console.log(`Generating PDF for invoice ${invoiceId}...`);
-            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL, DAB_API_URL);
+            const pdfBuffer = await generateInvoicePdf(invoiceId);
 
             // Get invoice number for filename
-            const invoiceResponse = await fetch(`${DAB_API_URL}/invoices?$filter=Id eq '${invoiceId}'`);
-            const invoiceData = await invoiceResponse.json();
-            const invoice = invoiceData.value?.[0];
+            const { getInvoiceById } = await import('./services/dbService.js');
+            const invoice = await getInvoiceById(invoiceId);
             const invoiceNumber = invoice?.InvoiceNumber || invoiceId;
 
             // Send via the configured transport
@@ -603,7 +602,7 @@ app.post('/email-api/send/reminder/:invoiceId', async (req, res) => {
         try {
             // Generate PDF attachment
             console.log(`Generating PDF for reminder - invoice ${invoiceId}...`);
-            const pdfBuffer = await generateInvoicePdf(invoiceId, APP_BASE_URL, DAB_API_URL);
+            const pdfBuffer = await generateInvoicePdf(invoiceId);
 
             // Send email via configured transport
             console.log(`Sending reminder to ${recipientEmail || customer?.Email}...`);
@@ -751,7 +750,7 @@ app.post('/email-api/process-reminders', async (req, res) => {
 
                     try {
                         // Generate PDF
-                        const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId, APP_BASE_URL, DAB_API_URL);
+                        const pdfBuffer = await generateInvoicePdf(invoice.InvoiceId);
 
                         // Send email via configured transport
                         await sendViaTransport(emailSettings, {

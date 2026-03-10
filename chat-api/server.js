@@ -8432,7 +8432,9 @@ async function startServer() {
                     PORT: String(EMAIL_API_PORT),
                     DATABASE_URL: process.env.SQL_CONNECTION_STRING || process.env.DATABASE_URL,
                     DB_CONNECTION_STRING: process.env.SQL_CONNECTION_STRING || process.env.DB_CONNECTION_STRING,
-                    DAB_API_URL: process.env.DAB_API_URL || process.env.DAB_REST_URL || `${DAB_PROXY_URL}/api`,
+                    // Point email-api at chat-api's local proxy (handles DAB auth)
+                    // NOT the external DAB URL which requires JWT
+                    DAB_API_URL: `http://localhost:${PORT}/api`,
                     APP_BASE_URL: 'https://accounting.a-cto.com',
                 },
                 stdio: 'pipe',

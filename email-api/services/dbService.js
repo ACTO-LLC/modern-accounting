@@ -598,3 +598,38 @@ export async function getReminderCountForInvoice(invoiceId, reminderSettingId) {
         throw error;
     }
 }
+
+// ============================================================================
+// Invoice Data Queries (for PDF generation)
+// ============================================================================
+
+export async function getInvoiceById(invoiceId) {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .input('Id', sql.UniqueIdentifier, invoiceId)
+        .query('SELECT * FROM Invoices WHERE Id = @Id');
+    return result.recordset[0] || null;
+}
+
+export async function getInvoiceLines(invoiceId) {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .input('InvoiceId', sql.UniqueIdentifier, invoiceId)
+        .query('SELECT * FROM InvoiceLines WHERE InvoiceId = @InvoiceId ORDER BY CreatedAt ASC');
+    return result.recordset;
+}
+
+export async function getCustomerById(customerId) {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .input('Id', sql.UniqueIdentifier, customerId)
+        .query('SELECT * FROM Customers WHERE Id = @Id');
+    return result.recordset[0] || null;
+}
+
+export async function getFirstCompany() {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .query('SELECT TOP 1 * FROM Companies ORDER BY CreatedAt DESC');
+    return result.recordset[0] || null;
+}
