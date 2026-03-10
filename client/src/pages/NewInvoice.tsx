@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import InvoiceForm, { InvoiceFormData } from '../components/InvoiceForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
-import { createInvoiceJournalEntry } from '../lib/autoPostingService';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { generateNextInvoiceNumber, type Invoice } from '../lib/invoiceUtils';
@@ -79,17 +78,7 @@ export default function NewInvoice() {
       // In Simple mode, auto-post to GL
       if (settings.invoicePostingMode === 'simple' && invoiceData.Status !== 'Draft') {
         try {
-          await createInvoiceJournalEntry(
-            invoice.Id,
-            invoiceData.TotalAmount,
-            invoiceData.TaxAmount,
-            invoiceData.InvoiceNumber,
-            invoice.CustomerName || 'Customer',
-            invoiceData.IssueDate,
-            user?.name || user?.username,
-            data.ProjectId || null,
-            data.ClassId || null
-          );
+          await api.post(`/invoices/${invoice.Id}/post`, { userId: user?.name || user?.username || 'System' });
         } catch (postingError) {
           const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
           showToast(`Invoice created, but ${msg}`, 'warning');

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import api from '../lib/api';
 import BillForm, { BillFormData } from '../components/BillForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
-import { createBillJournalEntry } from '../lib/autoPostingService';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 
@@ -133,23 +132,7 @@ export default function EditBill() {
       // 3. In Simple mode, auto-post to GL if bill is transitioning from Draft to a posted status
       if (settings.invoicePostingMode === 'simple' && wasNotPosted && isNowPosted) {
         try {
-          await createBillJournalEntry(
-            id,
-            billData.TotalAmount,
-            billData.BillNumber || '',
-            bill?.VendorName || 'Vendor',
-            billData.BillDate,
-            incomingLines.map(line => ({
-              AccountId: line.AccountId,
-              Amount: line.Amount,
-              Description: line.Description || undefined,
-              ProjectId: line.ProjectId || null,
-              ClassId: line.ClassId || null,
-            })),
-            user?.name || user?.username,
-            data.ProjectId || null,
-            data.ClassId || null
-          );
+          await api.post(`/bills/${id}/post`, { userId: user?.name || user?.username || 'System' });
         } catch (postingError) {
           const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
           showToast(`Bill saved, but ${msg}`, 'warning');

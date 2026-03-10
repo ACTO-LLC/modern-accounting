@@ -4,7 +4,6 @@ import { useState } from 'react';
 import api from '../lib/api';
 import BillForm, { BillFormData } from '../components/BillForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
-import { createBillJournalEntry } from '../lib/autoPostingService';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 
@@ -65,23 +64,7 @@ export default function NewBill() {
       // In Simple mode, auto-post to GL
       if (settings.invoicePostingMode === 'simple' && billData.Status !== 'Draft') {
         try {
-          await createBillJournalEntry(
-            bill.Id,
-            billData.TotalAmount,
-            billData.BillNumber || '',
-            bill.VendorName || 'Vendor',
-            billData.BillDate,
-            Lines.map(line => ({
-              AccountId: line.AccountId,
-              Amount: line.Amount,
-              Description: line.Description || undefined,
-              ProjectId: line.ProjectId || null,
-              ClassId: line.ClassId || null,
-            })),
-            user?.name || user?.username,
-            data.ProjectId || null,
-            data.ClassId || null
-          );
+          await api.post(`/bills/${bill.Id}/post`, { userId: user?.name || user?.username || 'System' });
         } catch (postingError) {
           const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
           showToast(`Bill created, but ${msg}`, 'warning');

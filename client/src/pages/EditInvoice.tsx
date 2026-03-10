@@ -14,7 +14,6 @@ import {
 import { formatGuidForOData } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
-import { createInvoiceJournalEntry } from '../lib/autoPostingService';
 import { useAuth } from '../contexts/AuthContext';
 
 interface InvoiceLine {
@@ -144,17 +143,7 @@ export default function EditInvoice() {
       // 3. In Simple mode, auto-post to GL if invoice is transitioning from Draft to a posted status
       if (settings.invoicePostingMode === 'simple' && wasNotPosted && isNowPosted) {
         try {
-          await createInvoiceJournalEntry(
-            id,
-            invoiceData.TotalAmount,
-            invoiceData.TaxAmount,
-            invoiceData.InvoiceNumber,
-            invoice?.CustomerName || 'Customer',
-            invoiceData.IssueDate,
-            user?.name || user?.username,
-            data.ProjectId || null,
-            data.ClassId || null
-          );
+          await api.post(`/invoices/${id}/post`, { userId: user?.name || user?.username || 'System' });
         } catch (postingError) {
           const msg = postingError instanceof Error ? postingError.message : 'GL posting failed';
           showToast(`Invoice saved, but ${msg}`, 'warning');

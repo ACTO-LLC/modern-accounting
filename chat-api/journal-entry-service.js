@@ -7,10 +7,15 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import axios from 'axios';
+import axiosBase from 'axios';
 import { randomUUID } from 'crypto';
 
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
+
+// Create axios instance with DAB auth header — Simulator provider requires X-MS-API-ROLE
+const axios = axiosBase.create({
+    headers: { 'X-MS-API-ROLE': 'Admin' }
+});
 
 /**
  * Account type constants for AccountDefaults
@@ -209,26 +214,27 @@ class JournalEntryService {
 
         // CR: Revenue accounts per line - batch create for performance
         // Line-level project/class overrides header; falls back to header; falls back to null
+        // Use Amount if populated, otherwise compute from Quantity * UnitPrice
         const revenueLinePromises = lines.map((line) => {
             const revenueAccountId = line.RevenueAccountId || revenueDefault.accountId;
+            const lineAmount = line.Amount || (line.Quantity * line.UnitPrice) || 0;
             return axios.post(`${DAB_API_URL}/journalentrylines`, {
                 JournalEntryId: journalEntryId,
                 AccountId: revenueAccountId,
                 Description: line.Description || `Invoice line`,
                 Debit: 0,
-                Credit: line.Amount,
+                Credit: lineAmount,
                 ProjectId: line.ProjectId || invoice.ProjectId || null,
                 ClassId: line.ClassId || invoice.ClassId || null
             });
         });
         await Promise.all(revenueLinePromises);
 
-        // Update invoice with journal entry link
+        // Update invoice with journal entry link (don't change Status — invoices use Sent/Paid/Overdue, not Posted)
         await axios.patch(`${DAB_API_URL}/invoices_write/Id/${invoiceId}`, {
             JournalEntryId: journalEntryId,
             PostedAt: now,
-            PostedBy: userId,
-            Status: 'Posted'
+            PostedBy: userId
         });
 
         return {
