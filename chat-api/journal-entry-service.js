@@ -7,13 +7,14 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import axiosBase from 'axios';
+import axiosLib from 'axios';
 import { randomUUID } from 'crypto';
 
 const DAB_API_URL = process.env.DAB_API_URL || 'http://localhost:5000/api';
 
-// Create axios instance with DAB auth header — Simulator provider requires X-MS-API-ROLE
-const axios = axiosBase.create({
+// DAB Simulator provider requires X-MS-API-ROLE to resolve permissions.
+// Create a dedicated instance so the header is sent on every request.
+const axios = axiosLib.create({
     headers: { 'X-MS-API-ROLE': 'Admin' }
 });
 

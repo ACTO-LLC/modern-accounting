@@ -26,10 +26,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
     setToasts((prev) => [...prev, newToast]);
 
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 5000);
+    // Auto-remove success/info after 5 seconds; warnings/errors stay until dismissed
+    if (type === 'success' || type === 'info') {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 5000);
+    }
   }, []);
 
   const removeToast = useCallback((id: string) => {

@@ -6,16 +6,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { JournalEntryService, ACCOUNT_TYPES } from '../journal-entry-service.js';
 
-// Mock axios
+// Mock axios — journal-entry-service calls axiosLib.create() to make an instance.
+// vi.hoisted ensures these are available when the hoisted vi.mock factory runs.
+const { mockGet, mockPost, mockPatch } = vi.hoisted(() => ({
+    mockGet: vi.fn(),
+    mockPost: vi.fn(),
+    mockPatch: vi.fn(),
+}));
 vi.mock('axios', () => ({
     default: {
-        get: vi.fn(),
-        post: vi.fn(),
-        patch: vi.fn()
+        create: vi.fn(() => ({ get: mockGet, post: mockPost, patch: mockPatch })),
     }
 }));
 
-import axios from 'axios';
+// The service uses the created instance
+const axios = { get: mockGet, post: mockPost, patch: mockPatch };
 
 describe('JournalEntryService', () => {
     let service;
@@ -179,11 +184,10 @@ describe('JournalEntryService', () => {
                 })
             );
 
-            // Verify invoice updated
+            // Verify invoice updated (Status not changed — invoices use Sent/Paid/Overdue, not Posted)
             expect(axios.patch).toHaveBeenCalledWith(
                 expect.stringContaining('/invoices_write/Id/inv-1'),
                 expect.objectContaining({
-                    Status: 'Posted',
                     PostedBy: 'test-user'
                 })
             );
