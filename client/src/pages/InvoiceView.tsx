@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Printer, Edit, Building2, Mail } from 'lucide-react';
+import { ArrowLeft, Printer, Edit, Building2, Mail, Trash2 } from 'lucide-react';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
+import { reverseInvoiceJournalEntry } from '../lib/autoPostingService';
 import EmailInvoiceModal from '../components/EmailInvoiceModal';
 import EmailHistory from '../components/EmailHistory';
 import { formatDate } from '../lib/dateUtils';
@@ -30,6 +32,7 @@ interface Invoice {
   TaxAmount: number;
   TotalAmount: number;
   Status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+  JournalEntryId?: string | null;
   Lines: InvoiceLine[];
 }
 
@@ -49,8 +52,10 @@ export default function InvoiceView() {
   const navigate = useNavigate();
   const { settings: company } = useCompanySettings();
   const { formatCurrency } = useCurrency();
+  const { user, userRole } = useAuth();
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailHistoryRefresh, setEmailHistoryRefresh] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch invoice
   const { data: invoice, isLoading: invoiceLoading } = useQuery<Invoice>({
@@ -131,6 +136,42 @@ export default function InvoiceView() {
   const invoiceLines = lines || invoice.Lines || [];
   const subtotal = invoiceLines.reduce((sum, line) => sum + (line.Quantity * line.UnitPrice), 0);
 
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete invoice ${invoice.InvoiceNumber}? This will create reversing GL entries and cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+
+      // If invoice was posted, create reversing GL entries
+      if (invoice.JournalEntryId) {
+        await reverseInvoiceJournalEntry(
+          invoice.JournalEntryId,
+          invoice.InvoiceNumber,
+          user?.name || user?.username
+        );
+      }
+
+      // Delete invoice lines first (FK constraint)
+      if (invoiceLines.length > 0) {
+        await Promise.all(
+          invoiceLines.map(line => api.delete(`/invoicelines/Id/${line.Id}`))
+        );
+      }
+
+      // Delete the invoice
+      await api.delete(`/invoices_write/Id/${invoice.Id}`);
+
+      navigate('/invoices');
+    } catch (error) {
+      console.error('Failed to delete invoice:', error);
+      alert('Failed to delete invoice. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Action Bar - Hidden when printing */}
@@ -169,6 +210,16 @@ export default function InvoiceView() {
             <Edit className="h-4 w-4" />
             Edit
           </Link>
+          {userRole === 'Admin' && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 rounded-md shadow-sm bg-white text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </button>
+          )}
         </div>
       </div>
 

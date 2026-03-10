@@ -434,6 +434,68 @@ export async function createBillJournalEntry(
 }
 
 /**
+ * Creates a reversing journal entry for a deleted invoice.
+ * Swaps debits and credits from the original journal entry.
+ */
+export async function reverseInvoiceJournalEntry(
+  journalEntryId: string,
+  invoiceNumber: string,
+  userName?: string
+): Promise<{ journalEntryId: string } | null> {
+  try {
+    // Fetch original journal entry lines
+    const linesResponse = await api.get<{ value: Array<{
+      AccountId: string; Description: string; DebitAmount: number; CreditAmount: number;
+      ProjectId?: string | null; ClassId?: string | null;
+    }> }>(`/journalentrylines?$filter=JournalEntryId eq '${journalEntryId}'`);
+    const originalLines = linesResponse.data.value;
+
+    if (!originalLines || originalLines.length === 0) {
+      console.warn('No journal entry lines found to reverse');
+      return null;
+    }
+
+    const entryNumber = await generateNextEntryNumber();
+    const description = `Reversal - Invoice ${invoiceNumber} deleted by ${userName || 'System'}`;
+
+    // Create reversing journal entry
+    const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
+      EntryNumber: entryNumber,
+      EntryDate: new Date().toISOString().split('T')[0],
+      Description: description,
+      Status: 'Posted'
+    });
+
+    const reversalEntry = journalEntryResponse.data;
+
+    // Create reversed lines (swap debits and credits)
+    await Promise.all(
+      originalLines.map(line =>
+        api.post('/journalentrylines', {
+          JournalEntryId: reversalEntry.Id,
+          AccountId: line.AccountId,
+          Description: `Reversal - ${line.Description}`,
+          DebitAmount: line.CreditAmount,
+          CreditAmount: line.DebitAmount,
+          ProjectId: line.ProjectId || null,
+          ClassId: line.ClassId || null
+        })
+      )
+    );
+
+    // Void the original journal entry
+    await api.patch(`/journalentries/Id/${journalEntryId}`, {
+      Status: 'Void'
+    });
+
+    return { journalEntryId: reversalEntry.Id };
+  } catch (error) {
+    console.error('Failed to reverse journal entry:', error);
+    return null;
+  }
+}
+
+/**
  * Clears the account defaults cache (useful after settings change)
  */
 export function clearAccountDefaultsCache(): void {

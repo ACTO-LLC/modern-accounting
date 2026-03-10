@@ -185,7 +185,7 @@ export default function InvoiceForm({ initialValues, onSubmit, title, isSubmitti
   const { register, control, handleSubmit, setValue, watch, formState: { errors, isSubmitting: formIsSubmitting } } = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
-      Status: 'Draft',
+      Status: settings.invoicePostingMode === 'simple' ? 'Sent' : 'Draft',
       IssueDate: new Date().toISOString().split('T')[0],
       DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, IsTaxable: true, ProjectId: null, ClassId: null }],
