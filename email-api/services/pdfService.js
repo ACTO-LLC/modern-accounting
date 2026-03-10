@@ -19,10 +19,23 @@ export async function generateInvoicePdf(invoiceId) {
         customer = await getCustomerById(invoice.CustomerId);
     }
 
-    return buildPdf(invoice, lines, customer, company);
+    // Fetch company logo if available
+    let logoBuffer = null;
+    if (company?.LogoUrl) {
+        try {
+            const logoRes = await fetch(company.LogoUrl);
+            if (logoRes.ok) {
+                logoBuffer = Buffer.from(await logoRes.arrayBuffer());
+            }
+        } catch (e) {
+            console.warn('Could not fetch company logo for PDF:', e.message);
+        }
+    }
+
+    return buildPdf(invoice, lines, customer, company, logoBuffer);
 }
 
-function buildPdf(invoice, lines, customer, company) {
+function buildPdf(invoice, lines, customer, company, logoBuffer) {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
         const buffers = [];
@@ -35,9 +48,21 @@ function buildPdf(invoice, lines, customer, company) {
         const rightX = doc.page.width - 50;
 
         // ── Header ──────────────────────────────────────────────────────
-        // Company name
-        doc.fontSize(20).fillColor('#1a365d').font('Helvetica-Bold')
-            .text(company?.Name || 'Company', 50, 50);
+        // Company logo or name
+        let logoBottom = 50;
+        if (logoBuffer) {
+            try {
+                doc.image(logoBuffer, 50, 50, { height: 40 });
+                logoBottom = 95;
+            } catch (e) {
+                console.warn('Could not embed logo in PDF:', e.message);
+                doc.fontSize(20).fillColor('#1a365d').font('Helvetica-Bold')
+                    .text(company?.Name || 'Company', 50, 50);
+            }
+        } else {
+            doc.fontSize(20).fillColor('#1a365d').font('Helvetica-Bold')
+                .text(company?.Name || 'Company', 50, 50);
+        }
 
         // INVOICE title
         doc.fontSize(28).fillColor('#1a365d').font('Helvetica-Bold')
@@ -48,7 +73,7 @@ function buildPdf(invoice, lines, customer, company) {
             .text(`#${invoice.InvoiceNumber || ''}`, rightX - 150, 82, { width: 150, align: 'right' });
 
         // Company address block
-        let compY = 78;
+        let compY = Math.max(78, logoBottom);
         doc.fontSize(9).fillColor('#4a5568').font('Helvetica');
         if (company?.Address) { doc.text(company.Address, 50, compY); compY += 12; }
         const cityStateZip = [company?.City, company?.State].filter(Boolean).join(', ') + (company?.Zip ? ` ${company.Zip}` : '');

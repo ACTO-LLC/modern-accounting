@@ -197,7 +197,7 @@ app.post('/email-api/settings/test', async (req, res) => {
 app.post('/email-api/send/invoice/:id', async (req, res) => {
     try {
         const invoiceId = validateUuid(req.params.id, 'invoiceId');
-        const { recipientEmail, recipientName, subject, body, cc, bcc, companySettings } = req.body;
+        const { recipientEmail, recipientName, subject, body, cc, bcc, sentBy, companySettings } = req.body;
 
         // Validate email format
         if (!recipientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
@@ -217,7 +217,8 @@ app.post('/email-api/send/invoice/:id', async (req, res) => {
             RecipientName: recipientName,
             Subject: subject,
             Body: body,
-            Status: 'Pending'
+            Status: 'Pending',
+            SentBy: sentBy,
         });
 
         try {

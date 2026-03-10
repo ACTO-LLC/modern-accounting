@@ -209,10 +209,11 @@ export async function createEmailLog(logData) {
         request.input('Subject', sql.NVarChar, logData.Subject);
         request.input('Body', sql.NVarChar, logData.Body);
         request.input('Status', sql.NVarChar, logData.Status);
+        request.input('SentBy', sql.NVarChar, logData.SentBy || null);
 
         await request.query(`
-            INSERT INTO EmailLog (Id, InvoiceId, RecipientEmail, RecipientName, Subject, Body, Status)
-            VALUES (@Id, @InvoiceId, @RecipientEmail, @RecipientName, @Subject, @Body, @Status)
+            INSERT INTO EmailLog (Id, InvoiceId, RecipientEmail, RecipientName, Subject, Body, Status, SentBy)
+            VALUES (@Id, @InvoiceId, @RecipientEmail, @RecipientName, @Subject, @Body, @Status, @SentBy)
         `);
 
         return logId;
@@ -249,7 +250,7 @@ export async function getEmailLogs(invoiceId) {
         request.input('InvoiceId', sql.UniqueIdentifier, invoiceId);
 
         const result = await request.query(`
-            SELECT Id, RecipientEmail, RecipientName, Subject, Status, ErrorMessage, SentAt, CreatedAt
+            SELECT Id, RecipientEmail, RecipientName, Subject, Status, ErrorMessage, SentBy, SentAt, CreatedAt
             FROM EmailLog
             WHERE InvoiceId = @InvoiceId
             ORDER BY CreatedAt DESC

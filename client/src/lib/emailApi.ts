@@ -40,6 +40,7 @@ export interface EmailLog {
   Subject: string;
   Status: 'Pending' | 'Sent' | 'Failed';
   ErrorMessage?: string;
+  SentBy?: string;
   SentAt?: string;
   CreatedAt: string;
   IsAutomatic?: boolean;
@@ -51,6 +52,7 @@ export interface SendEmailRequest {
   recipientName?: string;
   cc?: string;
   bcc?: string;
+  sentBy?: string;
   subject: string;
   body: string;
   companySettings?: {

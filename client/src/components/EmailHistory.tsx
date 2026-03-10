@@ -128,10 +128,9 @@ export default function EmailHistory({ invoiceId, refreshTrigger }: EmailHistory
                   </p>
                 )}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                {log.SentAt
-                  ? formatDateTime(log.SentAt)
-                  : formatDateTime(log.CreatedAt)}
+              <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap text-right">
+                <div>{log.SentAt ? formatDateTime(log.SentAt) : formatDateTime(log.CreatedAt)}</div>
+                {log.SentBy && <div className="text-gray-400 dark:text-gray-500">by {log.SentBy}</div>}
               </div>
             </div>
           </div>

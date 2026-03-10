@@ -9,6 +9,7 @@ CREATE TABLE [dbo].[EmailLog]
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Pending',
     [ErrorMessage] NVARCHAR(MAX) NULL,
     [SentAt] DATETIME2 NULL,
+    [SentBy] NVARCHAR(255) NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
     -- Additional columns from database

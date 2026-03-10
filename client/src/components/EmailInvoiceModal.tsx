@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Loader2, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { emailSettingsApi, emailSendApi, replaceTemplateVariables } from '../lib/emailApi';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { formatDateShort } from '../lib/dateUtils';
 
@@ -37,6 +38,7 @@ export default function EmailInvoiceModal({
   onEmailSent,
 }: EmailInvoiceModalProps) {
   const { settings: companySettings } = useCompanySettings();
+  const { user } = useAuth();
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [cc, setCc] = useState('');
@@ -118,6 +120,7 @@ export default function EmailInvoiceModal({
         recipientName,
         cc: cc || undefined,
         bcc: bcc || undefined,
+        sentBy: user?.name || user?.username || 'Unknown',
         subject,
         body,
         companySettings: {
