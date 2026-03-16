@@ -31,6 +31,7 @@ import NewEstimate from './pages/NewEstimate';
 import EditEstimate from './pages/EditEstimate';
 import JournalEntries from './pages/JournalEntries';
 import NewJournalEntry from './pages/NewJournalEntry';
+import EditJournalEntry from './pages/EditJournalEntry';
 import UnifiedImport from './pages/UnifiedImport';
 import Customers from './pages/Customers';
 import NewCustomer from './pages/NewCustomer';
@@ -116,6 +117,7 @@ import SalesByCustomer from './pages/reports/SalesByCustomer';
 import SalesByProduct from './pages/reports/SalesByProduct';
 import Payments from './pages/Payments';
 import NewPayment from './pages/NewPayment';
+import EditPayment from './pages/EditPayment';
 import CustomerDeposits from './pages/CustomerDeposits';
 import NewCustomerDeposit from './pages/NewCustomerDeposit';
 import ApplyDeposit from './pages/ApplyDeposit';
@@ -198,6 +200,7 @@ function AppContent() {
             <Route path="plaid-connections" element={<PlaidConnections />} />
             <Route path="journal-entries" element={<JournalEntries />} />
             <Route path="journal-entries/new" element={<NewJournalEntry />} />
+            <Route path="journal-entries/:id/edit" element={<EditJournalEntry />} />
             <Route path="import" element={<UnifiedImport />} />
             <Route path="review" element={<Navigate to="/transactions?view=review" replace />} />
             <Route path="customers" element={<Customers />} />
@@ -287,6 +290,7 @@ function AppContent() {
             <Route path="settings" element={<CompanySettings />} />
             <Route path="payments" element={<Payments />} />
             <Route path="payments/new" element={<NewPayment />} />
+            <Route path="payments/:id/edit" element={<EditPayment />} />
             <Route path="customer-deposits" element={<CustomerDeposits />} />
             <Route path="customer-deposits/new" element={<NewCustomerDeposit />} />
             <Route path="customer-deposits/:id/apply" element={<ApplyDeposit />} />

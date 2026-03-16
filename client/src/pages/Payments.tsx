@@ -75,6 +75,7 @@ export default function Payments() {
         gridKey="payments-grid"
         endpoint="/payments"
         columns={columns}
+        editPath="/payments/{id}/edit"
         initialPageSize={25}
         emptyMessage="No payments found."
       />

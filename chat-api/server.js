@@ -230,15 +230,21 @@ const DAB_EXCLUDED_PATHS = [
     '/api/categorization-rules',
     '/api/insights',
     '/api/account-defaults',
-    '/api/payments',
-    '/api/billpayments',
 ];
 
 // Patterns for locally-handled routes that live under DAB entity prefixes
 // (e.g., /api/invoices/:id/post, /api/bills/:id/void)
+// Also excludes top-level POST to /api/payments and /api/billpayments
+// (locally handled for GL posting), while allowing GETs to proxy through to DAB.
 const DAB_EXCLUDED_PATTERNS = [
     /^\/api\/invoices\/[^/]+\/(post|void)$/,
     /^\/api\/bills\/[^/]+\/(post|void)$/,
+];
+
+// Routes excluded only for specific HTTP methods (allows GETs to proxy through to DAB)
+const DAB_EXCLUDED_METHOD_PATHS = [
+    { method: 'POST', path: '/api/payments' },
+    { method: 'POST', path: '/api/billpayments' },
 ];
 
 // Create proxy middleware instance once (not per-request)
@@ -248,7 +254,9 @@ const dabProxyMiddleware = createProxyMiddleware({
     logLevel: 'debug',
     pathRewrite: (path, req) => {
         // Reconstruct full path: /api + stripped path
-        const fullPath = '/api' + path;
+        // Also translate $top to $first (DAB uses $first, not OData $top)
+        let fullPath = '/api' + path;
+        fullPath = fullPath.replace(/\$top=/g, '$first=');
         console.log(`[DAB Proxy] Rewriting path: ${path} -> ${fullPath}`);
         return fullPath;
     },
@@ -329,13 +337,123 @@ app.post('/api/companies', async (req, res) => {
     }
 });
 
+// ============================================================================
+// Server-side GET handlers for DAB view entities
+// ============================================================================
+// DAB has limitations with OData queries on views:
+// - Cannot filter on computed CASE columns (Status in v_Invoices, v_Bills)
+// - May reject $top/$orderby on certain views (v_Payments, v_BillPayments)
+// These handlers intercept GETs, strip problematic OData params, forward to
+// DAB via axios, and apply the stripped operations in JS.
+
+function extractStatusFilter(filter) {
+    if (!filter) return { cleanedFilter: '', statusConditions: [] };
+    const statusConditions = [];
+    let cleaned = filter.replace(/Status\s+(eq|ne)\s+'([^']+)'/gi, (match, op, value) => {
+        statusConditions.push({ op: op.toLowerCase(), value });
+        return '@@REMOVED@@';
+    });
+    cleaned = cleaned.replace(/@@REMOVED@@\s+and\s+/gi, '');
+    cleaned = cleaned.replace(/\s+and\s+@@REMOVED@@/gi, '');
+    cleaned = cleaned.replace(/@@REMOVED@@/g, '');
+    cleaned = cleaned.trim();
+    return { cleanedFilter: cleaned, statusConditions };
+}
+
+function applyStatusFilter(rows, statusConditions) {
+    let results = rows;
+    for (const cond of statusConditions) {
+        if (cond.op === 'eq') {
+            results = results.filter(r => r.Status === cond.value);
+        } else if (cond.op === 'ne') {
+            results = results.filter(r => r.Status !== cond.value);
+        }
+    }
+    return results;
+}
+
+function applyOrderBy(rows, orderby) {
+    if (!orderby) return rows;
+    // Parse "FieldName desc" or "FieldName asc" (default asc)
+    const parts = orderby.trim().split(/\s+/);
+    const field = parts[0];
+    const desc = (parts[1] || '').toLowerCase() === 'desc';
+    return [...rows].sort((a, b) => {
+        const va = a[field], vb = b[field];
+        if (va == null && vb == null) return 0;
+        if (va == null) return desc ? 1 : -1;
+        if (vb == null) return desc ? -1 : 1;
+        if (va < vb) return desc ? 1 : -1;
+        if (va > vb) return desc ? -1 : 1;
+        return 0;
+    });
+}
+
+// View entities that need server-side OData handling
+const VIEW_ENTITIES = ['invoices', 'bills', 'payments', 'billpayments'];
+
+for (const entity of VIEW_ENTITIES) {
+    app.get(`/api/${entity}`, async (req, res) => {
+        try {
+            const { cleanedFilter, statusConditions } = extractStatusFilter(req.query['$filter']);
+            const orderby = req.query['$orderby'];
+            const top = req.query['$top'] ? parseInt(req.query['$top'], 10) : null;
+
+            // Build query params to forward to DAB (only $filter and $select)
+            // Handle $top, $orderby, and Status filtering in JS to avoid DAB view limitations
+            const params = new URLSearchParams();
+            if (cleanedFilter) params.set('$filter', cleanedFilter);
+            if (req.query['$select']) params.set('$select', req.query['$select']);
+            if (req.query['$count']) params.set('$count', req.query['$count']);
+
+            const qs = params.toString();
+            const dabUrl = `${DAB_PROXY_URL}/api/${entity}${qs ? '?' + qs : ''}`;
+            const stripped = [];
+            if (statusConditions.length > 0) stripped.push(`${statusConditions.length} Status condition(s)`);
+            if (orderby) stripped.push(`$orderby=${orderby}`);
+            if (top) stripped.push(`$top=${top}`);
+            console.log(`[DAB View-Handler] GET ${dabUrl}${stripped.length ? ` (handling in JS: ${stripped.join(', ')})` : ''}`);
+
+            const response = await axios.get(dabUrl, {
+                headers: {
+                    ...(req.headers.authorization && { 'Authorization': req.headers.authorization }),
+                    ...(req.headers['x-ms-api-role'] && { 'X-MS-API-ROLE': req.headers['x-ms-api-role'] })
+                }
+            });
+
+            let rows = response.data.value || [];
+
+            // Apply Status filter in JS (for computed CASE columns)
+            if (statusConditions.length > 0) {
+                rows = applyStatusFilter(rows, statusConditions);
+            }
+
+            // Apply $orderby in JS
+            if (orderby) {
+                rows = applyOrderBy(rows, orderby);
+            }
+
+            // Apply $top in JS
+            if (top != null && top > 0) {
+                rows = rows.slice(0, top);
+            }
+
+            res.json({ value: rows });
+        } catch (error) {
+            console.error(`[DAB View-Handler] GET /api/${entity} failed:`, error.response?.data || error.message);
+            res.status(error.response?.status || 502).json(error.response?.data || { error: error.message });
+        }
+    });
+}
+
 // Apply proxy for /api/* routes, but skip locally-handled paths
 app.use('/api', async (req, res, next) => {
     // Check if this path should be handled locally
     const fullPath = '/api' + req.path;
     const shouldSkip = DAB_EXCLUDED_PATHS.some(excluded =>
         fullPath === excluded || fullPath.startsWith(excluded + '/')
-    ) || DAB_EXCLUDED_PATTERNS.some(pattern => pattern.test(fullPath));
+    ) || DAB_EXCLUDED_PATTERNS.some(pattern => pattern.test(fullPath))
+      || DAB_EXCLUDED_METHOD_PATHS.some(mp => mp.method === req.method && fullPath === mp.path);
 
     if (shouldSkip) {
         return next();

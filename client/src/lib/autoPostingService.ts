@@ -139,7 +139,7 @@ async function getRevenueAccountId(): Promise<string | null> {
  */
 async function generateNextEntryNumber(): Promise<string> {
   try {
-    const response = await api.get<{ value: JournalEntry[] }>('/journalentries?$orderby=CreatedAt desc&$top=1');
+    const response = await api.get<{ value: JournalEntry[] }>('/journalentries?$orderby=CreatedAt desc&$first=1');
     const lastEntry = response.data.value[0];
 
     if (lastEntry?.Reference) {
@@ -222,42 +222,47 @@ export async function createInvoiceJournalEntry(
       }
     }
 
-    // Create the journal entry
-    const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
+    const journalEntryId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    // Create JE as Draft first so lines can be added without balance issues
+    await api.post('/journalentries', {
+      Id: journalEntryId,
       Reference: entryNumber,
       TransactionDate: issueDate,
       Description: description,
-      Status: 'Posted',
+      Status: 'Draft',
       CreatedBy: userName || 'System',
-      PostedAt: new Date().toISOString(),
-      PostedBy: userName || 'System'
     });
 
-    const journalEntry = journalEntryResponse.data;
+    // Create journal entry lines sequentially
+    for (const line of lines) {
+      await api.post('/journalentrylines', {
+        JournalEntryId: journalEntryId,
+        AccountId: line.AccountId,
+        Description: line.Description,
+        Debit: line.DebitAmount,
+        Credit: line.CreditAmount,
+        ProjectId: line.ProjectId || null,
+        ClassId: line.ClassId || null
+      });
+    }
 
-    // Create journal entry lines
-    await Promise.all(
-      lines.map(line =>
-        api.post('/journalentrylines', {
-          JournalEntryId: journalEntry.Id,
-          AccountId: line.AccountId,
-          Description: line.Description,
-          Debit: line.DebitAmount,
-          Credit: line.CreditAmount,
-          ProjectId: line.ProjectId || null,
-          ClassId: line.ClassId || null
-        })
-      )
-    );
+    // Post the journal entry now that lines are balanced
+    await api.patch(`/journalentries/Id/${journalEntryId}`, {
+      Status: 'Posted',
+      PostedAt: now,
+      PostedBy: userName || 'System'
+    });
 
     // Update the invoice with the journal entry reference
     await api.patch(`/invoices_write/Id/${invoiceId}`, {
-      JournalEntryId: journalEntry.Id,
-      PostedAt: new Date().toISOString(),
+      JournalEntryId: journalEntryId,
+      PostedAt: now,
       PostedBy: userName || 'System'
     });
 
-    return { journalEntryId: journalEntry.Id };
+    return { journalEntryId };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error creating journal entry';
     throw new Error(`GL posting failed for invoice: ${msg}`);
@@ -287,57 +292,51 @@ export async function createPaymentJournalEntry(
 
     const entryNumber = await generateNextEntryNumber();
     const description = `Payment ${paymentNumber} - ${customerName}`;
+    const journalEntryId = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    // Create journal entry lines
-    const lines: JournalEntryLine[] = [
-      {
-        AccountId: depositAccountId,
-        Description: `Deposit - ${paymentNumber}`,
-        DebitAmount: totalAmount,
-        CreditAmount: 0
-      },
-      {
-        AccountId: arAccountId,
-        Description: `AR - ${paymentNumber}`,
-        DebitAmount: 0,
-        CreditAmount: totalAmount
-      }
-    ];
-
-    // Create the journal entry
-    const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
+    // Create JE as Draft first so lines can be added without balance issues
+    await api.post('/journalentries', {
+      Id: journalEntryId,
       Reference: entryNumber,
       TransactionDate: paymentDate,
       Description: description,
-      Status: 'Posted',
+      Status: 'Draft',
       CreatedBy: 'System',
-      PostedAt: new Date().toISOString(),
+    });
+
+    // Create lines sequentially to avoid race conditions
+    // DR: Cash/Bank
+    await api.post('/journalentrylines', {
+      JournalEntryId: journalEntryId,
+      AccountId: depositAccountId,
+      Description: `Deposit - ${paymentNumber}`,
+      Debit: totalAmount,
+      Credit: 0
+    });
+
+    // CR: Accounts Receivable
+    await api.post('/journalentrylines', {
+      JournalEntryId: journalEntryId,
+      AccountId: arAccountId,
+      Description: `AR - ${paymentNumber}`,
+      Debit: 0,
+      Credit: totalAmount
+    });
+
+    // Post the journal entry now that lines are balanced
+    await api.patch(`/journalentries/Id/${journalEntryId}`, {
+      Status: 'Posted',
+      PostedAt: now,
       PostedBy: 'System'
     });
 
-    const journalEntry = journalEntryResponse.data;
-
-    // Create journal entry lines
-    await Promise.all(
-      lines.map(line =>
-        api.post('/journalentrylines', {
-          JournalEntryId: journalEntry.Id,
-          AccountId: line.AccountId,
-          Description: line.Description,
-          Debit: line.DebitAmount,
-          Credit: line.CreditAmount,
-          ProjectId: line.ProjectId || null,
-          ClassId: line.ClassId || null
-        })
-      )
-    );
-
     // Update the payment with the journal entry reference
     await api.patch(`/payments_write/Id/${paymentId}`, {
-      JournalEntryId: journalEntry.Id
+      JournalEntryId: journalEntryId
     });
 
-    return { journalEntryId: journalEntry.Id };
+    return { journalEntryId };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error creating journal entry';
     throw new Error(`GL posting failed for payment: ${msg}`);
@@ -397,42 +396,47 @@ export async function createBillJournalEntry(
       ClassId: classId || null
     });
 
-    // Create the journal entry
-    const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
+    const journalEntryId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    // Create JE as Draft first so lines can be added without balance issues
+    await api.post('/journalentries', {
+      Id: journalEntryId,
       Reference: entryNumber,
       TransactionDate: billDate,
       Description: description,
-      Status: 'Posted',
+      Status: 'Draft',
       CreatedBy: userName || 'System',
-      PostedAt: new Date().toISOString(),
-      PostedBy: userName || 'System'
     });
 
-    const journalEntry = journalEntryResponse.data;
+    // Create journal entry lines sequentially
+    for (const line of lines) {
+      await api.post('/journalentrylines', {
+        JournalEntryId: journalEntryId,
+        AccountId: line.AccountId,
+        Description: line.Description,
+        Debit: line.DebitAmount,
+        Credit: line.CreditAmount,
+        ProjectId: line.ProjectId || null,
+        ClassId: line.ClassId || null
+      });
+    }
 
-    // Create journal entry lines
-    await Promise.all(
-      lines.map(line =>
-        api.post('/journalentrylines', {
-          JournalEntryId: journalEntry.Id,
-          AccountId: line.AccountId,
-          Description: line.Description,
-          Debit: line.DebitAmount,
-          Credit: line.CreditAmount,
-          ProjectId: line.ProjectId || null,
-          ClassId: line.ClassId || null
-        })
-      )
-    );
+    // Post the journal entry now that lines are balanced
+    await api.patch(`/journalentries/Id/${journalEntryId}`, {
+      Status: 'Posted',
+      PostedAt: now,
+      PostedBy: userName || 'System'
+    });
 
     // Update the bill with the journal entry reference
     await api.patch(`/bills_write/Id/${billId}`, {
-      JournalEntryId: journalEntry.Id,
-      PostedAt: new Date().toISOString(),
+      JournalEntryId: journalEntryId,
+      PostedAt: now,
       PostedBy: userName || 'System'
     });
 
-    return { journalEntryId: journalEntry.Id };
+    return { journalEntryId };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error creating journal entry';
     throw new Error(`GL posting failed for bill: ${msg}`);
@@ -464,40 +468,45 @@ export async function reverseInvoiceJournalEntry(
     const entryNumber = await generateNextEntryNumber();
     const description = `Reversal - Invoice ${invoiceNumber} deleted by ${userName || 'System'}`;
 
-    // Create reversing journal entry
-    const journalEntryResponse = await api.post<JournalEntry>('/journalentries', {
+    const reversalEntryId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    // Create reversing JE as Draft first
+    await api.post('/journalentries', {
+      Id: reversalEntryId,
       Reference: entryNumber,
       TransactionDate: new Date().toISOString().split('T')[0],
       Description: description,
-      Status: 'Posted',
+      Status: 'Draft',
       CreatedBy: userName || 'System',
-      PostedAt: new Date().toISOString(),
-      PostedBy: userName || 'System'
     });
 
-    const reversalEntry = journalEntryResponse.data;
+    // Create reversed lines sequentially (swap debits and credits)
+    for (const line of originalLines) {
+      await api.post('/journalentrylines', {
+        JournalEntryId: reversalEntryId,
+        AccountId: line.AccountId,
+        Description: `Reversal - ${line.Description}`,
+        Debit: line.Credit,
+        Credit: line.Debit,
+        ProjectId: line.ProjectId || null,
+        ClassId: line.ClassId || null
+      });
+    }
 
-    // Create reversed lines (swap debits and credits)
-    await Promise.all(
-      originalLines.map(line =>
-        api.post('/journalentrylines', {
-          JournalEntryId: reversalEntry.Id,
-          AccountId: line.AccountId,
-          Description: `Reversal - ${line.Description}`,
-          Debit: line.Credit,
-          Credit: line.Debit,
-          ProjectId: line.ProjectId || null,
-          ClassId: line.ClassId || null
-        })
-      )
-    );
+    // Post the reversal entry
+    await api.patch(`/journalentries/Id/${reversalEntryId}`, {
+      Status: 'Posted',
+      PostedAt: now,
+      PostedBy: userName || 'System'
+    });
 
     // Void the original journal entry
     await api.patch(`/journalentries/Id/${journalEntryId}`, {
       Status: 'Void'
     });
 
-    return { journalEntryId: reversalEntry.Id };
+    return { journalEntryId: reversalEntryId };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error reversing journal entry';
     throw new Error(`GL reversal failed: ${msg}`);
