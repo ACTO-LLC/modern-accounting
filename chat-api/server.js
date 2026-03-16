@@ -228,7 +228,17 @@ const DAB_EXCLUDED_PATHS = [
     '/api/banktransactions',
     '/api/post-transactions',
     '/api/categorization-rules',
-    '/api/insights'
+    '/api/insights',
+    '/api/account-defaults',
+    '/api/payments',
+    '/api/billpayments',
+];
+
+// Patterns for locally-handled routes that live under DAB entity prefixes
+// (e.g., /api/invoices/:id/post, /api/bills/:id/void)
+const DAB_EXCLUDED_PATTERNS = [
+    /^\/api\/invoices\/[^/]+\/(post|void)$/,
+    /^\/api\/bills\/[^/]+\/(post|void)$/,
 ];
 
 // Create proxy middleware instance once (not per-request)
@@ -325,7 +335,7 @@ app.use('/api', async (req, res, next) => {
     const fullPath = '/api' + req.path;
     const shouldSkip = DAB_EXCLUDED_PATHS.some(excluded =>
         fullPath === excluded || fullPath.startsWith(excluded + '/')
-    );
+    ) || DAB_EXCLUDED_PATTERNS.some(pattern => pattern.test(fullPath));
 
     if (shouldSkip) {
         return next();
