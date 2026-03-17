@@ -175,16 +175,25 @@ describe('JournalEntryService', () => {
             expect(result.totalAmount).toBe(1000);
             expect(result.linesCount).toBe(2);
 
-            // Verify journal entry created
+            // Verify journal entry created as Draft first (lines added, then patched to Posted)
             expect(axios.post).toHaveBeenCalledWith(
                 expect.stringContaining('/journalentries'),
                 expect.objectContaining({
                     Description: expect.stringContaining('Invoice INV-001'),
-                    Status: 'Posted'
+                    Status: 'Draft'
                 })
             );
 
-            // Verify invoice updated (Status not changed — invoices use Sent/Paid/Overdue, not Posted)
+            // Verify journal entry patched to Posted after lines are balanced
+            expect(axios.patch).toHaveBeenCalledWith(
+                expect.stringContaining('/journalentries/Id/'),
+                expect.objectContaining({
+                    Status: 'Posted',
+                    PostedBy: 'test-user'
+                })
+            );
+
+            // Verify invoice updated with JE link
             expect(axios.patch).toHaveBeenCalledWith(
                 expect.stringContaining('/invoices_write/Id/inv-1'),
                 expect.objectContaining({
