@@ -7288,7 +7288,7 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
         const authToken = extractAuthToken(req);
 
         if (!accountId) {
-            return res.status(400).json({ error: 'accountId is required' });
+            return res.status(400).json({ error: 'accountId is required. Assign an account before approving.' });
         }
 
         // Get the original transaction using dab client
@@ -7304,7 +7304,7 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
 
         // Check if the approved category differs from AI suggestion (learning opportunity)
         const suggestedAccountId = transaction.SuggestedAccountId;
-        const shouldLearn = suggestedAccountId && suggestedAccountId.toLowerCase() !== accountId.toLowerCase();
+        const shouldLearn = accountId && suggestedAccountId && suggestedAccountId.toLowerCase() !== accountId.toLowerCase();
 
         // Update the transaction using dab client
         const updateResult = await dab.update('banktransactions', id, {
@@ -7377,11 +7377,94 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
             });
         }
 
+        // Auto-post to GL: create journal entry for the approved transaction
+        let posted = false;
+        let journalEntryId = null;
+        const sourceAccountId = transaction.SourceAccountId;
+        if (sourceAccountId && accountId) {
+            try {
+                journalEntryId = crypto.randomUUID();
+                const amount = Math.abs(parseFloat(transaction.Amount));
+                const isOutflow = parseFloat(transaction.Amount) < 0;
+                const now = new Date().toISOString();
+                const jeDesc = memo || transaction.SuggestedMemo || transaction.Description;
+
+                // Create JE as Draft, add lines, then post (Draft→Post pattern)
+                await dab.create('journalentries', {
+                    Id: journalEntryId,
+                    TransactionDate: transaction.TransactionDate,
+                    Description: jeDesc,
+                    Reference: `BANK-${id.substring(0, 8)}`,
+                    Status: 'Draft',
+                    CreatedBy: 'system',
+                    SourceSystem: 'BankTransaction',
+                    SourceId: id
+                }, authToken);
+
+                if (isOutflow) {
+                    // DR: Expense/Asset account, CR: Bank account
+                    await dab.create('journalentrylines', {
+                        JournalEntryId: journalEntryId,
+                        AccountId: accountId,
+                        Description: jeDesc,
+                        Debit: amount,
+                        Credit: 0
+                    }, authToken);
+                    await dab.create('journalentrylines', {
+                        JournalEntryId: journalEntryId,
+                        AccountId: sourceAccountId,
+                        Description: jeDesc,
+                        Debit: 0,
+                        Credit: amount
+                    }, authToken);
+                } else {
+                    // DR: Bank account, CR: Income/Liability account
+                    await dab.create('journalentrylines', {
+                        JournalEntryId: journalEntryId,
+                        AccountId: sourceAccountId,
+                        Description: jeDesc,
+                        Debit: amount,
+                        Credit: 0
+                    }, authToken);
+                    await dab.create('journalentrylines', {
+                        JournalEntryId: journalEntryId,
+                        AccountId: accountId,
+                        Description: jeDesc,
+                        Debit: 0,
+                        Credit: amount
+                    }, authToken);
+                }
+
+                // Post the JE
+                await dab.update('journalentries', journalEntryId, {
+                    Status: 'Posted',
+                    PostedAt: now,
+                    PostedBy: 'system'
+                }, authToken);
+
+                // Update transaction to Posted with JE link
+                await dab.update('banktransactions', id, {
+                    Status: 'Posted',
+                    JournalEntryId: journalEntryId
+                }, authToken);
+
+                posted = true;
+                console.log(`[Approve] Auto-posted transaction ${id.substring(0, 8)} -> JE ${journalEntryId.substring(0, 8)}`);
+            } catch (postError) {
+                console.warn(`[Approve] Auto-post failed for ${id.substring(0, 8)}:`, postError.message);
+                // Transaction is still approved, just not posted
+            }
+        }
+
         res.json({
             success: true,
             transactionId: id,
             learned: ruleCreated,
-            message: ruleCreated ? 'Transaction approved and rule learned' : 'Transaction approved'
+            posted,
+            journalEntryId,
+            message: posted
+                ? (ruleCreated ? 'Transaction approved, posted to GL, and rule learned' : 'Transaction approved and posted to GL')
+                : (ruleCreated ? 'Transaction approved and rule learned' : 'Transaction approved')
         });
     } catch (error) {
         console.error('Transaction approval error:', error.message);

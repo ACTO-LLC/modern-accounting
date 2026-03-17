@@ -302,23 +302,26 @@ export default function UnifiedTransactions() {
   const handleApprove = useCallback((id: string) => {
     const txn = transactions.find(t => t.Id === id);
     if (!txn) return;
-    // Resolve category to account name for consistency with display
+    if (!txn.SuggestedAccountId) {
+      toast.error('Assign an account first (click the edit icon)');
+      return;
+    }
     const resolvedCategory = resolveCategory(txn, accountMap);
-    updateMutation.mutate({
-      id,
-      data: {
-        Status: 'Approved',
-        ApprovedAccountId: txn.SuggestedAccountId,
-        ApprovedCategory: resolvedCategory ?? txn.SuggestedCategory,
-        ApprovedMemo: txn.SuggestedMemo,
-        VendorId: txn.VendorId || null,
-        CustomerId: txn.CustomerId || null,
-        ClassId: txn.ClassId || null,
-        ProjectId: txn.ProjectId || null,
-        Payee: txn.Payee || null,
-      },
+    // Use server-side approve endpoint which also auto-posts to GL
+    api.post(`/transactions/${id}/approve`, {
+      accountId: txn.SuggestedAccountId,
+      category: resolvedCategory ?? txn.SuggestedCategory,
+      memo: txn.SuggestedMemo,
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      setDrawerTransaction(null);
+      setSelectedIds({ type: 'include', ids: new Set() });
+      toast.success('Transaction approved and posted to GL');
+    }).catch((err) => {
+      console.error('Approve failed:', err);
+      toast.error('Failed to approve transaction');
     });
-  }, [transactions, updateMutation, accountMap]);
+  }, [transactions, accountMap, queryClient]);
 
   const handleReject = useCallback((id: string) => {
     updateMutation.mutate({ id, data: { Status: 'Rejected' } });
@@ -440,7 +443,7 @@ export default function UnifiedTransactions() {
         const className = txn.ClassId ? classMap.get(txn.ClassId) : null;
         const hasDetails = vendorName || customerName || className || txn.Payee;
         return (
-          <div className="py-1">
+          <div className="py-1 min-w-0 w-full">
             <div className="font-medium truncate">{params.value}</div>
             {txn.OriginalCategory && (
               <div className="text-xs text-gray-500 truncate">Bank: {txn.OriginalCategory}</div>
@@ -502,7 +505,7 @@ export default function UnifiedTransactions() {
       renderCell: (params: GridRenderCellParams) => {
         const categoryDisplay = getCategoryDisplay(params.row as BankTransaction);
         return (
-          <div>
+          <div className="min-w-0 w-full">
             <div className="font-medium truncate">{categoryDisplay}</div>
             {params.row.SuggestedMemo && (
               <div className="text-xs text-gray-500 truncate">{params.row.SuggestedMemo}</div>
@@ -552,7 +555,7 @@ export default function UnifiedTransactions() {
 
         if (txn.Status === 'Pending') {
           return (
-            <div className="flex justify-center gap-1">
+            <div className="flex items-center justify-center gap-1 h-full">
               <button
                 onClick={(e) => { e.stopPropagation(); handleEdit(txn); }}
                 className="p-1 text-blue-600 hover:text-blue-800"
@@ -562,8 +565,9 @@ export default function UnifiedTransactions() {
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleApprove(txn.Id); }}
-                className="p-1 text-green-600 hover:text-green-800"
-                title="Approve"
+                className={`p-1 ${txn.SuggestedAccountId ? 'text-green-600 hover:text-green-800' : 'text-gray-300 cursor-not-allowed'}`}
+                title={txn.SuggestedAccountId ? 'Approve' : 'Assign an account first'}
+                disabled={!txn.SuggestedAccountId}
               >
                 <CheckCircle className="h-4 w-4" />
               </button>
@@ -691,12 +695,7 @@ export default function UnifiedTransactions() {
           columns={columns}
           getRowId={(row) => row.Id}
           loading={transactionsLoading}
-          getRowHeight={(params) => {
-            const row = params.model;
-            const hasDetails = row.VendorId || row.CustomerId || row.ClassId || row.Payee;
-            const hasMemo = row.SuggestedMemo || row.OriginalCategory;
-            return hasDetails ? 72 : hasMemo ? 58 : 44;
-          }}
+          getRowHeight={() => 'auto'}
           checkboxSelection
           disableRowSelectionOnClick
           onRowDoubleClick={(params) => {
@@ -714,6 +713,11 @@ export default function UnifiedTransactions() {
           onFilterModelChange={gridState.onFilterModelChange}
           localeText={{
             noRowsLabel: 'No transactions found. Sync your bank feed or import a CSV to get started.',
+          }}
+          sx={{
+            '& .MuiDataGrid-cell': {
+              py: 1,
+            },
           }}
         />
       </div>
