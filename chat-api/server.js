@@ -6861,12 +6861,12 @@ app.post('/api/plaid/connections/:itemId/update-link-token', async (req, res) =>
 // Exchange public token for access token (called after Plaid Link success)
 app.post('/api/plaid/exchange-token', async (req, res) => {
     try {
-        const { publicToken, metadata } = req.body;
+        const { publicToken, metadata, oldItemId } = req.body;
         if (!publicToken) {
             return res.status(400).json({ error: 'Missing publicToken' });
         }
 
-        const result = await plaidService.exchangePublicToken(publicToken, metadata);
+        const result = await plaidService.exchangePublicToken(publicToken, metadata, oldItemId);
         logAuditEvent({
             action: 'Create',
             entityType: 'PlaidConnection',
