@@ -173,39 +173,64 @@ class PlaidService {
      * Use this when a connection needs re-authentication (ITEM_LOGIN_REQUIRED)
      * @param {string} itemId - The Plaid Item ID to re-authenticate
      */
-    async createUpdateLinkToken(itemId) {
+    async createUpdateLinkToken(itemId, userId = 'actollc') {
         if (!this.client) {
             throw new Error('Plaid client not initialized. Check PLAID_CLIENT_ID and PLAID_SECRET.');
         }
 
+        // Get the connection to retrieve the access token
+        const connection = await this.getConnectionByItemId(itemId);
+        if (!connection) {
+            throw new Error('Connection not found for itemId: ' + itemId);
+        }
+
+        // Try update mode first (requires decrypting the stored token)
+        let accessToken = null;
         try {
-            // Get the connection to retrieve the access token
-            const connection = await this.getConnectionByItemId(itemId);
-            if (!connection) {
-                throw new Error('Connection not found for itemId: ' + itemId);
+            accessToken = this.decryptToken(connection.AccessToken);
+        } catch (decryptError) {
+            console.warn(`[Plaid] Cannot decrypt token for ${connection.InstitutionName} (${itemId}): ${decryptError.message}`);
+            console.warn('[Plaid] Falling back to fresh link flow for re-connection');
+        }
+
+        try {
+            if (accessToken) {
+                // Normal update mode — preserves item_id
+                const response = await this.client.linkTokenCreate({
+                    user: { client_user_id: userId },
+                    client_name: 'Modern Accounting',
+                    country_codes: [CountryCode.Us],
+                    language: 'en',
+                    access_token: accessToken,
+                });
+                return {
+                    success: true,
+                    linkToken: response.data.link_token,
+                    expiration: response.data.expiration,
+                    itemId: itemId,
+                    isRelink: false,
+                };
+            } else {
+                // Fallback: fresh link — old connection will be deactivated after re-link completes
+                const response = await this.client.linkTokenCreate({
+                    user: { client_user_id: userId },
+                    client_name: 'Modern Accounting',
+                    products: [Products.Transactions],
+                    country_codes: [CountryCode.Us],
+                    language: 'en',
+                });
+                return {
+                    success: true,
+                    linkToken: response.data.link_token,
+                    expiration: response.data.expiration,
+                    itemId: itemId,
+                    isRelink: true,  // Signal frontend to deactivate old connection after success
+                    institutionName: connection.InstitutionName,
+                };
             }
-
-            const accessToken = this.decryptToken(connection.AccessToken);
-
-            const response = await this.client.linkTokenCreate({
-                user: {
-                    client_user_id: 'actollc',  // Same user ID used for initial link
-                },
-                client_name: 'Modern Accounting',
-                country_codes: [CountryCode.Us],
-                language: 'en',
-                access_token: accessToken,  // Providing access_token creates update mode link
-            });
-
-            return {
-                success: true,
-                linkToken: response.data.link_token,
-                expiration: response.data.expiration,
-                itemId: itemId,
-            };
         } catch (error) {
-            console.error('Failed to create update link token:', error.response?.data || error.message);
-            throw new Error('Failed to create update link token: ' + (error.response?.data?.error_message || error.message));
+            console.error('Failed to create link token:', error.response?.data || error.message);
+            throw new Error('Failed to create link token: ' + (error.response?.data?.error_message || error.message));
         }
     }
 
@@ -214,7 +239,7 @@ class PlaidService {
      * @param {string} publicToken - Public token from Plaid Link
      * @param {object} metadata - Metadata from Plaid Link (institution, accounts)
      */
-    async exchangePublicToken(publicToken, metadata) {
+    async exchangePublicToken(publicToken, metadata, oldItemId = null) {
         if (!this.client) {
             throw new Error('Plaid client not initialized');
         }
@@ -254,6 +279,17 @@ class PlaidService {
                 accessToken: access_token,
                 institutionName: institutionName,
             });
+
+            // If this is a re-link (replacing a broken connection), deactivate the old one
+            if (oldItemId && oldItemId !== item_id) {
+                console.log(`[Plaid] Re-link: deactivating old connection ${oldItemId} in favor of new ${item_id}`);
+                try {
+                    await this.disconnect(oldItemId);
+                } catch (disconnectError) {
+                    console.warn('[Plaid] Could not deactivate old connection:', disconnectError.message);
+                    // Non-fatal — new connection is already saved
+                }
+            }
 
             return {
                 success: true,

@@ -149,7 +149,7 @@ class JournalEntryService {
         let invoice;
         try {
             const invoiceResp = await axios.get(`${DAB_API_URL}/invoices/Id/${invoiceId}`);
-            invoice = invoiceResp.data.value?.[0] || invoiceResp.data;
+            invoice = invoiceResp.data?.value?.[0] || invoiceResp.data;
         } catch (err) {
             if (err.response?.status === 404) {
                 throw new Error(`Invoice ${invoiceId} not found`);
@@ -290,7 +290,7 @@ class JournalEntryService {
         let invoice;
         try {
             const invoiceResp = await axios.get(`${DAB_API_URL}/invoices/Id/${invoiceId}`);
-            invoice = invoiceResp.data.value?.[0] || invoiceResp.data;
+            invoice = invoiceResp.data?.value?.[0] || invoiceResp.data;
         } catch (err) {
             if (err.response?.status === 404) {
                 throw new Error(`Invoice ${invoiceId} not found`);
@@ -375,7 +375,7 @@ class JournalEntryService {
         let bill;
         try {
             const billResp = await axios.get(`${DAB_API_URL}/bills/Id/${billId}`);
-            bill = billResp.data.value?.[0] || billResp.data;
+            bill = billResp.data?.value?.[0] || billResp.data;
         } catch (err) {
             if (err.response?.status === 404) {
                 throw new Error(`Bill ${billId} not found`);
@@ -484,7 +484,7 @@ class JournalEntryService {
         let bill;
         try {
             const billResp = await axios.get(`${DAB_API_URL}/bills/Id/${billId}`);
-            bill = billResp.data.value?.[0] || billResp.data;
+            bill = billResp.data?.value?.[0] || billResp.data;
         } catch (err) {
             if (err.response?.status === 404) {
                 throw new Error(`Bill ${billId} not found`);

@@ -80,6 +80,7 @@ export default function PlaidConnections() {
   const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
   const [updateLinkToken, setUpdateLinkToken] = useState<string | null>(null);
   const [reauthItemId, setReauthItemId] = useState<string | null>(null);
+  const [relinkOldItemId, setRelinkOldItemId] = useState<string | null>(null);
 
   // Check if Plaid service is available on mount
   useEffect(() => {
@@ -282,47 +283,82 @@ export default function PlaidConnections() {
     },
   });
 
-  // Re-authenticate mutation - creates update link token
+  // Re-authenticate mutation - creates update link token (or fresh link if token is unrecoverable)
   const reauthMutation = useMutation({
     mutationFn: async (itemId: string) => {
       const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/connections/${itemId}/update-link-token`, {
         method: 'POST',
       });
-      if (!response.ok) throw new Error('Failed to create update link token');
+      if (!response.ok) throw new Error('Failed to create link token');
       return response.json();
     },
     onSuccess: (data, itemId) => {
       setUpdateLinkToken(data.linkToken);
       setReauthItemId(itemId);
+      // If the stored token was unrecoverable, we'll do a fresh re-link
+      // and need to deactivate the old connection after success
+      setRelinkOldItemId(data.isRelink ? itemId : null);
     },
   });
 
-  // Handler for re-auth success
+  // Handler for re-auth success (update mode — same item_id, no exchange needed)
   const onReauthSuccess = useCallback(
     async () => {
-      // After re-auth, the connection is fixed on Plaid's side
-      // Refresh connection data and try syncing again
       queryClient.invalidateQueries({ queryKey: ['plaid-connections'] });
       queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] });
       setUpdateLinkToken(null);
       setReauthItemId(null);
-      // Optionally trigger a sync after re-auth
+      setRelinkOldItemId(null);
       if (reauthItemId) {
-        setTimeout(() => {
-          syncMutation.mutate(reauthItemId);
-        }, 1000);
+        setTimeout(() => syncMutation.mutate(reauthItemId), 1000);
       }
     },
     [queryClient, reauthItemId, syncMutation]
   );
 
-  // Plaid Link config for re-authentication (update mode)
+  // Handler for re-link success (fresh link — new item_id, old connection deactivated server-side)
+  const onRelinkSuccess = useCallback(
+    async (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
+      setIsConnecting(true);
+      try {
+        const response = await fetch(`${CHAT_API_BASE_URL}/api/plaid/exchange-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            publicToken,
+            metadata: { institution: metadata.institution, accounts: metadata.accounts },
+            oldItemId: relinkOldItemId,  // Server will deactivate the broken connection
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to exchange token');
+        const data = await response.json();
+        queryClient.invalidateQueries({ queryKey: ['plaid-connections'] });
+        queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] });
+        await createLinkToken();
+        // Trigger sync for the new connection
+        if (data.itemId) {
+          setTimeout(() => syncMutation.mutate(data.itemId), 1000);
+        }
+      } catch (error) {
+        console.error('Failed to complete re-link:', error);
+      } finally {
+        setIsConnecting(false);
+        setUpdateLinkToken(null);
+        setReauthItemId(null);
+        setRelinkOldItemId(null);
+      }
+    },
+    [queryClient, createLinkToken, relinkOldItemId]
+  );
+
+  // Plaid Link config for re-authentication
   const reauthPlaidConfig: PlaidLinkOptions = {
     token: updateLinkToken,
-    onSuccess: onReauthSuccess,
+    onSuccess: relinkOldItemId ? onRelinkSuccess : onReauthSuccess,
     onExit: () => {
       setUpdateLinkToken(null);
       setReauthItemId(null);
+      setRelinkOldItemId(null);
     },
   };
 
