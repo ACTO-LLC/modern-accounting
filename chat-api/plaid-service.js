@@ -173,7 +173,7 @@ class PlaidService {
      * Use this when a connection needs re-authentication (ITEM_LOGIN_REQUIRED)
      * @param {string} itemId - The Plaid Item ID to re-authenticate
      */
-    async createUpdateLinkToken(itemId) {
+    async createUpdateLinkToken(itemId, userId = 'actollc') {
         if (!this.client) {
             throw new Error('Plaid client not initialized. Check PLAID_CLIENT_ID and PLAID_SECRET.');
         }
@@ -197,7 +197,7 @@ class PlaidService {
             if (accessToken) {
                 // Normal update mode — preserves item_id
                 const response = await this.client.linkTokenCreate({
-                    user: { client_user_id: 'actollc' },
+                    user: { client_user_id: userId },
                     client_name: 'Modern Accounting',
                     country_codes: [CountryCode.Us],
                     language: 'en',
@@ -213,7 +213,7 @@ class PlaidService {
             } else {
                 // Fallback: fresh link — old connection will be deactivated after re-link completes
                 const response = await this.client.linkTokenCreate({
-                    user: { client_user_id: 'actollc' },
+                    user: { client_user_id: userId },
                     client_name: 'Modern Accounting',
                     products: [Products.Transactions],
                     country_codes: [CountryCode.Us],

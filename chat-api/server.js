@@ -6866,7 +6866,18 @@ app.post('/api/plaid/exchange-token', async (req, res) => {
             return res.status(400).json({ error: 'Missing publicToken' });
         }
 
-        const result = await plaidService.exchangePublicToken(publicToken, metadata, oldItemId);
+        // Validate oldItemId before using it to prevent unintended deactivations
+        let validatedOldItemId = null;
+        if (oldItemId) {
+            const existing = await plaidService.getConnectionByItemId(oldItemId);
+            if (existing && existing.IsActive) {
+                validatedOldItemId = oldItemId;
+            } else {
+                console.warn(`[Plaid] exchange-token: oldItemId ${oldItemId} not found or already inactive, ignoring`);
+            }
+        }
+
+        const result = await plaidService.exchangePublicToken(publicToken, metadata, validatedOldItemId);
         logAuditEvent({
             action: 'Create',
             entityType: 'PlaidConnection',

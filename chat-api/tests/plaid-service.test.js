@@ -292,6 +292,145 @@ describe('PlaidService', () => {
         });
     });
 
+    describe('createUpdateLinkToken', () => {
+        it('should return update-mode token with isRelink:false when token decrypts successfully', async () => {
+            // getConnectionByItemId
+            axios.get.mockResolvedValueOnce({
+                data: {
+                    value: [{
+                        Id: 'conn-1',
+                        ItemId: 'item-1',
+                        AccessToken: plaidService.encryptToken('access-live-token'),
+                        IsActive: true,
+                        InstitutionName: 'Chase',
+                    }],
+                },
+            });
+
+            plaidService.client.linkTokenCreate.mockResolvedValueOnce({
+                data: { link_token: 'link-update-token', expiration: '2026-04-01T00:00:00Z' },
+            });
+
+            const result = await plaidService.createUpdateLinkToken('item-1');
+
+            expect(result.success).toBe(true);
+            expect(result.isRelink).toBe(false);
+            expect(result.linkToken).toBe('link-update-token');
+            // Must use access_token (update mode) and consistent client_user_id
+            expect(plaidService.client.linkTokenCreate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    access_token: 'access-live-token',
+                    user: { client_user_id: 'actollc' },
+                })
+            );
+        });
+
+        it('should return fresh link token with isRelink:true when token cannot be decrypted', async () => {
+            // getConnectionByItemId — AccessToken encrypted with a different key
+            axios.get.mockResolvedValueOnce({
+                data: {
+                    value: [{
+                        Id: 'conn-1',
+                        ItemId: 'item-1',
+                        AccessToken: 'badhex:cannotdecrypt',  // Simulates wrong encryption key
+                        IsActive: true,
+                        InstitutionName: 'Wells Fargo',
+                    }],
+                },
+            });
+
+            plaidService.client.linkTokenCreate.mockResolvedValueOnce({
+                data: { link_token: 'link-fresh-token', expiration: '2026-04-01T00:00:00Z' },
+            });
+
+            const result = await plaidService.createUpdateLinkToken('item-1');
+
+            expect(result.success).toBe(true);
+            expect(result.isRelink).toBe(true);
+            expect(result.linkToken).toBe('link-fresh-token');
+            expect(result.institutionName).toBe('Wells Fargo');
+            // Must NOT use access_token (fresh link, not update mode)
+            expect(plaidService.client.linkTokenCreate).toHaveBeenCalledWith(
+                expect.not.objectContaining({ access_token: expect.anything() })
+            );
+        });
+
+        it('should throw when connection not found', async () => {
+            axios.get.mockResolvedValueOnce({ data: { value: [] } });
+
+            await expect(plaidService.createUpdateLinkToken('item-missing'))
+                .rejects.toThrow('Connection not found for itemId: item-missing');
+        });
+    });
+
+    describe('exchangePublicToken with oldItemId', () => {
+        const mockConnection = {
+            Id: 'conn-1',
+            ItemId: 'item-new',
+            InstitutionName: 'Chase',
+            AccessToken: 'some-token',
+            IsActive: true,
+        };
+
+        it('should call disconnect on oldItemId when it differs from new item_id', async () => {
+            plaidService.client.itemPublicTokenExchange.mockResolvedValueOnce({
+                data: { access_token: 'access-new', item_id: 'item-new' },
+            });
+
+            // axios.get calls in order:
+            // 1. saveConnection → getConnectionByItemId('item-new') → not found
+            // 2. disconnect → getConnectionByItemId('item-old') → old connection
+            // 3. disconnect → getAccountsByConnectionId('conn-old') → no accounts
+            axios.get
+                .mockResolvedValueOnce({ data: { value: [] } })
+                .mockResolvedValueOnce({ data: { value: [{ Id: 'conn-old', ItemId: 'item-old', AccessToken: plaidService.encryptToken('old-token'), IsActive: true }] } })
+                .mockResolvedValueOnce({ data: { value: [] } });
+
+            plaidService.client.accountsGet.mockResolvedValueOnce({ data: { accounts: [] } });
+            axios.post.mockResolvedValueOnce({ data: { Id: mockConnection.Id } });
+            plaidService.client.itemRemove.mockResolvedValueOnce({ data: {} });
+            axios.patch.mockResolvedValue({ data: {} });
+
+            const result = await plaidService.exchangePublicToken('public-token', {
+                institution: { institution_id: 'ins-1', name: 'Chase' },
+                accounts: [],
+            }, 'item-old');
+
+            expect(result.itemId).toBe('item-new');
+            expect(plaidService.client.itemRemove).toHaveBeenCalled();
+        });
+
+        it('should NOT call disconnect when oldItemId is null', async () => {
+            plaidService.client.itemPublicTokenExchange.mockResolvedValueOnce({
+                data: { access_token: 'access-new', item_id: 'item-new' },
+            });
+            axios.get.mockResolvedValueOnce({ data: { value: [] } }); // saveConnection check
+            plaidService.client.accountsGet.mockResolvedValueOnce({ data: { accounts: [] } });
+            axios.post.mockResolvedValueOnce({ data: {} });
+
+            await plaidService.exchangePublicToken('public-token', {
+                institution: { institution_id: 'ins-1', name: 'Chase' },
+            }, null);
+
+            expect(plaidService.client.itemRemove).not.toHaveBeenCalled();
+        });
+
+        it('should NOT call disconnect when oldItemId equals new item_id', async () => {
+            plaidService.client.itemPublicTokenExchange.mockResolvedValueOnce({
+                data: { access_token: 'access-new', item_id: 'item-same' },
+            });
+            axios.get.mockResolvedValueOnce({ data: { value: [] } }); // saveConnection check
+            plaidService.client.accountsGet.mockResolvedValueOnce({ data: { accounts: [] } });
+            axios.post.mockResolvedValueOnce({ data: {} });
+
+            await plaidService.exchangePublicToken('public-token', {
+                institution: { institution_id: 'ins-1', name: 'Chase' },
+            }, 'item-same');
+
+            expect(plaidService.client.itemRemove).not.toHaveBeenCalled();
+        });
+    });
+
     describe('validateConnection', () => {
         it('should return valid when Plaid itemGet succeeds', async () => {
             // getConnectionByItemId

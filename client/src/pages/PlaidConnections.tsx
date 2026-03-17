@@ -331,9 +331,14 @@ export default function PlaidConnections() {
           }),
         });
         if (!response.ok) throw new Error('Failed to exchange token');
+        const data = await response.json();
         queryClient.invalidateQueries({ queryKey: ['plaid-connections'] });
         queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] });
         await createLinkToken();
+        // Trigger sync for the new connection
+        if (data.itemId) {
+          setTimeout(() => syncMutation.mutate(data.itemId), 1000);
+        }
       } catch (error) {
         console.error('Failed to complete re-link:', error);
       } finally {
