@@ -70,7 +70,6 @@ async function mcpQuery(entity, criteria, fetchAll = false) {
 function parseQboRecords(text) {
     // The MCP returns a header line then JSON objects on separate lines
     const records = [];
-    const jsonRegex = /\{[^{}]*(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}[^{}]*)*\}/g;
     // Split by top-level JSON objects more carefully
     let depth = 0, start = -1;
     for (let i = 0; i < text.length; i++) {
@@ -83,7 +82,7 @@ function parseQboRecords(text) {
                 try {
                     records.push(JSON.parse(text.substring(start, i + 1)));
                 } catch { /* skip malformed */ }
-                start = -1;
+                    start = -1;
             }
         }
     }
