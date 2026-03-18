@@ -96,6 +96,72 @@ powershell -ExecutionPolicy Bypass -Command "sqlcmd -S 'localhost,14330' -U sa -
 docker restart accounting-dab
 ```
 
+## Retrospective: Plaid "bad decrypt" Production Outage (March 2026)
+
+**What happened:**
+1. `PLAID_SECRET` in Key Vault was rotated (only 1 version retained → old key permanently gone).
+2. All stored `AccessToken` values in `PlaidConnections` were encrypted with the old key → permanently undecryptable.
+3. Plaid sync silently failed for all connections starting Feb 25 (no new transactions imported).
+4. Re-authenticate button also hit 500 because `createUpdateLinkToken` tried to decrypt the token to create an update-mode link.
+5. Bonus problem: the Key Vault secret that was stored was the **sandbox** secret, not the production secret — so even after fixing the decrypt issue, Plaid API calls returned `INVALID_API_KEYS`.
+6. Stale deploy ID: a passing CI run from the day *before* the PR merge was mistaken for a post-merge deploy, masking that our fix wasn't actually live.
+
+**Root cause:** `PLAID_SECRET` was used both as the Plaid API credential AND as the encryption key for stored tokens. Rotating one broke the other.
+
+**Fixes applied:**
+- `plaid-service.js`: When token decrypt fails, fall back to fresh Plaid Link flow (`isRelink: true`) instead of crashing.
+- `server.js`: Pass `oldItemId` through exchange-token endpoint so old broken connection is deactivated after user re-links.
+- `PlaidConnections.tsx`: Handle `isRelink` response, re-link via `onRelinkSuccess`, auto-sync new connection.
+- Key Vault: Updated `plaid-secret` to the correct **production** secret.
+
+**Prevention — implement these:**
+
+### 1. Separate encryption key from API secret (HIGHEST PRIORITY)
+`PLAID_ENCRYPTION_KEY` already exists as a concept in `plaid-service.js` but was never set in production — so it fell back to deriving the key from `PLAID_SECRET`. **Fix:** Set `PLAID_ENCRYPTION_KEY` as an independent Key Vault secret. Rotating the Plaid API secret will no longer affect stored tokens.
+
+```bash
+# One-time setup: generate a random 32-byte key and store it separately
+az keyvault secret set --vault-name acto-prod-kv --name plaid-encryption-key \
+  --value "$(openssl rand -hex 32)"
+```
+
+Then in App Service, add:
+```
+PLAID_ENCRYPTION_KEY = @Microsoft.KeyVault(VaultName=acto-prod-kv;SecretName=plaid-encryption-key)
+```
+
+### 2. Never rotate `PLAID_ENCRYPTION_KEY` without re-encrypting stored tokens first
+If the key must rotate:
+1. Fetch all `PlaidConnections` with `IsActive = 1`
+2. Decrypt each `AccessToken` with the **old** key
+3. Re-encrypt with the **new** key
+4. Save back to DB
+5. Then update Key Vault
+
+### 3. Keep at least 2 versions of `PLAID_ENCRYPTION_KEY` in Key Vault
+Azure Key Vault supports multiple secret versions. Setting "Activation date" on the new version and keeping the old version enabled allows rollback. Don't set the old version to "Disabled" until all tokens are re-encrypted.
+
+### 4. Add startup validation
+On app startup, test-decrypt one stored `PlaidConnection` token. If it fails, log a prominent error and send an alert (email/Teams). This turns a silent data-loss failure into an immediate alert.
+
+### 5. Validate Plaid environment vs secret on startup
+```js
+// In plaid-service.js constructor
+if (process.env.NODE_ENV === 'production' && process.env.PLAID_ENV !== 'production') {
+    console.error('[Plaid] WARNING: PLAID_ENV is not "production" in a production environment!');
+}
+```
+
+### 6. Verify deploys by checking for a known string in the live artifact
+After triggering a deploy, don't trust the CI run ID — verify the code is live:
+```bash
+# Check that a known string from your change exists in the deployed bundle
+curl -s https://accounting.a-cto.com | grep -o 'index-[a-f0-9]*.js' | head -1 | \
+  xargs -I{} curl -s https://accounting.a-cto.com/assets/{} | grep -c "isRelink"
+```
+
+---
+
 ## Azure OpenAI Setup
 
 ### Provider Registration Required

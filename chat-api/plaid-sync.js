@@ -466,9 +466,14 @@ Respond in JSON format:
             return existing.Id;
         }
 
-        // Determine account type
+        // Determine account type and generate a meaningful code
         const type = accountType === 'credit' ? 'Credit Card' : 'Bank';
-        const code = `PLAID-${crypto.randomUUID()}`.toUpperCase();
+        const prefix = type === 'Bank' ? '1' : '2';
+        const maxCode = existingAccounts
+            .filter(a => a.Type === type && /^\d+$/.test(a.Code))
+            .map(a => parseInt(a.Code, 10))
+            .reduce((max, c) => Math.max(max, c), prefix === '1' ? 1000 : 2100);
+        const code = String(maxCode + 10);
 
         // Create new account
         const headers = await getDabHeaders();
