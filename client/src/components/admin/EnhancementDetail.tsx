@@ -14,7 +14,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Enhancement } from '../../services/enhancementApi';
-import { formatDate } from '../../lib/dateUtils';
+import { formatDateTime } from '../../lib/dateUtils';
 
 interface EnhancementDetailProps {
   enhancement: Enhancement;
@@ -252,12 +252,12 @@ export function EnhancementDetail({ enhancement, onClose, onScheduleDeployment }
               </div>
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
-                <span>Created {formatDate(enhancement.createdAt)}</span>
+                <span>Created {formatDateTime(enhancement.createdAt)}</span>
               </div>
               {enhancement.updatedAt !== enhancement.createdAt && (
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4" />
-                  <span>Updated {formatDate(enhancement.updatedAt)}</span>
+                  <span>Updated {formatDateTime(enhancement.updatedAt)}</span>
                 </div>
               )}
             </div>

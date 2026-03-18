@@ -10,7 +10,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Deployment, Enhancement } from '../../services/enhancementApi';
-import { formatDate, formatTimeCompact } from '../../lib/dateUtils';
+import { formatDate, formatDateTime, formatTimeCompact } from '../../lib/dateUtils';
 
 interface DeploymentSchedulerProps {
   deployments: Deployment[];
@@ -350,7 +350,7 @@ export function DeploymentScheduler({
                       </span>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(deployment.updatedAt)}
+                      {formatDateTime(deployment.updatedAt)}
                     </span>
                   </div>
                 );

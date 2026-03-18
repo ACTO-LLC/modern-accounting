@@ -105,7 +105,8 @@ export default function Invoices() {
             InvoiceId: createdInvoice.Id,
             Description: line.Description,
             Quantity: line.Quantity,
-            UnitPrice: line.UnitPrice
+            UnitPrice: line.UnitPrice,
+            Amount: (line.Quantity || 0) * (line.UnitPrice || 0),
           })
         )
       );

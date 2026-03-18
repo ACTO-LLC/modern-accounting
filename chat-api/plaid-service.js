@@ -95,6 +95,17 @@ class PlaidService {
         this.secret = process.env.PLAID_SECRET;
         this.env = process.env.PLAID_ENV || 'sandbox';
 
+        // Environment mismatch warning
+        const isProduction = process.env.NODE_ENV === 'production' || process.env.WEBSITE_SITE_NAME;
+        if (isProduction && this.env !== 'production') {
+            console.error(`[Plaid] ⚠️  ENVIRONMENT MISMATCH: PLAID_ENV="${this.env}" but running in production. Set PLAID_ENV=production.`);
+        }
+
+        // Warn if encryption key is derived from PLAID_SECRET (legacy behavior)
+        if (!process.env.PLAID_ENCRYPTION_KEY) {
+            console.warn('[Plaid] ⚠️  PLAID_ENCRYPTION_KEY not set — deriving from PLAID_SECRET. Set an independent key to prevent token loss on secret rotation.');
+        }
+
         if (!this.clientId || !this.secret) {
             console.warn('Plaid credentials not configured. Set PLAID_CLIENT_ID and PLAID_SECRET.');
             this.client = null;
@@ -110,6 +121,41 @@ class PlaidService {
             });
             this.client = new PlaidApi(configuration);
             console.log(`Plaid client initialized in ${this.env} environment`);
+        }
+    }
+
+    /**
+     * Validate stored tokens are decryptable. Call after startup to detect
+     * encryption key mismatches early (e.g., PLAID_SECRET was rotated).
+     */
+    async validateStoredTokens() {
+        try {
+            const headers = await getDabHeaders();
+            const resp = await axios.get(
+                `${DAB_API_URL}/plaidconnections?$filter=IsActive eq true`,
+                { headers }
+            );
+            const connections = resp.data?.value || [];
+            if (connections.length === 0) return;
+
+            let failures = 0;
+            for (const conn of connections) {
+                try {
+                    this.decryptToken(conn.AccessToken);
+                } catch {
+                    failures++;
+                    console.error(`[Plaid] ❌ Cannot decrypt token for ${conn.InstitutionName} (item: ${conn.ItemId})`);
+                }
+            }
+
+            if (failures > 0) {
+                console.error(`[Plaid] ❌ ${failures}/${connections.length} stored tokens failed decryption. Encryption key may have changed.`);
+                console.error('[Plaid] Affected connections will require re-authentication via fresh Plaid Link.');
+            } else {
+                console.log(`[Plaid] ✓ All ${connections.length} stored tokens validated successfully.`);
+            }
+        } catch (err) {
+            console.warn(`[Plaid] Token validation skipped: ${err.message}`);
         }
     }
 
@@ -990,5 +1036,9 @@ class PlaidService {
 }
 
 export const plaidService = new PlaidService();
+
+// Validate stored tokens after a short delay (allow DAB to become available)
+setTimeout(() => plaidService.validateStoredTokens(), 10000);
+
 export { getDabHeaders };
 export default plaidService;

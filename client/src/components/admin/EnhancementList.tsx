@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, ExternalLink, Eye, Filter, Clock, CheckCircle, AlertCircle, Loader2, XCircle, GitBranch } from 'lucide-react';
 import { Enhancement } from '../../services/enhancementApi';
-import { formatDate } from '../../lib/dateUtils';
+import { formatDateTime } from '../../lib/dateUtils';
 
 interface EnhancementListProps {
   enhancements: Enhancement[];
@@ -131,7 +131,7 @@ export function EnhancementList({ enhancements: rawEnhancements, isLoading, onRe
                         <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                           <span>#{enhancement.id}</span>
                           <span>by {enhancement.requestorName}</span>
-                          <span>{formatDate(enhancement.createdAt)}</span>
+                          <span>{formatDateTime(enhancement.createdAt)}</span>
                         </div>
                       </div>
                       <div className="ml-4 flex items-center gap-3">

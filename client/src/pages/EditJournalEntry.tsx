@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { ArrowLeft } from 'lucide-react';
-import { formatDate } from '../lib/dateUtils';
+import { formatDate, formatDateTime } from '../lib/dateUtils';
 import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -121,7 +121,7 @@ export default function EditJournalEntry() {
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Created</p>
-            <p className="text-gray-900 dark:text-gray-100">{formatDate(entry.CreatedAt)}</p>
+            <p className="text-gray-900 dark:text-gray-100">{formatDateTime(entry.CreatedAt)}</p>
           </div>
         </div>
 
@@ -185,7 +185,7 @@ export default function EditJournalEntry() {
 
         {entry.PostedBy && (
           <div className="text-sm text-gray-500 dark:text-gray-400 border-t dark:border-gray-600 pt-4">
-            Posted by {entry.PostedBy} on {formatDate(entry.PostedAt)}
+            Posted by {entry.PostedBy} on {formatDateTime(entry.PostedAt)}
           </div>
         )}
       </div>
