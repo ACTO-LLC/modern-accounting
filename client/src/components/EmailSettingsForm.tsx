@@ -393,7 +393,7 @@ export default function EmailSettingsForm() {
                 value={field.value ?? ''}
                 label={hasExistingPassword ? 'Password (leave blank to keep current)' : 'Password'}
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
+                autoComplete="new-password"
                 placeholder={hasExistingPassword ? '........' : 'Enter password'}
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
