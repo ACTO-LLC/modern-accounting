@@ -549,7 +549,7 @@ export default function CompanySettings() {
     <div className="max-w-7xl mx-auto flex gap-8">
       {/* Sidebar */}
       <aside className="hidden lg:block w-64 flex-shrink-0">
-        <div className="sticky top-20 space-y-1">
+        <div className="sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto space-y-1">
           {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
