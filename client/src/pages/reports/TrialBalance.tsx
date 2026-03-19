@@ -2,18 +2,19 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
-import { ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
-import type { ReportColumn, ReportRow } from '../../components/reports';
+import { PersonalBusinessFilter, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
+import type { ReportColumn, ReportRow, PersonalFilter } from '../../components/reports';
 import { formatDateLong } from '../../lib/dateUtils';
 import api from '../../lib/api';
 
 interface Account { Id: string; Name: string; Type: string; Subtype: string | null; }
-interface JournalEntry { Id: string; TransactionDate: string; }
+interface JournalEntry { Id: string; TransactionDate: string; IsPersonal: boolean; }
 interface JournalEntryLine { Id: string; JournalEntryId: string; AccountId: string; Debit: number; Credit: number; }
 
 export default function TrialBalance() {
   const today = new Date();
   const [asOfDate, setAsOfDate] = useState(today.toISOString().split('T')[0]);
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
 
   const {
     data: accounts,
@@ -60,8 +61,11 @@ export default function TrialBalance() {
     }
 
     const accountMap = new Map(accounts.map((a) => [a.Id, a]));
+
+    const filteredEntries = personalFilter === 'all' ? journalEntries
+      : journalEntries.filter(e => personalFilter === 'personal' ? e.IsPersonal : !e.IsPersonal);
     const entryDateMap = new Map(
-      journalEntries.map((e) => [e.Id, new Date(e.TransactionDate)])
+      filteredEntries.map((e) => [e.Id, new Date(e.TransactionDate)])
     );
 
     // Parse date explicitly to avoid timezone issues
@@ -124,7 +128,7 @@ export default function TrialBalance() {
       totalDebits: accountBalances.reduce((sum, a) => sum + a.debit, 0),
       totalCredits: accountBalances.reduce((sum, a) => sum + a.credit, 0),
     };
-  }, [accounts, journalEntries, lines, asOfDate]);
+  }, [accounts, journalEntries, lines, asOfDate, personalFilter]);
 
   const columns: ReportColumn[] = [
     { key: 'accountNumber', header: 'Account #', align: 'left' },
@@ -206,7 +210,7 @@ export default function TrialBalance() {
         onExportCSV={handleExportCSV}
       />
       <div className="mb-6 print:hidden">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <label className="text-sm font-medium text-gray-700">As of Date:</label>
           <input
             type="date"
@@ -214,6 +218,7 @@ export default function TrialBalance() {
             onChange={(e) => setAsOfDate(e.target.value)}
             className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
           />
+          <PersonalBusinessFilter value={personalFilter} onChange={setPersonalFilter} />
         </div>
       </div>
       <div

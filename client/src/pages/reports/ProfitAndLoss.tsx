@@ -2,13 +2,13 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { DateRangePicker, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
-import type { ReportColumn, ReportRow } from '../../components/reports';
+import { DateRangePicker, PersonalBusinessFilter, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
+import type { ReportColumn, ReportRow, PersonalFilter } from '../../components/reports';
 import { formatDateLong } from '../../lib/dateUtils';
 import api from '../../lib/api';
 
 interface Account { Id: string; Name: string; Type: string; Subtype: string | null; }
-interface JournalEntry { Id: string; TransactionDate: string; }
+interface JournalEntry { Id: string; TransactionDate: string; IsPersonal: boolean; }
 interface JournalEntryLine { Id: string; JournalEntryId: string; AccountId: string; Debit: number; Credit: number; }
 
 export default function ProfitAndLoss() {
@@ -16,6 +16,7 @@ export default function ProfitAndLoss() {
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
 
   const {
     data: accounts,
@@ -67,8 +68,11 @@ export default function ProfitAndLoss() {
     }
 
     const accountMap = new Map(accounts.map((a) => [a.Id, a]));
+
+    const filteredEntries = personalFilter === 'all' ? journalEntries
+      : journalEntries.filter(e => personalFilter === 'personal' ? e.IsPersonal : !e.IsPersonal);
     const entryDateMap = new Map(
-      journalEntries.map((e) => [e.Id, new Date(e.TransactionDate)])
+      filteredEntries.map((e) => [e.Id, new Date(e.TransactionDate)])
     );
 
     // Parse dates explicitly to avoid timezone issues
@@ -119,7 +123,7 @@ export default function ProfitAndLoss() {
       totalRevenue: revenueAccounts.reduce((sum, a) => sum + a.balance, 0),
       totalExpenses: expenseAccounts.reduce((sum, a) => sum + a.balance, 0),
     };
-  }, [accounts, journalEntries, lines, startDate, endDate]);
+  }, [accounts, journalEntries, lines, startDate, endDate, personalFilter]);
 
   const columns: ReportColumn[] = [
     { key: 'name', header: 'Account', align: 'left' },
@@ -203,13 +207,14 @@ export default function ProfitAndLoss() {
         dateRange={formatDateRange()}
         onExportCSV={handleExportCSV}
       />
-      <div className="mb-6">
+      <div className="mb-6 flex items-center gap-4 flex-wrap">
         <DateRangePicker
           startDate={startDate}
           endDate={endDate}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
         />
+        <PersonalBusinessFilter value={personalFilter} onChange={setPersonalFilter} />
       </div>
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <ReportTable columns={columns} data={tableData} />
