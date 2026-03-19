@@ -44,17 +44,13 @@ BEGIN
     AFTER UPDATE AS
     BEGIN
         SET NOCOUNT ON;
-        -- Skip if UpdatedAt was explicitly set in the UPDATE statement
-        IF NOT UPDATE(UpdatedAt) OR EXISTS (
-            SELECT 1 FROM inserted i JOIN deleted d ON i.Id = d.Id
-            WHERE i.UpdatedAt = d.UpdatedAt
-        )
-        BEGIN
-            UPDATE t
-            SET UpdatedAt = SYSDATETIME()
-            FROM dbo.' + @tableName + ' t
-            INNER JOIN inserted i ON t.Id = i.Id;
-        END
+        -- Only auto-set UpdatedAt for rows where caller did not explicitly change it
+        UPDATE t
+        SET UpdatedAt = SYSUTCDATETIME()
+        FROM dbo.' + @tableName + ' t
+        INNER JOIN inserted i ON t.Id = i.Id
+        INNER JOIN deleted d ON i.Id = d.Id
+        WHERE i.UpdatedAt = d.UpdatedAt;
     END';
     EXEC sp_executesql @sql;
 
@@ -79,7 +75,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.Invoices
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT InvoiceId FROM inserted
         UNION
@@ -97,7 +93,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.Bills
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT BillId FROM inserted
         UNION
@@ -115,7 +111,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.Estimates
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT EstimateId FROM inserted
         UNION
@@ -133,7 +129,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.JournalEntries
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT JournalEntryId FROM inserted
         UNION
@@ -151,7 +147,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.CreditMemos
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT CreditMemoId FROM inserted
         UNION
@@ -169,7 +165,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.SalesReceipts
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT SalesReceiptId FROM inserted
         UNION
@@ -187,7 +183,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.PurchaseOrders
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT PurchaseOrderId FROM inserted
         UNION
@@ -205,7 +201,7 @@ AFTER INSERT, UPDATE, DELETE AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.VendorCredits
-    SET UpdatedAt = SYSDATETIME()
+    SET UpdatedAt = SYSUTCDATETIME()
     WHERE Id IN (
         SELECT VendorCreditId FROM inserted
         UNION
