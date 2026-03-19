@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { Plus, Copy, Eye } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
 import RestDataGrid from '../components/RestDataGrid';
@@ -37,11 +37,17 @@ const statusColors: Record<string, string> = {
 
 export default function Invoices() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { showToast } = useToast();
   const { settings } = useCompanySettings();
+
+  const customerIdFilter = searchParams.get('customerId');
+  const customerBaseFilter = customerIdFilter
+    ? `CustomerId eq ${customerIdFilter}`
+    : undefined;
 
   const { data: allInvoices } = useQuery({
     queryKey: ['invoices-all'],
@@ -205,7 +211,7 @@ export default function Invoices() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Invoices</h1>
         <Link
           to="/invoices/new"
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
@@ -215,8 +221,22 @@ export default function Invoices() {
         </Link>
       </div>
 
+      {customerIdFilter && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-md">
+          <span className="text-sm text-indigo-800 dark:text-indigo-300">
+            Filtered by customer from AR Aging report
+          </span>
+          <Link
+            to="/invoices"
+            className="text-sm text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300"
+          >
+            Clear filter
+          </Link>
+        </div>
+      )}
+
       <RestDataGrid<Invoice>
-        key={refreshKey}
+        key={`${refreshKey}-${customerIdFilter ?? ''}`}
         gridKey="invoices-grid"
         endpoint="/invoices"
         columns={columns}
@@ -224,6 +244,7 @@ export default function Invoices() {
         initialPageSize={25}
         emptyMessage="No invoices found."
         refreshKey={refreshKey}
+        baseFilter={customerBaseFilter}
       />
     </div>
   );

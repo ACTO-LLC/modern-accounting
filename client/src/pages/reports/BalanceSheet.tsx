@@ -166,7 +166,12 @@ export default function BalanceSheet() {
     ];
 
     reportData.assetAccounts.forEach(({ account, balance }) =>
-      rows.push({ name: account.Name, amount: balance, indent: 1 })
+      rows.push({
+        name: account.Name,
+        amount: balance,
+        indent: 1,
+        href: `/reports/transaction-detail?accountId=${account.Id}&startDate=2000-01-01&endDate=${asOfDate}`,
+      })
     );
 
     rows.push(
@@ -176,7 +181,12 @@ export default function BalanceSheet() {
     );
 
     reportData.liabilityAccounts.forEach(({ account, balance }) =>
-      rows.push({ name: account.Name, amount: balance, indent: 1 })
+      rows.push({
+        name: account.Name,
+        amount: balance,
+        indent: 1,
+        href: `/reports/transaction-detail?accountId=${account.Id}&startDate=2000-01-01&endDate=${asOfDate}`,
+      })
     );
 
     rows.push(
@@ -190,7 +200,12 @@ export default function BalanceSheet() {
     );
 
     reportData.equityAccounts.forEach(({ account, balance }) =>
-      rows.push({ name: account.Name, amount: balance, indent: 1 })
+      rows.push({
+        name: account.Name,
+        amount: balance,
+        indent: 1,
+        href: `/reports/transaction-detail?accountId=${account.Id}&startDate=2000-01-01&endDate=${asOfDate}`,
+      })
     );
 
     if (reportData.retainedEarnings !== 0) {
@@ -212,7 +227,7 @@ export default function BalanceSheet() {
     );
 
     return rows;
-  }, [reportData]);
+  }, [reportData, asOfDate]);
 
   const handleExportCSV = () =>
     exportToCSV(`balance-sheet-${asOfDate}`, columns, tableData);

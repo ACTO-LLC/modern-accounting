@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export interface ReportColumn {
   key: string;
@@ -14,6 +15,8 @@ export interface ReportRow {
   isTotal?: boolean;
   isSubtotal?: boolean;
   indent?: number;
+  /** When set, the row becomes clickable and navigates to this URL */
+  href?: string;
 }
 
 interface ReportTableProps {
@@ -64,6 +67,8 @@ export function exportToCSV(filename: string, columns: ReportColumn[], data: Rep
 }
 
 export default function ReportTable({ columns, data }: ReportTableProps) {
+  const navigate = useNavigate();
+
   const getAlignment = (align?: 'left' | 'right' | 'center') => {
     switch (align) {
       case 'right':
@@ -78,11 +83,14 @@ export default function ReportTable({ columns, data }: ReportTableProps) {
   const getRowClasses = (row: ReportRow) => {
     const classes: string[] = [];
     if (row.isHeader) {
-      classes.push('bg-gray-50 font-semibold text-gray-900');
+      classes.push('bg-gray-50 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100');
     } else if (row.isTotal) {
-      classes.push('bg-gray-100 font-bold text-gray-900 border-t-2 border-gray-300');
+      classes.push('bg-gray-100 dark:bg-gray-700 font-bold text-gray-900 dark:text-gray-100 border-t-2 border-gray-300 dark:border-gray-500');
     } else if (row.isSubtotal) {
-      classes.push('font-semibold text-gray-800 border-t border-gray-200');
+      classes.push('font-semibold text-gray-800 dark:text-gray-200 border-t border-gray-200 dark:border-gray-600');
+    }
+    if (row.href) {
+      classes.push('cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors');
     }
     return classes.join(' ');
   };
@@ -101,20 +109,30 @@ export default function ReportTable({ columns, data }: ReportTableProps) {
       classes.push(indentClasses[index]);
     }
 
+    if (row.href && column.key === columns[0].key) {
+      classes.push('text-indigo-600 dark:text-indigo-400 underline decoration-dotted underline-offset-2');
+    }
+
     if (column.className) {
       classes.push(column.className);
     }
     return classes.join(' ');
   };
 
+  const handleRowClick = (row: ReportRow) => {
+    if (row.href) {
+      navigate(row.href);
+    }
+  };
+
   return (
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-gray-50 print:bg-white">
+    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <thead className="bg-gray-50 dark:bg-gray-800 print:bg-white">
         <tr>
           {columns.map((column) => (
             <th
               key={column.key}
-              className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider print:px-2 print:py-1 ${getAlignment(
+              className={`px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider print:px-2 print:py-1 ${getAlignment(
                 column.align
               )}`}
             >
@@ -123,9 +141,14 @@ export default function ReportTable({ columns, data }: ReportTableProps) {
           ))}
         </tr>
       </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
+      <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
         {data.map((row, rowIndex) => (
-          <tr key={rowIndex} className={getRowClasses(row)}>
+          <tr
+            key={rowIndex}
+            className={getRowClasses(row)}
+            onClick={() => handleRowClick(row)}
+            data-testid={row.href ? 'drilldown-row' : undefined}
+          >
             {columns.map((column) => (
               <td key={column.key} className={getCellClasses(row, column)}>
                 {column.format
