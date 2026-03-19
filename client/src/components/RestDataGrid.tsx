@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   DataGrid,
   GridColDef,
@@ -98,6 +98,12 @@ export default function RestDataGrid<T extends GridValidRowModel>({
   const setSortModel = gridKey ? persistedState.onSortModelChange : setLocalSortModel;
   const setFilterModel = gridKey ? persistedState.onFilterModelChange : setLocalFilterModel;
 
+  // Apply persisted column widths
+  const resolvedColumns = useMemo(
+    () => (gridKey ? persistedState.applyColumnWidths(columns) : columns),
+    [gridKey, persistedState.applyColumnWidths, columns],
+  );
+
   // Fetch data from REST API
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -165,7 +171,7 @@ export default function RestDataGrid<T extends GridValidRowModel>({
       <div ref={gridRef} style={{ height: resolvedHeight, width: '100%' }} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
         <DataGrid
           rows={rows}
-          columns={columns}
+          columns={resolvedColumns}
           getRowId={getRowId}
           loading={loading}
           // Client-side pagination
@@ -178,6 +184,8 @@ export default function RestDataGrid<T extends GridValidRowModel>({
           // Client-side filtering
           filterModel={filterModel}
           onFilterModelChange={setFilterModel}
+          // Persist column widths
+          onColumnWidthChange={gridKey ? persistedState.onColumnWidthChange : undefined}
           // Row interaction
           onRowClick={handleRowClick}
           checkboxSelection={checkboxSelection}

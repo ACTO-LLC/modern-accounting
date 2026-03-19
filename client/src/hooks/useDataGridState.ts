@@ -3,14 +3,20 @@ import type {
   GridSortModel,
   GridFilterModel,
   GridPaginationModel,
+  GridColDef,
+  GridColumnResizeParams,
 } from '@mui/x-data-grid';
 
 const STORAGE_PREFIX = 'datagrid-state:';
+
+/** Map of field name → pixel width */
+type ColumnWidthMap = Record<string, number>;
 
 interface PersistedState {
   sortModel?: GridSortModel;
   filterModel?: GridFilterModel;
   paginationModel?: GridPaginationModel;
+  columnWidths?: ColumnWidthMap;
 }
 
 function loadState(key: string): PersistedState {
@@ -49,6 +55,10 @@ interface UseDataGridStateReturn {
   onSortModelChange: (model: GridSortModel) => void;
   onFilterModelChange: (model: GridFilterModel) => void;
   onPaginationModelChange: (model: GridPaginationModel) => void;
+  /** Apply persisted column widths to a columns array */
+  applyColumnWidths: (columns: GridColDef[]) => GridColDef[];
+  /** Handler for DataGrid onColumnWidthChange */
+  onColumnWidthChange: (params: GridColumnResizeParams) => void;
 }
 
 /**
@@ -112,6 +122,34 @@ export default function useDataGridState({
     [gridKey],
   );
 
+  const [columnWidths, setColumnWidths] = useState<ColumnWidthMap>(
+    persisted.columnWidths ?? {},
+  );
+
+  const onColumnWidthChange = useCallback(
+    (params: GridColumnResizeParams) => {
+      setColumnWidths((prev) => {
+        const next = { ...prev, [params.colDef.field]: params.width };
+        const current = loadState(gridKey);
+        saveState(gridKey, { ...current, columnWidths: next });
+        return next;
+      });
+    },
+    [gridKey],
+  );
+
+  const applyColumnWidths = useCallback(
+    (columns: GridColDef[]): GridColDef[] => {
+      if (Object.keys(columnWidths).length === 0) return columns;
+      return columns.map((col) =>
+        columnWidths[col.field] != null
+          ? { ...col, width: columnWidths[col.field] }
+          : col,
+      );
+    },
+    [columnWidths],
+  );
+
   return {
     sortModel,
     filterModel,
@@ -119,5 +157,7 @@ export default function useDataGridState({
     onSortModelChange,
     onFilterModelChange,
     onPaginationModelChange,
+    applyColumnWidths,
+    onColumnWidthChange,
   };
 }
