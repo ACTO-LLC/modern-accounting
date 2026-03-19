@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
-import type { ReportColumn, ReportRow } from '../../components/reports';
+import { PersonalBusinessFilter, ReportHeader, ReportTable, formatCurrency, exportToCSV } from '../../components/reports';
+import type { ReportColumn, ReportRow, PersonalFilter } from '../../components/reports';
 import { formatDateLong } from '../../lib/dateUtils';
 import api from '../../lib/api';
 
@@ -19,6 +19,7 @@ interface Bill {
   DueDate: string;
   TotalAmount: number;
   Status: string;
+  IsPersonal: boolean;
 }
 interface AgingBucket {
   current: number;
@@ -67,6 +68,8 @@ function applyAmountToAgingBucket(
 }
 
 export default function APAgingSummary() {
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
+
   const {
     data: vendors,
     isLoading: loadingVendors,
@@ -99,7 +102,10 @@ export default function APAgingSummary() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const outstandingBills = bills.filter(
+    const personalFiltered = personalFilter === 'all' ? bills
+      : bills.filter(bill => personalFilter === 'personal' ? bill.IsPersonal : !bill.IsPersonal);
+
+    const outstandingBills = personalFiltered.filter(
       (bill) =>
         bill.Status !== 'Paid' && bill.Status !== 'Cancelled' && bill.Status !== 'Voided'
     );
@@ -146,7 +152,7 @@ export default function APAgingSummary() {
     });
 
     return { vendorAging: result, totals };
-  }, [vendors, bills]);
+  }, [vendors, bills, personalFilter]);
 
   const columns: ReportColumn[] = [
     { key: 'vendor', header: 'Vendor', align: 'left' },
@@ -257,6 +263,9 @@ export default function APAgingSummary() {
         dateRange={`As of ${formatDateLong(new Date())}`}
         onExportCSV={handleExportCSV}
       />
+      <div className="mb-6 flex items-center gap-4 flex-wrap print:hidden">
+        <PersonalBusinessFilter value={personalFilter} onChange={setPersonalFilter} />
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6 print:hidden">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-xs text-gray-500 uppercase">Current</div>

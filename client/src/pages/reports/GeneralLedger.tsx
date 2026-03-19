@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { DateRangePicker, ReportHeader, formatCurrency, exportToCSV } from '../../components/reports';
-import type { ReportColumn, ReportRow } from '../../components/reports';
+import { DateRangePicker, PersonalBusinessFilter, ReportHeader, formatCurrency, exportToCSV } from '../../components/reports';
+import type { ReportColumn, ReportRow, PersonalFilter } from '../../components/reports';
 import { formatDateShort, formatDateLong } from '../../lib/dateUtils';
 import api from '../../lib/api';
 
@@ -19,6 +19,7 @@ interface JournalEntry {
   TransactionDate: string;
   Description: string;
   Reference: string | null;
+  IsPersonal: boolean;
 }
 
 interface JournalEntryLine {
@@ -56,6 +57,7 @@ export default function GeneralLedger() {
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
+  const [personalFilter, setPersonalFilter] = useState<PersonalFilter>('business');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
   const [selectedAccountType, setSelectedAccountType] = useState<string>('all');
 
@@ -127,8 +129,11 @@ export default function GeneralLedger() {
       return { accountGroups: [] as AccountGroup[] };
     }
 
+    const filteredEntries = personalFilter === 'all' ? journalEntries
+      : journalEntries.filter(e => personalFilter === 'personal' ? e.IsPersonal : !e.IsPersonal);
+
     const accountMap = new Map(accounts.map((a) => [a.Id, a]));
-    const entryMap = new Map(journalEntries.map((e) => [e.Id, e]));
+    const entryMap = new Map(filteredEntries.map((e) => [e.Id, e]));
 
     // Parse dates explicitly to avoid timezone issues
     const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
@@ -250,7 +255,7 @@ export default function GeneralLedger() {
     });
 
     return { accountGroups };
-  }, [accounts, journalEntries, lines, startDate, endDate, selectedAccountId, selectedAccountType]);
+  }, [accounts, journalEntries, lines, startDate, endDate, selectedAccountId, selectedAccountType, personalFilter]);
 
   const columns: ReportColumn[] = [
     { key: 'date', header: 'Date', align: 'left' },
@@ -412,6 +417,7 @@ export default function GeneralLedger() {
             onStartDateChange={setStartDate}
             onEndDateChange={setEndDate}
           />
+          <PersonalBusinessFilter value={personalFilter} onChange={setPersonalFilter} />
           <div className="flex items-center gap-2">
             <label htmlFor="accountTypeFilter" className="text-sm font-medium text-gray-700">
               Account Type:
