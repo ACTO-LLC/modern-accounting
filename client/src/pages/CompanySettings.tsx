@@ -142,6 +142,25 @@ export default function CompanySettings() {
   // Active section (for sidebar highlight)
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
 
+  // Position sidebar fixed in viewport.
+  // CSS sticky doesn't work because Layout.tsx has overflow-hidden on a parent div.
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const anchor = anchorRef.current;
+    const sidebar = sidebarRef.current;
+    if (!anchor || !sidebar) return;
+
+    const update = () => {
+      const rect = anchor.getBoundingClientRect();
+      sidebar.style.left = `${rect.left}px`;
+      sidebar.style.width = `${rect.width}px`;
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   // IntersectionObserver to track which section is in view
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -546,10 +565,13 @@ export default function CompanySettings() {
   const SELF_MANAGED_IDS = new Set(['email', 'features', 'onboarding']);
 
   return (
-    <div className="max-w-7xl mx-auto flex gap-8">
+    <div className="max-w-7xl mx-auto lg:grid lg:grid-cols-[16rem_1fr] lg:gap-8">
       {/* Sidebar */}
-      <aside className="hidden lg:block w-64 flex-shrink-0">
-        <div className="sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto space-y-1">
+      {/* Invisible spacer reserves the grid column width */}
+      <div ref={anchorRef} className="hidden lg:block w-64" aria-hidden="true" />
+      {/* Fixed sidebar stays visible while <main> scrolls */}
+      <aside ref={sidebarRef} className="hidden lg:block fixed top-16 bottom-4 overflow-y-auto">
+        <div className="space-y-1 py-2">
           {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
