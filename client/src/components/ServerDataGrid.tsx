@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   DataGrid,
   GridColDef,
@@ -311,10 +311,16 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
     }
   }, [onRowClick, editPath, getRowId, navigate]);
 
+  // Apply persisted column widths
+  const widthAdjustedColumns = useMemo(
+    () => (gridKey ? persistedState.applyColumnWidths(columns) : columns),
+    [gridKey, persistedState.applyColumnWidths, columns],
+  );
+
   // Add actions column if renderActions is provided
   const columnsWithActions: GridColDef[] = renderActions
     ? [
-        ...columns,
+        ...widthAdjustedColumns,
         {
           field: 'actions',
           headerName: 'Actions',
@@ -324,7 +330,7 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
           renderCell: (params) => renderActions(params.row as T),
         },
       ]
-    : columns;
+    : widthAdjustedColumns;
 
   if (error) {
     return (
@@ -367,6 +373,8 @@ export default function ServerDataGrid<T extends GridValidRowModel>({
           filterMode="server"
           filterModel={filterModel}
           onFilterModelChange={handleFilterModelChange}
+          // Persist column widths
+          onColumnWidthChange={gridKey ? persistedState.onColumnWidthChange : undefined}
           // Row interaction
           onRowClick={handleRowClick}
           checkboxSelection={checkboxSelection}
