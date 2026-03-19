@@ -74,6 +74,11 @@ export async function getEmailSettings() {
         `;
         return result.recordset[0] || null;
     } catch (error) {
+        // Table may not exist yet (first run / no migrations)
+        if (error.number === 208 || error.message?.includes('Invalid object name')) {
+            console.warn('[email-api DB] EmailSettings table does not exist yet');
+            return null;
+        }
         console.error('Error getting email settings:', error);
         throw error;
     }
