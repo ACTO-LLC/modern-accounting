@@ -120,22 +120,9 @@ BEGIN
 END
 GO
 
--- JournalEntryLines → JournalEntries
-IF OBJECT_ID('dbo.TR_JournalEntryLines_UpdateParent', 'TR') IS NOT NULL
-    DROP TRIGGER dbo.TR_JournalEntryLines_UpdateParent;
-GO
-CREATE TRIGGER dbo.TR_JournalEntryLines_UpdateParent ON dbo.JournalEntryLines
-AFTER INSERT, UPDATE, DELETE AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE dbo.JournalEntries
-    SET UpdatedAt = SYSUTCDATETIME()
-    WHERE Id IN (
-        SELECT JournalEntryId FROM inserted
-        UNION
-        SELECT JournalEntryId FROM deleted
-    );
-END
+-- JournalEntryLines → JournalEntries: SKIPPED
+-- JournalEntries uses temporal tables (GENERATED ALWAYS) with ValidFrom/ValidTo
+-- instead of an explicit UpdatedAt column. Temporal versioning handles this automatically.
 GO
 
 -- CreditMemoLines → CreditMemos
