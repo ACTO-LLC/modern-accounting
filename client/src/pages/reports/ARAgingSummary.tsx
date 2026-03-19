@@ -203,6 +203,7 @@ export default function ARAgingSummary() {
       days61to90: aging.days61to90 || undefined,
       days90plus: aging.days90plus || undefined,
       total: aging.total,
+      href: `/invoices?customerId=${customer.Id}`,
     }));
 
     rows.push({

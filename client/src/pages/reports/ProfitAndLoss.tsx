@@ -141,7 +141,12 @@ export default function ProfitAndLoss() {
     ];
 
     reportData.revenueAccounts.forEach(({ account, balance }) =>
-      rows.push({ name: account.Name, amount: balance, indent: 1 })
+      rows.push({
+        name: account.Name,
+        amount: balance,
+        indent: 1,
+        href: `/reports/transaction-detail?accountId=${account.Id}&startDate=${startDate}&endDate=${endDate}`,
+      })
     );
 
     rows.push(
@@ -151,7 +156,12 @@ export default function ProfitAndLoss() {
     );
 
     reportData.expenseAccounts.forEach(({ account, balance }) =>
-      rows.push({ name: account.Name, amount: balance, indent: 1 })
+      rows.push({
+        name: account.Name,
+        amount: balance,
+        indent: 1,
+        href: `/reports/transaction-detail?accountId=${account.Id}&startDate=${startDate}&endDate=${endDate}`,
+      })
     );
 
     rows.push(
@@ -165,7 +175,7 @@ export default function ProfitAndLoss() {
     );
 
     return rows;
-  }, [reportData]);
+  }, [reportData, startDate, endDate]);
 
   const handleExportCSV = () =>
     exportToCSV(`profit-loss-${startDate}-to-${endDate}`, columns, tableData);

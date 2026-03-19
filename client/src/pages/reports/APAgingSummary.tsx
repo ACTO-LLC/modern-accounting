@@ -197,6 +197,7 @@ export default function APAgingSummary() {
       days61to90: aging.days61to90 || undefined,
       days90plus: aging.days90plus || undefined,
       total: aging.total,
+      href: `/bills?vendorId=${vendor.Id}`,
     }));
 
     rows.push({
