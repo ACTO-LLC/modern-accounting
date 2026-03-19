@@ -52,7 +52,7 @@ export default function TransactionDetail() {
   const [startDate, setStartDate] = useState(paramStartDate || firstDayOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(paramEndDate || today.toISOString().split('T')[0]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>(paramAccountId || 'all');
-  const [drillDownSource, setDrillDownSource] = useState<boolean>(!!paramAccountId);
+  const drillDownSource = !!paramAccountId;
 
   const {
     data: accounts,
