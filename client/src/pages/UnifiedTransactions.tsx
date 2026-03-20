@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import api, { customersApi, Customer, BankTransaction } from '../lib/api';
 import { formatDate } from '../lib/dateUtils';
 import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
+import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import useGridHeight from '../hooks/useGridHeight';
 import useDataGridState from '../hooks/useDataGridState';
 import TransactionFilters, { TransactionFiltersState } from '../components/transactions/TransactionFilters';
@@ -51,6 +52,8 @@ export default function UnifiedTransactions() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const gridRef = useRef<HTMLDivElement>(null);
+  const { settings } = useCompanySettings();
+  const isSimpleMode = settings.invoicePostingMode === 'simple';
 
   // Initialize filters based on URL params
   const [filters, setFilters] = useState<TransactionFiltersState>(() => {
@@ -224,6 +227,8 @@ export default function UnifiedTransactions() {
   // Bulk actions - uses chat-api batch-approve endpoint for proper DAB auth
   const bulkApproveMutation = useMutation({
     mutationFn: async (ids: string[]) => {
+      const action = isSimpleMode ? 'Approving and posting' : 'Approving';
+      toast.loading(`${action} ${ids.length} transactions...`, { id: 'bulk-approve', duration: Infinity });
       // Build transaction list with suggested values
       const txnList = ids.map(id => {
         const txn = transactions.find(t => t.Id === id);
@@ -237,6 +242,7 @@ export default function UnifiedTransactions() {
       // Use chat-api batch-approve endpoint which has proper X-MS-API-ROLE headers
       const response = await api.post('/transactions/batch-approve', {
         transactions: txnList,
+        autoPost: isSimpleMode,
       });
       return response.data;
     },
@@ -244,7 +250,14 @@ export default function UnifiedTransactions() {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
       setSelectedIds({ type: 'include', ids: new Set() });
       if (data?.approved > 0) {
-        toast.success(`Approved ${data.approved} transactions`);
+        const postedCount = data.posted || 0;
+        if (isSimpleMode && postedCount > 0) {
+          toast.success(`Approved and posted ${postedCount} transactions to GL`, { id: 'bulk-approve' });
+        } else {
+          toast.success(`Approved ${data.approved} transactions`, { id: 'bulk-approve' });
+        }
+      } else {
+        toast.dismiss('bulk-approve');
       }
       if (data?.failed > 0) {
         // Check if failures are due to missing categorization
@@ -259,7 +272,7 @@ export default function UnifiedTransactions() {
       }
     },
     onError: (error: Error) => {
-      toast.error(`Error approving transactions: ${error.message}`);
+      toast.error(`Error approving transactions: ${error.message}`, { id: 'bulk-approve' });
     },
   });
 
@@ -278,6 +291,7 @@ export default function UnifiedTransactions() {
   // Post transactions to journal
   const postMutation = useMutation({
     mutationFn: async (ids: string[]) => {
+      toast.loading(`Posting ${ids.length} transactions to the General Ledger...`, { id: 'post-transactions', duration: Infinity });
       const response = await api.post('/post-transactions', {
         transactionIds: ids,
       });
@@ -285,13 +299,24 @@ export default function UnifiedTransactions() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
-      toast.success(`Successfully posted ${data.count} transactions to the journal!`);
+      toast.success(`Successfully posted ${data.count} transactions to the journal!`, { id: 'post-transactions' });
       setShowPostConfirm(false);
     },
     onError: (error: Error) => {
-      toast.error(`Error posting transactions: ${error.message}`);
+      toast.error(`Error posting transactions: ${error.message}`, { id: 'post-transactions' });
     },
   });
+
+  // Warn user before navigating away during posting
+  const isPosting = postMutation.isPending || bulkApproveMutation.isPending;
+  useEffect(() => {
+    if (!isPosting) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isPosting]);
 
   // Resolve category display: prefer account name from SuggestedAccountId, fall back to SuggestedCategory
   const getCategoryDisplay = useCallback((txn: BankTransaction): string => {
@@ -307,16 +332,17 @@ export default function UnifiedTransactions() {
       return;
     }
     const resolvedCategory = resolveCategory(txn, accountMap);
-    // Use server-side approve endpoint which also auto-posts to GL
+    // Use server-side approve endpoint; auto-posts to GL in simple mode
     api.post(`/transactions/${id}/approve`, {
       accountId: txn.SuggestedAccountId,
       category: resolvedCategory ?? txn.SuggestedCategory,
       memo: txn.SuggestedMemo,
+      autoPost: isSimpleMode,
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
       setDrawerTransaction(null);
       setSelectedIds({ type: 'include', ids: new Set() });
-      toast.success('Transaction approved and posted to GL');
+      toast.success(isSimpleMode ? 'Transaction approved and posted to GL' : 'Transaction approved');
     }).catch((err) => {
       console.error('Approve failed:', err);
       toast.error('Failed to approve transaction');
@@ -357,13 +383,29 @@ export default function UnifiedTransactions() {
     });
   }, [accounts, updateMutation]);
 
+  // Resolve selected IDs, handling both 'include' and 'include_all' selection types
+  const getSelectedTransactions = useCallback(() => {
+    if (selectedIds.type === 'include') {
+      return transactions.filter(t => (selectedIds.ids as Set<string>).has(t.Id));
+    }
+    // 'include_all' — all rows selected, except those in the ids set (exclusions)
+    return transactions.filter(t => !(selectedIds.ids as Set<string>).has(t.Id));
+  }, [selectedIds, transactions]);
+
+  const selectedCount = useMemo(() => {
+    if (selectedIds.type === 'include') return selectedIds.ids.size;
+    return transactions.length - selectedIds.ids.size;
+  }, [selectedIds, transactions]);
+
   const handleBulkApprove = useCallback(() => {
-    bulkApproveMutation.mutate(Array.from(selectedIds.ids) as string[]);
-  }, [selectedIds, bulkApproveMutation]);
+    const ids = getSelectedTransactions().map(t => t.Id);
+    bulkApproveMutation.mutate(ids);
+  }, [getSelectedTransactions, bulkApproveMutation]);
 
   const handleBulkReject = useCallback(() => {
-    bulkRejectMutation.mutate(Array.from(selectedIds.ids) as string[]);
-  }, [selectedIds, bulkRejectMutation]);
+    const ids = getSelectedTransactions().map(t => t.Id);
+    bulkRejectMutation.mutate(ids);
+  }, [getSelectedTransactions, bulkRejectMutation]);
 
   const handleApproveHighConfidence = useCallback(() => {
     const highConfidenceIds = transactions
@@ -404,13 +446,26 @@ export default function UnifiedTransactions() {
     }
   };
 
+  // Post selected approved transactions
+  const handlePostSelected = useCallback(() => {
+    const selectedApprovedIds = getSelectedTransactions()
+      .filter(t => t.Status === 'Approved')
+      .map(t => t.Id);
+    if (selectedApprovedIds.length === 0) {
+      toast.error('No approved transactions selected to post');
+      return;
+    }
+    postMutation.mutate(selectedApprovedIds);
+  }, [getSelectedTransactions, postMutation]);
+
   // Counts
   const highConfidenceCount = transactions.filter(t => t.ConfidenceScore >= 80 && t.Status === 'Pending').length;
   const approvedCount = transactions.filter(t => t.Status === 'Approved').length;
-  const isLoading = bulkApproveMutation.isPending || bulkRejectMutation.isPending || updateMutation.isPending;
+  const approvedSelectedCount = getSelectedTransactions().filter(t => t.Status === 'Approved').length;
+  const isLoading = bulkApproveMutation.isPending || bulkRejectMutation.isPending || updateMutation.isPending || postMutation.isPending;
 
   // Calculate grid height, reserving space for the fixed bottom bulk-actions bar when visible
-  const bulkBarVisible = selectedIds.ids.size > 0 || highConfidenceCount > 0;
+  const bulkBarVisible = selectedCount > 0 || highConfidenceCount > 0;
   const gridHeight = useGridHeight(gridRef, 80, bulkBarVisible ? BULK_ACTIONS_BAR_HEIGHT : 0);
 
   // DataGrid columns
@@ -674,8 +729,8 @@ export default function UnifiedTransactions() {
         onFilterChange={setFilters}
       />
 
-      {/* Post Approved Button */}
-      {approvedCount > 0 && (
+      {/* Post Approved Button — only shown in Advanced mode; Simple mode auto-posts on approve */}
+      {!isSimpleMode && approvedCount > 0 && (
         <div className="mb-4 flex justify-end">
           <button
             onClick={handlePostApproved}
@@ -759,12 +814,14 @@ export default function UnifiedTransactions() {
 
       {/* Fixed bottom bulk actions bar - visible when rows are selected */}
       <BulkActionsBar
-        selectedCount={selectedIds.ids.size}
+        selectedCount={selectedCount}
         highConfidenceCount={highConfidenceCount}
+        approvedSelectedCount={approvedSelectedCount}
         onApproveSelected={handleBulkApprove}
         onRejectSelected={handleBulkReject}
         onApproveHighConfidence={handleApproveHighConfidence}
         onCategorizeSelected={() => {/* TODO: Open categorize modal */}}
+        onPostSelected={handlePostSelected}
         onClearSelection={() => setSelectedIds({ type: 'include', ids: new Set() })}
         isLoading={isLoading}
       />
