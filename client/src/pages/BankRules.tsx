@@ -20,6 +20,7 @@ interface BankRule {
   AssignCustomerId: string | null;
   AssignClassId: string | null;
   AssignMemo: string | null;
+  AssignIsPersonal: boolean;
   Priority: number;
   IsEnabled: boolean;
   CreatedAt: string;
@@ -62,6 +63,7 @@ interface BankRuleInput {
   AssignCustomerId?: string | null;
   AssignClassId?: string | null;
   AssignMemo?: string | null;
+  AssignIsPersonal?: boolean;
   Priority?: number;
   IsEnabled?: boolean;
 }
@@ -105,6 +107,7 @@ export default function BankRules() {
     AssignCustomerId: null,
     AssignClassId: null,
     AssignMemo: '',
+    AssignIsPersonal: false,
     Priority: 0,
     IsEnabled: true,
   });
@@ -237,6 +240,7 @@ export default function BankRules() {
       AssignCustomerId: null,
       AssignClassId: null,
       AssignMemo: '',
+      AssignIsPersonal: false,
       Priority: 0,
       IsEnabled: true,
     });
@@ -283,8 +287,8 @@ export default function BankRules() {
     }
 
     // Check that at least one assignment is made
-    if (!formData.AssignAccountId && !formData.AssignVendorId && !formData.AssignCustomerId && !formData.AssignMemo) {
-      errors.assignAccount = 'At least one assignment (account, vendor, customer, or memo) is required';
+    if (!formData.AssignAccountId && !formData.AssignVendorId && !formData.AssignCustomerId && !formData.AssignMemo && !formData.AssignIsPersonal) {
+      errors.assignAccount = 'At least one assignment (account, vendor, customer, memo, or personal) is required';
     }
 
     setValidationErrors(errors);
@@ -328,6 +332,7 @@ export default function BankRules() {
       AssignCustomerId: rule.AssignCustomerId,
       AssignClassId: rule.AssignClassId,
       AssignMemo: rule.AssignMemo || '',
+      AssignIsPersonal: rule.AssignIsPersonal || false,
       Priority: rule.Priority,
       IsEnabled: rule.IsEnabled,
     });
@@ -764,6 +769,22 @@ export default function BankRules() {
                     ))}
                   </select>
                 </div>
+                <div className="flex items-center">
+                  <label className="flex items-center gap-2 mt-6">
+                    <input
+                      type="checkbox"
+                      checked={formData.AssignIsPersonal || false}
+                      onChange={(e) => {
+                        setFormData({ ...formData, AssignIsPersonal: e.target.checked });
+                        if (validationErrors.assignAccount) {
+                          setValidationErrors({ ...validationErrors, assignAccount: undefined });
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mark as Personal</span>
+                  </label>
+                </div>
                 <div className="sm:col-span-2">
                   <label htmlFor="assignMemo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Memo
@@ -1004,6 +1025,9 @@ export default function BankRules() {
                       )}
                       {rule.AssignClassId && (
                         <span title="Class" className="text-xs">Class: {getClassName(rule.AssignClassId)}</span>
+                      )}
+                      {rule.AssignIsPersonal && (
+                        <span className="inline-flex items-center px-2 py-0.5 text-xs rounded bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">Personal</span>
                       )}
                       {rule.AssignMemo && (
                         <span title="Memo" className="text-xs italic truncate max-w-xs">Memo: {rule.AssignMemo}</span>

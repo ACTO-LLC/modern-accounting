@@ -304,6 +304,20 @@ class PlaidSync {
             }
         }
 
+        // STEP 3: Check BankRules for account-level assignments (e.g., mark as personal)
+        let isPersonal = false;
+        const bankRuleMatch = await this.checkBankRules(sourceAccountId, plaidTx.name || '', amount);
+        if (bankRuleMatch) {
+            if (bankRuleMatch.AssignIsPersonal) {
+                isPersonal = true;
+            }
+            if (bankRuleMatch.AssignAccountId && !suggestedAccountId) {
+                suggestedAccountId = bankRuleMatch.AssignAccountId;
+                confidenceScore = 100;
+            }
+            console.log(`BankRule match: "${bankRuleMatch.Name}" for "${plaidTx.name}"`);
+        }
+
         return {
             Id: crypto.randomUUID(),
             SourceType: sourceType,
@@ -322,6 +336,7 @@ class PlaidSync {
             SuggestedCategory: suggestedCategory,
             SuggestedMemo: suggestedMemo,
             ConfidenceScore: confidenceScore,
+            IsPersonal: isPersonal,
             Status: 'Pending',
         };
     }
@@ -449,6 +464,83 @@ Respond in JSON format:
             // 404 means categorizationrules entity doesn't exist yet - that's OK
             if (error.response?.status !== 404) {
                 console.warn('Rule check error:', error.message);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Check BankRules for a transaction
+     * Returns first matching rule or null
+     */
+    async checkBankRules(sourceAccountId, description, amount) {
+        try {
+            const headers = await getDabHeaders();
+            const response = await axios.get(
+                `${DAB_API_URL}/bankrules?$filter=IsEnabled eq true&$orderby=Priority desc`,
+                { headers }
+            );
+            const rules = response.data?.value || [];
+
+            for (const rule of rules) {
+                // Check BankAccountId scope: null means all accounts, otherwise must match
+                if (rule.BankAccountId && rule.BankAccountId !== sourceAccountId) {
+                    continue;
+                }
+
+                // Check MatchField / MatchType / MatchValue
+                let matches = false;
+                const matchField = rule.MatchField || 'Description';
+                const matchType = rule.MatchType || 'Contains';
+                const matchValue = rule.MatchValue || '';
+
+                if (matchField === 'Description' || matchField === 'Both') {
+                    const lowerDesc = (description || '').toLowerCase();
+                    const lowerMatch = matchValue.toLowerCase();
+
+                    switch (matchType) {
+                        case 'Contains':
+                            matches = lowerDesc.includes(lowerMatch);
+                            break;
+                        case 'StartsWith':
+                            matches = lowerDesc.startsWith(lowerMatch);
+                            break;
+                        case 'Equals':
+                            matches = lowerDesc === lowerMatch;
+                            break;
+                        case 'Regex':
+                            try {
+                                matches = new RegExp(matchValue, 'i').test(description || '');
+                            } catch {
+                                matches = false;
+                            }
+                            break;
+                    }
+                }
+
+                if ((matchField === 'Amount' || matchField === 'Both') && !matches) {
+                    const absAmount = Math.abs(amount || 0);
+                    const minOk = rule.MinAmount === null || rule.MinAmount === undefined || absAmount >= rule.MinAmount;
+                    const maxOk = rule.MaxAmount === null || rule.MaxAmount === undefined || absAmount <= rule.MaxAmount;
+                    matches = minOk && maxOk;
+                }
+
+                // Check TransactionType if specified
+                if (matches && rule.TransactionType) {
+                    const isDebit = (amount || 0) < 0;
+                    if (rule.TransactionType === 'Debit' && !isDebit) matches = false;
+                    if (rule.TransactionType === 'Credit' && isDebit) matches = false;
+                }
+
+                if (matches) {
+                    return rule;
+                }
+            }
+
+            return null;
+        } catch (error) {
+            if (error.response?.status !== 404) {
+                console.warn('BankRules check error:', error.message);
             }
             return null;
         }

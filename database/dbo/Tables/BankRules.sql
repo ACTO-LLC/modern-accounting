@@ -14,6 +14,7 @@ CREATE TABLE [dbo].[BankRules]
     [AssignCustomerId] UNIQUEIDENTIFIER NULL,
     [AssignClassId] UNIQUEIDENTIFIER NULL,
     [AssignMemo] NVARCHAR(500) NULL,
+    [AssignIsPersonal] BIT NOT NULL DEFAULT 0,
     [Priority] INT NOT NULL DEFAULT 0,
     [IsEnabled] BIT NOT NULL DEFAULT 1,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
