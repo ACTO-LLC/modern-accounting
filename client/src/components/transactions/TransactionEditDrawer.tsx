@@ -37,6 +37,7 @@ interface TransactionEditDrawerProps {
   onSave: (id: string, data: TransactionEditFormData) => void;
   onClose: () => void;
   isSaving?: boolean;
+  isRecategorize?: boolean;
 }
 
 export default function TransactionEditDrawer({
@@ -45,6 +46,7 @@ export default function TransactionEditDrawer({
   onSave,
   onClose,
   isSaving = false,
+  isRecategorize = false,
 }: TransactionEditDrawerProps) {
   const [form, setForm] = useState<TransactionEditFormData>({
     accountId: '',
@@ -60,8 +62,8 @@ export default function TransactionEditDrawer({
   useEffect(() => {
     if (transaction) {
       setForm({
-        accountId: transaction.SuggestedAccountId ?? '',
-        memo: transaction.SuggestedMemo ?? '',
+        accountId: (isRecategorize ? transaction.ApprovedAccountId : transaction.SuggestedAccountId) ?? '',
+        memo: (isRecategorize ? transaction.ApprovedMemo : transaction.SuggestedMemo) ?? '',
         vendorId: transaction.VendorId ?? '',
         customerId: transaction.CustomerId ?? '',
         classId: transaction.ClassId ?? '',
@@ -70,7 +72,7 @@ export default function TransactionEditDrawer({
         isPersonal: transaction.IsPersonal,
       });
     }
-  }, [transaction]);
+  }, [transaction, isRecategorize]);
 
   const handleSave = () => {
     if (!transaction) return;
@@ -93,7 +95,7 @@ export default function TransactionEditDrawer({
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Edit Transaction
+              {isRecategorize ? 'Recategorize Transaction' : 'Edit Transaction'}
             </h2>
             <IconButton onClick={onClose} size="small">
               <X className="w-5 h-5" />
@@ -102,6 +104,15 @@ export default function TransactionEditDrawer({
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+            {/* Recategorize warning */}
+            {isRecategorize && (
+              <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  This transaction is posted to the GL. Changing the account will automatically update the journal entry.
+                </p>
+              </div>
+            )}
+
             {/* Read-only context */}
             <div className="space-y-2 pb-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex justify-between text-sm">
@@ -279,7 +290,7 @@ export default function TransactionEditDrawer({
               onClick={handleSave}
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : 'Save'}
+              {isSaving ? 'Saving...' : isRecategorize ? 'Recategorize' : 'Save'}
             </Button>
           </div>
         </div>

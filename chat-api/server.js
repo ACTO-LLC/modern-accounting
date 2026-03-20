@@ -45,6 +45,7 @@ import {
     renderPage
 } from './src/services/web-renderer.js';
 import { logAuditEvent, mapEntityType } from './src/services/audit-log.js';
+import { query as dbQuery } from './src/db/connection.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -8103,55 +8104,24 @@ app.post('/api/post-transactions', async (req, res) => {
                     continue;
                 }
 
-                // Create journal entry lines (double-entry)
+                // Create journal entry lines (double-entry) in a single INSERT
+                // to satisfy the balance enforcement trigger.
                 // For outflow (negative amount): Debit expense/asset, Credit bank
                 // For inflow (positive amount): Debit bank, Credit income/liability
                 const line1Id = crypto.randomUUID();
                 const line2Id = crypto.randomUUID();
+                const lineDesc = txn.ApprovedMemo || txn.Description;
+                const now = new Date().toISOString();
 
-                if (isOutflow) {
-                    // Debit the expense/asset account
-                    await dab.create('journalentrylines', {
-                        Id: line1Id,
-                        JournalEntryId: journalEntryId,
-                        AccountId: txn.ApprovedAccountId,
-                        Description: txn.ApprovedMemo || txn.Description,
-                        Debit: amount,
-                        Credit: 0,
-                        CreatedAt: new Date().toISOString()
-                    }, authToken);
-                    // Credit the bank account
-                    await dab.create('journalentrylines', {
-                        Id: line2Id,
-                        JournalEntryId: journalEntryId,
-                        AccountId: txn.SourceAccountId,
-                        Description: txn.ApprovedMemo || txn.Description,
-                        Debit: 0,
-                        Credit: amount,
-                        CreatedAt: new Date().toISOString()
-                    }, authToken);
-                } else {
-                    // Debit the bank account
-                    await dab.create('journalentrylines', {
-                        Id: line1Id,
-                        JournalEntryId: journalEntryId,
-                        AccountId: txn.SourceAccountId,
-                        Description: txn.ApprovedMemo || txn.Description,
-                        Debit: amount,
-                        Credit: 0,
-                        CreatedAt: new Date().toISOString()
-                    }, authToken);
-                    // Credit the income/liability account
-                    await dab.create('journalentrylines', {
-                        Id: line2Id,
-                        JournalEntryId: journalEntryId,
-                        AccountId: txn.ApprovedAccountId,
-                        Description: txn.ApprovedMemo || txn.Description,
-                        Debit: 0,
-                        Credit: amount,
-                        CreatedAt: new Date().toISOString()
-                    }, authToken);
-                }
+                const debitAccountId = isOutflow ? txn.ApprovedAccountId : txn.SourceAccountId;
+                const creditAccountId = isOutflow ? txn.SourceAccountId : txn.ApprovedAccountId;
+
+                await dbQuery(
+                    `INSERT INTO JournalEntryLines (Id, JournalEntryId, AccountId, Description, Debit, Credit, CreatedAt)
+                     VALUES (@line1Id, @journalEntryId, @debitAccountId, @lineDesc, @amount, 0, @now),
+                            (@line2Id, @journalEntryId, @creditAccountId, @lineDesc, 0, @amount, @now)`,
+                    { line1Id, line2Id, journalEntryId, debitAccountId, creditAccountId, lineDesc, amount, now }
+                );
 
                 // Update the bank transaction status and link to journal entry
                 await dab.update('banktransactions', txnId, {
@@ -8196,6 +8166,151 @@ app.post('/api/post-transactions', async (req, res) => {
     } catch (error) {
         console.error('Post transactions error:', error.message);
         res.status(500).json({ error: error.message || 'Failed to post transactions' });
+    }
+});
+
+// Recategorize a posted bank transaction (Issue #564)
+// Updates the journal entry line's AccountId directly (simple 2-line entries)
+app.post('/api/banktransactions/:id/recategorize', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { accountId, memo, vendorId, customerId, classId, projectId, payee, isPersonal } = req.body;
+        const authToken = extractAuthToken(req);
+
+        if (!accountId) {
+            return res.status(400).json({ error: 'accountId is required' });
+        }
+
+        // Get the bank transaction
+        const txnResult = await dab.getById('banktransactions', id, authToken);
+        const txn = txnResult.value?.value?.[0] || txnResult.value;
+
+        if (!txn) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+        if (txn.Status !== 'Posted') {
+            return res.status(400).json({ error: `Transaction status is ${txn.Status}, not Posted` });
+        }
+        if (!txn.JournalEntryId) {
+            return res.status(400).json({ error: 'Transaction has no linked journal entry' });
+        }
+
+        const oldAccountId = txn.ApprovedAccountId;
+        if (oldAccountId === accountId) {
+            // Account didn't change — just update other fields on the bank transaction
+            const updateData = {};
+            if (memo !== undefined) updateData.ApprovedMemo = memo || null;
+            if (vendorId !== undefined) updateData.VendorId = vendorId || null;
+            if (customerId !== undefined) updateData.CustomerId = customerId || null;
+            if (classId !== undefined) updateData.ClassId = classId || null;
+            if (projectId !== undefined) updateData.ProjectId = projectId || null;
+            if (payee !== undefined) updateData.Payee = payee || null;
+            if (isPersonal !== undefined) updateData.IsPersonal = isPersonal;
+
+            if (Object.keys(updateData).length > 0) {
+                await dab.update('banktransactions', id, updateData, authToken);
+            }
+            return res.json({ success: true, recategorized: false, message: 'Account unchanged, other fields updated' });
+        }
+
+        // Get the journal entry lines to find the one with the old account
+        // Note: DAB requires GUID values without quotes in OData filters
+        const linesResult = await dab.get('journalentrylines', {
+            filter: `JournalEntryId eq ${txn.JournalEntryId}`
+        }, authToken);
+        const lines = linesResult.value || [];
+
+        if (lines.length !== 2) {
+            return res.status(400).json({
+                error: `Expected 2 journal entry lines but found ${lines.length}. Complex entries cannot be recategorized automatically.`
+            });
+        }
+
+        // Find the expense/income line (the one with ApprovedAccountId, not SourceAccountId)
+        const expenseLine = lines.find(l => l.AccountId === oldAccountId);
+        const bankLine = lines.find(l => l.AccountId === txn.SourceAccountId);
+
+        if (!expenseLine || !bankLine) {
+            return res.status(400).json({
+                error: 'Could not identify expense/income line vs bank line in journal entry'
+            });
+        }
+
+        // Update the journal entry line with the new account
+        const lineUpdateData = { AccountId: accountId };
+        if (memo !== undefined) lineUpdateData.Description = memo || txn.Description;
+        await dab.update('journalentrylines', expenseLine.Id, lineUpdateData, authToken);
+
+        // Update the journal entry description if memo changed
+        if (memo !== undefined) {
+            await dab.update('journalentries', txn.JournalEntryId, {
+                Description: memo || txn.Description
+            }, authToken);
+        }
+
+        // Get the new account name for SuggestedCategory/ApprovedCategory
+        const newAccForName = await dab.getById('accounts', accountId, authToken);
+        const newAccObj = newAccForName.value?.value?.[0] || newAccForName.value;
+        const newCategoryName = newAccObj?.Name || null;
+
+        // Update the bank transaction fields
+        const txnUpdate = {
+            ApprovedAccountId: accountId,
+            ApprovedCategory: newCategoryName,
+            SuggestedAccountId: accountId,
+            SuggestedCategory: newCategoryName,
+        };
+        if (memo !== undefined) {
+            txnUpdate.ApprovedMemo = memo || null;
+            txnUpdate.SuggestedMemo = memo || null;
+        }
+        if (vendorId !== undefined) txnUpdate.VendorId = vendorId || null;
+        if (customerId !== undefined) txnUpdate.CustomerId = customerId || null;
+        if (classId !== undefined) txnUpdate.ClassId = classId || null;
+        if (projectId !== undefined) txnUpdate.ProjectId = projectId || null;
+        if (payee !== undefined) txnUpdate.Payee = payee || null;
+        if (isPersonal !== undefined) txnUpdate.IsPersonal = isPersonal;
+
+        await dab.update('banktransactions', id, txnUpdate, authToken);
+
+        // Get account names for audit log (reuse newAccObj from above)
+        const oldAccResult = await dab.getById('accounts', oldAccountId, authToken);
+        const oldAcc = oldAccResult.value?.value?.[0] || oldAccResult.value;
+        const oldAccName = oldAcc?.Name || oldAccountId;
+        const newAccName = newCategoryName || accountId;
+
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'BankTransaction',
+            entityId: id,
+            entityDescription: `Recategorize BankTransaction #${id.substring(0, 8)}: ${oldAccName} -> ${newAccName}`,
+            oldValues: { ApprovedAccountId: oldAccountId, ApprovedAccountName: oldAccName },
+            newValues: { ApprovedAccountId: accountId, ApprovedAccountName: newAccName },
+            req,
+            source: 'API',
+        });
+        logAuditEvent({
+            action: 'Update',
+            entityType: 'JournalEntryLine',
+            entityId: expenseLine.Id,
+            entityDescription: `Recategorize JE line for BankTransaction #${id.substring(0, 8)}: ${oldAccName} -> ${newAccName}`,
+            oldValues: { AccountId: oldAccountId },
+            newValues: { AccountId: accountId },
+            req,
+            source: 'API',
+        });
+
+        console.log(`[Recategorize] Transaction ${id.substring(0, 8)}: ${oldAccName} -> ${newAccName}`);
+        res.json({
+            success: true,
+            recategorized: true,
+            oldAccount: oldAccName,
+            newAccount: newAccName,
+            journalEntryId: txn.JournalEntryId,
+        });
+    } catch (error) {
+        console.error('Recategorize error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to recategorize transaction' });
     }
 });
 
