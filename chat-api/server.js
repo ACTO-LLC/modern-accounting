@@ -2675,8 +2675,8 @@ async function executeQueryInvoices(params) {
                 filters.push(`Status eq '${params.status}'`);
             }
         }
-        if (params.date_from) filters.push(`IssueDate ge ${params.date_from}`);
-        if (params.date_to) filters.push(`IssueDate le ${params.date_to}`);
+        if (params.date_from) filters.push(`IssueDate ge ${params.date_from}T00:00:00Z`);
+        if (params.date_to) filters.push(`IssueDate le ${params.date_to}T23:59:59Z`);
         if (params.min_amount) filters.push(`TotalAmount ge ${params.min_amount}`);
         if (params.max_amount) filters.push(`TotalAmount le ${params.max_amount}`);
         if (params.customer_name) {
@@ -2806,8 +2806,8 @@ async function executeQueryBills(params) {
                 filters.push(`Status eq '${params.status}'`);
             }
         }
-        if (params.date_from) filters.push(`BillDate ge ${params.date_from}`);
-        if (params.date_to) filters.push(`BillDate le ${params.date_to}`);
+        if (params.date_from) filters.push(`BillDate ge ${params.date_from}T00:00:00Z`);
+        if (params.date_to) filters.push(`BillDate le ${params.date_to}T23:59:59Z`);
         if (params.vendor_name) {
             filters.push(`contains(VendorName, '${params.vendor_name}')`);
         }
