@@ -7394,7 +7394,7 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
         let posted = false;
         let journalEntryId = null;
         const sourceAccountId = transaction.SourceAccountId;
-        if (autoPost && sourceAccountId && accountId) {
+        if (autoPost && sourceAccountId) {
             try {
                 journalEntryId = crypto.randomUUID();
                 const amount = Math.abs(parseFloat(transaction.Amount));
@@ -7597,7 +7597,7 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
 
                     // In simple mode, also post to GL immediately
                     let posted = false;
-                    if (autoPost && accountId) {
+                    if (autoPost) {
                         try {
                             // Fetch full transaction for SourceAccountId and Amount
                             const fullTxnResult = await dab.getById('banktransactions', txn.id, authToken);
