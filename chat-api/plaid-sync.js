@@ -30,6 +30,8 @@ if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_API_KEY) {
 class PlaidSync {
     constructor() {
         this.plaidClient = plaidService.getClient();
+        this._bankRulesCache = null;
+        this._bankRulesCacheTime = 0;
     }
 
     /**
@@ -475,12 +477,18 @@ Respond in JSON format:
      */
     async checkBankRules(sourceAccountId, description, amount) {
         try {
-            const headers = await getDabHeaders();
-            const response = await axios.get(
-                `${DAB_API_URL}/bankrules?$filter=IsEnabled eq true&$orderby=Priority desc`,
-                { headers }
-            );
-            const rules = response.data?.value || [];
+            // Cache rules for 60 seconds to avoid N+1 queries during sync
+            const now = Date.now();
+            if (!this._bankRulesCache || now - this._bankRulesCacheTime > 60000) {
+                const headers = await getDabHeaders();
+                const response = await axios.get(
+                    `${DAB_API_URL}/bankrules?$filter=IsEnabled eq true&$orderby=Priority desc`,
+                    { headers }
+                );
+                this._bankRulesCache = response.data?.value || [];
+                this._bankRulesCacheTime = now;
+            }
+            const rules = this._bankRulesCache;
 
             for (const rule of rules) {
                 // Check BankAccountId scope: null means all accounts, otherwise must match
@@ -494,35 +502,46 @@ Respond in JSON format:
                 const matchType = rule.MatchType || 'Contains';
                 const matchValue = rule.MatchValue || '';
 
+                let descriptionMatches = false;
+                let amountMatches = false;
+
                 if (matchField === 'Description' || matchField === 'Both') {
                     const lowerDesc = (description || '').toLowerCase();
                     const lowerMatch = matchValue.toLowerCase();
 
                     switch (matchType) {
                         case 'Contains':
-                            matches = lowerDesc.includes(lowerMatch);
+                            descriptionMatches = lowerDesc.includes(lowerMatch);
                             break;
                         case 'StartsWith':
-                            matches = lowerDesc.startsWith(lowerMatch);
+                            descriptionMatches = lowerDesc.startsWith(lowerMatch);
                             break;
                         case 'Equals':
-                            matches = lowerDesc === lowerMatch;
+                            descriptionMatches = lowerDesc === lowerMatch;
                             break;
                         case 'Regex':
                             try {
-                                matches = new RegExp(matchValue, 'i').test(description || '');
+                                descriptionMatches = new RegExp(matchValue, 'i').test(description || '');
                             } catch {
-                                matches = false;
+                                descriptionMatches = false;
                             }
                             break;
                     }
                 }
 
-                if ((matchField === 'Amount' || matchField === 'Both') && !matches) {
+                if (matchField === 'Amount' || matchField === 'Both') {
                     const absAmount = Math.abs(amount || 0);
                     const minOk = rule.MinAmount === null || rule.MinAmount === undefined || absAmount >= rule.MinAmount;
                     const maxOk = rule.MaxAmount === null || rule.MaxAmount === undefined || absAmount <= rule.MaxAmount;
-                    matches = minOk && maxOk;
+                    amountMatches = minOk && maxOk;
+                }
+
+                if (matchField === 'Description') {
+                    matches = descriptionMatches;
+                } else if (matchField === 'Amount') {
+                    matches = amountMatches;
+                } else if (matchField === 'Both') {
+                    matches = descriptionMatches && amountMatches;
                 }
 
                 // Check TransactionType if specified

@@ -4769,15 +4769,26 @@ async function executeMarkTransactionsPersonal(params, authToken = null) {
         const account = matches[0];
 
         // Step 2: Query non-personal transactions for this account
+        // Request one extra to detect if there are more than the limit
+        const TX_LIMIT = 5000;
         const txResult = await dab.get('banktransactions', {
             filter: `SourceAccountId eq ${account.Id} and IsPersonal eq false`,
-            first: 5000
+            first: TX_LIMIT + 1
         }, authToken);
 
         if (!txResult.success) {
             return { success: false, error: 'Failed to query transactions: ' + txResult.error };
         }
-        const transactions = txResult.value || [];
+        const allResults = txResult.value || [];
+
+        if (allResults.length > TX_LIMIT) {
+            return {
+                success: false,
+                error: `Too many transactions (>${TX_LIMIT}) for "${account.Name}". This tool supports up to ${TX_LIMIT} transactions at a time. Please contact support for bulk operations of this size.`,
+                count: allResults.length
+            };
+        }
+        const transactions = allResults;
 
         if (preview) {
             // Preview mode
@@ -8581,16 +8592,24 @@ app.post('/api/chat', optionalJWT, async (req, res) => {
 
                 toolUsed = toolCall.function.name;
                 const functionResult = await executeFunction(toolCall.function.name, functionArgs, authToken);
-                let resultJson = JSON.stringify(functionResult);
+                const rawResultJson = JSON.stringify(functionResult);
 
                 // Guard against context window blowout — truncate oversized tool results
                 const MAX_TOOL_RESULT_CHARS = 50000; // ~12.5K tokens
-                if (resultJson.length > MAX_TOOL_RESULT_CHARS) {
-                    console.warn(`[Chat] Tool result from "${toolCall.function.name}" is ${resultJson.length} chars, truncating to ${MAX_TOOL_RESULT_CHARS}`);
-                    resultJson = resultJson.substring(0, MAX_TOOL_RESULT_CHARS) + '... [TRUNCATED — result too large. Try a more specific query with $filter, $select, or $first to reduce results.]';
+                let toolResultPayload;
+                if (rawResultJson.length > MAX_TOOL_RESULT_CHARS) {
+                    console.warn(`[Chat] Tool result from "${toolCall.function.name}" is ${rawResultJson.length} chars, truncating to ${MAX_TOOL_RESULT_CHARS}`);
+                    toolResultPayload = {
+                        truncated: true,
+                        message: 'Tool result too large. Returning preview. Try a more specific query with $filter, $select, or $first to reduce results.',
+                        originalLength: rawResultJson.length,
+                        preview: rawResultJson.substring(0, MAX_TOOL_RESULT_CHARS)
+                    };
+                } else {
+                    toolResultPayload = functionResult;
                 }
 
-                messages.push({ role: 'tool', toolCallId: toolCall.id, content: resultJson });
+                messages.push({ role: 'tool', toolCallId: toolCall.id, content: JSON.stringify(toolResultPayload) });
             }
 
             response = await client.getChatCompletions(deploymentName, messages, { tools: getAllTools(), toolChoice: 'auto' });
