@@ -8116,12 +8116,18 @@ app.post('/api/post-transactions', async (req, res) => {
                 const debitAccountId = isOutflow ? txn.ApprovedAccountId : txn.SourceAccountId;
                 const creditAccountId = isOutflow ? txn.SourceAccountId : txn.ApprovedAccountId;
 
-                await dbQuery(
-                    `INSERT INTO JournalEntryLines (Id, JournalEntryId, AccountId, Description, Debit, Credit, CreatedAt)
-                     VALUES (@line1Id, @journalEntryId, @debitAccountId, @lineDesc, @amount, 0, @now),
-                            (@line2Id, @journalEntryId, @creditAccountId, @lineDesc, 0, @amount, @now)`,
-                    { line1Id, line2Id, journalEntryId, debitAccountId, creditAccountId, lineDesc, amount, now }
-                );
+                try {
+                    await dbQuery(
+                        `INSERT INTO JournalEntryLines (Id, JournalEntryId, AccountId, Description, Debit, Credit, CreatedAt)
+                         VALUES (@line1Id, @journalEntryId, @debitAccountId, @lineDesc, @amount, 0, @now),
+                                (@line2Id, @journalEntryId, @creditAccountId, @lineDesc, 0, @amount, @now)`,
+                        { line1Id, line2Id, journalEntryId, debitAccountId, creditAccountId, lineDesc, amount, now }
+                    );
+                } catch (lineError) {
+                    // Compensating cleanup: remove orphan JE header if lines INSERT failed
+                    try { await dab.delete('journalentries', journalEntryId, authToken); } catch (_) { /* best-effort */ }
+                    throw lineError;
+                }
 
                 // Update the bank transaction status and link to journal entry
                 await dab.update('banktransactions', txnId, {
@@ -8196,7 +8202,9 @@ app.post('/api/banktransactions/:id/recategorize', async (req, res) => {
         }
 
         const oldAccountId = txn.ApprovedAccountId;
-        if (oldAccountId === accountId) {
+        const accountUnchanged = oldAccountId && accountId &&
+            oldAccountId.toLowerCase() === accountId.toLowerCase();
+        if (accountUnchanged) {
             // Account didn't change — just update other fields on the bank transaction
             const updateData = {};
             if (memo !== undefined) updateData.ApprovedMemo = memo || null;
@@ -8210,6 +8218,25 @@ app.post('/api/banktransactions/:id/recategorize', async (req, res) => {
             if (Object.keys(updateData).length > 0) {
                 await dab.update('banktransactions', id, updateData, authToken);
             }
+
+            // Keep linked journal entry descriptions in sync with memo
+            if (memo !== undefined && txn.JournalEntryId) {
+                const descriptionUpdate = { Description: memo || null };
+                await dab.update('journalentries', txn.JournalEntryId, descriptionUpdate, authToken);
+
+                const jeLinesResult = await dab.get('journalentrylines', {
+                    filter: `JournalEntryId eq ${txn.JournalEntryId}`
+                }, authToken);
+                const jeLines = jeLinesResult.value || [];
+                if (jeLines.length > 0) {
+                    await Promise.all(
+                        jeLines.map(line =>
+                            dab.update('journalentrylines', line.Id, descriptionUpdate, authToken)
+                        )
+                    );
+                }
+            }
+
             return res.json({ success: true, recategorized: false, message: 'Account unchanged, other fields updated' });
         }
 
@@ -8218,6 +8245,9 @@ app.post('/api/banktransactions/:id/recategorize', async (req, res) => {
         const linesResult = await dab.get('journalentrylines', {
             filter: `JournalEntryId eq ${txn.JournalEntryId}`
         }, authToken);
+        if (!linesResult.success) {
+            return res.status(500).json({ error: `Failed to fetch journal entry lines: ${linesResult.error || 'unknown error'}` });
+        }
         const lines = linesResult.value || [];
 
         if (lines.length !== 2) {
@@ -8256,10 +8286,13 @@ app.post('/api/banktransactions/:id/recategorize', async (req, res) => {
         // Update the bank transaction fields
         const txnUpdate = {
             ApprovedAccountId: accountId,
-            ApprovedCategory: newCategoryName,
             SuggestedAccountId: accountId,
-            SuggestedCategory: newCategoryName,
         };
+        // Only overwrite category fields if we successfully resolved a new category name
+        if (newCategoryName !== null) {
+            txnUpdate.ApprovedCategory = newCategoryName;
+            txnUpdate.SuggestedCategory = newCategoryName;
+        }
         if (memo !== undefined) {
             txnUpdate.ApprovedMemo = memo || null;
             txnUpdate.SuggestedMemo = memo || null;
