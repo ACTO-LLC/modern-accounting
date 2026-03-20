@@ -39,6 +39,23 @@
 
 ---
 
+## CRITICAL: NEVER MERGE FEATURE BRANCHES TO MAIN
+
+**NEVER merge feature branches directly into main.** All feature/fix branches MUST go through the PR review and testing process.
+
+1. **NEVER run `git merge <feature-branch>` on main** — feature branches are merged only via reviewed PRs
+2. **NEVER push untested code to main** — even if the user says "merge to main", clarify what they mean
+3. **Commits directly on main are OK only for:** documentation-only changes (CLAUDE.md, README), config tweaks, and other non-code changes that don't need testing
+
+**If the user says "merge to main":**
+- **ASK** what specifically should be merged — don't assume it includes unreviewed feature branches
+- If there are pending feature PRs AND unrelated small changes, commit only the small changes directly to main
+- Feature branches get merged through their PRs after review and testing
+
+**March 2026 incident:** When asked to "merge to main" (meaning only a CLAUDE.md documentation change), the entire `feat/565-unified-transaction-rules` branch was also merged directly into main, bypassing PR review and testing. The PR (#568) became effectively dead.
+
+---
+
 ## CRITICAL: NO WORKAROUNDS WITHOUT APPROVAL
 
 **NEVER implement workarounds without explicit developer approval.** This includes:
