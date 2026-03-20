@@ -717,7 +717,7 @@ export default function UnifiedTransactions() {
                 <Edit2 className="h-4 w-4" />
               </button>
               <Link
-                to="/journal-entries"
+                to={`/journal-entries/${txn.JournalEntryId}/edit`}
                 className="p-1 text-indigo-600 hover:text-indigo-800"
                 title="View Journal Entry"
                 onClick={(e) => e.stopPropagation()}
