@@ -61,7 +61,7 @@ export default function TransactionFilters({ filters, accounts, onFilterChange }
             onChange={(e) => updateFilter('status', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="all">All</option>
+            <option value="all">All Actionable</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>

@@ -81,7 +81,10 @@ export default function UnifiedTransactions() {
     queryFn: async () => {
       const filterParts: string[] = [];
 
-      if (filters.status !== 'all') {
+      if (filters.status === 'all') {
+        // "All Actionable" excludes Posted and Excluded
+        filterParts.push(`Status ne 'Posted' and Status ne 'Excluded'`);
+      } else {
         filterParts.push(`Status eq '${filters.status}'`);
       }
       if (filters.account !== 'all') {
