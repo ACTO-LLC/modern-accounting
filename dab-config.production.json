@@ -103,6 +103,12 @@
                         "read",
                         "update"
                     ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "read"
+                    ]
                 }
             ],
             "mappings": {
@@ -120,6 +126,7 @@
                 "AssignCustomerId": "AssignCustomerId",
                 "AssignClassId": "AssignClassId",
                 "AssignMemo": "AssignMemo",
+                "AssignIsPersonal": "AssignIsPersonal",
                 "Priority": "Priority",
                 "IsEnabled": "IsEnabled",
                 "CreatedAt": "CreatedAt",

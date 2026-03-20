@@ -1325,6 +1325,14 @@ Transactions can be tagged as personal (IsPersonal = true) or business (default)
 - Use dab_query with filter "IsPersonal eq true" or "IsPersonal eq false" to query by type
 - Remind users: Personal expenses are NOT tax-deductible for the business
 
+BULK PERSONAL MARKING:
+When a user wants to mark all transactions for a specific account/card as personal:
+1. Call mark_transactions_personal with account_hint and preview=true
+2. Show preview: account name, count, sample transactions
+3. Ask user to confirm
+4. Call mark_transactions_personal with preview=false, confirm_count=N, create_rule=true
+5. Report result
+
 CUSTOMER DEPOSITS & PREPAYMENTS:
 Customer deposits are advance payments before services are rendered (unearned revenue):
 - Located under Sales > Customer Deposits
@@ -1993,6 +2001,37 @@ const tools = [
                         description: 'Required for actual deletion. Must match exact count of products. User must explicitly confirm this number.'
                     }
                 }
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mark_transactions_personal',
+            description: 'Mark all bank transactions for a specific account/card as personal. Uses preview/confirm pattern. Can also create a BankRule to auto-mark future imports.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    account_hint: {
+                        type: 'string',
+                        description: 'Last 4 digits of card/account, partial account name, or account code to identify the source account'
+                    },
+                    preview: {
+                        type: 'boolean',
+                        description: 'If true (default), shows count and sample without modifying. Set to false to execute.',
+                        default: true
+                    },
+                    confirm_count: {
+                        type: 'number',
+                        description: 'Required for execution. Must match exact count from preview.'
+                    },
+                    create_rule: {
+                        type: 'boolean',
+                        description: 'If true (default), creates a BankRule to auto-mark future imports from this account as personal.',
+                        default: true
+                    }
+                },
+                required: ['account_hint']
             }
         }
     },
@@ -4678,6 +4717,182 @@ async function executeDeleteProducts(params) {
 }
 
 // ============================================================================
+// Bulk Personal Marking
+// ============================================================================
+
+async function executeMarkTransactionsPersonal(params, authToken = null) {
+    try {
+        const hint = params.account_hint;
+        const preview = params.preview !== false; // default true
+        const confirmCount = params.confirm_count;
+        const createRule = params.create_rule !== false; // default true
+
+        if (!hint) {
+            return { success: false, error: 'account_hint is required. Provide last 4 digits, partial account name, or account code.' };
+        }
+
+        // Step 1: Find matching accounts
+        const accountsResult = await dab.get('accounts', { first: 500 }, authToken);
+        if (!accountsResult.success) {
+            return { success: false, error: 'Failed to query accounts: ' + accountsResult.error };
+        }
+        const allAccounts = accountsResult.value || [];
+
+        // Match by last 4 digits pattern (XXXX) in Name/SourceName, or by partial name/code
+        const isDigits = /^\d{4}$/.test(hint);
+        const lowerHint = hint.toLowerCase();
+        const matches = allAccounts.filter(a => {
+            const name = (a.Name || '').toLowerCase();
+            const code = (a.Code || '').toLowerCase();
+            if (isDigits) {
+                // Match "(XXXX)" pattern in name or code ending
+                return name.includes(`(${hint})`) || name.includes(hint) || code.endsWith(hint);
+            }
+            return name.includes(lowerHint) || code.includes(lowerHint);
+        });
+
+        if (matches.length === 0) {
+            return {
+                success: false,
+                error: `No accounts found matching "${hint}". Try a different search term or last 4 digits.`
+            };
+        }
+
+        if (matches.length > 1) {
+            return {
+                success: false,
+                error: `Multiple accounts match "${hint}". Please be more specific.`,
+                matches: matches.slice(0, 10).map(a => ({ id: a.Id, code: a.Code, name: a.Name, type: a.Type }))
+            };
+        }
+
+        const account = matches[0];
+
+        // Step 2: Query non-personal transactions for this account
+        // Request one extra to detect if there are more than the limit
+        const TX_LIMIT = 5000;
+        const txResult = await dab.get('banktransactions', {
+            filter: `SourceAccountId eq ${account.Id} and IsPersonal eq false`,
+            first: TX_LIMIT + 1
+        }, authToken);
+
+        if (!txResult.success) {
+            return { success: false, error: 'Failed to query transactions: ' + txResult.error };
+        }
+        const allResults = txResult.value || [];
+
+        if (allResults.length > TX_LIMIT) {
+            return {
+                success: false,
+                error: `Too many transactions (>${TX_LIMIT}) for "${account.Name}". This tool supports up to ${TX_LIMIT} transactions at a time. Please contact support for bulk operations of this size.`,
+                count: allResults.length
+            };
+        }
+        const transactions = allResults;
+
+        if (preview) {
+            // Preview mode
+            const totalAmount = transactions.reduce((sum, tx) => sum + (tx.Amount || 0), 0);
+            return {
+                success: true,
+                preview: true,
+                account: { id: account.Id, code: account.Code, name: account.Name, type: account.Type },
+                count: transactions.length,
+                totalAmount: totalAmount,
+                samples: transactions.slice(0, 5).map(tx => ({
+                    date: tx.TransactionDate,
+                    description: tx.Description,
+                    amount: tx.Amount
+                })),
+                message: transactions.length === 0
+                    ? `No business transactions found for "${account.Name}". All may already be marked as personal.`
+                    : `Found ${transactions.length} business transaction(s) for "${account.Name}" totaling ${totalAmount < 0 ? '-' : ''}$${Math.abs(totalAmount).toFixed(2)}. Confirm with count ${transactions.length} to mark them all as personal.`
+            };
+        }
+
+        // Execute mode
+        if (confirmCount === undefined || confirmCount === null) {
+            return {
+                success: false,
+                error: 'confirm_count is required to execute. Preview first to get the count.',
+                count: transactions.length
+            };
+        }
+
+        if (confirmCount !== transactions.length) {
+            return {
+                success: false,
+                error: `Count mismatch! You confirmed ${confirmCount} but there are ${transactions.length} transactions. Preview again to get the current count.`,
+                actualCount: transactions.length,
+                providedCount: confirmCount
+            };
+        }
+
+        if (transactions.length === 0) {
+            return {
+                success: true,
+                preview: false,
+                marked: 0,
+                message: 'No transactions to mark as personal.'
+            };
+        }
+
+        // Batch update transactions — 10 concurrent
+        let markedCount = 0;
+        const errors = [];
+        const batchSize = 10;
+
+        for (let i = 0; i < transactions.length; i += batchSize) {
+            const batch = transactions.slice(i, i + batchSize);
+            const results = await Promise.allSettled(
+                batch.map(tx => dab.update('banktransactions', tx.Id, { IsPersonal: true }, authToken))
+            );
+            for (let j = 0; j < results.length; j++) {
+                if (results[j].status === 'fulfilled' && results[j].value.success) {
+                    markedCount++;
+                } else {
+                    const errMsg = results[j].status === 'rejected' ? results[j].reason?.message : results[j].value?.error;
+                    errors.push({ id: batch[j].Id, error: errMsg || 'Unknown error' });
+                }
+            }
+        }
+
+        // Create BankRule if requested
+        let ruleCreated = false;
+        if (createRule && markedCount > 0) {
+            const ruleName = `Personal — ${account.Name}`;
+            const ruleResult = await dab.create('bankrules', {
+                Name: ruleName,
+                BankAccountId: account.Id,
+                MatchField: 'Description',
+                MatchType: 'Regex',
+                MatchValue: '.*',
+                AssignIsPersonal: true,
+                Priority: 100,
+                IsEnabled: true,
+            }, authToken);
+            ruleCreated = ruleResult.success;
+            if (!ruleResult.success) {
+                console.warn('Failed to create bank rule:', ruleResult.error);
+            }
+        }
+
+        return {
+            success: true,
+            preview: false,
+            account: { id: account.Id, code: account.Code, name: account.Name },
+            marked: markedCount,
+            failed: errors.length,
+            errors: errors.slice(0, 5),
+            ruleCreated,
+            message: `Marked ${markedCount} transaction(s) as personal for "${account.Name}".${ruleCreated ? ' A bank rule was created to auto-mark future imports.' : ''}${errors.length > 0 ? ` ${errors.length} failed.` : ''}`
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================================================
 // Company Onboarding Functions
 // ============================================================================
 
@@ -5989,6 +6204,8 @@ function getAllTools() {
             t.function.name.startsWith('diagnose_') ||
             t.function.name.startsWith('find_unbalanced') ||
             t.function.name.startsWith('fetch_') ||
+            t.function.name.startsWith('delete_') ||
+            t.function.name.startsWith('mark_') ||
             t.function.name.startsWith('qbo_')
         );
         // Put essential static tools FIRST so AI prefers them for migration tasks
@@ -6112,6 +6329,8 @@ async function executeFunction(name, args, authToken = null) {
             return executeMigrateInvoiceLines(args, authToken);
         case 'delete_products':
             return executeDeleteProducts(args);
+        case 'mark_transactions_personal':
+            return executeMarkTransactionsPersonal(args, authToken);
         // QBO Cutoff Date Migration Tools
         case 'create_opening_balance_je':
             return executeCreateOpeningBalanceJE(args, authToken);
@@ -8373,7 +8592,24 @@ app.post('/api/chat', optionalJWT, async (req, res) => {
 
                 toolUsed = toolCall.function.name;
                 const functionResult = await executeFunction(toolCall.function.name, functionArgs, authToken);
-                messages.push({ role: 'tool', toolCallId: toolCall.id, content: JSON.stringify(functionResult) });
+                const rawResultJson = JSON.stringify(functionResult);
+
+                // Guard against context window blowout — truncate oversized tool results
+                const MAX_TOOL_RESULT_CHARS = 50000; // ~12.5K tokens
+                let toolResultPayload;
+                if (rawResultJson.length > MAX_TOOL_RESULT_CHARS) {
+                    console.warn(`[Chat] Tool result from "${toolCall.function.name}" is ${rawResultJson.length} chars, truncating to ${MAX_TOOL_RESULT_CHARS}`);
+                    toolResultPayload = {
+                        truncated: true,
+                        message: 'Tool result too large. Returning preview. Try a more specific query with $filter, $select, or $first to reduce results.',
+                        originalLength: rawResultJson.length,
+                        preview: rawResultJson.substring(0, MAX_TOOL_RESULT_CHARS)
+                    };
+                } else {
+                    toolResultPayload = functionResult;
+                }
+
+                messages.push({ role: 'tool', toolCallId: toolCall.id, content: JSON.stringify(toolResultPayload) });
             }
 
             response = await client.getChatCompletions(deploymentName, messages, { tools: getAllTools(), toolChoice: 'auto' });
