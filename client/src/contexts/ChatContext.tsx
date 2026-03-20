@@ -236,6 +236,17 @@ const proactiveSuggestions: ProactiveSuggestion[] = [
     quickActions: ['Show overdue invoices', 'Customer payment analysis', 'Send reminders'],
   },
   {
+    route: '/transactions',
+    routePattern: /^\/transactions$/,
+    suggestion: "Managing your bank transactions? I can help with:\n\n" +
+      "- **Review and categorize** pending transactions\n" +
+      "- **Approve and post** transactions to the General Ledger\n" +
+      "- **Set up bank rules** for automatic categorization\n" +
+      "- **Explain the workflow** from import to posting\n\n" +
+      "What would you like help with?",
+    quickActions: ['Explain the transaction workflow', 'How do I post transactions?', 'Set up auto-categorization'],
+  },
+  {
     route: '/',
     routePattern: /^\/$/,
     suggestion: "Welcome to your dashboard! Here's what I've noticed:\n\n" +

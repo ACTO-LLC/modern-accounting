@@ -7295,7 +7295,7 @@ function extractAuthToken(req) {
 app.post('/api/transactions/:id/approve', async (req, res) => {
     try {
         const { id } = req.params;
-        const { accountId, category, memo } = req.body;
+        const { accountId, category, memo, autoPost = true } = req.body;
         const authToken = extractAuthToken(req);
 
         if (!accountId) {
@@ -7389,10 +7389,12 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
         }
 
         // Auto-post to GL: create journal entry for the approved transaction
+        // In simple mode (autoPost=true), approve + post happen together
+        // In advanced mode (autoPost=false), only approve — user posts separately
         let posted = false;
         let journalEntryId = null;
         const sourceAccountId = transaction.SourceAccountId;
-        if (sourceAccountId && accountId) {
+        if (autoPost && sourceAccountId && accountId) {
             try {
                 journalEntryId = crypto.randomUUID();
                 const amount = Math.abs(parseFloat(transaction.Amount));
@@ -7486,14 +7488,14 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
 // Batch approve transactions
 app.post('/api/transactions/batch-approve', async (req, res) => {
     try {
-        const { transactions } = req.body;  // Array of { id, accountId, category }
+        const { transactions, autoPost = false } = req.body;  // Array of { id, accountId, category }
         const authToken = extractAuthToken(req);
 
         if (!Array.isArray(transactions) || transactions.length === 0) {
             return res.status(400).json({ error: 'transactions array is required' });
         }
 
-        console.log(`[Batch Approve] Processing ${transactions.length} transactions`);
+        console.log(`[Batch Approve] Processing ${transactions.length} transactions (autoPost=${autoPost})`);
 
         // Pre-fetch accounts for category lookup if needed
         let accountsCache = null;
@@ -7583,7 +7585,6 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
                 }, authToken);
 
                 if (updateResult.success) {
-                    results.push({ id: txn.id, success: true });
                     logAuditEvent({
                         action: 'Update',
                         entityType: 'BankTransaction',
@@ -7593,6 +7594,87 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
                         req,
                         source: 'API',
                     });
+
+                    // In simple mode, also post to GL immediately
+                    let posted = false;
+                    if (autoPost && accountId) {
+                        try {
+                            // Fetch full transaction for SourceAccountId and Amount
+                            const fullTxnResult = await dab.getById('banktransactions', txn.id, authToken);
+                            const fullTxn = fullTxnResult.value?.value?.[0] || fullTxnResult.value;
+                            const sourceAccountId = fullTxn?.SourceAccountId;
+
+                            if (sourceAccountId) {
+                                const journalEntryId = crypto.randomUUID();
+                                const amount = Math.abs(parseFloat(fullTxn.Amount));
+                                const isOutflow = parseFloat(fullTxn.Amount) < 0;
+                                const now = new Date().toISOString();
+                                const jeDesc = fullTxn.ApprovedMemo || fullTxn.SuggestedMemo || fullTxn.Description;
+
+                                await dab.create('journalentries', {
+                                    Id: journalEntryId,
+                                    TransactionDate: fullTxn.TransactionDate,
+                                    Description: jeDesc,
+                                    Reference: `BANK-${txn.id.substring(0, 8)}`,
+                                    Status: 'Draft',
+                                    CreatedBy: 'system',
+                                    SourceSystem: 'BankTransaction',
+                                    SourceId: txn.id
+                                }, authToken);
+
+                                if (isOutflow) {
+                                    await dab.create('journalentrylines', {
+                                        JournalEntryId: journalEntryId,
+                                        AccountId: accountId,
+                                        Description: jeDesc,
+                                        Debit: amount,
+                                        Credit: 0
+                                    }, authToken);
+                                    await dab.create('journalentrylines', {
+                                        JournalEntryId: journalEntryId,
+                                        AccountId: sourceAccountId,
+                                        Description: jeDesc,
+                                        Debit: 0,
+                                        Credit: amount
+                                    }, authToken);
+                                } else {
+                                    await dab.create('journalentrylines', {
+                                        JournalEntryId: journalEntryId,
+                                        AccountId: sourceAccountId,
+                                        Description: jeDesc,
+                                        Debit: amount,
+                                        Credit: 0
+                                    }, authToken);
+                                    await dab.create('journalentrylines', {
+                                        JournalEntryId: journalEntryId,
+                                        AccountId: accountId,
+                                        Description: jeDesc,
+                                        Debit: 0,
+                                        Credit: amount
+                                    }, authToken);
+                                }
+
+                                await dab.update('journalentries', journalEntryId, {
+                                    Status: 'Posted',
+                                    PostedAt: now,
+                                    PostedBy: 'system'
+                                }, authToken);
+
+                                await dab.update('banktransactions', txn.id, {
+                                    Status: 'Posted',
+                                    JournalEntryId: journalEntryId
+                                }, authToken);
+
+                                posted = true;
+                                console.log(`[Batch Approve] Auto-posted ${txn.id.substring(0, 8)} -> JE ${journalEntryId.substring(0, 8)}`);
+                            }
+                        } catch (postError) {
+                            console.warn(`[Batch Approve] Auto-post failed for ${txn.id.substring(0, 8)}:`, postError.message);
+                            // Transaction is still approved, just not posted
+                        }
+                    }
+
+                    results.push({ id: txn.id, success: true, posted });
                 } else {
                     console.log(`[Batch Approve] Failed ${txn.id}: ${updateResult.error}`);
                     results.push({ id: txn.id, success: false, error: updateResult.error });
@@ -7604,12 +7686,14 @@ app.post('/api/transactions/batch-approve', async (req, res) => {
         }
 
         const approved = results.filter(r => r.success).length;
+        const posted = results.filter(r => r.success && r.posted).length;
         const failed = results.filter(r => !r.success).length;
-        console.log(`[Batch Approve] Completed: ${approved} approved, ${failed} failed`);
+        console.log(`[Batch Approve] Completed: ${approved} approved, ${posted} posted, ${failed} failed`);
 
         res.json({
             success: true,
             approved,
+            posted,
             failed,
             results
         });

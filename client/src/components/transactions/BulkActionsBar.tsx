@@ -1,12 +1,14 @@
-import { CheckCircle, XCircle, Tag, X, Zap } from 'lucide-react';
+import { CheckCircle, XCircle, Tag, X, Zap, FileText } from 'lucide-react';
 
 interface BulkActionsBarProps {
   selectedCount: number;
   highConfidenceCount: number;
+  approvedSelectedCount: number;
   onApproveSelected: () => void;
   onRejectSelected: () => void;
   onApproveHighConfidence: () => void;
   onCategorizeSelected: () => void;
+  onPostSelected: () => void;
   onClearSelection: () => void;
   isLoading: boolean;
 }
@@ -17,10 +19,12 @@ export const BULK_ACTIONS_BAR_HEIGHT = 100;
 export default function BulkActionsBar({
   selectedCount,
   highConfidenceCount,
+  approvedSelectedCount,
   onApproveSelected,
   onRejectSelected,
   onApproveHighConfidence,
   onCategorizeSelected,
+  onPostSelected,
   onClearSelection,
   isLoading,
 }: BulkActionsBarProps) {
@@ -105,6 +109,18 @@ export default function BulkActionsBar({
                   <Tag className="h-4 w-4 mr-1.5" />
                   Categorize
                 </button>
+
+                {/* Post Selected (for approved-but-not-posted transactions) */}
+                {approvedSelectedCount > 0 && (
+                  <button
+                    onClick={onPostSelected}
+                    disabled={isLoading}
+                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <FileText className="h-4 w-4 mr-1.5" />
+                    Post to GL ({approvedSelectedCount})
+                  </button>
+                )}
               </>
             )}
           </div>

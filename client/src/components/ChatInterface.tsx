@@ -445,6 +445,7 @@ export default function ChatInterface() {
         'projects': 'project',
         'expenses': 'expense',
         'purchase-orders': 'purchase_order',
+        'transactions': 'transaction',
       };
 
       entity = entityMap[routeParts[0]];
