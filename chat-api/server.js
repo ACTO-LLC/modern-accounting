@@ -7515,7 +7515,7 @@ function extractAuthToken(req) {
 app.post('/api/transactions/:id/approve', async (req, res) => {
     try {
         const { id } = req.params;
-        const { accountId, category, memo, autoPost = true } = req.body;
+        const { accountId, category, memo, vendorId, customerId, classId, projectId, payee, isPersonal, autoPost = true } = req.body;
         const authToken = extractAuthToken(req);
 
         if (!accountId) {
@@ -7551,8 +7551,9 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
             return res.status(500).json({ error: updateResult.error || 'Failed to update transaction' });
         }
 
-        // Learn from the correction - create a rule if different from AI suggestion
+        // Learn from the correction - create/update a TransactionRule
         let ruleCreated = false;
+        let ruleUpdated = false;
         if (shouldLearn && transaction.Description) {
             // Extract a pattern from the description (use merchant if available, otherwise first significant word)
             const pattern = transaction.Merchant ||
@@ -7561,29 +7562,47 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
 
             if (pattern) {
                 try {
-                    // Check if rule already exists using dab client
-                    const existingRulesResult = await dab.get('categorizationrules', {
+                    // Check if rule already exists
+                    const existingRulesResult = await dab.get('transactionrules', {
                         filter: `MatchValue eq '${pattern.replace(/'/g, "''")}'`
                     }, authToken);
 
-                    if (existingRulesResult.success && (!existingRulesResult.value || existingRulesResult.value.length === 0)) {
-                        // Create new rule using dab client
-                        const createResult = await dab.create('categorizationrules', {
-                            MatchType: 'contains',
-                            MatchField: 'Description',
-                            MatchValue: pattern,
-                            AccountId: accountId,
-                            Category: category || transaction.SuggestedCategory,
-                            Priority: 50,  // User-learned rules have higher priority
-                            CreatedBy: 'user-feedback'
-                        }, authToken);
+                    const ruleData = {
+                        MatchType: 'Contains',
+                        MatchField: transaction.Merchant ? 'Merchant' : 'Description',
+                        MatchValue: pattern,
+                        AssignAccountId: accountId,
+                        AssignCategory: category || transaction.SuggestedCategory || null,
+                        AssignVendorId: vendorId || null,
+                        AssignCustomerId: customerId || null,
+                        AssignClassId: classId || null,
+                        AssignProjectId: projectId || null,
+                        AssignMemo: memo || null,
+                        AssignPayee: payee || null,
+                        AssignIsPersonal: isPersonal || false,
+                        Priority: 50,
+                        IsEnabled: true,
+                        Source: 'auto-approve',
+                    };
+
+                    const existingRules = existingRulesResult.success ? (existingRulesResult.value || []) : [];
+                    if (existingRules.length > 0) {
+                        // Update existing rule
+                        const existingRule = existingRules[0];
+                        const { MatchType, MatchField, MatchValue, Source, ...updateFields } = ruleData;
+                        await dab.update('transactionrules', existingRule.Id, updateFields, authToken);
+                        ruleUpdated = true;
+                        console.log(`Learning: Updated rule for "${pattern}" -> ${category}`);
+                    } else {
+                        // Create new rule
+                        const createResult = await dab.create('transactionrules', ruleData, authToken);
                         if (createResult.success) {
                             ruleCreated = true;
                             console.log(`Learning: Created rule for "${pattern}" -> ${category}`);
                         }
                     }
                 } catch (ruleError) {
-                    console.warn('Failed to create learning rule:', ruleError.message);
+                    console.warn('Failed to create/update learning rule:', ruleError.message);
                 }
             }
         }
@@ -7597,12 +7616,12 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
             req,
             source: 'API',
         });
-        if (ruleCreated) {
+        if (ruleCreated || ruleUpdated) {
             logAuditEvent({
-                action: 'Create',
-                entityType: 'CategorizationRule',
-                entityDescription: `Auto-created rule from transaction approval`,
-                newValues: { MatchValue: transaction.Merchant || transaction.Description?.substring(0, 50), AccountId: accountId },
+                action: ruleCreated ? 'Create' : 'Update',
+                entityType: 'TransactionRule',
+                entityDescription: `Auto-${ruleCreated ? 'created' : 'updated'} rule from transaction approval`,
+                newValues: { MatchValue: transaction.Merchant || transaction.Description?.substring(0, 50), AssignAccountId: accountId },
                 req,
                 source: 'API',
             });
@@ -7689,15 +7708,18 @@ app.post('/api/transactions/:id/approve', async (req, res) => {
             }
         }
 
+        const learned = ruleCreated || ruleUpdated;
         res.json({
             success: true,
             transactionId: id,
-            learned: ruleCreated,
+            learned,
+            ruleCreated,
+            ruleUpdated,
             posted,
             journalEntryId,
             message: posted
-                ? (ruleCreated ? 'Transaction approved, posted to GL, and rule learned' : 'Transaction approved and posted to GL')
-                : (ruleCreated ? 'Transaction approved and rule learned' : 'Transaction approved')
+                ? (learned ? 'Transaction approved, posted to GL, and rule learned' : 'Transaction approved and posted to GL')
+                : (learned ? 'Transaction approved and rule learned' : 'Transaction approved')
         });
     } catch (error) {
         console.error('Transaction approval error:', error.message);
@@ -8334,12 +8356,86 @@ app.post('/api/banktransactions/:id/recategorize', async (req, res) => {
         });
 
         console.log(`[Recategorize] Transaction ${id.substring(0, 8)}: ${oldAccName} -> ${newAccName}`);
+
+        // Create or update a TransactionRule so future transactions are categorized correctly
+        let ruleCreated = false;
+        let ruleUpdated = false;
+        let ruleConflict = false;
+        let existingRuleInfo = null;
+        try {
+            const pattern = txn.Merchant ||
+                (txn.Description || '').split(' ').filter(w => w.length > 3)[0] ||
+                (txn.Description || '').substring(0, 50);
+
+            if (pattern) {
+                const escapedPattern = pattern.replace(/'/g, "''");
+                const existingRulesResult = await dab.get('transactionrules', {
+                    filter: `MatchValue eq '${escapedPattern}'`
+                }, authToken);
+                const existingRules = existingRulesResult.success ? (existingRulesResult.value || []) : [];
+
+                const ruleData = {
+                    MatchType: 'Contains',
+                    MatchField: txn.Merchant ? 'Merchant' : 'Description',
+                    MatchValue: pattern,
+                    AssignAccountId: accountId,
+                    AssignCategory: newCategoryName || null,
+                    AssignVendorId: vendorId || null,
+                    AssignCustomerId: customerId || null,
+                    AssignClassId: classId || null,
+                    AssignProjectId: projectId || null,
+                    AssignMemo: memo || null,
+                    AssignPayee: payee || null,
+                    AssignIsPersonal: isPersonal || false,
+                    Priority: 50,
+                    IsEnabled: true,
+                    Source: 'auto-recategorize',
+                };
+
+                if (existingRules.length > 0) {
+                    const existingRule = existingRules[0];
+                    const existingAccountDiffers = existingRule.AssignAccountId &&
+                        existingRule.AssignAccountId.toLowerCase() !== accountId.toLowerCase();
+
+                    if (existingAccountDiffers && req.query.updateRule !== 'true') {
+                        // Conflict — return info so frontend can ask user
+                        ruleConflict = true;
+                        existingRuleInfo = {
+                            ruleId: existingRule.Id,
+                            matchValue: existingRule.MatchValue,
+                            existingAccountId: existingRule.AssignAccountId,
+                            existingCategory: existingRule.AssignCategory || null,
+                        };
+                    } else {
+                        // Update existing rule (same account, or user confirmed update)
+                        const { MatchType, MatchField, MatchValue, Source, ...updateFields } = ruleData;
+                        await dab.update('transactionrules', existingRule.Id, updateFields, authToken);
+                        ruleUpdated = true;
+                        console.log(`[Recategorize] Updated rule for "${pattern}" -> ${newAccName}`);
+                    }
+                } else {
+                    // No existing rule — create automatically
+                    const createResult = await dab.create('transactionrules', ruleData, authToken);
+                    if (createResult.success) {
+                        ruleCreated = true;
+                        console.log(`[Recategorize] Created rule for "${pattern}" -> ${newAccName}`);
+                    }
+                }
+            }
+        } catch (ruleError) {
+            console.warn('[Recategorize] Failed to create/update rule:', ruleError.message);
+        }
+
         res.json({
             success: true,
             recategorized: true,
             oldAccount: oldAccName,
             newAccount: newAccName,
             journalEntryId: txn.JournalEntryId,
+            ruleCreated,
+            ruleUpdated,
+            ruleConflict,
+            existingRule: existingRuleInfo,
         });
     } catch (error) {
         console.error('Recategorize error:', error.message);

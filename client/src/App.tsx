@@ -130,7 +130,7 @@ import TaxForms from './pages/TaxForms';
 import W2Forms from './pages/W2Forms';
 import Form1099NEC from './pages/Form1099NEC';
 import BankImportHistory from './pages/BankImportHistory';
-import BankRules from './pages/BankRules';
+import TransactionRules from './pages/TransactionRules';
 import VendorHierarchy from './pages/VendorHierarchy';
 import CustomerHierarchy from './pages/CustomerHierarchy';
 import CreditMemos from './pages/CreditMemos';
@@ -308,7 +308,8 @@ function AppContent() {
             <Route path="bank-import" element={<Navigate to="/import?tab=bank-import" replace />} />
             <Route path="bank-import/matches" element={<Navigate to="/import?tab=review-matches" replace />} />
             <Route path="bank-import/history" element={<BankImportHistory />} />
-            <Route path="bank-rules" element={<BankRules />} />
+            <Route path="transaction-rules" element={<TransactionRules />} />
+            <Route path="bank-rules" element={<TransactionRules />} />
             <Route path="email-reminders" element={<EmailReminders />} />
             <Route path="admin/audit-log" element={<AuditLog />} />
             <Route path="accounting-periods" element={<AccountingPeriods />} />

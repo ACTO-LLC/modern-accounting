@@ -74,6 +74,13 @@ export default function UnifiedTransactions() {
   });
   const [showPostConfirm, setShowPostConfirm] = useState(false);
   const [matchingTransaction, setMatchingTransaction] = useState<BankTransaction | null>(null);
+  const [ruleConflict, setRuleConflict] = useState<{
+    transactionId: string;
+    data: TransactionEditFormData;
+    matchValue: string;
+    existingCategory: string | null;
+    newCategory: string | null;
+  } | null>(null);
 
   // Fetch transactions
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
@@ -229,8 +236,11 @@ export default function UnifiedTransactions() {
 
   // Recategorize posted transaction mutation
   const recategorizeMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: TransactionEditFormData }) => {
-      const response = await api.post(`/banktransactions/${id}/recategorize`, {
+    mutationFn: async ({ id, data, updateRule }: { id: string; data: TransactionEditFormData; updateRule?: boolean }) => {
+      const url = updateRule
+        ? `/banktransactions/${id}/recategorize?updateRule=true`
+        : `/banktransactions/${id}/recategorize`;
+      const response = await api.post(url, {
         accountId: data.accountId || null,
         memo: data.memo || null,
         vendorId: data.vendorId || null,
@@ -242,12 +252,32 @@ export default function UnifiedTransactions() {
       });
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactionrules'] });
+
+      if (data.ruleConflict && data.existingRule) {
+        // Show confirmation dialog for rule conflict
+        const newAccountName = data.newAccount || 'new account';
+        setRuleConflict({
+          transactionId: variables.id,
+          data: variables.data,
+          matchValue: data.existingRule.matchValue,
+          existingCategory: data.existingRule.existingCategory,
+          newCategory: newAccountName,
+        });
+        // Still show success for the recategorization itself
+        if (data.recategorized) {
+          toast.success(`Recategorized: ${data.oldAccount} → ${data.newAccount}`);
+        }
+        return;
+      }
+
       setDrawerTransaction(null);
       setSelectedIds({ type: 'include', ids: new Set() });
       if (data.recategorized) {
-        toast.success(`Recategorized: ${data.oldAccount} → ${data.newAccount}`);
+        const ruleMsg = data.ruleCreated ? ' (rule created)' : data.ruleUpdated ? ' (rule updated)' : '';
+        toast.success(`Recategorized: ${data.oldAccount} → ${data.newAccount}${ruleMsg}`);
       } else {
         toast.success('Transaction updated');
       }
@@ -845,6 +875,35 @@ export default function UnifiedTransactions() {
         confirmText="Post Transactions"
         cancelText="Cancel"
         isLoading={postMutation.isPending}
+        variant="default"
+      />
+
+      {/* Rule Conflict Confirmation */}
+      <ConfirmModal
+        isOpen={!!ruleConflict}
+        onClose={() => {
+          setRuleConflict(null);
+          setDrawerTransaction(null);
+          setSelectedIds({ type: 'include', ids: new Set() });
+        }}
+        onConfirm={() => {
+          if (ruleConflict) {
+            recategorizeMutation.mutate({
+              id: ruleConflict.transactionId,
+              data: ruleConflict.data,
+              updateRule: true,
+            });
+            setRuleConflict(null);
+            setDrawerTransaction(null);
+            setSelectedIds({ type: 'include', ids: new Set() });
+          }
+        }}
+        title="Update Transaction Rule?"
+        message={ruleConflict
+          ? `An existing rule categorizes "${ruleConflict.matchValue}" as "${ruleConflict.existingCategory || 'unknown'}". Update it to "${ruleConflict.newCategory || 'new account'}"?`
+          : ''}
+        confirmText="Update Rule"
+        cancelText="Keep Existing Rule"
         variant="default"
       />
 

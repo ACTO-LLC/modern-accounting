@@ -5,24 +5,29 @@ import api from '../lib/api';
 import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { useToast } from '../hooks/useToast';
 
-interface BankRule {
+interface TransactionRule {
   Id: string;
   Name: string;
   BankAccountId: string | null;
-  MatchField: 'Description' | 'Amount' | 'Both';
+  MatchField: 'Description' | 'Merchant' | 'Amount' | 'Both';
   MatchType: 'Contains' | 'StartsWith' | 'Equals' | 'Regex';
   MatchValue: string;
   MinAmount: number | null;
   MaxAmount: number | null;
   TransactionType: 'Debit' | 'Credit' | null;
   AssignAccountId: string | null;
+  AssignCategory: string | null;
   AssignVendorId: string | null;
   AssignCustomerId: string | null;
   AssignClassId: string | null;
+  AssignProjectId: string | null;
   AssignMemo: string | null;
+  AssignPayee: string | null;
   AssignIsPersonal: boolean;
   Priority: number;
   IsEnabled: boolean;
+  HitCount: number;
+  Source: string;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -49,20 +54,23 @@ interface ClassItem {
   Name: string;
 }
 
-interface BankRuleInput {
+interface TransactionRuleInput {
   Name: string;
   BankAccountId?: string | null;
-  MatchField: 'Description' | 'Amount' | 'Both';
+  MatchField: 'Description' | 'Merchant' | 'Amount' | 'Both';
   MatchType: 'Contains' | 'StartsWith' | 'Equals' | 'Regex';
   MatchValue: string;
   MinAmount?: number | null;
   MaxAmount?: number | null;
   TransactionType?: 'Debit' | 'Credit' | null;
   AssignAccountId?: string | null;
+  AssignCategory?: string | null;
   AssignVendorId?: string | null;
   AssignCustomerId?: string | null;
   AssignClassId?: string | null;
+  AssignProjectId?: string | null;
   AssignMemo?: string | null;
+  AssignPayee?: string | null;
   AssignIsPersonal?: boolean;
   Priority?: number;
   IsEnabled?: boolean;
@@ -86,14 +94,14 @@ interface ValidationErrors {
 const NAME_MAX_LENGTH = 100;
 const MATCH_VALUE_MAX_LENGTH = 255;
 
-export default function BankRules() {
+export default function TransactionRules() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [showTestDialog, setShowTestDialog] = useState(false);
   const [testResults, setTestResults] = useState<BankTransaction[]>([]);
-  const [editingRule, setEditingRule] = useState<BankRule | null>(null);
-  const [formData, setFormData] = useState<BankRuleInput>({
+  const [editingRule, setEditingRule] = useState<TransactionRule | null>(null);
+  const [formData, setFormData] = useState<TransactionRuleInput>({
     Name: '',
     BankAccountId: null,
     MatchField: 'Description',
@@ -116,15 +124,15 @@ export default function BankRules() {
 
   const queryClient = useQueryClient();
 
-  // Fetch bank rules
+  // Fetch transaction rules
   const {
     data: bankRules,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['bankrules'],
+    queryKey: ['transactionrules'],
     queryFn: async () => {
-      const response = await api.get<{ value: BankRule[] }>('/bankrules?$orderby=Priority desc,Name');
+      const response = await api.get<{ value: TransactionRule[] }>('/transactionrules?$orderby=Priority desc,Name');
       return response.data.value;
     },
   });
@@ -178,48 +186,48 @@ export default function BankRules() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: BankRuleInput) => {
-      const response = await api.post('/bankrules', data);
+    mutationFn: async (data: TransactionRuleInput) => {
+      const response = await api.post('/transactionrules', data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bankrules'] });
-      showToast('Bank rule created successfully', 'success');
+      queryClient.invalidateQueries({ queryKey: ['transactionrules'] });
+      showToast('Transaction rule created successfully', 'success');
       resetForm();
     },
     onError: (error) => {
-      console.error('Failed to create bank rule:', error);
-      showToast('Failed to create bank rule', 'error');
+      console.error('Failed to create transaction rule:', error);
+      showToast('Failed to create transaction rule', 'error');
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<BankRuleInput> }) => {
-      const response = await api.patch(`/bankrules/Id/${id}`, data);
+    mutationFn: async ({ id, data }: { id: string; data: Partial<TransactionRuleInput> }) => {
+      const response = await api.patch(`/transactionrules/Id/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bankrules'] });
-      showToast('Bank rule updated successfully', 'success');
+      queryClient.invalidateQueries({ queryKey: ['transactionrules'] });
+      showToast('Transaction rule updated successfully', 'success');
       resetForm();
     },
     onError: (error) => {
-      console.error('Failed to update bank rule:', error);
-      showToast('Failed to update bank rule', 'error');
+      console.error('Failed to update transaction rule:', error);
+      showToast('Failed to update transaction rule', 'error');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/bankrules/Id/${id}`);
+      await api.delete(`/transactionrules/Id/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bankrules'] });
-      showToast('Bank rule deleted successfully', 'success');
+      queryClient.invalidateQueries({ queryKey: ['transactionrules'] });
+      showToast('Transaction rule deleted successfully', 'success');
     },
     onError: (error) => {
-      console.error('Failed to delete bank rule:', error);
-      showToast('Failed to delete bank rule', 'error');
+      console.error('Failed to delete transaction rule:', error);
+      showToast('Failed to delete transaction rule', 'error');
     },
   });
 
@@ -276,7 +284,7 @@ export default function BankRules() {
     }
 
     // Check amount range for Amount/Both match fields
-    if (formData.MatchField !== 'Description') {
+    if (formData.MatchField === 'Amount' || formData.MatchField === 'Both') {
       const minAmt = formData.MinAmount ?? null;
       const maxAmt = formData.MaxAmount ?? null;
       if (minAmt === null && maxAmt === null) {
@@ -302,7 +310,7 @@ export default function BankRules() {
       return;
     }
 
-    const submitData: BankRuleInput = {
+    const submitData: TransactionRuleInput = {
       ...formData,
       Name: formData.Name.trim(),
       MatchValue: formData.MatchValue.trim(),
@@ -316,7 +324,7 @@ export default function BankRules() {
     }
   };
 
-  const handleEdit = (rule: BankRule) => {
+  const handleEdit = (rule: TransactionRule) => {
     setEditingRule(rule);
     setFormData({
       Name: rule.Name,
@@ -346,10 +354,10 @@ export default function BankRules() {
     }
   };
 
-  const handleToggleEnabled = async (rule: BankRule) => {
+  const handleToggleEnabled = async (rule: TransactionRule) => {
     try {
-      await api.patch(`/bankrules/Id/${rule.Id}`, { IsEnabled: !rule.IsEnabled });
-      queryClient.invalidateQueries({ queryKey: ['bankrules'] });
+      await api.patch(`/transactionrules/Id/${rule.Id}`, { IsEnabled: !rule.IsEnabled });
+      queryClient.invalidateQueries({ queryKey: ['transactionrules'] });
       showToast(`Rule ${rule.IsEnabled ? 'disabled' : 'enabled'} successfully`, 'success');
     } catch (error) {
       console.error('Failed to toggle rule:', error);
@@ -472,7 +480,7 @@ export default function BankRules() {
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Bank Rules</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Transaction Rules</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Automatically categorize imported bank transactions based on configurable rules
           </p>
@@ -572,12 +580,13 @@ export default function BankRules() {
                   <select
                     id="matchField"
                     value={formData.MatchField}
-                    onChange={(e) => setFormData({ ...formData, MatchField: e.target.value as 'Description' | 'Amount' | 'Both' })}
+                    onChange={(e) => setFormData({ ...formData, MatchField: e.target.value as 'Description' | 'Merchant' | 'Amount' | 'Both' })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   >
                     <option value="Description">Description</option>
+                    <option value="Merchant">Merchant</option>
                     <option value="Amount">Amount</option>
-                    <option value="Both">Both</option>
+                    <option value="Both">Both (Description + Amount)</option>
                   </select>
                 </div>
                 <div>
@@ -961,6 +970,9 @@ export default function BankRules() {
                 Assigns To
               </th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Source
+              </th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Status
               </th>
               <th scope="col" className="relative px-4 py-3">
@@ -971,8 +983,8 @@ export default function BankRules() {
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredRules?.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                  No bank rules found. Create your first rule to automatically categorize transactions.
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No transaction rules found. Create your first rule to automatically categorize transactions.
                 </td>
               </tr>
             ) : (
@@ -991,9 +1003,9 @@ export default function BankRules() {
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-900 dark:text-gray-100">
                     <div className="flex flex-col gap-1">
-                      {(rule.MatchField === 'Description' || rule.MatchField === 'Both') && (
+                      {(rule.MatchField === 'Description' || rule.MatchField === 'Merchant' || rule.MatchField === 'Both') && (
                         <span className="inline-flex items-center px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-                          {rule.MatchType}: "{rule.MatchValue}"
+                          {rule.MatchField === 'Merchant' ? 'Merchant ' : ''}{rule.MatchType}: "{rule.MatchValue}"
                         </span>
                       )}
                       {(rule.MatchField === 'Amount' || rule.MatchField === 'Both') && (
@@ -1033,6 +1045,18 @@ export default function BankRules() {
                         <span title="Memo" className="text-xs italic truncate max-w-xs">Memo: {rule.AssignMemo}</span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-0.5 text-xs rounded ${
+                      rule.Source === 'manual' ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
+                      rule.Source === 'auto-approve' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                      rule.Source === 'auto-recategorize' ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200' :
+                      'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}>
+                      {rule.Source === 'auto-approve' ? 'Approve' :
+                       rule.Source === 'auto-recategorize' ? 'Recategorize' :
+                       rule.Source || 'Manual'}
+                    </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <span
@@ -1086,7 +1110,7 @@ export default function BankRules() {
 
       <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
         <p>
-          Bank rules are applied automatically when transactions are imported. Rules are processed in priority order (highest first).
+          Transaction rules are applied automatically when transactions are imported. Rules are also created when you approve or recategorize transactions. Rules are processed in priority order (highest first).
           The first matching rule wins.
         </p>
       </div>

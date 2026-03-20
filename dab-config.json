@@ -142,6 +142,71 @@
                 "enabled": false
             }
         },
+        "transactionrules": {
+            "source": "dbo.TransactionRules",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                },
+                {
+                    "role": "Service",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "BankAccountId": "BankAccountId",
+                "MatchField": "MatchField",
+                "MatchType": "MatchType",
+                "MatchValue": "MatchValue",
+                "MinAmount": "MinAmount",
+                "MaxAmount": "MaxAmount",
+                "TransactionType": "TransactionType",
+                "AssignAccountId": "AssignAccountId",
+                "AssignCategory": "AssignCategory",
+                "AssignVendorId": "AssignVendorId",
+                "AssignCustomerId": "AssignCustomerId",
+                "AssignClassId": "AssignClassId",
+                "AssignProjectId": "AssignProjectId",
+                "AssignMemo": "AssignMemo",
+                "AssignPayee": "AssignPayee",
+                "AssignIsPersonal": "AssignIsPersonal",
+                "Priority": "Priority",
+                "IsEnabled": "IsEnabled",
+                "HitCount": "HitCount",
+                "Source": "Source",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
         "banktransactions": {
             "source": "dbo.BankTransactions",
             "permissions": [

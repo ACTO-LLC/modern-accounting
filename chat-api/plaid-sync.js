@@ -272,13 +272,29 @@ class PlaidSync {
         let suggestedMemo = plaidTx.name;
         let confidenceScore = 0;
 
-        // STEP 1: Check learned categorization rules first (faster + higher accuracy)
-        const ruleMatch = await this.checkCategorizationRules(plaidTx.name, plaidTx.merchant_name);
+        // STEP 1: Check unified TransactionRules (replaces separate categorization + bank rules)
+        let isPersonal = false;
+        let assignedVendorId = null;
+        let assignedCustomerId = null;
+        let assignedClassId = null;
+        let assignedProjectId = null;
+        let assignedPayee = null;
+
+        const ruleMatch = await this.checkTransactionRules(sourceAccountId, plaidTx.name || '', plaidTx.merchant_name, amount);
         if (ruleMatch) {
-            suggestedAccountId = ruleMatch.AccountId;
-            suggestedCategory = ruleMatch.Category || suggestedCategory;
-            confidenceScore = 100;  // Rules are 100% confidence (user-verified)
-            console.log(`Rule match: "${plaidTx.name}" -> ${ruleMatch.Category}`);
+            if (ruleMatch.AssignAccountId) {
+                suggestedAccountId = ruleMatch.AssignAccountId;
+                confidenceScore = 100;  // Rules are 100% confidence (user-verified)
+            }
+            suggestedCategory = ruleMatch.AssignCategory || suggestedCategory;
+            if (ruleMatch.AssignMemo) suggestedMemo = ruleMatch.AssignMemo;
+            if (ruleMatch.AssignIsPersonal) isPersonal = true;
+            assignedVendorId = ruleMatch.AssignVendorId || null;
+            assignedCustomerId = ruleMatch.AssignCustomerId || null;
+            assignedClassId = ruleMatch.AssignClassId || null;
+            assignedProjectId = ruleMatch.AssignProjectId || null;
+            assignedPayee = ruleMatch.AssignPayee || null;
+            console.log(`TransactionRule match: "${ruleMatch.MatchValue}" for "${plaidTx.name}"`);
         }
         // STEP 2: Try AI categorization if no rule match and AI is available
         else if (openaiClient) {
@@ -306,20 +322,6 @@ class PlaidSync {
             }
         }
 
-        // STEP 3: Check BankRules for account-level assignments (e.g., mark as personal)
-        let isPersonal = false;
-        const bankRuleMatch = await this.checkBankRules(sourceAccountId, plaidTx.name || '', amount);
-        if (bankRuleMatch) {
-            if (bankRuleMatch.AssignIsPersonal) {
-                isPersonal = true;
-            }
-            if (bankRuleMatch.AssignAccountId && !suggestedAccountId) {
-                suggestedAccountId = bankRuleMatch.AssignAccountId;
-                confidenceScore = 100;
-            }
-            console.log(`BankRule match: "${bankRuleMatch.Name}" for "${plaidTx.name}"`);
-        }
-
         return {
             Id: crypto.randomUUID(),
             SourceType: sourceType,
@@ -339,6 +341,11 @@ class PlaidSync {
             SuggestedMemo: suggestedMemo,
             ConfidenceScore: confidenceScore,
             IsPersonal: isPersonal,
+            VendorId: assignedVendorId,
+            CustomerId: assignedCustomerId,
+            ClassId: assignedClassId,
+            ProjectId: assignedProjectId,
+            Payee: assignedPayee,
             Status: 'Pending',
         };
     }
@@ -416,79 +423,24 @@ Respond in JSON format:
     }
 
     /**
-     * Check categorization rules for a transaction
-     * Returns matching rule or null if no match
-     */
-    async checkCategorizationRules(description, merchant) {
-        try {
-            const headers = await getDabHeaders();
-            // Get active rules ordered by priority
-            const response = await axios.get(
-                `${DAB_API_URL}/categorizationrules?$filter=IsActive eq true&$orderby=Priority`,
-                { headers }
-            );
-            const rules = response.data?.value || [];
-
-            for (const rule of rules) {
-                const valueToCheck = rule.MatchField === 'Merchant' ? merchant : description;
-                if (!valueToCheck) continue;
-
-                let matches = false;
-                const lowerValue = valueToCheck.toLowerCase();
-                const lowerMatch = rule.MatchValue.toLowerCase();
-
-                switch (rule.MatchType) {
-                    case 'exact':
-                        matches = lowerValue === lowerMatch;
-                        break;
-                    case 'contains':
-                        matches = lowerValue.includes(lowerMatch);
-                        break;
-                    case 'startswith':
-                        matches = lowerValue.startsWith(lowerMatch);
-                        break;
-                    default:
-                        matches = lowerValue.includes(lowerMatch);
-                }
-
-                if (matches) {
-                    // Increment hit count (fire and forget)
-                    axios.patch(`${DAB_API_URL}/categorizationrules/Id/${rule.Id}`, {
-                        HitCount: (rule.HitCount || 0) + 1
-                    }, { headers }).catch(() => {});
-
-                    return rule;
-                }
-            }
-
-            return null;
-        } catch (error) {
-            // 404 means categorizationrules entity doesn't exist yet - that's OK
-            if (error.response?.status !== 404) {
-                console.warn('Rule check error:', error.message);
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Check BankRules for a transaction
+     * Check unified TransactionRules for a transaction
+     * Replaces separate checkCategorizationRules + checkBankRules
      * Returns first matching rule or null
      */
-    async checkBankRules(sourceAccountId, description, amount) {
+    async checkTransactionRules(sourceAccountId, description, merchant, amount) {
         try {
             // Cache rules for 60 seconds to avoid N+1 queries during sync
             const now = Date.now();
-            if (!this._bankRulesCache || now - this._bankRulesCacheTime > 60000) {
+            if (!this._transactionRulesCache || now - this._transactionRulesCacheTime > 60000) {
                 const headers = await getDabHeaders();
                 const response = await axios.get(
-                    `${DAB_API_URL}/bankrules?$filter=IsEnabled eq true&$orderby=Priority desc`,
+                    `${DAB_API_URL}/transactionrules?$filter=IsEnabled eq true&$orderby=Priority desc`,
                     { headers }
                 );
-                this._bankRulesCache = response.data?.value || [];
-                this._bankRulesCacheTime = now;
+                this._transactionRulesCache = response.data?.value || [];
+                this._transactionRulesCacheTime = now;
             }
-            const rules = this._bankRulesCache;
+            const rules = this._transactionRulesCache;
 
             for (const rule of rules) {
                 // Check BankAccountId scope: null means all accounts, otherwise must match
@@ -496,37 +448,19 @@ Respond in JSON format:
                     continue;
                 }
 
-                // Check MatchField / MatchType / MatchValue
                 let matches = false;
                 const matchField = rule.MatchField || 'Description';
                 const matchType = rule.MatchType || 'Contains';
                 const matchValue = rule.MatchValue || '';
 
-                let descriptionMatches = false;
+                let textMatches = false;
                 let amountMatches = false;
 
-                if (matchField === 'Description' || matchField === 'Both') {
-                    const lowerDesc = (description || '').toLowerCase();
-                    const lowerMatch = matchValue.toLowerCase();
-
-                    switch (matchType) {
-                        case 'Contains':
-                            descriptionMatches = lowerDesc.includes(lowerMatch);
-                            break;
-                        case 'StartsWith':
-                            descriptionMatches = lowerDesc.startsWith(lowerMatch);
-                            break;
-                        case 'Equals':
-                            descriptionMatches = lowerDesc === lowerMatch;
-                            break;
-                        case 'Regex':
-                            try {
-                                descriptionMatches = new RegExp(matchValue, 'i').test(description || '');
-                            } catch {
-                                descriptionMatches = false;
-                            }
-                            break;
-                    }
+                // For Merchant field, check merchant name; for Description, check description
+                if (matchField === 'Merchant') {
+                    textMatches = this._matchText(merchant || '', matchValue, matchType);
+                } else if (matchField === 'Description' || matchField === 'Both') {
+                    textMatches = this._matchText(description || '', matchValue, matchType);
                 }
 
                 if (matchField === 'Amount' || matchField === 'Both') {
@@ -536,12 +470,12 @@ Respond in JSON format:
                     amountMatches = minOk && maxOk;
                 }
 
-                if (matchField === 'Description') {
-                    matches = descriptionMatches;
+                if (matchField === 'Description' || matchField === 'Merchant') {
+                    matches = textMatches;
                 } else if (matchField === 'Amount') {
                     matches = amountMatches;
                 } else if (matchField === 'Both') {
-                    matches = descriptionMatches && amountMatches;
+                    matches = textMatches && amountMatches;
                 }
 
                 // Check TransactionType if specified
@@ -552,6 +486,12 @@ Respond in JSON format:
                 }
 
                 if (matches) {
+                    // Increment hit count (fire and forget)
+                    const headers = await getDabHeaders();
+                    axios.patch(`${DAB_API_URL}/transactionrules/Id/${rule.Id}`, {
+                        HitCount: (rule.HitCount || 0) + 1
+                    }, { headers }).catch(() => {});
+
                     return rule;
                 }
             }
@@ -559,9 +499,38 @@ Respond in JSON format:
             return null;
         } catch (error) {
             if (error.response?.status !== 404) {
-                console.warn('BankRules check error:', error.message);
+                console.warn('TransactionRules check error:', error.message);
             }
             return null;
+        }
+    }
+
+    /**
+     * Match text against a pattern using the given match type
+     */
+    _matchText(text, matchValue, matchType) {
+        if (!text) return false;
+        const lowerText = text.toLowerCase();
+        const lowerMatch = matchValue.toLowerCase();
+
+        switch (matchType) {
+            case 'Contains':
+            case 'contains':
+                return lowerText.includes(lowerMatch);
+            case 'StartsWith':
+            case 'startswith':
+                return lowerText.startsWith(lowerMatch);
+            case 'Equals':
+            case 'exact':
+                return lowerText === lowerMatch;
+            case 'Regex':
+                try {
+                    return new RegExp(matchValue, 'i').test(text);
+                } catch {
+                    return false;
+                }
+            default:
+                return lowerText.includes(lowerMatch);
         }
     }
 

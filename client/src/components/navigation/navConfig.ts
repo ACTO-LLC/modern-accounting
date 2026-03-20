@@ -126,7 +126,7 @@ export const navigationConfig: NavEntry[] = [
     items: [
       { id: 'banking', name: 'Bank Connections', href: '/plaid-connections', icon: Building2 },
       { id: 'import', name: 'Import', href: '/import', icon: Upload },
-      { id: 'bank-rules', name: 'Bank Rules', href: '/bank-rules', icon: ListFilter },
+      { id: 'transaction-rules', name: 'Transaction Rules', href: '/transaction-rules', icon: ListFilter },
     ],
   },
 
