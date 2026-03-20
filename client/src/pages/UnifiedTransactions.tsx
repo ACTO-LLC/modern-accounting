@@ -227,6 +227,36 @@ export default function UnifiedTransactions() {
     },
   });
 
+  // Recategorize posted transaction mutation
+  const recategorizeMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: TransactionEditFormData }) => {
+      const response = await api.post(`/banktransactions/${id}/recategorize`, {
+        accountId: data.accountId || null,
+        memo: data.memo || null,
+        vendorId: data.vendorId || null,
+        customerId: data.customerId || null,
+        classId: data.classId || null,
+        projectId: data.projectId || null,
+        payee: data.payee || null,
+        isPersonal: data.isPersonal,
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      setDrawerTransaction(null);
+      setSelectedIds({ type: 'include', ids: new Set() });
+      if (data.recategorized) {
+        toast.success(`Recategorized: ${data.oldAccount} → ${data.newAccount}`);
+      } else {
+        toast.success('Transaction updated');
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to recategorize: ${error.message}`);
+    },
+  });
+
   // Bulk actions - uses chat-api batch-approve endpoint for proper DAB auth
   const bulkApproveMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -365,6 +395,12 @@ export default function UnifiedTransactions() {
   }, []);
 
   const handleSaveEdit = useCallback((id: string, formData: TransactionEditFormData) => {
+    // Posted transactions use the recategorize endpoint
+    if (drawerTransaction?.Status === 'Posted') {
+      recategorizeMutation.mutate({ id, data: formData });
+      return;
+    }
+
     const selectedAccount = accounts.find(a => a.Id === formData.accountId);
     updateMutation.mutate({
       id,
@@ -384,7 +420,7 @@ export default function UnifiedTransactions() {
         toast.success('Transaction updated');
       },
     });
-  }, [accounts, updateMutation]);
+  }, [accounts, updateMutation, recategorizeMutation, drawerTransaction]);
 
   // Resolve selected IDs, handling both 'include' and 'include_all' selection types
   const getSelectedTransactions = useCallback(() => {
@@ -465,7 +501,7 @@ export default function UnifiedTransactions() {
   const highConfidenceCount = transactions.filter(t => t.ConfidenceScore >= 80 && t.Status === 'Pending').length;
   const approvedCount = transactions.filter(t => t.Status === 'Approved').length;
   const approvedSelectedCount = getSelectedTransactions().filter(t => t.Status === 'Approved').length;
-  const isLoading = bulkApproveMutation.isPending || bulkRejectMutation.isPending || updateMutation.isPending || postMutation.isPending;
+  const isLoading = bulkApproveMutation.isPending || bulkRejectMutation.isPending || updateMutation.isPending || postMutation.isPending || recategorizeMutation.isPending;
 
   // Calculate grid height, reserving space for the fixed bottom bulk-actions bar when visible
   const bulkBarVisible = selectedCount > 0 || highConfidenceCount > 0;
@@ -670,16 +706,25 @@ export default function UnifiedTransactions() {
           );
         }
 
-        if (txn.JournalEntryId) {
+        if (txn.Status === 'Posted' && txn.JournalEntryId) {
           return (
-            <Link
-              to="/journal-entries"
-              className="p-1 text-indigo-600 hover:text-indigo-800"
-              title="View Journal Entry"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <FileText className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center justify-center gap-1 h-full">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleEdit(txn); }}
+                className="p-1 text-blue-600 hover:text-blue-800"
+                title="Recategorize"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <Link
+                to={`/journal-entries/${txn.JournalEntryId}/edit`}
+                className="p-1 text-indigo-600 hover:text-indigo-800"
+                title="View Journal Entry"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FileText className="h-4 w-4" />
+              </Link>
+            </div>
           );
         }
 
@@ -758,7 +803,7 @@ export default function UnifiedTransactions() {
           disableRowSelectionOnClick
           onRowDoubleClick={(params) => {
             const txn = params.row as BankTransaction;
-            if (txn.Status === 'Pending') setDrawerTransaction(txn);
+            if (txn.Status === 'Pending' || txn.Status === 'Posted') setDrawerTransaction(txn);
           }}
           rowSelectionModel={selectedIds}
           onRowSelectionModelChange={setSelectedIds}
@@ -786,7 +831,8 @@ export default function UnifiedTransactions() {
         accounts={accounts}
         onSave={handleSaveEdit}
         onClose={() => setDrawerTransaction(null)}
-        isSaving={updateMutation.isPending}
+        isSaving={updateMutation.isPending || recategorizeMutation.isPending}
+        isRecategorize={drawerTransaction?.Status === 'Posted'}
       />
 
       {/* Post Confirmation Modal */}
