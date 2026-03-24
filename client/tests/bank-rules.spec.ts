@@ -1,11 +1,11 @@
 import { test, expect } from './coverage.fixture';
 
-test.describe('Bank Rules (Inline CRUD)', () => {
-  test('should create a new bank rule', async ({ page }) => {
+test.describe('Transaction Rules (Inline CRUD)', () => {
+  test('should create a new transaction rule', async ({ page }) => {
     const timestamp = Date.now();
     const ruleName = `Test Rule ${timestamp}`;
 
-    await page.goto('/bank-rules');
+    await page.goto('/transaction-rules');
     await expect(page.getByRole('heading', { name: /Transaction Rules/i })).toBeVisible();
 
     // Click New Rule button
@@ -20,26 +20,28 @@ test.describe('Bank Rules (Inline CRUD)', () => {
     // Select an account to assign
     const accountSelect = page.locator('#assignAccount');
     await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await accountSelect.selectOption({ index: 1 });
+    const firstOptionValue = await accountSelect.locator('option').nth(1).getAttribute('value');
+    await accountSelect.selectOption(firstOptionValue!);
 
-    // Save — click Create Rule, then confirm in dialog
-    const responsePromise = page.waitForResponse(
-      resp => resp.url().includes('/transactionrules') && (resp.status() === 201 || resp.status() === 200),
-      { timeout: 15000 }
-    );
-    await page.getByRole('button', { name: /Create Rule/i }).click();
-    await page.getByRole('button', { name: 'Yes' }).click();
-    await responsePromise;
+    // Save
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/transactionrules') && resp.request().method() === 'POST',
+        { timeout: 15000 }
+      ),
+      page.getByRole('button', { name: /Create Rule/i }).click(),
+    ]);
+    expect(response.status()).toBeLessThan(300);
 
     // Verify rule appears in list
     await expect(page.getByText(ruleName)).toBeVisible();
   });
 
-  test('should edit an existing bank rule', async ({ page }) => {
+  test('should edit an existing transaction rule', async ({ page }) => {
     const timestamp = Date.now();
     const ruleName = `Edit Rule ${timestamp}`;
 
-    await page.goto('/bank-rules');
+    await page.goto('/transaction-rules');
 
     // Create first
     await page.getByRole('button', { name: /New Rule/i }).click();
@@ -50,21 +52,23 @@ test.describe('Bank Rules (Inline CRUD)', () => {
 
     const accountSelect = page.locator('#assignAccount');
     await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await accountSelect.selectOption({ index: 1 });
+    const firstOptionValue = await accountSelect.locator('option').nth(1).getAttribute('value');
+    await accountSelect.selectOption(firstOptionValue!);
 
-    const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/transactionrules') && (resp.status() === 201 || resp.status() === 200),
-      { timeout: 15000 }
-    );
-    await page.getByRole('button', { name: /Create Rule/i }).click();
-    await page.getByRole('button', { name: 'Yes' }).click();
-    await createPromise;
+    const [createResp] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/transactionrules') && resp.request().method() === 'POST',
+        { timeout: 15000 }
+      ),
+      page.getByRole('button', { name: /Create Rule/i }).click(),
+    ]);
+    expect(createResp.status()).toBeLessThan(300);
 
     await expect(page.getByText(ruleName)).toBeVisible();
 
     // Find the rule's edit button
     const ruleRow = page.locator('tr, div').filter({ hasText: ruleName }).first();
-    const editButton = ruleRow.locator('button[aria-label="Edit"], button').filter({ hasText: /Edit/i }).first();
+    const editButton = ruleRow.locator('button[aria-label="Edit rule"]').first();
     if (await editButton.isVisible()) {
       await editButton.click();
 
@@ -84,11 +88,11 @@ test.describe('Bank Rules (Inline CRUD)', () => {
     }
   });
 
-  test('should delete a bank rule', async ({ page }) => {
+  test('should delete a transaction rule', async ({ page }) => {
     const timestamp = Date.now();
     const ruleName = `Delete Rule ${timestamp}`;
 
-    await page.goto('/bank-rules');
+    await page.goto('/transaction-rules');
 
     // Create first
     await page.getByRole('button', { name: /New Rule/i }).click();
@@ -99,29 +103,27 @@ test.describe('Bank Rules (Inline CRUD)', () => {
 
     const accountSelect = page.locator('#assignAccount');
     await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
-    await accountSelect.selectOption({ index: 1 });
+    const firstOptionValue = await accountSelect.locator('option').nth(1).getAttribute('value');
+    await accountSelect.selectOption(firstOptionValue!);
 
-    const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/transactionrules') && (resp.status() === 201 || resp.status() === 200),
-      { timeout: 15000 }
-    );
-    await page.getByRole('button', { name: /Create Rule/i }).click();
-    await page.getByRole('button', { name: 'Yes' }).click();
-    await createPromise;
+    const [createResp] = await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/transactionrules') && resp.request().method() === 'POST',
+        { timeout: 15000 }
+      ),
+      page.getByRole('button', { name: /Create Rule/i }).click(),
+    ]);
+    expect(createResp.status()).toBeLessThan(300);
 
     await expect(page.getByText(ruleName)).toBeVisible();
 
     // Click delete
     const ruleRow = page.locator('tr, div').filter({ hasText: ruleName }).first();
-    const deleteButton = ruleRow.locator('button[aria-label="Delete"], button').filter({ hasText: /Delete/i }).first();
+    const deleteButton = ruleRow.locator('button[aria-label="Delete rule"]').first();
     if (await deleteButton.isVisible()) {
+      // Handle native confirm dialog
+      page.on('dialog', dialog => dialog.accept());
       await deleteButton.click();
-
-      // Confirm deletion if dialog appears
-      const confirmButton = page.getByRole('button', { name: /Delete/i }).last();
-      if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await confirmButton.click();
-      }
 
       await expect(page.getByText(ruleName)).not.toBeVisible({ timeout: 5000 });
     }

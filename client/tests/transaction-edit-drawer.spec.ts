@@ -50,6 +50,10 @@ test.describe('Transaction Edit Drawer', () => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
+    await page.waitForTimeout(500);
+
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
     await expect(row).toBeVisible({ timeout: 10000 });
 
@@ -64,6 +68,10 @@ test.describe('Transaction Edit Drawer', () => {
 
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
+    await page.waitForTimeout(500);
 
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
     await expect(row).toBeVisible({ timeout: 10000 });
@@ -83,6 +91,10 @@ test.describe('Transaction Edit Drawer', () => {
 
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
+    await page.waitForTimeout(500);
 
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
     await expect(row).toBeVisible({ timeout: 10000 });
@@ -113,6 +125,10 @@ test.describe('Transaction Edit Drawer', () => {
 
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
+    await page.waitForTimeout(500);
 
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
     await expect(row).toBeVisible({ timeout: 10000 });
@@ -160,6 +176,10 @@ test.describe('Transaction Edit Drawer', () => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
+    await page.waitForTimeout(500);
+
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
     await expect(row).toBeVisible({ timeout: 10000 });
     await row.locator('button[title="Edit"]').click();
@@ -180,6 +200,10 @@ test.describe('Transaction Edit Drawer', () => {
 
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
+
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
+    await page.waitForTimeout(500);
 
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
     await expect(row).toBeVisible({ timeout: 10000 });

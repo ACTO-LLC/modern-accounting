@@ -214,7 +214,6 @@ const TABLE_ORDER = [
   'InventoryLocations',
   'PurchaseOrders',
   'PurchaseOrderLines',
-  'BankRules',
   'TransactionRules',
 ];
 
