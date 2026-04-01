@@ -418,7 +418,7 @@ export default function UnifiedTransactions() {
       console.error('Approve failed:', err);
       toast.error('Failed to approve transaction');
     });
-  }, [transactions, accountMap, queryClient]);
+  }, [transactions, accountMap, queryClient, isSimpleMode]);
 
   const handleReject = useCallback((id: string) => {
     updateMutation.mutate({ id, data: { Status: 'Rejected' } });
@@ -461,37 +461,59 @@ export default function UnifiedTransactions() {
   }, [accounts, updateMutation, recategorizeMutation, drawerTransaction]);
 
   // Save edits and approve in one step
-  const handleSaveAndApprove = useCallback((id: string, formData: TransactionEditFormData) => {
-    if (!formData.accountId) {
-      toast.error('Select an account before approving');
-      return;
-    }
-    const selectedAccount = accounts.find(a => a.Id === formData.accountId);
-    const category = selectedAccount?.Name || null;
+  const saveAndApproveMutation = useMutation({
+    mutationFn: async ({ id, formData }: { id: string; formData: TransactionEditFormData }) => {
+      const selectedAccount = accounts.find(a => a.Id === formData.accountId);
+      const category = selectedAccount?.Name || null;
 
-    api.post(`/transactions/${id}/approve`, {
-      accountId: formData.accountId,
-      category,
-      memo: formData.memo || null,
-      vendorId: formData.vendorId || null,
-      customerId: formData.customerId || null,
-      classId: formData.classId || null,
-      projectId: formData.projectId || null,
-      payee: formData.payee || null,
-      isPersonal: formData.isPersonal,
-      autoPost: isSimpleMode,
-    }).then(() => {
+      // First, persist the edited transaction fields
+      await api.patch(`/api/banktransactions/Id/${id}`, {
+        SuggestedAccountId: formData.accountId || null,
+        SuggestedCategory: category,
+        SuggestedMemo: formData.memo || null,
+        IsPersonal: formData.isPersonal,
+        VendorId: formData.vendorId || null,
+        CustomerId: formData.customerId || null,
+        ClassId: formData.classId || null,
+        ProjectId: formData.projectId || null,
+        Payee: formData.payee || null,
+      }, { headers: { 'X-MS-API-ROLE': 'Accountant' } });
+
+      // Then approve
+      return api.post(`/transactions/${id}/approve`, {
+        accountId: formData.accountId,
+        category,
+        memo: formData.memo || null,
+        vendorId: formData.vendorId || null,
+        customerId: formData.customerId || null,
+        classId: formData.classId || null,
+        projectId: formData.projectId || null,
+        payee: formData.payee || null,
+        isPersonal: formData.isPersonal,
+        autoPost: isSimpleMode,
+      });
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       setDrawerTransaction(null);
       setSelectedIds({ type: 'include', ids: new Set() });
       toast.success(isSimpleMode ? 'Transaction approved and posted to GL' : 'Transaction approved');
-    }).catch((err) => {
+    },
+    onError: (err: unknown) => {
       console.error('Save & Approve failed:', err);
       toast.error('Failed to approve transaction');
-    });
-  }, [accounts, queryClient, isSimpleMode]);
+    },
+  });
+
+  const handleSaveAndApprove = useCallback((id: string, formData: TransactionEditFormData) => {
+    if (!formData.accountId) {
+      toast.error('Select an account before approving');
+      return;
+    }
+    saveAndApproveMutation.mutate({ id, formData });
+  }, [saveAndApproveMutation]);
 
   // Resolve selected IDs, handling both 'include' and 'include_all' selection types
   const getSelectedTransactions = useCallback(() => {
@@ -903,7 +925,7 @@ export default function UnifiedTransactions() {
         onSave={handleSaveEdit}
         onSaveAndApprove={handleSaveAndApprove}
         onClose={() => setDrawerTransaction(null)}
-        isSaving={updateMutation.isPending || recategorizeMutation.isPending}
+        isSaving={updateMutation.isPending || recategorizeMutation.isPending || saveAndApproveMutation.isPending}
         isRecategorize={drawerTransaction?.Status === 'Posted'}
       />
 

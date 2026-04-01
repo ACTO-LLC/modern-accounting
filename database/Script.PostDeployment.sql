@@ -14,12 +14,11 @@ Uses IF NOT EXISTS guards for idempotent operations (safe to run multiple times)
 
 -- Migration: BankRules -> TransactionRules
 -- Copy existing BankRules into the unified TransactionRules table
--- (Idempotent: only runs if TransactionRules is empty and BankRules has data)
+-- (Idempotent per-row: only inserts BankRules whose Id is not already in TransactionRules)
 IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TransactionRules')
    AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'BankRules')
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[TransactionRules])
-       AND EXISTS (SELECT 1 FROM [dbo].[BankRules])
+    IF EXISTS (SELECT 1 FROM [dbo].[BankRules] br WHERE NOT EXISTS (SELECT 1 FROM [dbo].[TransactionRules] tr WHERE tr.Id = br.Id))
     BEGIN
         PRINT 'Migrating BankRules to TransactionRules...'
 
@@ -33,20 +32,21 @@ BEGIN
             [CreatedAt], [UpdatedAt]
         )
         SELECT
-            [Id], [Name], [BankAccountId],
-            [MatchField], [MatchType], [MatchValue],
-            [MinAmount], [MaxAmount], [TransactionType],
-            [AssignAccountId], [AssignVendorId], [AssignCustomerId],
-            [AssignClassId], [AssignMemo], [AssignIsPersonal],
-            [Priority], [IsEnabled], 'manual',
-            [CreatedAt], [UpdatedAt]
-        FROM [dbo].[BankRules];
+            br.[Id], br.[Name], br.[BankAccountId],
+            br.[MatchField], br.[MatchType], br.[MatchValue],
+            br.[MinAmount], br.[MaxAmount], br.[TransactionType],
+            br.[AssignAccountId], br.[AssignVendorId], br.[AssignCustomerId],
+            br.[AssignClassId], br.[AssignMemo], br.[AssignIsPersonal],
+            br.[Priority], br.[IsEnabled], 'manual',
+            br.[CreatedAt], br.[UpdatedAt]
+        FROM [dbo].[BankRules] br
+        WHERE NOT EXISTS (SELECT 1 FROM [dbo].[TransactionRules] tr WHERE tr.Id = br.Id);
 
         PRINT 'Migrated BankRules to TransactionRules: ' + CAST(@@ROWCOUNT AS VARCHAR) + ' rows';
     END
     ELSE
     BEGIN
-        PRINT 'TransactionRules migration skipped (already has data or BankRules is empty).'
+        PRINT 'TransactionRules migration skipped (no unmigrated BankRules found).'
     END
 END
 GO
