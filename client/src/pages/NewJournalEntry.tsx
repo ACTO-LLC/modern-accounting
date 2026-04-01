@@ -2,7 +2,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
@@ -50,6 +50,7 @@ type JournalEntryFormData = z.infer<typeof journalEntrySchema>;
 
 export default function NewJournalEntry() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { register, control, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<JournalEntryFormData>({
     resolver: zodResolver(journalEntrySchema),
     defaultValues: {
@@ -107,6 +108,8 @@ export default function NewJournalEntry() {
         });
       }
 
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       navigate('/journal-entries');
     } catch (error: any) {
       console.error('Failed to create journal entry:', error);

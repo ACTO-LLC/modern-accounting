@@ -105,7 +105,7 @@ test.describe('Transaction Edit Drawer', () => {
     await expect(page.getByText('Personal Transaction')).toBeVisible();
     // Buttons
     await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
   });
 
   test('Save persists changes via PATCH', async ({ page }) => {
@@ -136,7 +136,7 @@ test.describe('Transaction Edit Drawer', () => {
       { timeout: 15000 }
     );
 
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     const patchResp = await patchPromise;
     expect(patchResp.status()).toBeLessThan(300);
 
@@ -201,7 +201,7 @@ test.describe('Transaction Edit Drawer', () => {
         resp.request().method() === 'PATCH',
       { timeout: 15000 }
     );
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     const patchResp = await patchPromise;
     expect(patchResp.status()).toBeLessThan(300);
   });

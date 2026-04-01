@@ -112,6 +112,8 @@ export default function NewPayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       navigate('/payments');
     },
     onError: (error) => {

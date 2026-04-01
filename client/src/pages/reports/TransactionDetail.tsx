@@ -76,6 +76,7 @@ export default function TransactionDetail() {
       const r = await api.get('/journalentries');
       return r.data.value as JournalEntry[];
     },
+    refetchOnMount: 'always',
   });
 
   const {
@@ -88,6 +89,7 @@ export default function TransactionDetail() {
       const r = await api.get('/journalentrylines');
       return r.data.value as JournalEntryLine[];
     },
+    refetchOnMount: 'always',
   });
 
   const isLoading = accountsLoading || journalEntriesLoading || linesLoading;

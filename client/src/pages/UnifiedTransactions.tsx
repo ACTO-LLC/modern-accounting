@@ -255,6 +255,8 @@ export default function UnifiedTransactions() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['transactionrules'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
 
       if (data.ruleConflict && data.existingRule) {
         // Show confirmation dialog for rule conflict
@@ -311,6 +313,8 @@ export default function UnifiedTransactions() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       setSelectedIds({ type: 'include', ids: new Set() });
       if (data?.approved > 0) {
         const postedCount = data.posted || 0;
@@ -362,6 +366,8 @@ export default function UnifiedTransactions() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       toast.success(`Successfully posted ${data.count} transactions to the journal!`, { id: 'post-transactions' });
       setShowPostConfirm(false);
     },
@@ -403,6 +409,8 @@ export default function UnifiedTransactions() {
       autoPost: isSimpleMode,
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       setDrawerTransaction(null);
       setSelectedIds({ type: 'include', ids: new Set() });
       toast.success(isSimpleMode ? 'Transaction approved and posted to GL' : 'Transaction approved');
@@ -451,6 +459,39 @@ export default function UnifiedTransactions() {
       },
     });
   }, [accounts, updateMutation, recategorizeMutation, drawerTransaction]);
+
+  // Save edits and approve in one step
+  const handleSaveAndApprove = useCallback((id: string, formData: TransactionEditFormData) => {
+    if (!formData.accountId) {
+      toast.error('Select an account before approving');
+      return;
+    }
+    const selectedAccount = accounts.find(a => a.Id === formData.accountId);
+    const category = selectedAccount?.Name || null;
+
+    api.post(`/transactions/${id}/approve`, {
+      accountId: formData.accountId,
+      category,
+      memo: formData.memo || null,
+      vendorId: formData.vendorId || null,
+      customerId: formData.customerId || null,
+      classId: formData.classId || null,
+      projectId: formData.projectId || null,
+      payee: formData.payee || null,
+      isPersonal: formData.isPersonal,
+      autoPost: isSimpleMode,
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
+      setDrawerTransaction(null);
+      setSelectedIds({ type: 'include', ids: new Set() });
+      toast.success(isSimpleMode ? 'Transaction approved and posted to GL' : 'Transaction approved');
+    }).catch((err) => {
+      console.error('Save & Approve failed:', err);
+      toast.error('Failed to approve transaction');
+    });
+  }, [accounts, queryClient, isSimpleMode]);
 
   // Resolve selected IDs, handling both 'include' and 'include_all' selection types
   const getSelectedTransactions = useCallback(() => {
@@ -860,6 +901,7 @@ export default function UnifiedTransactions() {
         transaction={drawerTransaction}
         accounts={accounts}
         onSave={handleSaveEdit}
+        onSaveAndApprove={handleSaveAndApprove}
         onClose={() => setDrawerTransaction(null)}
         isSaving={updateMutation.isPending || recategorizeMutation.isPending}
         isRecategorize={drawerTransaction?.Status === 'Posted'}

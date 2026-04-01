@@ -264,6 +264,7 @@ export default function YearEndClose() {
       queryClient.invalidateQueries({ queryKey: ['accounting-periods'] });
       queryClient.invalidateQueries({ queryKey: ['year-end-close-entries'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       navigate('/accounting-periods');
     },
     onError: (err: any) => {

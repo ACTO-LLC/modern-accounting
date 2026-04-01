@@ -160,6 +160,8 @@ export default function MatchToInvoiceDialog({
       queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       toast.success('Deposit matched to invoice successfully');
       onMatched();
       handleClose();

@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, X, ArrowUpDown, Play, Pause, Trash2, Pencil, FlaskConical } from 'lucide-react';
 import { useState } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 import api from '../lib/api';
 import { formatCurrencyStandalone } from '../contexts/CurrencyContext';
 import { useToast } from '../hooks/useToast';
@@ -120,6 +126,7 @@ export default function TransactionRules() {
     IsEnabled: true,
   });
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const { showToast } = useToast();
 
   const queryClient = useQueryClient();
@@ -309,6 +316,12 @@ export default function TransactionRules() {
     if (!validateForm()) {
       return;
     }
+
+    setShowSaveConfirm(true);
+  };
+
+  const handleConfirmSave = () => {
+    setShowSaveConfirm(false);
 
     const submitData: TransactionRuleInput = {
       ...formData,
@@ -848,6 +861,20 @@ export default function TransactionRules() {
           </form>
         </div>
       )}
+
+      {/* Save Confirmation Dialog */}
+      <Dialog open={showSaveConfirm} onClose={() => setShowSaveConfirm(false)}>
+        <DialogTitle>{editingRule ? 'Update Rule' : 'Create Rule'}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to {editingRule ? 'update' : 'create'} the rule &quot;{formData.Name.trim()}&quot;?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowSaveConfirm(false)}>No</Button>
+          <Button onClick={handleConfirmSave} variant="contained" autoFocus>Yes</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Test Dialog */}
       {showTestDialog && (
