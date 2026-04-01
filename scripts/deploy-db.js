@@ -214,6 +214,8 @@ const TABLE_ORDER = [
   'InventoryLocations',
   'PurchaseOrders',
   'PurchaseOrderLines',
+  'BankRules',
+  'TransactionRules',
 ];
 
 async function runBatches(pool, script, name) {

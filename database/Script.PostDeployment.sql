@@ -7,6 +7,50 @@ Uses IF NOT EXISTS guards for idempotent operations (safe to run multiple times)
 --------------------------------------------------------------------------------------
 */
 
+-- ============================================================================
+-- DATA MIGRATIONS (run in ALL environments, including production)
+-- These are operational data migrations, NOT seed data.
+-- ============================================================================
+
+-- Migration: BankRules -> TransactionRules
+-- Copy existing BankRules into the unified TransactionRules table
+-- (Idempotent: only runs if TransactionRules is empty and BankRules has data)
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TransactionRules')
+   AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'BankRules')
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TransactionRules])
+       AND EXISTS (SELECT 1 FROM [dbo].[BankRules])
+    BEGIN
+        PRINT 'Migrating BankRules to TransactionRules...'
+
+        INSERT INTO [dbo].[TransactionRules] (
+            [Id], [Name], [BankAccountId],
+            [MatchField], [MatchType], [MatchValue],
+            [MinAmount], [MaxAmount], [TransactionType],
+            [AssignAccountId], [AssignVendorId], [AssignCustomerId],
+            [AssignClassId], [AssignMemo], [AssignIsPersonal],
+            [Priority], [IsEnabled], [Source],
+            [CreatedAt], [UpdatedAt]
+        )
+        SELECT
+            [Id], [Name], [BankAccountId],
+            [MatchField], [MatchType], [MatchValue],
+            [MinAmount], [MaxAmount], [TransactionType],
+            [AssignAccountId], [AssignVendorId], [AssignCustomerId],
+            [AssignClassId], [AssignMemo], [AssignIsPersonal],
+            [Priority], [IsEnabled], 'manual',
+            [CreatedAt], [UpdatedAt]
+        FROM [dbo].[BankRules];
+
+        PRINT 'Migrated BankRules to TransactionRules: ' + CAST(@@ROWCOUNT AS VARCHAR) + ' rows';
+    END
+    ELSE
+    BEGIN
+        PRINT 'TransactionRules migration skipped (already has data or BankRules is empty).'
+    END
+END
+GO
+
 -- Gate: skip all seed data when SeedData=false (production deploys)
 IF '$(SeedData)' = 'false'
 BEGIN
