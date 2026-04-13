@@ -192,7 +192,7 @@ describe('PlaidSync', () => {
                 .mockResolvedValueOnce({ data: { value: [] } })
                 // checkForDuplicates
                 .mockResolvedValueOnce({ data: { value: [] } })
-                // checkCategorizationRules
+                // checkTransactionRules
                 .mockResolvedValueOnce({ data: { value: [] } });
 
             // saveBankTransaction POST
@@ -263,7 +263,13 @@ describe('PlaidSync', () => {
         });
     });
 
-    describe('checkCategorizationRules', () => {
+    describe('checkTransactionRules', () => {
+        beforeEach(() => {
+            // Clear the rules cache before each test
+            plaidSync._transactionRulesCache = null;
+            plaidSync._transactionRulesCacheTime = 0;
+        });
+
         it('should return matching rule for contains match', async () => {
             axios.get.mockResolvedValueOnce({
                 data: {
@@ -271,11 +277,10 @@ describe('PlaidSync', () => {
                         {
                             Id: 'rule-1',
                             MatchField: 'Description',
-                            MatchType: 'contains',
+                            MatchType: 'Contains',
                             MatchValue: 'starbucks',
-                            AccountId: 'acct-food',
-                            Category: 'Food & Drink',
-                            IsActive: true,
+                            AssignAccountId: 'acct-food',
+                            IsEnabled: true,
                             Priority: 1,
                             HitCount: 5,
                         },
@@ -286,11 +291,10 @@ describe('PlaidSync', () => {
             // Mock the hit count update (fire and forget)
             axios.patch.mockResolvedValueOnce({ data: {} });
 
-            const result = await plaidSync.checkCategorizationRules('STARBUCKS COFFEE #123', null);
+            const result = await plaidSync.checkTransactionRules(null, 'STARBUCKS COFFEE #123', null, -5.50);
 
             expect(result).toBeTruthy();
-            expect(result.AccountId).toBe('acct-food');
-            expect(result.Category).toBe('Food & Drink');
+            expect(result.AssignAccountId).toBe('acct-food');
         });
 
         it('should return null when no rules match', async () => {
@@ -300,17 +304,17 @@ describe('PlaidSync', () => {
                         {
                             Id: 'rule-1',
                             MatchField: 'Description',
-                            MatchType: 'exact',
+                            MatchType: 'Exact',
                             MatchValue: 'starbucks',
-                            AccountId: 'acct-food',
-                            IsActive: true,
+                            AssignAccountId: 'acct-food',
+                            IsEnabled: true,
                             Priority: 1,
                         },
                     ],
                 },
             });
 
-            const result = await plaidSync.checkCategorizationRules('Amazon.com purchase', null);
+            const result = await plaidSync.checkTransactionRules(null, 'Amazon.com purchase', null, -10.00);
 
             expect(result).toBeNull();
         });
@@ -318,7 +322,7 @@ describe('PlaidSync', () => {
         it('should return null on API error (graceful degradation)', async () => {
             axios.get.mockRejectedValueOnce({ response: { status: 500 }, message: 'Server error' });
 
-            const result = await plaidSync.checkCategorizationRules('test', null);
+            const result = await plaidSync.checkTransactionRules(null, 'test', null, -1.00);
 
             expect(result).toBeNull();
         });
@@ -326,7 +330,7 @@ describe('PlaidSync', () => {
         it('should return null on 404 (entity not created yet)', async () => {
             axios.get.mockRejectedValueOnce({ response: { status: 404 }, message: 'Not found' });
 
-            const result = await plaidSync.checkCategorizationRules('test', null);
+            const result = await plaidSync.checkTransactionRules(null, 'test', null, -1.00);
 
             expect(result).toBeNull();
         });
