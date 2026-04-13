@@ -123,6 +123,12 @@ services:
       - SQL_SA_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123}
       - SQL_DATABASE=AccountingDB
       - DAB_API_URL=http://dab:5000/api
+      - DAB_URL=http://dab:5000
+      - DAB_REST_URL=http://dab:5000/api
+      - DAB_MCP_URL=http://dab:5000/mcp
+      - QBO_MCP_URL=http://qbo-mcp:8001/mcp
+      - MA_MCP_URL=http://ma-mcp:5002/mcp
+      - APP_URL=http://client:5173
       - BYPASS_AUTH=${BYPASS_AUTH:-true}
       - NODE_ENV=development
     volumes:
