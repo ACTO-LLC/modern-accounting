@@ -106,27 +106,48 @@ cd modern-accounting
 | Service | URL | Purpose |
 |---------|-----|---------|
 | Client | http://localhost:5173 | React frontend |
-| Chat API | http://localhost:7071 | Express backend |
+| Chat API | http://localhost:8080 | Express backend |
 | DAB API | http://localhost:5000 | GraphQL + REST |
 | MA MCP | http://localhost:5002 | Onboarding service |
+| Email API | http://localhost:7073 | Invoice PDF + SMTP |
 | SQL Server | localhost:14330 | Database |
 
 <details>
 <summary><strong>Manual Setup</strong></summary>
 
 ```bash
-# 1. Start Docker services
+# 1. Start Docker services (DB, DAB, MCPs, email — schema auto-deploys via db-init)
 docker compose up -d
 
-# 2. Deploy database schema
-node scripts/deploy-db.js
+# 2. Install dependencies
+npm install && cd chat-api && npm install && cd ../client && npm install && cd ..
 
-# 3. Start API (terminal 1)
-cd chat-api && npm install && npm start
+# 3. Start API + Client locally
+npm run dev
 
-# 4. Start Client (terminal 2)
-cd client && npm install && npm run dev
+# Or run everything in Docker (including chat-api + client):
+npm run dev:full
 ```
+
+</details>
+
+<details>
+<summary><strong>Clone Azure Prod Database Locally</strong></summary>
+
+Get real production data in your local Docker SQL Server:
+
+```bash
+# Ensure Docker SQL Server is running
+docker compose up -d database
+
+# Clone from Azure prod (exports .bacpac, imports locally)
+npm run db:clone
+
+# Re-import from existing .bacpac (skip the slow Azure export)
+npm run db:clone:quick
+```
+
+Requires: `az login`, SqlPackage (installed via `dotnet tool install -g microsoft.sqlpackage`).
 
 </details>
 
@@ -536,13 +557,18 @@ cd monitor-agent && npm test
 
 ```bash
 # Deploy database schema (auto-detects best mode)
-node scripts/deploy-db.js
+npm run db:deploy
+
+# Clone Azure prod data to local Docker
+npm run db:clone            # Full export + import
+npm run db:clone:quick      # Re-import existing .bacpac
+
+# Azure DB management (backup, restore, list, delete)
+node scripts/manage-db.js backup --env prod
+node scripts/manage-db.js list --env prod
 
 # Force SqlPackage mode (incremental updates)
 node scripts/deploy-db.js --sqlpackage
-
-# Force Node.js mode (fallback)
-node scripts/deploy-db.js --node
 
 # Connect via sqlcmd
 sqlcmd -S localhost,14330 -U sa -P $SQL_SA_PASSWORD -d AccountingDB

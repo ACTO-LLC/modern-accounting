@@ -148,8 +148,10 @@ When users say:
 - **Client:** React + Vite + TypeScript + Tailwind CSS
 - **API:** Node.js Express (`chat-api/`)
 - **Database:** SQL Server via DAB (Data API Builder)
-- **Database Deployment:** Use `node scripts/deploy-db.js` - supports SqlPackage mode (incremental) or Node.js mode (fallback)
+- **Database Deployment:** Use `npm run db:deploy` - supports SqlPackage mode (incremental) or Node.js mode (fallback)
+- **Database Clone:** Use `npm run db:clone` to copy Azure prod DB to local Docker (requires `az login` + SqlPackage)
 - **MCP Servers:** DAB MCP (port 5000), QBO MCP (port 8001)
+- **Docker Dev:** `docker compose up -d` starts DB + DAB + MCPs + email (schema auto-deploys). Add `--profile app` for chat-api + client containers too (`npm run dev:full`).
 - **Dark Mode:** Tailwind `.dark` class on `<html>` - does NOT automatically sync with MUI
 
 ---

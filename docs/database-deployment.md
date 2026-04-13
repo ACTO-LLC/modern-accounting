@@ -67,20 +67,44 @@ node scripts/deploy-db.js --script-only
 
 ## Local Development
 
-1. Start the database container:
-   ```bash
-   docker compose up -d database
-   ```
+### Quick Start (empty database with schema)
 
-2. Deploy the schema:
-   ```bash
-   node scripts/deploy-db.js
-   ```
+```bash
+# Start all services — db-init auto-deploys schema + migrations
+docker compose up -d
 
-3. Restart DAB to pick up schema changes:
-   ```bash
-   docker compose restart dab
-   ```
+# Start chat-api + client locally
+npm run dev
+```
+
+### Clone Azure Prod Data Locally
+
+Get real production data in your local Docker SQL Server:
+
+```bash
+# Full clone: export from Azure prod → import locally
+npm run db:clone
+
+# Re-import from existing .bacpac (skip the slow Azure export)
+npm run db:clone:quick
+```
+
+Requires `az login` and SqlPackage (`dotnet tool install -g microsoft.sqlpackage`).
+
+Under the hood this runs `node scripts/manage-db.js clone --env prod`, which:
+1. Exports a `.bacpac` from Azure SQL via SqlPackage
+2. Starts the local Docker SQL Server if not running
+3. Drops and re-imports into `localhost,14330`
+4. Restarts DAB
+
+### Manual Schema Deploy
+
+If you need to re-deploy schema without recreating the container:
+
+```bash
+npm run db:deploy          # auto-detects SqlPackage or Node.js mode
+docker compose restart dab # restart DAB to pick up changes
+```
 
 ## CI/CD Deployment
 

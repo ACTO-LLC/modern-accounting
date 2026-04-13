@@ -11,6 +11,7 @@
  *   node scripts/manage-db.js restore [--env prod] [--file <name>] [--latest] [--confirm-prod]
  *   node scripts/manage-db.js list    [--env prod]
  *   node scripts/manage-db.js delete  [--env prod] [--confirm-prod]
+ *   node scripts/manage-db.js clone   [--env prod] [--skip-export]
  *
  * Credential resolution order:
  *   1. --admin-user / --admin-password CLI flags
@@ -23,6 +24,8 @@
  */
 
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 // ============================================================================
 // Utility Functions (matching deploy-db.js patterns)
@@ -401,6 +404,162 @@ async function doList() {
 }
 
 // ============================================================================
+// Clone: Azure → Local Docker
+// ============================================================================
+
+async function doClone() {
+  const localServer = getOption('local-server') || 'localhost,14330';
+  const localUser = getOption('local-user') || 'sa';
+  const localPassword = getOption('local-password') || process.env.SQL_SA_PASSWORD || 'StrongPassword123';
+  const backupsDir = path.join(__dirname, '..', 'database', 'backups');
+  const skipExport = getFlag('skip-export');
+
+  // Ensure backups directory exists
+  if (!fs.existsSync(backupsDir)) {
+    fs.mkdirSync(backupsDir, { recursive: true });
+  }
+
+  // Check SqlPackage is available
+  try {
+    execSync('SqlPackage /version', { stdio: 'pipe' });
+  } catch {
+    log('SqlPackage not found. Install it via: dotnet tool install -g microsoft.sqlpackage', 'error');
+    process.exit(1);
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:-]/g, '').replace('T', '-').split('.')[0];
+  const bacpacFile = path.join(backupsDir, `${database}-${env}-${timestamp}.bacpac`);
+
+  // Check for existing .bacpac if --skip-export
+  let importFile = bacpacFile;
+  if (skipExport) {
+    const existing = fs.readdirSync(backupsDir)
+      .filter(f => f.endsWith('.bacpac') && f.includes(`-${env}-`))
+      .sort()
+      .pop();
+    if (!existing) {
+      log('No existing .bacpac found for --skip-export. Run without --skip-export first.', 'error');
+      process.exit(1);
+    }
+    importFile = path.join(backupsDir, existing);
+    log(`Reusing existing export: ${existing}`, 'info');
+  }
+
+  // Step 1: Export from Azure
+  if (!skipExport) {
+    log('Step 1/3: Exporting from Azure SQL...', 'step');
+    const creds = getCredentials();
+    const sourceFqdn = `${sqlServer}.database.windows.net`;
+
+    log(`Source: ${sourceFqdn} / ${database}`);
+    log(`Target file: ${bacpacFile}`);
+
+    try {
+      execSync(
+        `SqlPackage /Action:Export ` +
+        `/SourceServerName:${sourceFqdn} ` +
+        `/SourceDatabaseName:${database} ` +
+        `/SourceUser:${q(creds.user)} ` +
+        `/SourcePassword:${q(creds.password)} ` +
+        `/SourceEncryptConnection:true ` +
+        `/SourceTrustServerCertificate:false ` +
+        `/TargetFile:${q(bacpacFile)}`,
+        { stdio: 'inherit', timeout: 600000 }
+      );
+    } catch (err) {
+      log(`Export failed: ${err.message}`, 'error');
+      process.exit(1);
+    }
+
+    importFile = bacpacFile;
+    log('Export complete', 'success');
+  } else {
+    log('Step 1/3: Skipped (--skip-export)', 'info');
+  }
+
+  // Step 2: Ensure local Docker SQL Server is running
+  log('Step 2/3: Checking local Docker SQL Server...', 'step');
+  try {
+    const containers = execSync('docker ps --format "{{.Names}}"', { encoding: 'utf8' });
+    if (!containers.includes('accounting-db')) {
+      log('Starting Docker SQL Server...', 'info');
+      execSync('docker compose up -d database', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+      log('Waiting for SQL Server to be ready...', 'info');
+      // Wait for SQL Server to accept connections
+      for (let i = 0; i < 30; i++) {
+        try {
+          execSync(
+            `sqlcmd -S ${localServer} -U ${localUser} -P ${q(localPassword)} -C -Q "SELECT 1"`,
+            { stdio: 'pipe', timeout: 5000 }
+          );
+          break;
+        } catch {
+          if (i === 29) {
+            log('SQL Server did not become ready in time', 'error');
+            process.exit(1);
+          }
+          execSync('sleep 2', { stdio: 'pipe' });
+        }
+      }
+    }
+    log('Local SQL Server is running', 'success');
+  } catch (err) {
+    log(`Docker check failed: ${err.message}`, 'error');
+    log('Make sure Docker is running and docker-compose.yml is present', 'info');
+    process.exit(1);
+  }
+
+  // Step 3: Drop existing DB and import .bacpac
+  log('Step 3/3: Importing into local SQL Server...', 'step');
+  log(`Source: ${importFile}`);
+  log(`Target: ${localServer} / ${database}`);
+
+  // Drop existing database if it exists (SqlPackage Import requires no existing DB)
+  try {
+    execSync(
+      `sqlcmd -S ${localServer} -U ${localUser} -P ${q(localPassword)} -C ` +
+      `-Q "IF DB_ID('${database}') IS NOT NULL BEGIN ALTER DATABASE [${database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [${database}]; END"`,
+      { stdio: 'inherit', timeout: 30000 }
+    );
+    log('Dropped existing local database', 'info');
+  } catch {
+    log('No existing local database to drop', 'info');
+  }
+
+  try {
+    execSync(
+      `SqlPackage /Action:Import ` +
+      `/SourceFile:${q(importFile)} ` +
+      `/TargetServerName:${localServer} ` +
+      `/TargetDatabaseName:${database} ` +
+      `/TargetUser:${localUser} ` +
+      `/TargetPassword:${q(localPassword)} ` +
+      `/TargetEncryptConnection:false ` +
+      `/TargetTrustServerCertificate:true`,
+      { stdio: 'inherit', timeout: 600000 }
+    );
+  } catch (err) {
+    log(`Import failed: ${err.message}`, 'error');
+    process.exit(1);
+  }
+
+  log('Import complete', 'success');
+
+  // Restart DAB to pick up the new data
+  log('Restarting DAB...', 'info');
+  try {
+    execSync('docker restart accounting-dab', { stdio: 'pipe', timeout: 30000 });
+    log('DAB restarted', 'success');
+  } catch {
+    log('DAB not running — start it with: docker compose up -d dab', 'warn');
+  }
+
+  console.log('');
+  log(`Azure ${env} database cloned to local Docker successfully!`, 'success');
+  log(`Local connection: Server=${localServer};Database=${database};User Id=${localUser}`, 'info');
+}
+
+// ============================================================================
 // Main Entry Point
 // ============================================================================
 
@@ -417,12 +576,13 @@ async function main() {
   console.log(`  Storage:        ${storageAccount}/${container}`);
   console.log('');
 
-  if (!command || !['backup', 'restore', 'list', 'delete'].includes(command)) {
+  if (!command || !['backup', 'restore', 'list', 'delete', 'clone'].includes(command)) {
     console.log('Usage:');
     console.log('  node scripts/manage-db.js backup  [--env prod] [--delete-after] [--confirm-prod]');
     console.log('  node scripts/manage-db.js restore [--env prod] [--file <name>] [--latest] [--confirm-prod]');
     console.log('  node scripts/manage-db.js list    [--env prod]');
     console.log('  node scripts/manage-db.js delete  [--env prod] [--confirm-prod]');
+    console.log('  node scripts/manage-db.js clone   [--env prod] [--skip-export] [--local-server host,port]');
     console.log('');
     console.log('Options:');
     console.log('  --env <name>           Target environment (default: dev)');
@@ -432,6 +592,12 @@ async function main() {
     console.log('  --latest               Restore most recent backup');
     console.log('  --admin-user <user>    SQL admin username');
     console.log('  --admin-password <pw>  SQL admin password');
+    console.log('');
+    console.log('Clone options (Azure → local Docker):');
+    console.log('  --skip-export          Reuse existing .bacpac (skip Azure export)');
+    console.log('  --local-server <s>     Local SQL Server (default: localhost,14330)');
+    console.log('  --local-user <u>       Local SQL user (default: sa)');
+    console.log('  --local-password <p>   Local SQL password (default: from SQL_SA_PASSWORD or StrongPassword123)');
     process.exit(1);
   }
 
@@ -449,6 +615,9 @@ async function main() {
       case 'delete':
         requireProdConfirmation('delete');
         doDeleteDb();
+        break;
+      case 'clone':
+        await doClone();
         break;
     }
 

@@ -12,7 +12,11 @@
     "dev:client": "cd client && npm run dev",
     "dev:api": "cd chat-api && npm start",
     "dev:docker": "docker compose up -d",
+    "dev:full": "docker compose --profile app up",
     "test": "cd client && npx playwright test",
+    "db:clone": "node scripts/manage-db.js clone --env prod",
+    "db:clone:quick": "node scripts/manage-db.js clone --env prod --skip-export",
+    "db:deploy": "node scripts/deploy-db.js",
     "seed": "node database/seed-data.cjs",
     "seed:clean": "node database/seed-data.cjs --clean"
   },

@@ -1,7 +1,10 @@
-version: '3.8'
-
-# Local development without Dev Containers
-# For isolated environments, use .devcontainer instead
+# Local development with Docker
+# Usage:
+#   docker compose up              - Start all services (db, dab, mcps, email)
+#   docker compose up -d           - Start in background
+#   docker compose --profile app up - Also start chat-api + client
+#   docker compose --profile agent up - Also start monitor agent
+#   docker compose down            - Stop all services
 
 services:
   database:
@@ -15,12 +18,32 @@ services:
       - "14330:1433"
     volumes:
       - sql-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -N -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  db-init:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile.db-init
+    container_name: accounting-db-init
+    environment:
+      - SQL_SERVER=database
+      - SQL_PORT=1433
+      - SQL_SA_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123}
+    depends_on:
+      database:
+        condition: service_healthy
 
   dab:
     image: mcr.microsoft.com/azure-databases/data-api-builder:1.7.83-rc
     container_name: accounting-dab
     depends_on:
-      - database
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "5000:5000"
     volumes:
@@ -76,6 +99,55 @@ services:
       - DAB_API_URL=http://dab:5000/api
     volumes:
       - ./email-api:/app
+      - /app/node_modules
+
+  # Chat API - Express backend (profile: app)
+  # Start with: docker compose --profile app up
+  chat-api:
+    build:
+      context: ./chat-api
+      dockerfile: Dockerfile
+    container_name: accounting-chat-api
+    profiles:
+      - app
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - SQL_SERVER=database
+      - SQL_PORT=1433
+      - SQL_USER=sa
+      - SQL_SA_PASSWORD=${SQL_SA_PASSWORD:-StrongPassword123}
+      - SQL_DATABASE=AccountingDB
+      - DAB_API_URL=http://dab:5000/api
+      - BYPASS_AUTH=${BYPASS_AUTH:-true}
+      - NODE_ENV=development
+    volumes:
+      - ./chat-api:/app
+      - /app/node_modules
+
+  # Vite client - React frontend (profile: app)
+  # Start with: docker compose --profile app up
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: accounting-client
+    profiles:
+      - app
+    depends_on:
+      - chat-api
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://chat-api:8080
+      - VITE_BYPASS_AUTH=true
+      - VITE_DAB_URL=http://localhost:5000
+    volumes:
+      - ./client:/app
       - /app/node_modules
 
   # Monitor Agent - AI-driven enhancement processor

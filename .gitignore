@@ -79,3 +79,6 @@ logs/
 
 # Migration output (contains production data)
 scripts/output/
+
+# Database backups (.bacpac files from Azure clone)
+database/backups/
