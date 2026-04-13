@@ -226,6 +226,8 @@ export default function ApplyDeposit() {
       queryClient.invalidateQueries({ queryKey: ['customerdeposits'] });
       queryClient.invalidateQueries({ queryKey: ['depositapplications'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       navigate('/customer-deposits');
     },
     onError: (error) => {

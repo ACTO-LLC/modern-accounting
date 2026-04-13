@@ -6,7 +6,7 @@ test.describe('Bank Rules (Inline CRUD)', () => {
     const ruleName = `Test Rule ${timestamp}`;
 
     await page.goto('/bank-rules');
-    await expect(page.getByRole('heading', { name: /Bank Rules/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Transaction Rules/i })).toBeVisible();
 
     // Click New Rule button
     await page.getByRole('button', { name: /New Rule/i }).click();
@@ -22,12 +22,13 @@ test.describe('Bank Rules (Inline CRUD)', () => {
     await expect(accountSelect.locator('option')).not.toHaveCount(1, { timeout: 10000 });
     await accountSelect.selectOption({ index: 1 });
 
-    // Save
+    // Save — click Create Rule, then confirm in dialog
     const responsePromise = page.waitForResponse(
-      resp => resp.url().includes('/bankrules') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/transactionrules') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /Create Rule/i }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
     await responsePromise;
 
     // Verify rule appears in list
@@ -52,10 +53,11 @@ test.describe('Bank Rules (Inline CRUD)', () => {
     await accountSelect.selectOption({ index: 1 });
 
     const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/bankrules') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/transactionrules') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /Create Rule/i }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
     await createPromise;
 
     await expect(page.getByText(ruleName)).toBeVisible();
@@ -70,7 +72,14 @@ test.describe('Bank Rules (Inline CRUD)', () => {
       await page.locator('#matchValue').clear();
       await page.locator('#matchValue').fill('AMAZON PRIME');
 
+      const updatePromise = page.waitForResponse(
+        resp => resp.url().includes('/transactionrules') && (resp.status() === 201 || resp.status() === 200),
+        { timeout: 15000 }
+      );
       await page.getByRole('button', { name: /Update Rule/i }).click();
+      await page.getByRole('button', { name: 'Yes' }).click();
+      await updatePromise;
+
       await expect(page.getByText('AMAZON PRIME')).toBeVisible();
     }
   });
@@ -93,10 +102,11 @@ test.describe('Bank Rules (Inline CRUD)', () => {
     await accountSelect.selectOption({ index: 1 });
 
     const createPromise = page.waitForResponse(
-      resp => resp.url().includes('/bankrules') && (resp.status() === 201 || resp.status() === 200),
+      resp => resp.url().includes('/transactionrules') && (resp.status() === 201 || resp.status() === 200),
       { timeout: 15000 }
     );
     await page.getByRole('button', { name: /Create Rule/i }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
     await createPromise;
 
     await expect(page.getByText(ruleName)).toBeVisible();

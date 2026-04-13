@@ -7,6 +7,50 @@ Uses IF NOT EXISTS guards for idempotent operations (safe to run multiple times)
 --------------------------------------------------------------------------------------
 */
 
+-- ============================================================================
+-- DATA MIGRATIONS (run in ALL environments, including production)
+-- These are operational data migrations, NOT seed data.
+-- ============================================================================
+
+-- Migration: BankRules -> TransactionRules
+-- Copy existing BankRules into the unified TransactionRules table
+-- (Idempotent per-row: only inserts BankRules whose Id is not already in TransactionRules)
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TransactionRules')
+   AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'BankRules')
+BEGIN
+    IF EXISTS (SELECT 1 FROM [dbo].[BankRules] br WHERE NOT EXISTS (SELECT 1 FROM [dbo].[TransactionRules] tr WHERE tr.Id = br.Id))
+    BEGIN
+        PRINT 'Migrating BankRules to TransactionRules...'
+
+        INSERT INTO [dbo].[TransactionRules] (
+            [Id], [Name], [BankAccountId],
+            [MatchField], [MatchType], [MatchValue],
+            [MinAmount], [MaxAmount], [TransactionType],
+            [AssignAccountId], [AssignVendorId], [AssignCustomerId],
+            [AssignClassId], [AssignMemo], [AssignIsPersonal],
+            [Priority], [IsEnabled], [Source],
+            [CreatedAt], [UpdatedAt]
+        )
+        SELECT
+            br.[Id], br.[Name], br.[BankAccountId],
+            br.[MatchField], br.[MatchType], br.[MatchValue],
+            br.[MinAmount], br.[MaxAmount], br.[TransactionType],
+            br.[AssignAccountId], br.[AssignVendorId], br.[AssignCustomerId],
+            br.[AssignClassId], br.[AssignMemo], br.[AssignIsPersonal],
+            br.[Priority], br.[IsEnabled], 'manual',
+            br.[CreatedAt], br.[UpdatedAt]
+        FROM [dbo].[BankRules] br
+        WHERE NOT EXISTS (SELECT 1 FROM [dbo].[TransactionRules] tr WHERE tr.Id = br.Id);
+
+        PRINT 'Migrated BankRules to TransactionRules: ' + CAST(@@ROWCOUNT AS VARCHAR) + ' rows';
+    END
+    ELSE
+    BEGIN
+        PRINT 'TransactionRules migration skipped (no unmigrated BankRules found).'
+    END
+END
+GO
+
 -- Gate: skip all seed data when SeedData=false (production deploys)
 IF '$(SeedData)' = 'false'
 BEGIN

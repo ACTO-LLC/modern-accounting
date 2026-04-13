@@ -2009,7 +2009,7 @@ const tools = [
         type: 'function',
         function: {
             name: 'mark_transactions_personal',
-            description: 'Mark all bank transactions for a specific account/card as personal. Uses preview/confirm pattern. Can also create a BankRule to auto-mark future imports.',
+            description: 'Mark all bank transactions for a specific account/card as personal. Uses preview/confirm pattern. Can also create a TransactionRule to auto-mark future imports.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -2028,7 +2028,7 @@ const tools = [
                     },
                     create_rule: {
                         type: 'boolean',
-                        description: 'If true (default), creates a BankRule to auto-mark future imports from this account as personal.',
+                        description: 'If true (default), creates a TransactionRule to auto-mark future imports from this account as personal.',
                         default: true
                     }
                 },
@@ -4858,11 +4858,11 @@ async function executeMarkTransactionsPersonal(params, authToken = null) {
             }
         }
 
-        // Create BankRule if requested
+        // Create TransactionRule if requested
         let ruleCreated = false;
         if (createRule && markedCount > 0) {
             const ruleName = `Personal — ${account.Name}`;
-            const ruleResult = await dab.create('bankrules', {
+            const ruleResult = await dab.create('transactionrules', {
                 Name: ruleName,
                 BankAccountId: account.Id,
                 MatchField: 'Description',
@@ -4871,10 +4871,11 @@ async function executeMarkTransactionsPersonal(params, authToken = null) {
                 AssignIsPersonal: true,
                 Priority: 100,
                 IsEnabled: true,
+                Source: 'manual',
             }, authToken);
             ruleCreated = ruleResult.success;
             if (!ruleResult.success) {
-                console.warn('Failed to create bank rule:', ruleResult.error);
+                console.warn('Failed to create transaction rule:', ruleResult.error);
             }
         }
 

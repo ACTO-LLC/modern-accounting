@@ -111,6 +111,8 @@ export default function NewCustomerDeposit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customerdeposits'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] }); // Refresh account balances
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       navigate('/customer-deposits');
     },
     onError: (error) => {

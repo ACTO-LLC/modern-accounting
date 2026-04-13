@@ -35,6 +35,7 @@ interface TransactionEditDrawerProps {
   transaction: BankTransaction | null;
   accounts: Account[];
   onSave: (id: string, data: TransactionEditFormData) => void;
+  onSaveAndApprove?: (id: string, data: TransactionEditFormData) => void;
   onClose: () => void;
   isSaving?: boolean;
   isRecategorize?: boolean;
@@ -44,6 +45,7 @@ export default function TransactionEditDrawer({
   transaction,
   accounts,
   onSave,
+  onSaveAndApprove,
   onClose,
   isSaving = false,
   isRecategorize = false,
@@ -77,6 +79,11 @@ export default function TransactionEditDrawer({
   const handleSave = () => {
     if (!transaction) return;
     onSave(transaction.Id, form);
+  };
+
+  const handleSaveAndApprove = () => {
+    if (!transaction || !onSaveAndApprove) return;
+    onSaveAndApprove(transaction.Id, form);
   };
 
   const selectedAccount = accounts.find((a) => a.Id === form.accountId) ?? null;
@@ -292,6 +299,17 @@ export default function TransactionEditDrawer({
             >
               {isSaving ? 'Saving...' : isRecategorize ? 'Recategorize' : 'Save'}
             </Button>
+            {onSaveAndApprove && !isRecategorize && transaction?.Status === 'Pending' && (
+              <Button
+                variant="contained"
+                color="success"
+                onClick={handleSaveAndApprove}
+                disabled={isSaving || !form.accountId}
+                title={!form.accountId ? 'Select an account to approve' : ''}
+              >
+                {isSaving ? 'Saving...' : 'Save & Approve'}
+              </Button>
+            )}
           </div>
         </div>
       )}

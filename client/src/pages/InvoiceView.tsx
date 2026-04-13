@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Printer, Edit, Building2, Mail, Trash2 } from 'lucide-react';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -50,6 +50,7 @@ interface Customer {
 export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { settings: company } = useCompanySettings();
   const { formatCurrency } = useCurrency();
   const { user, userRole } = useAuth();
@@ -163,6 +164,8 @@ export default function InvoiceView() {
       // Delete the invoice
       await api.delete(`/invoices_write/Id/${invoice.Id}`);
 
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-lines'] });
       navigate('/invoices');
     } catch (error) {
       console.error('Failed to delete invoice:', error);
