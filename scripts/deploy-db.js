@@ -124,35 +124,44 @@ function canBuildSqlProj() {
 async function deployWithSqlPackage() {
   log('Starting SqlPackage deployment mode', 'step');
 
-  // Step 1: Build the SQL project
-  log('Building SQL project...', 'step');
-  console.log(`  Project: ${sqlProjFile}`);
+  // Step 1: Find or build the DACPAC
+  // Check for pre-built DACPAC (e.g., from Docker build stage)
+  const prebuiltDacpac = path.join(projectDir, 'dacpac', 'AccountingDB.dacpac');
+  let activeDacpacPath = dacpacPath;
 
-  try {
-    // Try dotnet build first (requires Microsoft.Build.Sql SDK project)
-    execSync(`dotnet build "${sqlProjFile}" -c Debug`, {
-      stdio: 'inherit',
-      cwd: databaseDir,
-    });
-  } catch (e) {
-    // If dotnet build fails, try MSBuild
-    log('dotnet build failed, trying MSBuild...', 'warn');
+  if (fs.existsSync(prebuiltDacpac)) {
+    log(`Using pre-built DACPAC: ${prebuiltDacpac}`, 'success');
+    activeDacpacPath = prebuiltDacpac;
+  } else {
+    log('Building SQL project...', 'step');
+    console.log(`  Project: ${sqlProjFile}`);
+
     try {
-      execSync(`msbuild "${sqlProjFile}" /p:Configuration=Debug /t:Build`, {
+      // Try dotnet build first (requires Microsoft.Build.Sql SDK project)
+      execSync(`dotnet build "${sqlProjFile}" -c Debug`, {
         stdio: 'inherit',
         cwd: databaseDir,
       });
-    } catch (e2) {
-      throw new Error(
-        'Failed to build SQL project. Ensure Visual Studio with SSDT or Microsoft.Build.Sql is installed.'
-      );
+    } catch (e) {
+      // If dotnet build fails, try MSBuild
+      log('dotnet build failed, trying MSBuild...', 'warn');
+      try {
+        execSync(`msbuild "${sqlProjFile}" /p:Configuration=Debug /t:Build`, {
+          stdio: 'inherit',
+          cwd: databaseDir,
+        });
+      } catch (e2) {
+        throw new Error(
+          'Failed to build SQL project. Ensure Visual Studio with SSDT or Microsoft.Build.Sql is installed.'
+        );
+      }
     }
-  }
 
-  if (!fs.existsSync(dacpacPath)) {
-    throw new Error(`DACPAC not found at: ${dacpacPath}`);
+    if (!fs.existsSync(dacpacPath)) {
+      throw new Error(`DACPAC not found at: ${dacpacPath}`);
+    }
+    log(`Build successful: ${dacpacPath}`, 'success');
   }
-  log(`Build successful: ${dacpacPath}`, 'success');
 
   // Step 2: Find SqlPackage
   const sqlPackage = findSqlPackage();
@@ -169,14 +178,14 @@ async function deployWithSqlPackage() {
     const scriptPath = path.join(outputDir, 'deploy-script.sql');
     log('Generating deployment script...', 'step');
     execSync(
-      `"${sqlPackage}" /Action:Script /SourceFile:"${dacpacPath}" /TargetConnectionString:"${connectionString}" /OutputPath:"${scriptPath}"`,
+      `"${sqlPackage}" /Action:Script /SourceFile:"${activeDacpacPath}" /TargetConnectionString:"${connectionString}" /OutputPath:"${scriptPath}"`,
       { stdio: 'inherit' }
     );
     log(`Script saved to: ${scriptPath}`, 'success');
   } else {
     log(`Deploying to ${config.server}:${config.port}/${config.database}...`, 'step');
     execSync(
-      `"${sqlPackage}" /Action:Publish /SourceFile:"${dacpacPath}" /TargetConnectionString:"${connectionString}" /p:BlockOnPossibleDataLoss=false /p:GenerateSmartDefaults=true`,
+      `"${sqlPackage}" /Action:Publish /SourceFile:"${activeDacpacPath}" /TargetConnectionString:"${connectionString}" /p:BlockOnPossibleDataLoss=false /p:GenerateSmartDefaults=true`,
       { stdio: 'inherit' }
     );
     log('Deployment completed successfully!', 'success');
@@ -397,18 +406,16 @@ async function main() {
     const sqlPackageAvailable = findSqlPackage() !== null;
     canBuildSqlProj(); // Check if sqlproj can be built (logs warning if not)
 
-    if (forceSqlPackage) {
-      if (!sqlPackageAvailable) {
-        log('SqlPackage not found. Install via: dotnet tool install -g microsoft.sqlpackage', 'error');
-        process.exit(1);
-      }
+    if (forceNode) {
+      log('Using Node.js mode (explicit --node flag)', 'warn');
+      await deployWithNode();
+    } else if (sqlPackageAvailable) {
       await deployWithSqlPackage();
-    } else if (forceNode) {
-      await deployWithNode();
     } else {
-      // Default to Node.js mode (more reliable across environments)
-      // SqlPackage mode requires Visual Studio SSDT or specific SDK setup
-      await deployWithNode();
+      log('SqlPackage not found. Schema objects (views, triggers, stored procs) will NOT be updated.', 'error');
+      log('Install SqlPackage: dotnet tool install -g microsoft.sqlpackage', 'error');
+      log('Or use --node flag to force Node.js mode (migrations only, no view updates).', 'error');
+      process.exit(1);
     }
 
     console.log('');
