@@ -15,9 +15,8 @@
  *    - Handles table ordering and foreign key dependencies
  *
  * Usage:
- *   node deploy-db.js                 # Auto-detect best mode
- *   node deploy-db.js --sqlpackage    # Force SqlPackage mode
- *   node deploy-db.js --node          # Force Node.js mode
+ *   node deploy-db.js                 # Default: SqlPackage (errors if missing)
+ *   node deploy-db.js --node          # Force Node.js mode (migrations only, no view updates)
  *   node deploy-db.js --script-only   # Generate deployment script only (SqlPackage)
  *
  * Environment Variables:
@@ -57,7 +56,6 @@ const dacpacPath = path.join(outputDir, 'AccountingDB.dacpac');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-const forceSqlPackage = args.includes('--sqlpackage');
 const forceNode = args.includes('--node');
 const scriptOnly = args.includes('--script-only');
 
@@ -77,22 +75,36 @@ function log(message, type = 'info') {
 }
 
 function findSqlPackage() {
-  // Check if SqlPackage is in PATH
-  try {
-    const result = spawnSync('where', ['SqlPackage'], { encoding: 'utf8', shell: true });
-    if (result.status === 0 && result.stdout.trim()) {
-      return result.stdout.trim().split('\n')[0].trim();
-    }
-  } catch (e) {}
+  const isWindows = process.platform === 'win32';
+  const lookupCmd = isWindows ? 'where' : 'which';
+
+  // Check if SqlPackage is in PATH (try both casings for Linux/macOS)
+  const names = isWindows ? ['SqlPackage'] : ['sqlpackage', 'SqlPackage'];
+  for (const name of names) {
+    try {
+      const result = spawnSync(lookupCmd, [name], { encoding: 'utf8', shell: true });
+      if (result.status === 0 && result.stdout.trim()) {
+        return result.stdout.trim().split('\n')[0].trim();
+      }
+    } catch (e) {}
+  }
 
   // Check common installation paths
-  const possiblePaths = [
-    path.join(process.env.USERPROFILE || '', '.dotnet', 'tools', 'SqlPackage.exe'),
-    'C:\\Program Files\\Microsoft SQL Server\\160\\DAC\\bin\\SqlPackage.exe',
-    'C:\\Program Files\\Microsoft SQL Server\\150\\DAC\\bin\\SqlPackage.exe',
-    'C:\\Program Files (x86)\\Microsoft SQL Server\\160\\DAC\\bin\\SqlPackage.exe',
-    'C:\\Program Files (x86)\\Microsoft SQL Server\\150\\DAC\\bin\\SqlPackage.exe',
-  ];
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+  const possiblePaths = isWindows
+    ? [
+        path.join(homeDir, '.dotnet', 'tools', 'SqlPackage.exe'),
+        'C:\\Program Files\\Microsoft SQL Server\\160\\DAC\\bin\\SqlPackage.exe',
+        'C:\\Program Files\\Microsoft SQL Server\\150\\DAC\\bin\\SqlPackage.exe',
+        'C:\\Program Files (x86)\\Microsoft SQL Server\\160\\DAC\\bin\\SqlPackage.exe',
+        'C:\\Program Files (x86)\\Microsoft SQL Server\\150\\DAC\\bin\\SqlPackage.exe',
+      ]
+    : [
+        path.join(homeDir, '.dotnet', 'tools', 'sqlpackage'),
+        '/usr/local/bin/sqlpackage',
+        '/usr/local/bin/SqlPackage',
+        '/root/.dotnet/tools/sqlpackage',
+      ];
 
   for (const p of possiblePaths) {
     if (fs.existsSync(p)) {
@@ -175,6 +187,10 @@ async function deployWithSqlPackage() {
 
   // Step 4: Deploy or generate script
   if (scriptOnly) {
+    // Ensure output dir exists (may not when using pre-built DACPAC)
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
     const scriptPath = path.join(outputDir, 'deploy-script.sql');
     log('Generating deployment script...', 'step');
     execSync(

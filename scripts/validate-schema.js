@@ -23,7 +23,12 @@ const path = require('path');
 const projectDir = path.join(__dirname, '..');
 const viewsDir = path.join(projectDir, 'database', 'dbo', 'Views');
 const migrationsDir = path.join(projectDir, 'database', 'migrations');
-const dabConfigPath = path.join(projectDir, 'dab-config.json');
+
+// Validate all dab-config*.json variants (main, development, production)
+const dabConfigPaths = fs
+  .readdirSync(projectDir)
+  .filter(f => /^dab-config.*\.json$/.test(f))
+  .map(f => path.join(projectDir, f));
 
 let errors = [];
 let warnings = [];
@@ -50,42 +55,50 @@ for (const file of viewFiles) {
 console.log(`Found ${sqlprojViews.size} views in sqlproj (database/dbo/Views/)`);
 
 // ============================================================================
-// Step 2: Check DAB config — every view-backed entity needs a sqlproj file
+// Step 2: Check DAB configs — every view-backed entity needs a sqlproj file
 // ============================================================================
 
-try {
-  const dabConfig = JSON.parse(fs.readFileSync(dabConfigPath, 'utf8'));
+if (dabConfigPaths.length === 0) {
+  warnings.push('No dab-config*.json files found, skipping DAB cross-reference');
+} else {
+  for (const configPath of dabConfigPaths) {
+    const configName = path.basename(configPath);
+    try {
+      const dabConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-  if (dabConfig.entities) {
-    let viewEntityCount = 0;
+      if (!dabConfig.entities) continue;
 
-    for (const [entityName, entity] of Object.entries(dabConfig.entities)) {
-      if (!entity.source || !entity.source.object) continue;
+      let viewEntityCount = 0;
 
-      const sourceObj = entity.source.object;
-      // Check if this entity is backed by a view (dbo.v_*)
-      const viewMatch = sourceObj.match(/^dbo\.(v_\w+)$/i);
-      if (!viewMatch) continue;
+      for (const [entityName, entity] of Object.entries(dabConfig.entities)) {
+        if (!entity.source || !entity.source.object) continue;
 
-      viewEntityCount++;
-      const viewName = viewMatch[1].toLowerCase();
+        // Prefer source.type === "view" (robust); fall back to v_ name pattern
+        const isView =
+          (entity.source.type && entity.source.type.toLowerCase() === 'view') ||
+          /^dbo\.v_\w+$/i.test(entity.source.object);
+        if (!isView) continue;
 
-      if (!sqlprojViews.has(viewName)) {
-        errors.push(
-          `DAB entity "${entityName}" references view "dbo.${viewMatch[1]}" ` +
-          `but no file exists in database/dbo/Views/. ` +
-          `SqlPackage deployments will not create or update this view.`
-        );
+        // Extract object name (strip schema prefix if present)
+        const objectMatch = entity.source.object.match(/^(?:\[?dbo\]?\.)?\[?(\w+)\]?$/i);
+        if (!objectMatch) continue;
+
+        viewEntityCount++;
+        const viewName = objectMatch[1].toLowerCase();
+
+        if (!sqlprojViews.has(viewName)) {
+          errors.push(
+            `${configName}: entity "${entityName}" references view "${entity.source.object}" ` +
+            `but no file exists in database/dbo/Views/. ` +
+            `SqlPackage deployments will not create or update this view.`
+          );
+        }
       }
-    }
 
-    console.log(`Checked ${viewEntityCount} view-backed DAB entities`);
-  }
-} catch (e) {
-  if (e.code === 'ENOENT') {
-    warnings.push('dab-config.json not found, skipping DAB cross-reference');
-  } else {
-    warnings.push(`Error reading dab-config.json: ${e.message}`);
+      console.log(`Checked ${viewEntityCount} view-backed entities in ${configName}`);
+    } catch (e) {
+      warnings.push(`Error reading ${configName}: ${e.message}`);
+    }
   }
 }
 

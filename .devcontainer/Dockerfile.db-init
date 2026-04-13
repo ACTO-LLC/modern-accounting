@@ -6,7 +6,9 @@ WORKDIR /src
 COPY database/ ./database/
 RUN dotnet build database/AccountingDB.sqlproj -c Release -o /dacpac
 
-# Runtime stage — slim image with SqlPackage + Node.js for migrations
+# Runtime stage — SDK image with SqlPackage + Node.js for migrations
+# (SDK is required because SqlPackage is installed as a dotnet tool and
+# the Node.js post-deploy script may invoke dotnet/sqlpackage directly.)
 FROM mcr.microsoft.com/dotnet/sdk:8.0-noble
 
 # Install Node.js 20 (needed for post-deploy migrations)
