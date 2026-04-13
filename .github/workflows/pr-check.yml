@@ -32,9 +32,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate DAB config
-        run: node scripts/validate-dab-config.js
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -43,6 +40,12 @@ jobs:
           cache-dependency-path: |
             client/package-lock.json
             chat-api/package-lock.json
+
+      - name: Validate DAB config
+        run: node scripts/validate-dab-config.js
+
+      - name: Validate schema consistency
+        run: node scripts/validate-schema.js
 
       - name: Install client dependencies
         working-directory: client

@@ -1,15 +1,38 @@
-FROM node:20-slim
+FROM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
+
+WORKDIR /src
+
+# Copy sqlproj and build DACPAC
+COPY database/ ./database/
+RUN dotnet build database/AccountingDB.sqlproj -c Release -o /dacpac
+
+# Runtime stage — SDK image with SqlPackage + Node.js for migrations
+# (SDK is required because SqlPackage is installed as a dotnet tool and
+# the Node.js post-deploy script may invoke dotnet/sqlpackage directly.)
+FROM mcr.microsoft.com/dotnet/sdk:8.0-noble
+
+# Install Node.js 20 (needed for post-deploy migrations)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install SqlPackage
+RUN dotnet tool install -g microsoft.sqlpackage
+ENV PATH="$PATH:/root/.dotnet/tools"
 
 WORKDIR /app
 
-# Copy package files and install mssql
+# Copy DACPAC from build stage
+COPY --from=build /dacpac/ ./dacpac/
+
+# Copy package files and install mssql (for migrations)
 COPY package*.json ./
 RUN npm install mssql
 
-# Copy database project and deploy script
+# Copy database project (for migrations) and deploy script
 COPY database/ ./database/
 COPY scripts/deploy-db.js ./scripts/
 
-# Use Node.js mode explicitly since we're in a minimal container
-# SqlPackage mode requires .NET SDK which isn't installed here
-CMD ["node", "scripts/deploy-db.js", "--node"]
+# Deploy using SqlPackage (builds DACPAC in build stage, publishes here)
+# Falls through to run migrations via Node.js after SqlPackage publish
+CMD ["node", "scripts/deploy-db.js"]

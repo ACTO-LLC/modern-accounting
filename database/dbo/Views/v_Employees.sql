@@ -24,6 +24,19 @@ SELECT
     e.[State],
     e.[ZipCode],
     e.[Status],
+    -- Bank info (masked account number)
+    e.[BankRoutingNumber],
+    CASE WHEN e.[BankAccountNumber] IS NOT NULL
+         THEN '****' + RIGHT(e.[BankAccountNumber], 4)
+         ELSE NULL
+    END AS [BankAccountNumberMasked],
+    e.[BankAccountType],
+    -- Plaid verification fields
+    e.[PlaidItemId],
+    e.[PlaidAccountId],
+    e.[BankVerificationStatus],
+    e.[BankVerifiedAt],
+    e.[BankInstitutionName],
     e.[CreatedAt],
     e.[UpdatedAt]
 FROM [dbo].[Employees] e
