@@ -1,0 +1,78 @@
+name: Check DAB Cache Fix Upstream
+
+on:
+  schedule:
+    # Mondays at 16:00 UTC (~9 AM PT)
+    - cron: '0 16 * * 1'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    name: Poll Azure/data-api-builder#3446
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check upstream issue and recent DAB releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          UPSTREAM_REPO="Azure/data-api-builder"
+          UPSTREAM_ISSUE=3446
+          TRACKING_LABEL="dab-cache-fix-tracking"
+          TRACKING_TITLE="Upstream DAB cache fix available — re-enable view entity caches"
+
+          ISSUE_JSON=$(gh issue view "$UPSTREAM_ISSUE" --repo "$UPSTREAM_REPO" --json state,closedAt,title,url)
+          STATE=$(echo "$ISSUE_JSON" | jq -r '.state')
+          URL=$(echo "$ISSUE_JSON" | jq -r '.url')
+          echo "Upstream issue $UPSTREAM_REPO#$UPSTREAM_ISSUE state: $STATE"
+
+          RELEASES=$(gh release list --repo "$UPSTREAM_REPO" --limit 5 --json tagName,publishedAt,name,isPrerelease)
+          echo "Recent releases:"
+          echo "$RELEASES" | jq -r '.[] | "  \(.tagName) (\(.publishedAt)) prerelease=\(.isPrerelease)"'
+
+          RELEASE_HIT=""
+          for TAG in $(echo "$RELEASES" | jq -r '.[].tagName'); do
+            BODY=$(gh release view "$TAG" --repo "$UPSTREAM_REPO" --json body --jq '.body' || echo "")
+            if echo "$BODY" | grep -iqE "(#3446|ParseResultIntoJsonDocument|JsonElement.*cache|cache.*JsonDocument|GetResultInCacheScenario)"; then
+              RELEASE_HIT="$TAG"
+              echo "Release $TAG mentions the cache fix."
+              break
+            fi
+          done
+
+          if [ "$STATE" != "CLOSED" ] && [ -z "$RELEASE_HIT" ]; then
+            echo "No upstream fix yet. Nothing to do."
+            exit 0
+          fi
+
+          EXISTING=$(gh issue list --state open --label "$TRACKING_LABEL" --json number --jq '.[0].number' || echo "")
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "Tracking issue #$EXISTING already open. Skipping."
+            exit 0
+          fi
+
+          gh label create "$TRACKING_LABEL" --description "Tracking the upstream DAB cache empty-result fix" --color FBCA04 2>/dev/null || true
+
+          BODY=$(cat <<MSG
+          Weekly upstream check flagged a possible fix for the DAB empty-result cache bug (see PR #585).
+
+          - Upstream issue: $URL
+          - Upstream state: $STATE
+          - Release mentioning the fix: ${RELEASE_HIT:-none detected, but upstream issue is closed}
+
+          ## Action
+          1. Read the upstream release notes / commit.
+          2. If a fixed DAB version is published, bump \`docker-compose.yml\` image tag and re-enable \`cache.enabled: true\` + \`ttl-seconds: 5\` on the 9 view entities disabled in PR #585 (invoices, timeentries, estimates, purchaseorders, billpayments, expenses, banktransactionimports, salesreceipts, creditmemos).
+          3. Verify on dev that empty-result reads still return 200 with cache on.
+          4. Close this tracking issue.
+
+          _Auto-filed by \`.github/workflows/check-dab-cache-fix.yml\`._
+          MSG
+          )
+
+          gh issue create --title "$TRACKING_TITLE" --body "$BODY" --label "$TRACKING_LABEL"
