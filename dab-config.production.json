@@ -1648,8 +1648,7 @@
                 "ClassName": "ClassName"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "estimates_write": {
