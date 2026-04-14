@@ -614,8 +614,7 @@
                 "TermDueDays": "TermDueDays"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "invoices_write": {
@@ -1248,8 +1247,7 @@
                 "UpdatedAt": "UpdatedAt"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "timeentries_write": {
@@ -1793,8 +1791,7 @@
                 "ClassName": "ClassName"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "purchaseorders_write": {
@@ -2533,8 +2530,7 @@
                 "UpdatedAt": "UpdatedAt"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "billpayments_write": {
@@ -3391,8 +3387,7 @@
                 "ReceiptCount": "ReceiptCount"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "expenses_write": {
@@ -3765,8 +3760,7 @@
                 "CreatedAt": "CreatedAt"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "banktransactionimports_write": {
@@ -4394,8 +4388,7 @@
                 "UpdatedAt": "UpdatedAt"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "salesreceipts_write": {
@@ -4828,8 +4821,7 @@
                 "ClassName": "ClassName"
             },
             "cache": {
-                "enabled": true,
-                "ttl-seconds": 5
+                "enabled": false
             }
         },
         "creditmemos_write": {
