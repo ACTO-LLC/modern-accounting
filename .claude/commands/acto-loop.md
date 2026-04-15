@@ -1,6 +1,12 @@
 # ACTO Loop - Autonomous Issue Resolution
 
-You are executing an autonomous development loop. Work iteratively until the task is complete or you hit an escape condition.
+You are the **orchestrator** of an autonomous development loop. You do NOT investigate or edit code yourself — you delegate the entire iteration loop to a **subagent running in an isolated git worktree**, then drive Phase 4 (PR review polish) from the orchestrator context.
+
+## Why a subagent + worktree?
+
+- **Isolation:** each issue fix happens in its own git worktree so parallel fixes don't interfere and uncommitted changes in the main checkout are never touched.
+- **Context hygiene:** the orchestrator never sees raw exploration output (file reads, greps, long build logs) — only the subagent's summary. This keeps the loop controller focused and cheap.
+- **Clean reset on failure:** a worktree with no changes is auto-cleaned; a worktree with changes preserves the branch and path so you can resume or hand off.
 
 ## Input Arguments
 $ARGUMENTS will contain:
@@ -12,170 +18,179 @@ $ARGUMENTS will contain:
 
 ## Your Mission
 
-Execute an iterative development loop to resolve the issue or complete the task.
+Resolve the issue by delegating implementation to a subagent, then polish the resulting PR.
 
-### Phase 1: Setup
+---
+
+### Phase 1: Orchestrator setup (you)
+
 1. Parse arguments from: $ARGUMENTS
-2. If `--issue` provided:
-   - Fetch issue details: `gh issue view <number> --json title,body,labels`
-   - Determine if it's a bug (`fix/`) or feature (`feat/`)
-   - **CRITICAL: Check for uncommitted changes with `git status --porcelain`**
-     - If uncommitted changes exist, you MUST either:
-       a) Create a git worktree for the issue work: `git worktree add ../modern-accounting-issue-<number> -b feat/<number>-<short-name>`
-       b) Or ask the user to commit/stash their changes first
-     - This prevents losing work when switching branches
-   - If clean, create the branch normally in the current worktree
-3. Initialize tracking state mentally:
-   - Current iteration: 1
-   - Start time: now
-   - Error history: empty
-   - Approaches tried: empty
+2. If `--issue` provided, fetch a short summary so your delegation prompt is accurate:
+   ```bash
+   gh issue view <number> --json title,body,labels
+   ```
+3. Decide the branch prefix (`fix/` for bugs, `feat/` for features) and short slug.
+4. **Do NOT** run `git status`, create branches, or edit files in the main checkout. The subagent handles all git/filesystem work inside its worktree.
 
-### Phase 2: Iteration Loop
+---
 
-For each iteration:
+### Phase 2: Delegate the iteration loop to a subagent (you → Agent tool)
 
-#### Step 1: Assess
-- What is the current state?
-- What errors exist (build, tests)?
-- Have we seen this error before?
+Launch **one** `Agent` call with `isolation: "worktree"` and `subagent_type: "general-purpose"`. The subagent owns Phase 1 setup (branch creation), Phase 2 iteration, and Phase 3 PR creation. The orchestrator waits for its summary and does nothing else during this phase.
 
-#### Step 2: Check Escape Conditions
-**EXIT if ANY are true:**
-- Total iterations >= max-iterations
-- Same error signature seen >= max-attempts times
-- Time spent on same error >= stuck-timeout
+**Template for the Agent call:**
 
-**On escape:**
-- Output summary of what was tried
-- Output: `<acto-escape reason="...">Approaches tried: ...</acto-escape>`
-- Do NOT continue
+```
+Agent({
+  description: "Resolve issue #<N>",
+  subagent_type: "general-purpose",
+  isolation: "worktree",
+  prompt: `
+You are implementing a fix for GitHub issue #<N> in the ACTO modern-accounting repo.
+You're running in an isolated git worktree — treat it as your own checkout.
 
-#### Step 3: Act
-- If new error or first attempt: investigate and fix
-- If repeat error: try a DIFFERENT approach than before
-- Document what approach you're trying
+## Issue
+Title: <title>
+Body:
+<full issue body>
 
-#### Step 4: Verify
-- Run `npm run build` in client folder
-- Run relevant tests: `VITE_BYPASS_AUTH=true npx playwright test <pattern>`
-  - Note: Auth bypass is required for Playwright tests (see CLAUDE.md)
-- Check results
+## Your job
+1. Create a branch: <prefix>/<N>-<short-slug>
+2. Run an iterative implementation loop (see Escape Conditions below). For each iteration:
+   - Assess current state (build errors, failing tests)
+   - Act: investigate, read relevant code, make the minimal change needed
+   - Verify:
+     * \`cd client && npm run build\` (must pass with zero TS errors)
+     * Relevant Playwright tests: \`VITE_BYPASS_AUTH=true npx playwright test <pattern>\`
+   - If same error repeats, try a different approach
+3. When green, commit with a descriptive message referencing #<N>, push the branch, and create a PR with \`gh pr create\`.
 
-#### Step 5: Evaluate
-- **All pass?** → Go to Phase 3 (Complete)
-- **New error?** → Reset error timer, continue to next iteration
-- **Same error?** → Increment attempt counter, continue to next iteration
+## Escape conditions (exit early, do NOT keep trying)
+- iterations >= <max-iterations, default 20>
+- same error signature seen >= <max-attempts, default 3>
+- time on same error >= <stuck-timeout, default 5> minutes
 
-### Phase 3: Create PR
+If you escape, output a summary of approaches tried and stop.
 
-When all acceptance criteria pass:
-1. Commit changes with descriptive message referencing issue
-2. Push branch
-3. Create PR with summary
-4. Output: `<acto-pr-created>PR #N created: <url></acto-pr-created>`
-5. Continue to Phase 4
+## Rules (from CLAUDE.md)
+- NEVER create a PR without a passing \`npm run build\` in client/.
+- NEVER lower security posture (anonymous access, disabled auth).
+- NEVER merge feature branches directly to main.
+- For NEW tables/views: add \`.sql\` files to the sqlproj. Migrations are for data only.
+- DAB \`permissions: []\` is wrong — always include at least the \`authenticated\` role.
 
-### Phase 4: PR Review & Polish
+## Return
+Report back (under 300 words):
+- PR URL (or "escaped" + reason)
+- Branch name
+- One-line summary of the change
+- Build ✅/❌, tests ✅/❌/skipped
+- Any surprises worth flagging to the orchestrator
+Do NOT paste build logs or file contents — just the summary.
+`
+})
+```
 
-After PR is created:
+**When the subagent returns:**
+- If it created a PR → continue to Phase 4.
+- If it escaped → surface its summary to the user and stop. Do not retry blindly.
+
+---
+
+### Phase 3: (handled by subagent)
+
+The subagent creates the PR. The orchestrator does not duplicate this work.
+
+On success, output:
+```
+<acto-pr-created>PR #N created: <url></acto-pr-created>
+```
+
+---
+
+### Phase 4: PR Review & Polish (you)
+
+This phase runs in the orchestrator because it's mostly waiting (Copilot latency) and lightweight gh calls — not worth another worktree.
 
 #### Step 1: Request Copilot Review
-- Run: `gh pr comment <PR_NUMBER> --body "@copilot review"`
-- Wait 30-60 seconds for Copilot to respond
-- Check for response: `gh pr view <PR_NUMBER> --comments --json comments`
+```bash
+gh pr comment <PR_NUMBER> --body "@copilot review"
+```
+Use a `Monitor` poll to wait for Copilot's response rather than sleeping manually.
 
 #### Step 2: Handle Copilot's Response
-Copilot responds in one of two ways:
 
-**Option A: Copilot creates a follow-up PR**
-- Copilot comments: "I've opened a new pull request, #NNN, to work on those changes"
-- Check the follow-up PR: `gh pr view <COPILOT_PR> --json title,body,additions,deletions,files`
-- **CRITICAL: If `[WIP]` in title, Copilot is still working!**
-  - NEVER close, merge, or take action on WIP PRs
-  - Poll every 30-60 seconds: `gh pr view <COPILOT_PR> --json title`
-  - Wait until `[WIP]` is removed from title before proceeding
-- Once ready (no WIP in title):
-  - Review the changes Copilot proposes
-  - If changes are valid improvements (additions > 0):
-    - Merge Copilot's PR first: `gh pr merge <COPILOT_PR> --squash --delete-branch`
-    - Rebase your PR on main: `git fetch origin && git rebase origin/main`
-    - Push updated branch: `git push --force-with-lease`
-  - If changes are empty (0 additions/0 deletions): Copilot found no issues, close with thanks
-  - If changes are problematic: Close Copilot's PR with explanation
+**Option A: Copilot opens a follow-up PR**
+- If `[WIP]` in the title, **DO NOT** close, merge, or act on it. Keep polling with `Monitor` until `[WIP]` is removed.
+- Once ready:
+  - additions > 0 and changes are valid → merge Copilot's PR, rebase yours on main, force-with-lease push.
+  - additions == 0 → close Copilot's PR with thanks.
+  - changes are wrong → close with explanation.
 
 **Option B: Copilot leaves inline comments**
-- Review each comment and implement valid suggestions
-- Track what was implemented
+- Read the comments. For each valid suggestion, either apply it inline (small tweaks) or delegate back to a fresh subagent in the same worktree (non-trivial changes).
 
 #### Step 3: Independent Review Check
-- Verify code follows patterns in CLAUDE.md
-- Check for common issues (null handling, type safety, etc.)
-- Implement any additional improvements found
+- Re-check the diff for CLAUDE.md pattern compliance, null handling, type safety.
+- Apply any obvious additional improvements.
 
 #### Step 4: Final Verification
-- Re-run build: `npm run build`
-- Re-run tests: `VITE_BYPASS_AUTH=true npx playwright test <pattern>`
-- If failures: loop back to fix (but don't count against escape hatch)
+If Phase 4 introduced code changes, have the subagent (or yourself, for trivial edits) re-run:
+- `npm run build` in `client/`
+- Relevant Playwright tests
 
 #### Step 5: Complete
-- Push final changes to PR
-- Output: `<acto-complete>PR #N ready for merge: <url></acto-complete>`
-
-## Error Signature Detection
-
-Consider errors "the same" if they have:
-- Same error code (TS2322, etc.)
-- Same file and approximate line number
-- Same general message pattern
-
-## Approach Tracking
-
-Keep mental note of approaches tried to avoid repetition:
-- "Tried changing .optional() to .nullish()"
-- "Tried updating import path"
-- "Tried regenerating types"
-
-When stuck on same error, explicitly try something DIFFERENT.
-
-## Output Format
-
-During execution, output progress markers:
 ```
-[Iteration N]
-- Assessing: <brief state>
-- Action: <what you're doing>
-- Result: <build/test outcome>
+<acto-complete>PR #N ready for merge: <url></acto-complete>
+```
+
+---
+
+## Error Signature Detection (subagent)
+
+Consider errors "the same" if they share: same error code (TS2322 etc.), same file + near-same line, same message pattern.
+
+## Approach Tracking (subagent)
+
+Keep notes like "tried .optional() → .nullish()", "updated import path". When stuck on the same error, try something explicitly different.
+
+## Output Format (orchestrator)
+
+Short progress markers between tool calls:
+```
+[Phase 1] Fetching issue #<N>…
+[Phase 2] Delegating to subagent in worktree…
+[Phase 2] Subagent returned: PR #<N> created
+[Phase 4] Requesting Copilot review…
+[Phase 4] Copilot responded: <A/B>, handling…
 ```
 
 ## Completion Criteria
 
-ALL must pass before `<acto-complete>`:
-- [ ] `npm run build` succeeds (no TypeScript errors)
-- [ ] Relevant tests pass
+ALL must be true before `<acto-complete>`:
+- [ ] Subagent reported `npm run build` passed
+- [ ] Relevant tests passed (or explicitly documented as N/A)
 - [ ] PR created and pushed
-- [ ] Copilot review requested and suggestions implemented
-- [ ] Final test pass after review changes
+- [ ] Copilot review requested AND addressed
+- [ ] Any Phase 4 code changes re-verified (build + tests)
 
 ## Important Rules
 
-1. **Don't fake completion** - Only output `<acto-complete>` when genuinely done
-2. **Don't infinite loop** - Respect escape conditions strictly
-3. **Try different approaches** - Don't repeat the same fix twice
-4. **Check CLAUDE.md** - Look for known patterns before giving up
-5. **Document learning** - If you discover something novel, suggest adding to CLAUDE.md
-6. **Always do Phase 4** - PR review is not optional; it catches issues
-7. **NEVER create a PR without passing build** - Run `npm run build` in client/ and verify it succeeds with zero errors before committing. TypeScript errors that reach main break CI for everyone.
-8. **Database changes use sqlproj** - See "Database Schema Changes" section below
-9. **NEVER close or merge WIP PRs** - If a Copilot PR has `[WIP]` in the title, it means Copilot is still working. Wait for the WIP to be removed before taking any action. Closing a WIP PR interrupts Copilot's work.
-10. **Protect uncommitted changes** - Always check `git status --porcelain` before starting. If there are uncommitted changes, use a git worktree to isolate the issue work. Never do `git reset --hard` or `git checkout` that would discard user's work.
+1. **Always delegate implementation to a subagent with `isolation: "worktree"`.** The orchestrator never runs `git checkout`, `npm run build`, or edits code in the main checkout during Phase 2. Even for "simple" fixes — consistency beats exceptions.
+2. **Don't fake completion** — only output `<acto-complete>` when all criteria are met.
+3. **Respect escape conditions** — if the subagent escaped, surface the reason to the user and stop.
+4. **Don't duplicate the subagent's work** — if it reports the build passed, trust it. Re-run builds only after orchestrator-side Phase 4 changes.
+5. **Check CLAUDE.md** — the subagent's prompt already references project rules; add issue-specific guidance when relevant.
+6. **Phase 4 is not optional** — Copilot review catches real issues.
+7. **NEVER close or merge WIP PRs from Copilot** — poll until `[WIP]` is removed.
+8. **Never touch the main checkout's uncommitted state** — the subagent's worktree is the only place edits happen during Phase 2.
 
-## Database Schema Changes
+## Database Schema Changes (passed through to subagent)
 
-**CRITICAL:** Use the hybrid approach documented in CLAUDE.md.
+Use the hybrid approach documented in CLAUDE.md.
 
 ### For NEW Tables/Views (use sqlproj):
-1. Create SQL file: `database/dbo/Tables/NewTable.sql` or `database/dbo/Views/v_NewView.sql`
+1. Create `database/dbo/Tables/NewTable.sql` or `database/dbo/Views/v_NewView.sql`
 2. Add to `database/AccountingDB.sqlproj`:
    ```xml
    <Build Include="dbo\Tables\NewTable.sql" />
@@ -183,72 +198,40 @@ ALL must pass before `<acto-complete>`:
 3. Update `dab-config.json` with new entity endpoints
 
 ### DO NOT create migration files for:
-- CREATE TABLE
-- CREATE VIEW
-- ALTER TABLE ADD COLUMN
-- CREATE INDEX
+- CREATE TABLE / CREATE VIEW / ALTER TABLE ADD COLUMN / CREATE INDEX
 - Stored procedures, triggers, functions
 
 ### Only use migrations (`database/migrations/`) for:
-- Seed data (INSERT statements)
+- Seed data (INSERT)
 - Data transforms (UPDATE existing data)
-- One-time fixes
-- Complex operations DACPAC can't handle
-
-### Example - Adding a new entity:
-
-```
-# Files to create:
-database/dbo/Tables/Vehicles.sql      # CREATE TABLE
-database/dbo/Views/v_Vehicles.sql     # CREATE VIEW (if needed)
-
-# Files to update:
-database/AccountingDB.sqlproj         # Add <Build Include="..."/>
-dab-config.json                       # Add entity endpoints
-
-# DO NOT create:
-database/migrations/034_AddVehicles.sql  # WRONG!
-```
+- One-time fixes DACPAC can't handle
 
 ## References
 
-- `docs/pr-review-template.md` - PR review process template
-- `CLAUDE.md` - Project patterns and known issues
+- `docs/pr-review-template.md` — PR review process template
+- `CLAUDE.md` — project patterns and known issues
 
 ## Example Execution
 
 ```
-[Iteration 1]
-- Assessing: Build failing with TS2322 in EstimateForm.tsx
-- Action: Investigating type mismatch, checking Zod schema
-- Result: Build ❌ - same error
+[Phase 1] gh issue view 155 → "Estimate form breaks on null address"
+[Phase 2] Delegating to subagent in isolated worktree…
 
-[Iteration 2]
-- Assessing: Same TS2322, attempt 2/3
-- Action: Trying different approach - checking if API returns null vs undefined
-- Found: API returns null, schema uses .optional() which only allows undefined
-- Action: Changing to .nullish()
-- Result: Build ✅, Tests ❌ - 1 failing
+  Subagent returns:
+  - PR: https://github.com/ACTO-LLC/modern-accounting/pull/162
+  - Branch: fix/155-estimate-null-address
+  - Change: schema .optional() → .nullish() in EstimateForm.tsx
+  - Build ✅, Tests ✅ (3 playwright specs)
+  - No surprises
 
-[Iteration 3]
-- Assessing: Test failing - modal not appearing
-- Action: Checking onClick handler and modal state
-- Result: Build ✅, Tests ✅
+<acto-pr-created>PR #162 created: https://github.com/ACTO-LLC/modern-accounting/pull/162</acto-pr-created>
 
-<acto-pr-created>PR #155 created: https://github.com/ACTO-LLC/modern-accounting/pull/155</acto-pr-created>
+[Phase 4] gh pr comment 162 --body "@copilot review"
+[Phase 4] Monitor poll → Copilot left 2 inline suggestions
+[Phase 4] Applied suggestion 1 (trivial rename); suggestion 2 was a false positive.
+[Phase 4] No new code ⇒ no rebuild needed.
 
-[Phase 4: PR Review]
-- Requesting Copilot review: `gh pr comment 155 --body "@copilot review"`
-- Waiting for response...
-- Copilot responded: "I've opened a new pull request, #156, to work on those changes"
-- Checking Copilot's PR: `gh pr view 156 --json title,body,additions,deletions`
-- PR #156 has 3 additions, 1 deletion - standardizes error handling
-- Changes look valid, merging Copilot's PR...
-- Rebasing our branch on main...
-- Independent review: Code follows CLAUDE.md patterns ✅
-- Final tests: Build ✅, Tests ✅
-
-<acto-complete>PR #155 ready for merge: https://github.com/ACTO-LLC/modern-accounting/pull/155</acto-complete>
+<acto-complete>PR #162 ready for merge: https://github.com/ACTO-LLC/modern-accounting/pull/162</acto-complete>
 ```
 
 ## Start Now
