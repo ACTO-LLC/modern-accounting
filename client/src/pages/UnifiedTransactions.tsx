@@ -172,14 +172,24 @@ export default function UnifiedTransactions() {
     // Apply search filter client-side
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
+      const searchNumeric = filters.search.replace(/[$,\s]/g, '');
+      const isAmountSearch =
+        searchNumeric !== '' && /^-?\d*\.?\d+$/.test(searchNumeric);
       data = data.filter(txn => {
         // Resolve category to account name for search
         const resolvedCategory = resolveCategory(txn, accountMap);
-        return (
+        if (
           txn.Description?.toLowerCase().includes(searchLower) ||
           txn.Merchant?.toLowerCase().includes(searchLower) ||
           resolvedCategory?.toLowerCase().includes(searchLower)
-        );
+        ) {
+          return true;
+        }
+        if (isAmountSearch && typeof txn.Amount === 'number') {
+          const absAmount = Math.abs(txn.Amount).toFixed(2);
+          return absAmount.includes(searchNumeric);
+        }
+        return false;
       });
     }
 
