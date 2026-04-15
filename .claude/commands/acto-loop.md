@@ -15,6 +15,7 @@ $ARGUMENTS will contain:
 - `--stuck-timeout <minutes>` - Max time on same error (default: 5)
 - `--max-attempts <n>` - Max attempts at same error (default: 3)
 - `--max-iterations <n>` - Hard cap on iterations (default: 20)
+- `--no-worktree` - Skip `isolation: "worktree"` on the subagent. Use ONLY when the caller has already placed this Claude session inside an isolated worktree (e.g. `/acto-batch` launches `/acto-loop` from a pre-created worktree). Still delegates to a subagent for context hygiene.
 
 ## Your Mission
 
@@ -29,22 +30,22 @@ Resolve the issue by delegating implementation to a subagent, then polish the re
    ```bash
    gh issue view <number> --json title,body,labels
    ```
-3. Decide the branch prefix (`fix/` for bugs, `feat/` for features) and short slug.
+3. Decide the branch name. Pick `fix/` for bugs or `feat/` for features, plus a short kebab-case slug derived from the issue title. Example: issue #155 titled "Estimate form breaks on null address" → `fix/155-estimate-null-address`. **You must interpolate the concrete branch name into the subagent prompt below** — do not leave `<prefix>/<N>-<short-slug>` as a placeholder for the subagent to re-derive, or orchestrator and subagent can diverge.
 4. **Do NOT** run `git status`, create branches, or edit files in the main checkout. The subagent handles all git/filesystem work inside its worktree.
 
 ---
 
 ### Phase 2: Delegate the iteration loop to a subagent (you → Agent tool)
 
-Launch **one** `Agent` call with `isolation: "worktree"` and `subagent_type: "general-purpose"`. The subagent owns Phase 1 setup (branch creation), Phase 2 iteration, and Phase 3 PR creation. The orchestrator waits for its summary and does nothing else during this phase.
+Launch **one** `Agent` call with `subagent_type: "general-purpose"`, passing the concrete branch name you chose in Phase 1. Use `isolation: "worktree"` **unless `--no-worktree` was passed** (which means the caller has already put you in an isolated worktree — e.g. `/acto-batch`). The subagent owns Phase 1 setup (branch creation + worktree env bootstrap), Phase 2 iteration, and Phase 3 PR creation. The orchestrator waits for its summary and does nothing else during this phase.
 
-**Template for the Agent call:**
+**Template for the Agent call** (substitute `<N>`, `<branch-name>`, `<title>`, `<body>`, `<max-iterations>`, `<max-attempts>`, `<stuck-timeout>` with the values you computed in Phase 1; remove the `isolation` field if `--no-worktree`):
 
 ```
 Agent({
   description: "Resolve issue #<N>",
   subagent_type: "general-purpose",
-  isolation: "worktree",
+  isolation: "worktree",   // OMIT this line if --no-worktree was passed
   prompt: `
 You are implementing a fix for GitHub issue #<N> in the ACTO modern-accounting repo.
 You're running in an isolated git worktree — treat it as your own checkout.
@@ -52,25 +53,33 @@ You're running in an isolated git worktree — treat it as your own checkout.
 ## Issue
 Title: <title>
 Body:
-<full issue body>
+<body>
 
 ## Your job
-1. Create a branch: <prefix>/<N>-<short-slug>
-2. Run an iterative implementation loop (see Escape Conditions below). For each iteration:
+1. Create and switch to branch: <branch-name>
+2. **Bootstrap the worktree before any build/test** (per CLAUDE.md "Local Development with Git Worktrees"):
+   - Copy env files FROM the main checkout INTO this worktree:
+     * \`client/.env.local\`  (sets VITE_API_URL so the client proxies to chat-api)
+     * \`chat-api/.env\`      (sets PORT=8080 plus Azure OpenAI, QBO, Plaid config)
+     Find the main checkout path with \`git worktree list\` and copy from there.
+   - Run \`npm install\` in THREE places: repo root, \`client/\`, and \`chat-api/\`.
+   - Skip this step cleanly if the env files don't exist in the main checkout
+     (report it in your summary; the user may have a non-standard setup).
+3. Run an iterative implementation loop. For each iteration:
    - Assess current state (build errors, failing tests)
    - Act: investigate, read relevant code, make the minimal change needed
    - Verify:
      * \`cd client && npm run build\` (must pass with zero TS errors)
      * Relevant Playwright tests: \`VITE_BYPASS_AUTH=true npx playwright test <pattern>\`
    - If same error repeats, try a different approach
-3. When green, commit with a descriptive message referencing #<N>, push the branch, and create a PR with \`gh pr create\`.
+4. When green, commit with a descriptive message referencing #<N>, push the branch, and create a PR with \`gh pr create\`.
 
 ## Escape conditions (exit early, do NOT keep trying)
-- iterations >= <max-iterations, default 20>
-- same error signature seen >= <max-attempts, default 3>
-- time on same error >= <stuck-timeout, default 5> minutes
+- iterations >= <max-iterations>
+- same error signature seen >= <max-attempts>
+- time on same error >= <stuck-timeout> minutes
 
-If you escape, output a summary of approaches tried and stop.
+If you escape, output a summary of approaches tried and stop — do NOT create a PR.
 
 ## Rules (from CLAUDE.md)
 - NEVER create a PR without a passing \`npm run build\` in client/.
@@ -81,7 +90,8 @@ If you escape, output a summary of approaches tried and stop.
 
 ## Return
 Report back (under 300 words):
-- PR URL (or "escaped" + reason)
+- Status: \`created-pr\` or \`escaped\`
+- PR URL (if created-pr) or escape reason (if escaped)
 - Branch name
 - One-line summary of the change
 - Build ✅/❌, tests ✅/❌/skipped
@@ -92,19 +102,20 @@ Do NOT paste build logs or file contents — just the summary.
 ```
 
 **When the subagent returns:**
-- If it created a PR → continue to Phase 4.
-- If it escaped → surface its summary to the user and stop. Do not retry blindly.
+- If status is `created-pr` → you (the orchestrator) emit the `<acto-pr-created>` marker using the PR URL from the summary, then continue to Phase 4.
+- If status is `escaped` → surface its summary to the user and stop. Do not retry blindly.
 
 ---
 
-### Phase 3: (handled by subagent)
+### Phase 3: PR creation (subagent does the work, orchestrator emits the marker)
 
-The subagent creates the PR. The orchestrator does not duplicate this work.
+The subagent creates the PR during Phase 2 and returns the URL in its summary. The orchestrator does not duplicate this work.
 
-On success, output:
+When the subagent's summary reports status = `created-pr`, **you (the orchestrator)** emit:
 ```
 <acto-pr-created>PR #N created: <url></acto-pr-created>
 ```
+using the PR URL from the subagent's summary.
 
 ---
 
@@ -116,7 +127,7 @@ This phase runs in the orchestrator because it's mostly waiting (Copilot latency
 ```bash
 gh pr comment <PR_NUMBER> --body "@copilot review"
 ```
-Use a `Monitor` poll to wait for Copilot's response rather than sleeping manually.
+Copilot takes 1–3 minutes to respond. Poll with `gh pr view <PR_NUMBER> --json comments,reviews` until a comment from `copilot-swe-agent` / `copilot-pull-request-reviewer` / `Copilot` appears, or a review lands. If your environment has a background/streaming tool available (e.g. `Monitor`), use it so you can work on other things while waiting; otherwise, use a short poll loop with `run_in_background: true` — don't block the orchestrator with long sleeps.
 
 #### Step 2: Handle Copilot's Response
 
