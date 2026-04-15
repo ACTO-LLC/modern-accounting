@@ -187,7 +187,8 @@ export default function UnifiedTransactions() {
         }
         if (isAmountSearch && typeof txn.Amount === 'number') {
           const absAmount = Math.abs(txn.Amount).toFixed(2);
-          return absAmount.includes(searchNumeric);
+          const searchAbs = searchNumeric.replace(/^-/, '');
+          return absAmount.includes(searchAbs);
         }
         return false;
       });
