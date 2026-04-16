@@ -95,20 +95,22 @@ Launching ACTO Loops...
 
 Terminal 1:
   cd C:/source/modern-accounting-142
-  claude "/acto-loop --issue 142"
+  claude "/acto-loop --issue 142 --no-worktree"
 
 Terminal 2:
   cd C:/source/modern-accounting-117
-  claude "/acto-loop --issue 117"
+  claude "/acto-loop --issue 117 --no-worktree"
 
 Terminal 3:
   cd C:/source/modern-accounting-139
-  claude "/acto-loop --issue 139"
+  claude "/acto-loop --issue 139 --no-worktree"
 
 Monitor progress with: /acto-status
 ```
 
-**Important:** Claude Code runs in a single process, so true parallelism requires multiple terminal sessions. Output the commands for the user to run.
+**Important:**
+- Claude Code runs in a single process, so true parallelism requires multiple terminal sessions. Output the commands for the user to run.
+- **Always pass `--no-worktree` to `/acto-loop`** when launching from an acto-batch-created worktree. Without it, `/acto-loop` spawns its own nested worktree, defeating the per-issue isolation acto-batch already set up.
 
 ### Phase 6: Summary
 
