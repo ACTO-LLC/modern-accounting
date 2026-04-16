@@ -13,6 +13,20 @@ Configuration lives in `.mcp.json` (gitignored — safe to contain credentials).
 
 ---
 
+## First-Time Setup
+
+`.mcp.json` is gitignored. On a fresh checkout, bootstrap it from the committed template:
+
+```bash
+cp .mcp.json.example .mcp.json
+# Update the MSSQL `command` path to your local mssql_mcp_server.exe
+node scripts/switch-mcp.js prod   # or: local
+```
+
+The switch script fills in prod creds from Key Vault on each run, so the template ships with local/sandbox defaults.
+
+---
+
 ## Quick Start: Switching Environments
 
 ```bash
