@@ -22,16 +22,18 @@ test.describe('Transaction Category Display (#432)', () => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
-    // Set status filter to "All" so we see all transactions
+    // Set status filter to "All Actionable" (default 'all' value) to see actionable transactions
     await page.locator('#statusFilter').selectOption('all');
 
-    // Wait for rows to load
+    // Wait for rows to load after filter change
+    await page.waitForTimeout(1000);
     const hasRows = await page.locator('.MuiDataGrid-row').first().isVisible({ timeout: 10000 }).catch(() => false);
     test.skip(!hasRows, 'No transaction data available to verify category display');
 
     // Get all Category column cells. The Category column uses field 'SuggestedCategory'
     // so cells are in the column with data-field="SuggestedCategory"
     const categoryCells = page.locator('[data-field="SuggestedCategory"] .font-medium');
+    await expect(categoryCells.first()).toBeVisible({ timeout: 5000 });
     const cellCount = await categoryCells.count();
     expect(cellCount).toBeGreaterThan(0);
 

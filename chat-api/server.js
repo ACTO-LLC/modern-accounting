@@ -1499,17 +1499,24 @@ Encouragement guidelines:
 - Acknowledge progress: "You're making great progress - already 40% through your learning journey!"
 - Offer help: "Would you like me to explain any concepts as you explore this feature?"
 
-GENERIC DATABASE ACCESS:
-You have direct database access via these MCP tools - use them for any data queries:
-- dab_describe_entities: Discover available tables and their fields
-- dab_query: Query ANY table with filters (invoices, invoicelines, customers, accounts, journalentries, etc.)
-- dab_create: Create records in any table
+DATABASE ACCESS:
+You have direct SQL access to the accounting database. Use these tools for ALL data queries:
 
-IMPORTANT: For specific data lookups (like "show invoice 9126 line items"), use dab_query directly:
-  dab_query({ entity: "invoicelines", filter: "InvoiceId eq 'xxx'" })
-This is MORE EFFICIENT than using legacy tools like query_invoices which don't return line items.
+- sql_query: Execute SELECT queries directly against SQL Server. Supports LIKE, JOIN, GROUP BY, aggregations — use this for ALL data lookups, text searches, and analytics.
+- sql_schema: Discover table/column names when you need exact schema details.
+- dab_create: Create records in any table (for writes only).
 
-Common DAB entities: invoices, invoicelines, customers, vendors, accounts, journalentries, journalentrylines, bills, billlines, banktransactions, payments, paymentapplications
+IMPORTANT QUERY GUIDELINES:
+- Use sql_query for ALL read operations. It supports full SQL including LIKE for text search, JOINs, GROUP BY, ORDER BY, subqueries, CTEs, etc.
+- ALWAYS use LIKE with wildcards for text/name searches, NEVER use exact match (=). Use the SHORTEST distinctive keyword from the search term — bank descriptions abbreviate names (e.g., "Southern California Edison" appears as "SO CAL EDISON"). Search with just the most unique word: WHERE Description LIKE '%edison%' (not '%southern california edison%').
+- When searching for "transactions" from a vendor/payee, ALWAYS search BankTransactions first (columns: Description, Merchant, Payee). This is where bank feed data lives. Also check Bills if relevant.
+  Example: SELECT TransactionDate, Amount, Description, Merchant, Status FROM BankTransactions WHERE Description LIKE '%edison%' OR Merchant LIKE '%edison%' ORDER BY TransactionDate DESC
+- Use views (prefixed with v_) for human-readable JOINed data: v_Invoices, v_Bills, v_Payments, v_BillPayments, v_Estimates, v_Expenses, v_CreditMemos, v_PurchaseOrders, v_SalesReceipts, v_Projects, v_BankTransactionMatches, etc.
+- Column names are PascalCase (e.g., CustomerName, TotalAmount, TransactionDate). IDs are UUIDs (UNIQUEIDENTIFIER).
+- Dates are DATETIME2 format. Use CAST or date functions for comparisons.
+- Keep queries focused — SELECT only the columns you need. Results are capped at 100 rows.
+
+Key tables: Customers, Vendors, Invoices, InvoiceLines, Bills, BillLines, Accounts, JournalEntries, JournalEntryLines, BankTransactions, Payments, PaymentApplications, BillPayments, BillPaymentApplications, ProductsServices, Classes, Locations, Estimates, EstimateLines, Expenses, CreditMemos, CreditMemoLines, PurchaseOrders, PurchaseOrderLines, Employees, Projects
 
 QUICKBOOKS ONLINE ACCESS:
 You also have direct QBO access via these tools:
@@ -1520,7 +1527,7 @@ QBO entities: Customer, Vendor, Invoice, Bill, Payment, BillPayment, JournalEntr
 Note: QBO line items are embedded in parent objects (Invoice.Line), not separate tables.
 
 WHEN TO USE WHICH:
-- For ACTO/Modern Accounting data → use dab_query
+- For ACTO/Modern Accounting data → use sql_query (reads) or dab_create (writes)
 - For QuickBooks Online data → use qbo_query or qbo_get_invoice
 - For migration comparisons → query both systems
 
@@ -1545,38 +1552,55 @@ ALWAYS run the diagnostic tools and report specific findings with actual numbers
 
 const tools = [
     // =========================================================================
-    // Generic MCP Tools - Direct database access via DAB MCP
+    // Direct SQL Tools - Full SQL Server access
     // =========================================================================
     {
         type: 'function',
         function: {
-            name: 'dab_describe_entities',
-            description: 'List all available database entities/tables and their fields. Call this first to discover what data is available. Returns entity names, field names, types, and permissions.',
+            name: 'sql_query',
+            description: 'Execute a read-only SQL SELECT query against the accounting database. Supports full SQL: LIKE, JOIN, GROUP BY, ORDER BY, subqueries, CTEs, aggregations. Key tables: Customers, Vendors, Invoices, InvoiceLines, Bills, BillLines, Accounts, JournalEntries, JournalEntryLines, BankTransactions, Payments, ProductsServices, Employees, Projects, Expenses, Estimates, CreditMemos, PurchaseOrders. Views (JOINed data): v_Invoices, v_Bills, v_Payments, v_BillPayments, v_Estimates, v_Expenses, v_CreditMemos, v_PurchaseOrders, v_SalesReceipts, v_Projects, v_BankTransactionMatches. Columns are PascalCase, IDs are UUIDs. Results capped at 100 rows.',
             parameters: {
                 type: 'object',
                 properties: {
-                    entities: {
-                        type: 'array',
-                        items: { type: 'string' },
-                        description: 'Optional: specific entity names to describe. Omit to get all entities.'
-                    }
-                }
+                    sql: { type: 'string', description: 'SQL SELECT query to execute. Must start with SELECT or WITH (for CTEs). Examples: "SELECT TOP 10 * FROM Customers WHERE Name LIKE \'%acme%\'", "SELECT c.Name, SUM(i.TotalAmount) AS Revenue FROM Customers c JOIN Invoices i ON c.Id = i.CustomerId GROUP BY c.Name ORDER BY Revenue DESC"' }
+                },
+                required: ['sql']
             }
         }
     },
     {
         type: 'function',
         function: {
-            name: 'dab_query',
-            description: 'Query any database table/entity. Use dab_describe_entities first to discover available entities and fields. Supports OData-style filtering.',
+            name: 'sql_schema',
+            description: 'Discover database table and column names. Call without arguments to list all tables/views. Pass table names to get their columns with data types.',
             parameters: {
                 type: 'object',
                 properties: {
-                    entity: { type: 'string', description: 'Entity name to query (e.g., invoices, invoicelines, customers, accounts, journalentries)' },
-                    filter: { type: 'string', description: 'OData filter expression (e.g., "InvoiceId eq \'abc-123\'", "Status eq \'Pending\'", "Amount gt 100")' },
-                    select: { type: 'string', description: 'Comma-separated field names to return (e.g., "Id,Name,Amount")' },
-                    orderby: { type: 'string', description: 'Field to sort by (e.g., "CreatedAt desc")' },
-                    first: { type: 'number', description: 'Max records to return (default 100)' }
+                    tables: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: 'Optional: specific table names to describe (e.g., ["Invoices", "Customers"]). Omit to list all tables and views.'
+                    }
+                }
+            }
+        }
+    },
+    // =========================================================================
+    // DAB Tools - Write operations only
+    // =========================================================================
+    {
+        type: 'function',
+        function: {
+            name: 'dab_query',
+            description: 'Query database via OData (legacy). Prefer sql_query for reads — it supports LIKE, JOIN, GROUP BY. Use this only as fallback.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    entity: { type: 'string', description: 'Entity name to query (e.g., invoices, customers)' },
+                    filter: { type: 'string', description: 'OData filter (exact match only: eq, ne, gt, lt). No text search support.' },
+                    select: { type: 'string', description: 'Comma-separated field names' },
+                    orderby: { type: 'string', description: 'Sort field (e.g., "CreatedAt desc")' },
+                    first: { type: 'number', description: 'Max records (default 100)' }
                 },
                 required: ['entity']
             }
@@ -1586,7 +1610,7 @@ const tools = [
         type: 'function',
         function: {
             name: 'dab_create',
-            description: 'Create a new record in any database table/entity. Use dab_describe_entities first to see required fields.',
+            description: 'Create a new record in any database table/entity. Use sql_schema first to see required fields.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -1636,120 +1660,8 @@ const tools = [
         }
     },
     // =========================================================================
-    // Legacy Custom Tools (kept for backwards compatibility)
+    // Custom Tools
     // =========================================================================
-    {
-        type: 'function',
-        function: {
-            name: 'query_invoices',
-            description: 'Query invoices with optional filters for customer name, status, date range, and amounts.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    customer_name: { type: 'string', description: 'Filter by customer name (partial match)' },
-                    status: { type: 'string', enum: ['Draft', 'Sent', 'Paid', 'Overdue'], description: 'Filter by invoice status' },
-                    date_from: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
-                    date_to: { type: 'string', description: 'End date (YYYY-MM-DD)' },
-                    min_amount: { type: 'number', description: 'Minimum total amount' },
-                    max_amount: { type: 'number', description: 'Maximum total amount' },
-                    limit: { type: 'number', description: 'Max results to return (default 10)' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'query_customers',
-            description: 'Query customers with analytics. Use for questions like "who are my top customers", "customers with unpaid invoices".',
-            parameters: {
-                type: 'object',
-                properties: {
-                    name: { type: 'string', description: 'Filter by customer name (partial match)' },
-                    has_unpaid_invoices: { type: 'boolean', description: 'Only customers with unpaid invoices' },
-                    top_by_revenue: { type: 'number', description: 'Return top N customers by total revenue' },
-                    limit: { type: 'number', description: 'Max results to return (default 10)' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'query_bills',
-            description: 'Query bills/expenses from vendors.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    vendor_name: { type: 'string', description: 'Filter by vendor name' },
-                    status: { type: 'string', enum: ['Draft', 'Open', 'Partial', 'Paid', 'Overdue'], description: 'Filter by bill status' },
-                    date_from: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
-                    date_to: { type: 'string', description: 'End date (YYYY-MM-DD)' },
-                    limit: { type: 'number', description: 'Max results to return (default 10)' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'get_financial_summary',
-            description: 'Get a financial summary including total revenue, expenses, and outstanding amounts for a period.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    period: {
-                        type: 'string',
-                        enum: ['this_month', 'last_month', 'this_quarter', 'this_year', 'last_year'],
-                        description: 'Time period for summary'
-                    }
-                },
-                required: ['period']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'get_overdue_items',
-            description: 'Get overdue invoices and bills, plus items due soon.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    days_overdue: { type: 'number', description: 'Minimum days overdue (default 0)' },
-                    include_upcoming: { type: 'boolean', description: 'Include items due in next 7 days' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'get_account_chart',
-            description: 'Get chart of accounts or find specific accounts by type or name.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    type: { type: 'string', enum: ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'], description: 'Filter by account type' },
-                    search: { type: 'string', description: 'Search by account name' }
-                }
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'search_all',
-            description: 'Search across customers, invoices, and journal entries by keyword.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    query: { type: 'string', description: 'Search term' }
-                },
-                required: ['query']
-            }
-        }
-    },
     {
         type: 'function',
         function: {
@@ -2487,24 +2399,6 @@ function getDateRange(period) {
 // Generic MCP Tool Execution Functions
 // ============================================================================
 
-async function executeDabDescribeEntities(params, authToken = null) {
-    try {
-        const result = await dab.describeEntities(params.entities ? { entities: params.entities } : {}, authToken);
-        if (result.error) {
-            return { success: false, error: result.error };
-        }
-        // Simplify the response for the AI - just entity names and key fields
-        const entities = result.result?.entities || result.entities || [];
-        const simplified = entities.map(e => ({
-            name: e.name,
-            fields: (e.fields || []).map(f => ({ name: f.name, type: f.type })).slice(0, 20),
-            permissions: e.permissions
-        }));
-        return { success: true, entities: simplified };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
 
 async function executeDabQuery(params, authToken = null) {
     try {
@@ -2545,6 +2439,99 @@ async function executeDabCreate(params, authToken = null) {
         };
     } catch (error) {
         return { success: false, error: error.message, entity: params.entity };
+    }
+}
+
+// ============================================================================
+// Direct SQL Tool Execution Functions
+// ============================================================================
+
+async function executeSqlQuery(params) {
+    try {
+        const sql = (params.sql || '').trim();
+        if (!sql) {
+            return { success: false, error: 'sql parameter is required' };
+        }
+
+        // Must start with SELECT or WITH (CTEs)
+        const firstKeyword = sql.split(/\s/)[0].toUpperCase();
+        if (firstKeyword !== 'SELECT' && firstKeyword !== 'WITH') {
+            return { success: false, error: 'Only SELECT queries are allowed. Query must start with SELECT or WITH.' };
+        }
+
+        // Strip string literals to avoid false positives (e.g., WHERE Description LIKE '%update%')
+        const strippedSql = sql.replace(/'[^']*'/g, '').replace(/"[^"]*"/g, '');
+        const blocklist = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'EXEC', 'EXECUTE', 'TRUNCATE', 'CREATE', 'GRANT', 'REVOKE', 'MERGE', 'BULK'];
+        const upperStripped = strippedSql.toUpperCase();
+        for (const keyword of blocklist) {
+            // Match as whole word to avoid false positives
+            const regex = new RegExp(`\\b${keyword}\\b`);
+            if (regex.test(upperStripped)) {
+                return { success: false, error: `Write operations are not allowed. Detected: ${keyword}` };
+            }
+        }
+
+        const result = await dbQuery(sql);
+        const rows = result.recordset || [];
+        const truncated = rows.length > 100;
+        const limitedRows = rows.slice(0, 100);
+        const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+
+        return {
+            success: true,
+            columns,
+            rows: limitedRows,
+            rowCount: limitedRows.length,
+            truncated,
+            ...(truncated ? { note: 'Results truncated to 100 rows. Add TOP or WHERE clauses to narrow results.' } : {})
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function executeSqlSchema(params) {
+    try {
+        if (!params.tables || params.tables.length === 0) {
+            // List all tables and views
+            const result = await dbQuery(`
+                SELECT TABLE_NAME, TABLE_TYPE
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = 'dbo'
+                ORDER BY TABLE_TYPE, TABLE_NAME
+            `);
+            const tables = result.recordset || [];
+            return {
+                success: true,
+                tables: tables.map(t => ({ name: t.TABLE_NAME, type: t.TABLE_TYPE === 'BASE TABLE' ? 'TABLE' : 'VIEW' }))
+            };
+        }
+
+        // Get columns for specified tables
+        const tableList = params.tables.map(t => `'${t.replace(/'/g, "''")}'`).join(',');
+        const result = await dbQuery(`
+            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME IN (${tableList})
+            ORDER BY TABLE_NAME, ORDINAL_POSITION
+        `);
+        const columns = result.recordset || [];
+
+        // Group by table
+        const schema = {};
+        for (const col of columns) {
+            if (!schema[col.TABLE_NAME]) schema[col.TABLE_NAME] = [];
+            schema[col.TABLE_NAME].push({
+                column: col.COLUMN_NAME,
+                type: col.DATA_TYPE,
+                nullable: col.IS_NULLABLE === 'YES',
+                ...(col.CHARACTER_MAXIMUM_LENGTH ? { maxLength: col.CHARACTER_MAXIMUM_LENGTH } : {})
+            });
+        }
+
+        return { success: true, schema };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
 }
 
@@ -2663,448 +2650,6 @@ async function executeQboGetInvoice(params) {
 // Legacy Tool Execution Functions (using MCP)
 // ============================================================================
 
-async function executeQueryInvoices(params) {
-    try {
-        const filters = [];
-        const today = getTodayDate();
-
-        if (params.status) {
-            if (params.status === 'Overdue') {
-                filters.push(`Status ne 'Paid' and DueDate lt ${today}`);
-            } else {
-                filters.push(`Status eq '${params.status}'`);
-            }
-        }
-        if (params.date_from) filters.push(`IssueDate ge ${params.date_from}T00:00:00Z`);
-        if (params.date_to) filters.push(`IssueDate le ${params.date_to}T23:59:59Z`);
-        if (params.min_amount) filters.push(`TotalAmount ge ${params.min_amount}`);
-        if (params.max_amount) filters.push(`TotalAmount le ${params.max_amount}`);
-        if (params.customer_name) {
-            filters.push(`contains(CustomerName, '${params.customer_name}')`);
-        }
-
-        const mcpOptions = {
-            first: params.limit || 10,
-            orderby: ['IssueDate desc']
-        };
-        if (filters.length > 0) {
-            mcpOptions.filter = filters.join(' and ');
-        }
-
-        const result = await dab.readRecords('invoices', mcpOptions);
-        if (result.error) {
-            return { success: false, error: result.error };
-        }
-
-        const invoices = result.result?.value || [];
-        const todayDate = new Date();
-
-        return {
-            success: true,
-            count: invoices.length,
-            invoices: invoices.map(inv => {
-                const dueDate = new Date(inv.DueDate);
-                const isOverdue = dueDate < todayDate && inv.Status !== 'Paid';
-                return {
-                    number: inv.InvoiceNumber,
-                    customer: inv.CustomerName || 'Unknown Customer',
-                    issueDate: inv.IssueDate,
-                    dueDate: inv.DueDate,
-                    amount: formatCurrency(inv.TotalAmount),
-                    status: isOverdue ? 'Overdue' : inv.Status,
-                    daysOverdue: isOverdue ? Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24)) : 0,
-                    link: `${APP_URL}/invoices/${inv.Id}/edit`
-                };
-            })
-        };
-    } catch (error) {
-        console.error('Query invoices error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeQueryCustomers(params) {
-    try {
-        const mcpOptions = { first: 100 };
-        if (params.name) {
-            mcpOptions.filter = `contains(Name, '${params.name}')`;
-        }
-
-        const custResult = await dab.readRecords('customers', mcpOptions);
-        if (custResult.error) {
-            return { success: false, error: custResult.error };
-        }
-
-        let customers = custResult.result?.value || [];
-
-        // Get all invoices to calculate revenue
-        const invResult = await dab.readRecords('invoices', { first: 1000 });
-        const invoices = invResult.result?.value || [];
-
-        // Calculate totals per customer
-        const customerStats = {};
-        invoices.forEach(inv => {
-            if (!customerStats[inv.CustomerId]) {
-                customerStats[inv.CustomerId] = { totalRevenue: 0, unpaidAmount: 0, invoiceCount: 0 };
-            }
-            customerStats[inv.CustomerId].totalRevenue += Number(inv.TotalAmount) || 0;
-            customerStats[inv.CustomerId].invoiceCount++;
-            if (inv.Status !== 'Paid') {
-                customerStats[inv.CustomerId].unpaidAmount += Number(inv.TotalAmount) || 0;
-            }
-        });
-
-        // Enrich customers with stats
-        customers = customers.map(c => ({
-            ...c,
-            totalRevenue: customerStats[c.Id]?.totalRevenue || 0,
-            unpaidAmount: customerStats[c.Id]?.unpaidAmount || 0,
-            invoiceCount: customerStats[c.Id]?.invoiceCount || 0
-        }));
-
-        // Filter by unpaid invoices if requested
-        if (params.has_unpaid_invoices) {
-            customers = customers.filter(c => c.unpaidAmount > 0);
-        }
-
-        // Sort by revenue and limit to top N if requested
-        if (params.top_by_revenue) {
-            customers.sort((a, b) => b.totalRevenue - a.totalRevenue);
-            customers = customers.slice(0, params.top_by_revenue);
-        }
-
-        customers = customers.slice(0, params.limit || 10);
-
-        return {
-            success: true,
-            count: customers.length,
-            customers: customers.map(c => ({
-                name: c.Name,
-                email: c.Email,
-                phone: c.Phone,
-                totalRevenue: formatCurrency(c.totalRevenue),
-                unpaidAmount: formatCurrency(c.unpaidAmount),
-                invoiceCount: c.invoiceCount,
-                link: `${APP_URL}/customers`
-            }))
-        };
-    } catch (error) {
-        console.error('Query customers error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeQueryBills(params) {
-    try {
-        const filters = [];
-        const today = getTodayDate();
-
-        if (params.status) {
-            if (params.status === 'Overdue') {
-                filters.push(`Status ne 'Paid' and DueDate lt ${today}`);
-            } else {
-                filters.push(`Status eq '${params.status}'`);
-            }
-        }
-        if (params.date_from) filters.push(`BillDate ge ${params.date_from}T00:00:00Z`);
-        if (params.date_to) filters.push(`BillDate le ${params.date_to}T23:59:59Z`);
-        if (params.vendor_name) {
-            filters.push(`contains(VendorName, '${params.vendor_name}')`);
-        }
-
-        const mcpOptions = { first: params.limit || 10 };
-        if (filters.length > 0) {
-            mcpOptions.filter = filters.join(' and ');
-        }
-
-        const result = await dab.readRecords('bills', mcpOptions);
-        if (result.error) {
-            return { success: false, error: result.error };
-        }
-
-        const bills = result.result?.value || [];
-        const todayDate = new Date();
-
-        return {
-            success: true,
-            count: bills.length,
-            bills: bills.map(b => {
-                const dueDate = new Date(b.DueDate);
-                const isOverdue = dueDate < todayDate && b.Status !== 'Paid';
-                return {
-                    number: b.BillNumber,
-                    vendor: b.VendorName || 'Unknown Vendor',
-                    billDate: b.BillDate,
-                    dueDate: b.DueDate,
-                    amount: formatCurrency(b.TotalAmount),
-                    amountPaid: formatCurrency(b.AmountPaid),
-                    balance: formatCurrency((b.TotalAmount || 0) - (b.AmountPaid || 0)),
-                    status: isOverdue ? 'Overdue' : b.Status,
-                    link: `${APP_URL}/bills/${b.Id}/edit`
-                };
-            })
-        };
-    } catch (error) {
-        console.error('Query bills error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeGetFinancialSummary(params) {
-    try {
-        const { start, end } = getDateRange(params.period);
-
-        // Get invoices for the period
-        const invResult = await dab.readRecords('invoices', {
-            filter: `IssueDate ge ${start} and IssueDate le ${end}`,
-            first: 1000
-        });
-        const invoices = invResult.result?.value || [];
-
-        // Get bills for the period
-        const billResult = await dab.readRecords('bills', {
-            filter: `BillDate ge ${start} and BillDate le ${end}`,
-            first: 1000
-        });
-        const bills = billResult.result?.value || [];
-
-        // Calculate totals
-        const totalRevenue = invoices.reduce((sum, inv) => sum + (Number(inv.TotalAmount) || 0), 0);
-        const totalExpenses = bills.reduce((sum, b) => sum + (Number(b.TotalAmount) || 0), 0);
-        const paidRevenue = invoices.filter(inv => inv.Status === 'Paid')
-            .reduce((sum, inv) => sum + (Number(inv.TotalAmount) || 0), 0);
-        const unpaidRevenue = totalRevenue - paidRevenue;
-        const paidExpenses = bills.filter(b => b.Status === 'Paid')
-            .reduce((sum, b) => sum + (Number(b.TotalAmount) || 0), 0);
-        const unpaidExpenses = totalExpenses - paidExpenses;
-
-        return {
-            success: true,
-            period: params.period,
-            dateRange: { start, end },
-            revenue: {
-                total: formatCurrency(totalRevenue),
-                paid: formatCurrency(paidRevenue),
-                outstanding: formatCurrency(unpaidRevenue),
-                invoiceCount: invoices.length
-            },
-            expenses: {
-                total: formatCurrency(totalExpenses),
-                paid: formatCurrency(paidExpenses),
-                outstanding: formatCurrency(unpaidExpenses),
-                billCount: bills.length
-            },
-            netIncome: formatCurrency(totalRevenue - totalExpenses),
-            cashFlow: formatCurrency(paidRevenue - paidExpenses)
-        };
-    } catch (error) {
-        console.error('Financial summary error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeGetOverdueItems(params) {
-    try {
-        const today = getTodayDate();
-        const results = { overdueInvoices: [], overdueBills: [], upcomingInvoices: [], upcomingBills: [] };
-
-        // Get overdue invoices
-        const overdueInvResult = await dab.readRecords('invoices', {
-            filter: `Status ne 'Paid' and DueDate lt ${today}`,
-            orderby: ['DueDate asc'],
-            first: 100
-        });
-        const overdueInvoices = overdueInvResult.result?.value || [];
-
-        // Get overdue bills
-        const overdueBillsResult = await dab.readRecords('bills', {
-            filter: `Status ne 'Paid' and DueDate lt ${today}`,
-            orderby: ['DueDate asc'],
-            first: 100
-        });
-        const overdueBills = overdueBillsResult.result?.value || [];
-
-        const minDaysOverdue = params.days_overdue || 0;
-        const todayDate = new Date();
-
-        results.overdueInvoices = overdueInvoices
-            .map(inv => {
-                const dueDate = new Date(inv.DueDate);
-                const daysOverdue = Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24));
-                return {
-                    number: inv.InvoiceNumber,
-                    customer: inv.CustomerName || 'Unknown',
-                    amount: formatCurrency(inv.TotalAmount),
-                    dueDate: inv.DueDate,
-                    daysOverdue,
-                    link: `${APP_URL}/invoices/${inv.Id}/edit`
-                };
-            })
-            .filter(inv => inv.daysOverdue >= minDaysOverdue);
-
-        results.overdueBills = overdueBills
-            .map(bill => {
-                const dueDate = new Date(bill.DueDate);
-                const daysOverdue = Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24));
-                return {
-                    number: bill.BillNumber,
-                    vendor: bill.VendorName || 'Unknown',
-                    amount: formatCurrency(bill.TotalAmount),
-                    dueDate: bill.DueDate,
-                    daysOverdue,
-                    link: `${APP_URL}/bills/${bill.Id}/edit`
-                };
-            })
-            .filter(bill => bill.daysOverdue >= minDaysOverdue);
-
-        // Get upcoming items (due in next 7 days)
-        if (params.include_upcoming) {
-            const nextWeek = getDateInDays(7);
-
-            const upcomingInvResult = await dab.readRecords('invoices', {
-                filter: `Status eq 'Sent' and DueDate ge ${today} and DueDate le ${nextWeek}`,
-                orderby: ['DueDate asc'],
-                first: 100
-            });
-            results.upcomingInvoices = (upcomingInvResult.result?.value || []).map(inv => ({
-                number: inv.InvoiceNumber,
-                customer: inv.CustomerName || 'Unknown',
-                amount: formatCurrency(inv.TotalAmount),
-                dueDate: inv.DueDate,
-                link: `${APP_URL}/invoices/${inv.Id}/edit`
-            }));
-
-            const upcomingBillsResult = await dab.readRecords('bills', {
-                filter: `Status ne 'Paid' and DueDate ge ${today} and DueDate le ${nextWeek}`,
-                orderby: ['DueDate asc'],
-                first: 100
-            });
-            results.upcomingBills = (upcomingBillsResult.result?.value || []).map(bill => ({
-                number: bill.BillNumber,
-                vendor: bill.VendorName || 'Unknown',
-                amount: formatCurrency(bill.TotalAmount),
-                dueDate: bill.DueDate,
-                link: `${APP_URL}/bills/${bill.Id}/edit`
-            }));
-        }
-
-        return {
-            success: true,
-            summary: {
-                overdueInvoiceCount: results.overdueInvoices.length,
-                overdueInvoiceTotal: formatCurrency(overdueInvoices.reduce((sum, inv) => sum + (Number(inv.TotalAmount) || 0), 0)),
-                overdueBillCount: results.overdueBills.length,
-                overdueBillTotal: formatCurrency(overdueBills.reduce((sum, b) => sum + (Number(b.TotalAmount) || 0), 0)),
-                upcomingInvoiceCount: results.upcomingInvoices.length,
-                upcomingBillCount: results.upcomingBills.length
-            },
-            ...results
-        };
-    } catch (error) {
-        console.error('Overdue items error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeGetAccountChart(params) {
-    try {
-        const filters = [];
-
-        if (params.type) {
-            filters.push(`Type eq '${params.type}'`);
-        }
-        if (params.search) {
-            filters.push(`contains(Name, '${params.search}')`);
-        }
-
-        const mcpOptions = {
-            orderby: ['Code asc'],
-            first: 100
-        };
-        if (filters.length > 0) {
-            mcpOptions.filter = filters.join(' and ');
-        }
-
-        const result = await dab.readRecords('accounts', mcpOptions);
-        if (result.error) {
-            return { success: false, error: result.error };
-        }
-
-        const accounts = result.result?.value || [];
-
-        return {
-            success: true,
-            count: accounts.length,
-            accounts: accounts.map(acc => ({
-                code: acc.Code,
-                name: acc.Name,
-                type: acc.Type,
-                subtype: acc.Subtype,
-                description: acc.Description,
-                isActive: acc.IsActive
-            }))
-        };
-    } catch (error) {
-        console.error('Account chart error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-async function executeSearchAll(params) {
-    try {
-        const query = params.query;
-        const results = { customers: [], invoices: [], journalEntries: [] };
-
-        // Search customers
-        const custResult = await dab.readRecords('customers', {
-            filter: `contains(Name, '${query}')`,
-            first: 10
-        });
-        results.customers = (custResult.result?.value || []).map(c => ({
-            id: c.Id,
-            name: c.Name,
-            email: c.Email,
-            link: `${APP_URL}/customers`
-        }));
-
-        // Search invoices
-        const invResult = await dab.readRecords('invoices', {
-            filter: `contains(InvoiceNumber, '${query}')`,
-            first: 10
-        });
-        results.invoices = (invResult.result?.value || []).map(inv => ({
-            id: inv.Id,
-            number: inv.InvoiceNumber,
-            amount: formatCurrency(inv.TotalAmount),
-            status: inv.Status,
-            link: `${APP_URL}/invoices/${inv.Id}/edit`
-        }));
-
-        // Search journal entries
-        const jeResult = await dab.readRecords('journalentries', {
-            filter: `contains(Reference, '${query}')`,
-            first: 10
-        });
-        results.journalEntries = (jeResult.result?.value || []).map(je => ({
-            id: je.Id,
-            reference: je.Reference,
-            description: je.Description,
-            date: je.TransactionDate,
-            link: `${APP_URL}/journal-entries`
-        }));
-
-        const totalResults = results.customers.length + results.invoices.length + results.journalEntries.length;
-
-        return {
-            success: true,
-            query,
-            totalResults,
-            results
-        };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
 
 async function executeCopyInvoice(params) {
     try {
@@ -6197,6 +5742,7 @@ function getAllTools() {
 
         // Combine dynamic tools with essential static tools (migration, etc.)
         const essentialStaticTools = tools.filter(t =>
+            t.function.name.startsWith('sql_') ||
             t.function.name.startsWith('migrate_') ||
             t.function.name.startsWith('create_') ||
             t.function.name.startsWith('get_onboarding') ||
@@ -6262,9 +5808,12 @@ async function executeFunction(name, args, authToken = null) {
 
     // Fall through to static tool handlers
     switch (name) {
-        // Legacy static tools - these don't go through MCP
-        case 'dab_describe_entities':
-            return executeDabDescribeEntities(args, authToken);
+        // Direct SQL tools
+        case 'sql_query':
+            return executeSqlQuery(args);
+        case 'sql_schema':
+            return executeSqlSchema(args);
+        // DAB tools
         case 'dab_query':
             return executeDabQuery(args, authToken);
         case 'dab_create':
@@ -6273,20 +5822,6 @@ async function executeFunction(name, args, authToken = null) {
             return executeQboQuery(args);
         case 'qbo_get_invoice':
             return executeQboGetInvoice(args);
-        case 'query_invoices':
-            return executeQueryInvoices(args);
-        case 'query_customers':
-            return executeQueryCustomers(args);
-        case 'query_bills':
-            return executeQueryBills(args);
-        case 'get_financial_summary':
-            return executeGetFinancialSummary(args);
-        case 'get_overdue_items':
-            return executeGetOverdueItems(args);
-        case 'get_account_chart':
-            return executeGetAccountChart(args);
-        case 'search_all':
-            return executeSearchAll(args);
         case 'copy_invoice':
             return executeCopyInvoice(args);
         case 'create_customer':

@@ -98,13 +98,19 @@ test.describe('Recategorize Posted Transaction (#564)', () => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
-    // Switch to Posted filter
+    // Switch to Posted filter and wait for data to load
     const statusSelect = page.locator('#statusFilter');
-    await statusSelect.selectOption('Posted');
+    await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/banktransactions') && resp.status() === 200, { timeout: 10000 }),
+      statusSelect.selectOption('Posted'),
+    ]);
+
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
     await page.waitForTimeout(500);
 
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
-    await expect(row).toBeVisible({ timeout: 10000 });
+    await expect(row).toBeVisible({ timeout: 15000 });
 
     // Posted transaction should have a Recategorize edit button
     await row.locator('button[title="Recategorize"]').click();
@@ -124,13 +130,19 @@ test.describe('Recategorize Posted Transaction (#564)', () => {
     await page.goto('/transactions');
     await page.waitForSelector('.MuiDataGrid-root', { timeout: 10000 });
 
-    // Switch to Posted filter
+    // Switch to Posted filter and wait for data to load
     const statusSelect = page.locator('#statusFilter');
-    await statusSelect.selectOption('Posted');
+    await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/banktransactions') && resp.status() === 200, { timeout: 10000 }),
+      statusSelect.selectOption('Posted'),
+    ]);
+
+    // Search for our test transaction to avoid virtualization issues with large datasets
+    await page.locator('#searchFilter').fill(TEST_DESCRIPTION);
     await page.waitForTimeout(500);
 
     const row = page.locator('.MuiDataGrid-row', { hasText: TEST_DESCRIPTION });
-    await expect(row).toBeVisible({ timeout: 10000 });
+    await expect(row).toBeVisible({ timeout: 15000 });
     await row.locator('button[title="Recategorize"]').click();
     await expect(page.getByText('Recategorize Transaction')).toBeVisible({ timeout: 5000 });
 

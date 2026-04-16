@@ -275,7 +275,7 @@ export default function TransactionRules() {
       // Check for duplicate names
       const duplicate = bankRules?.find(
         (rule) =>
-          rule.Name.toLowerCase() === trimmedName.toLowerCase() &&
+          rule.Name?.toLowerCase() === trimmedName.toLowerCase() &&
           (!editingRule || rule.Id !== editingRule.Id)
       );
       if (duplicate) {
