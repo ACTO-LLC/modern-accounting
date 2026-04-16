@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "workiq": {
+      "type": "stdio",
+      "command": "npx.cmd",
+      "args": [
+        "-y",
+        "@microsoft/workiq@latest",
+        "mcp"
+      ]
+    },
+    "mssql": {
+      "command": "<path-to>/mssql_mcp_server.exe",
+      "env": {
+        "MSSQL_HOST": "localhost,14330",
+        "MSSQL_DATABASE": "AccountingDB",
+        "MSSQL_USER": "sa",
+        "MSSQL_PASSWORD": "StrongPassword123"
+      }
+    },
+    "qbo": {
+      "type": "http",
+      "url": "http://localhost:8001/mcp"
+    }
+  }
+}
