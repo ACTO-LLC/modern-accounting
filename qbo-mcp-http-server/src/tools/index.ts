@@ -172,12 +172,13 @@ export const tools = [
             })).optional().describe('Filter criteria as field/value/operator objects'),
             limit: z.number().optional().describe('Max records per request (default 1000)'),
             offset: z.number().optional().describe('Pagination offset'),
-            fetchAll: z.boolean().optional().describe('Set to true to fetch ALL records with automatic pagination')
+            fetchAll: z.boolean().optional().describe('Set to true to fetch ALL records with automatic pagination'),
+            detail: z.boolean().optional().describe('Set to true to return full records (all fields, including nested arrays like Line) in the text content instead of a truncated preview')
         }),
         handler: async (sessionId: string, args: any) => {
             try {
                 const qb = await getClient(sessionId, args);
-                const { entity, criteria = [], fetchAll, limit } = args.params || {};
+                const { entity, criteria = [], fetchAll, limit, detail } = args.params || {};
 
                 if (!entity) {
                     return {
@@ -204,10 +205,16 @@ export const tools = [
                     // Derive columns from first record
                     const columns = records.length > 0 ? Object.keys(records[0]) : [];
 
+                    const content: any[] = [
+                        { type: 'text' as const, text: `Found ${totalCount} ${meta.description.toLowerCase()} records (fetched all with pagination). Columns: ${columns.slice(0, 15).join(', ')}${columns.length > 15 ? '...' : ''}` }
+                    ];
+                    if (detail) {
+                        for (const rec of records) {
+                            content.push({ type: 'text' as const, text: JSON.stringify(rec) });
+                        }
+                    }
                     return {
-                        content: [
-                            { type: 'text' as const, text: `Found ${totalCount} ${meta.description.toLowerCase()} records (fetched all with pagination). Columns: ${columns.slice(0, 15).join(', ')}${columns.length > 15 ? '...' : ''}` }
-                        ],
+                        content,
                         data: records,
                         totalCount
                     };
@@ -251,13 +258,13 @@ export const tools = [
                 // Derive columns from first record
                 const columns = records.length > 0 ? Object.keys(records[0]) : [];
 
-                // Show first few records as preview (all fields, not cherry-picked)
-                const preview = records.slice(0, 5).map((r: any) => {
-                    // Show a compact summary of each record
+                // Build per-record output: full JSON when detail=true, else compact preview
+                const previewRecords = detail ? records : records.slice(0, 5);
+                const previewText = previewRecords.map((r: any) => {
+                    if (detail) return JSON.stringify(r);
                     const summary: Record<string, any> = {};
                     for (const key of columns.slice(0, 10)) {
                         const val = r[key];
-                        // Flatten refs for readability
                         if (val && typeof val === 'object' && 'name' in val) {
                             summary[key] = val.name;
                         } else if (Array.isArray(val)) {
@@ -266,16 +273,13 @@ export const tools = [
                             summary[key] = val;
                         }
                     }
-                    return summary;
+                    return JSON.stringify(summary);
                 });
 
                 const response: any = {
                     content: [
                         { type: 'text' as const, text: `Found ${records.length} ${meta.description.toLowerCase()} records${totalCount > records.length ? ` (${totalCount} total, use fetchAll=true for all)` : ''}. Columns: ${columns.slice(0, 15).join(', ')}${columns.length > 15 ? '...' : ''}` },
-                        ...preview.map((p: any) => ({
-                            type: 'text' as const,
-                            text: JSON.stringify(p)
-                        }))
+                        ...previewText.map((t: string) => ({ type: 'text' as const, text: t }))
                     ],
                     data: records,
                     totalCount,
