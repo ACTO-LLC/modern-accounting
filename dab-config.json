@@ -1155,6 +1155,8 @@
                 "EndDate": "EndDate",
                 "BudgetedHours": "BudgetedHours",
                 "BudgetedAmount": "BudgetedAmount",
+                "EstimatedCost": "EstimatedCost",
+                "ContractAmount": "ContractAmount",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
             }
@@ -1193,8 +1195,96 @@
                 "EndDate": "EndDate",
                 "BudgetedHours": "BudgetedHours",
                 "BudgetedAmount": "BudgetedAmount",
+                "EstimatedCost": "EstimatedCost",
+                "ContractAmount": "ContractAmount",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt"
+            }
+        },
+        "jobcostcodes": {
+            "source": "dbo.JobCostCodes",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProjectId": "ProjectId",
+                "Code": "Code",
+                "Description": "Description",
+                "BudgetedAmount": "BudgetedAmount",
+                "BudgetedHours": "BudgetedHours",
+                "SortOrder": "SortOrder",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "jobcosts": {
+            "source": "dbo.JobCosts",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "ProjectId": "ProjectId",
+                "CostCodeId": "CostCodeId",
+                "SourceType": "SourceType",
+                "SourceId": "SourceId",
+                "PostingDate": "PostingDate",
+                "Amount": "Amount",
+                "Hours": "Hours",
+                "IsCommitted": "IsCommitted",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
             }
         },
         "timeentries": {
