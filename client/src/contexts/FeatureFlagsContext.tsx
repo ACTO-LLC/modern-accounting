@@ -17,13 +17,14 @@ function getErrorMessage(err: unknown): string {
 }
 
 // Feature flag keys that map to navigation items
-export type FeatureKey = 'sales_receipts' | 'mileage' | 'inventory' | 'payroll';
+export type FeatureKey = 'sales_receipts' | 'mileage' | 'inventory' | 'payroll' | 'job_costing';
 
 export interface FeatureFlags {
   SalesReceiptsEnabled: boolean;
   MileageTrackingEnabled: boolean;
   InventoryManagementEnabled: boolean;
   PayrollEnabled: boolean;
+  JobCostingEnabled: boolean;
 }
 
 interface FeatureFlagsRecord extends FeatureFlags {
@@ -34,12 +35,14 @@ interface FeatureFlagsRecord extends FeatureFlags {
   UpdatedBy: string | null;
 }
 
-// Default values - all features enabled for backward compatibility
+// Default values for features without a record yet.
+// Most default to true (backward compatibility), JobCostingEnabled is opt-in (epic #606).
 const defaultFeatureFlags: FeatureFlags = {
   SalesReceiptsEnabled: true,
   MileageTrackingEnabled: true,
   InventoryManagementEnabled: true,
   PayrollEnabled: true,
+  JobCostingEnabled: false,
 };
 
 interface FeatureFlagsContextType {
@@ -59,6 +62,7 @@ const featureKeyMap: Record<FeatureKey, keyof FeatureFlags> = {
   'mileage': 'MileageTrackingEnabled',
   'inventory': 'InventoryManagementEnabled',
   'payroll': 'PayrollEnabled',
+  'job_costing': 'JobCostingEnabled',
 };
 
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
@@ -96,6 +100,8 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           MileageTrackingEnabled: record.MileageTrackingEnabled,
           InventoryManagementEnabled: record.InventoryManagementEnabled,
           PayrollEnabled: record.PayrollEnabled,
+          // Records created before #607 won't have the column populated; default to false (opt-in).
+          JobCostingEnabled: record.JobCostingEnabled ?? false,
         });
       } else {
         // No record exists - use defaults (all enabled)
