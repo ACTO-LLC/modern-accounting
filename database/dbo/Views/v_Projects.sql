@@ -10,6 +10,8 @@ SELECT
     p.[EndDate],
     p.[BudgetedHours],
     p.[BudgetedAmount],
+    p.[EstimatedCost],
+    p.[ContractAmount],
     p.[CreatedAt],
     p.[UpdatedAt]
 FROM
