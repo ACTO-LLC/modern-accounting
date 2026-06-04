@@ -2,7 +2,7 @@
 
 ## Overview
 
-The feature flags system allows administrators to show or hide optional features on a per-company basis. It controls navigation visibility, so disabling a flag hides the corresponding menu items (and any associated pages/reports) without deleting underlying data. All flags default to enabled for backward compatibility.
+The feature flags system allows administrators to show or hide optional features on a per-company basis. It controls navigation visibility, so disabling a flag hides the corresponding menu items (and any associated pages/reports) without deleting underlying data. Most flags default to enabled for backward compatibility; **opt-in flags** (introduced after launch for entirely new modules) default to disabled.
 
 ---
 
@@ -14,6 +14,7 @@ The feature flags system allows administrators to show or hide optional features
 | `MileageTrackingEnabled` | `mileage` | Mileage nav item (under Purchasing group) | Enabled |
 | `InventoryManagementEnabled` | `inventory` | Inventory nav item (under Products group) | Enabled |
 | `PayrollEnabled` | `payroll` | Entire Payroll nav group (Run Payroll, Time Tracking) | Enabled |
+| `JobCostingEnabled` | `job_costing` | Job Costing module (cost capture + reports), epic #606 | **Disabled** (opt-in) |
 
 **Key distinction:** `FeatureKey` is the string used in the client-side `navConfig.ts` (`visibilityFlag` property). The flag column name is what is stored in the database and returned by the DAB API.
 
@@ -242,10 +243,11 @@ Each toggle shows the feature name, a description, and an icon. Disabled feature
 
 ### 1. Database: Add the column
 
-Edit `database/dbo/Tables/CompanyFeatureFlags.sql` to add a new `BIT` column with `DEFAULT 1`:
+Edit `database/dbo/Tables/CompanyFeatureFlags.sql` to add a new `BIT` column. Use `DEFAULT 1` for features existing tenants should keep, or `DEFAULT 0` for opt-in features (entirely new modules existing tenants haven't asked for):
 
 ```sql
-[NewFeatureEnabled] BIT NOT NULL DEFAULT 1,
+[NewFeatureEnabled] BIT NOT NULL DEFAULT 1,   -- existing-feature toggle
+[NewFeatureEnabled] BIT NOT NULL DEFAULT 0,   -- opt-in new module
 ```
 
 Deploy with `node scripts/deploy-db.js` (SqlPackage will add the column incrementally).
@@ -326,7 +328,7 @@ In `client/src/components/navigation/navConfig.ts`, add `visibilityFlag: 'new_fe
 
 1. **Forgetting DAB restart after config change:** DAB reads `dab-config.json` at startup. After adding a new mapping, restart the container.
 
-2. **Forgetting the default value:** New flag columns must default to `1` (enabled) so existing companies are not affected. The client `defaultFeatureFlags` must also default to `true`.
+2. **Default value mismatch between DB and client:** The SQL `DEFAULT` and the client `defaultFeatureFlags` value must agree. Backward-compatible features default to `1`/`true`; opt-in new modules default to `0`/`false`. Mismatches cause flicker (UI shows one state on first load, another after the API returns).
 
 3. **Feature flags vs. onboarding `featureKey`:** These are separate systems. `visibilityFlag` is the admin toggle (this system). `featureKey` is the onboarding progressive disclosure system. A nav item can have both.
 

@@ -3,11 +3,14 @@ CREATE TABLE [dbo].[CompanyFeatureFlags]
     [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
     [CompanyId] UNIQUEIDENTIFIER NOT NULL,
 
-    -- Optional Features (all default to enabled for backward compatibility)
+    -- Optional Features
+    -- Most flags default to 1 (enabled) for backward compatibility with existing tenants.
+    -- JobCostingEnabled is opt-in (defaults to 0) — see epic #606.
     [SalesReceiptsEnabled] BIT NOT NULL DEFAULT 1,
     [MileageTrackingEnabled] BIT NOT NULL DEFAULT 1,
     [InventoryManagementEnabled] BIT NOT NULL DEFAULT 1,
     [PayrollEnabled] BIT NOT NULL DEFAULT 1,
+    [JobCostingEnabled] BIT NOT NULL DEFAULT 0,
 
     -- Audit fields
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),

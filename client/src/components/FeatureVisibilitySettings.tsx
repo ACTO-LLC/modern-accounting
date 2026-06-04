@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Package, Car, Warehouse, DollarSign, AlertCircle, Check, Loader2 } from 'lucide-react';
+import { Save, Package, Car, Warehouse, DollarSign, Briefcase, AlertCircle, Check, Loader2 } from 'lucide-react';
 import { useFeatureFlags, FeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface FeatureOption {
@@ -33,6 +33,12 @@ const featureOptions: FeatureOption[] = [
     name: 'Payroll',
     description: 'Run payroll for employees including tax withholdings, pay stubs, and W-2 forms.',
     icon: <DollarSign className="h-5 w-5" />,
+  },
+  {
+    key: 'JobCostingEnabled',
+    name: 'Job Costing',
+    description: 'Track labor, materials, and overhead costs against jobs and report on profitability.',
+    icon: <Briefcase className="h-5 w-5" />,
   },
 ];
 

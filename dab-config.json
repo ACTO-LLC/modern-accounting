@@ -2702,6 +2702,7 @@
                 "MileageTrackingEnabled": "MileageTrackingEnabled",
                 "InventoryManagementEnabled": "InventoryManagementEnabled",
                 "PayrollEnabled": "PayrollEnabled",
+                "JobCostingEnabled": "JobCostingEnabled",
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "UpdatedBy": "UpdatedBy"
