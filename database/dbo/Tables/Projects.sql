@@ -9,6 +9,10 @@ CREATE TABLE [dbo].[Projects]
     [EndDate] DATE,
     [BudgetedHours] DECIMAL(10, 2),
     [BudgetedAmount] DECIMAL(19, 4),
+    -- Job Costing (issue #606): cost-side fields separate from revenue-side BudgetedAmount.
+    -- Populated only when JobCostingEnabled feature flag is on for the tenant.
+    [EstimatedCost] DECIMAL(19, 4) NULL,
+    [ContractAmount] DECIMAL(19, 4) NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
