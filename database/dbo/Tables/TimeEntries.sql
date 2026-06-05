@@ -7,6 +7,9 @@ CREATE TABLE [dbo].[TimeEntries]
     [EntryDate] DATE NOT NULL,
     [Hours] DECIMAL(5, 2) NOT NULL,
     [HourlyRate] DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    -- Job Costing (issue #610): employer's cost per hour, distinct from HourlyRate (the billable rate).
+    -- Trigger TR_TimeEntries_PostJobCosts posts Hours * CostRate to JobCosts when Status = 'Approved'.
+    [CostRate] DECIMAL(10, 2) NOT NULL DEFAULT 0,
     [Description] NVARCHAR(500),
     [IsBillable] BIT NOT NULL DEFAULT 1,
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Pending',
