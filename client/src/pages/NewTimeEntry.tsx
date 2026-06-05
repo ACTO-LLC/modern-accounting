@@ -11,6 +11,7 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
 import { timeEntriesApi, projectsApi, customersApi, employeesApi, Project, Customer, Employee, TimeEntryInput } from '../lib/api';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 const timeEntrySchema = z.object({
   ProjectId: z.string().min(1, 'Project is required'),
@@ -18,6 +19,7 @@ const timeEntrySchema = z.object({
   EntryDate: z.string().min(1, 'Date is required'),
   Hours: z.coerce.number().min(0.25, 'Minimum 0.25 hours').max(24, 'Maximum 24 hours'),
   HourlyRate: z.coerce.number().min(0).nullish(),
+  CostRate: z.coerce.number().min(0).nullish(),
   Description: z.string().nullish(),
   IsBillable: z.boolean().nullish(),
 });
@@ -27,6 +29,8 @@ type TimeEntryFormData = z.infer<typeof timeEntrySchema>;
 export default function NewTimeEntry() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ['projects'],
@@ -53,6 +57,7 @@ export default function NewTimeEntry() {
       EntryDate: new Date().toISOString().split('T')[0],
       Hours: 1,
       HourlyRate: 0,
+      CostRate: 0,
       IsBillable: true,
     }
   });
@@ -73,6 +78,7 @@ export default function NewTimeEntry() {
         EntryDate: data.EntryDate,
         Hours: data.Hours,
         HourlyRate: data.HourlyRate ?? 0,
+        CostRate: data.CostRate ?? 0,
         Description: data.Description || null,
         IsBillable: data.IsBillable ?? true,
         Status: 'Pending',
@@ -92,6 +98,7 @@ export default function NewTimeEntry() {
   // Extract refs from register for use with MUI TextField
   const { ref: hoursRef, ...hoursRest } = register('Hours');
   const { ref: hourlyRateRef, ...hourlyRateRest } = register('HourlyRate');
+  const { ref: costRateRef, ...costRateRest } = register('CostRate');
   const { ref: descriptionRef, ...descriptionRest } = register('Description');
 
   return (
@@ -253,11 +260,25 @@ export default function NewTimeEntry() {
           type="number"
           label="Hourly Rate ($)"
           error={!!errors.HourlyRate}
-          helperText={errors.HourlyRate?.message}
+          helperText={errors.HourlyRate?.message ?? (jobCostingEnabled ? 'What the customer is billed per hour' : undefined)}
           size="small"
           fullWidth
           slotProps={{ htmlInput: { step: '0.01', min: '0' } }}
         />
+
+        {jobCostingEnabled && (
+          <TextField
+            {...costRateRest}
+            inputRef={costRateRef}
+            type="number"
+            label="Cost Rate ($)"
+            error={!!errors.CostRate}
+            helperText={errors.CostRate?.message ?? "Employer's cost per hour (used for job profitability)"}
+            size="small"
+            fullWidth
+            slotProps={{ htmlInput: { step: '0.01', min: '0' } }}
+          />
+        )}
 
         <TextField
           {...descriptionRest}

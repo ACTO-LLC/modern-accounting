@@ -252,6 +252,7 @@ export interface TimeEntry {
   EntryDate: string;
   Hours: number;
   HourlyRate: number;
+  CostRate: number;
   Description?: string;
   IsBillable: boolean;
   Status: 'Pending' | 'Approved' | 'Invoiced';
@@ -267,6 +268,7 @@ export interface TimeEntryInput {
   EntryDate: string;
   Hours: number;
   HourlyRate?: number | null;
+  CostRate?: number | null;
   Description?: string | null;
   IsBillable?: boolean | null;
   Status?: 'Pending' | 'Approved' | 'Invoiced' | null;

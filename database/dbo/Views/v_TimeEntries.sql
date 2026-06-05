@@ -8,6 +8,7 @@ SELECT
     t.[EntryDate],
     t.[Hours],
     t.[HourlyRate],
+    t.[CostRate],
     t.[Description],
     t.[IsBillable],
     t.[Status],
