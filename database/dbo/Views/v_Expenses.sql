@@ -20,6 +20,7 @@ SELECT
     c.[Name] AS CustomerName,
     e.[ProjectId],
     p.[Name] AS ProjectName,
+    e.[CostCodeId],
     e.[ClassId],
     cl.[Name] AS ClassName,
     e.[BankTransactionId],

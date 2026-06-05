@@ -15,6 +15,8 @@ CREATE TABLE [dbo].[Expenses]
     [ReimbursedDate] DATE NULL,
     [CustomerId] UNIQUEIDENTIFIER NULL, -- If billable to customer
     [ProjectId] UNIQUEIDENTIFIER NULL,
+    -- Job Costing (issue #611): roll this expense up to a specific cost code under the project.
+    [CostCodeId] UNIQUEIDENTIFIER NULL,
     [ClassId] UNIQUEIDENTIFIER NULL,
     [BankTransactionId] UNIQUEIDENTIFIER NULL,
     [Status] NVARCHAR(20) NOT NULL DEFAULT 'Recorded', -- Recorded, Pending, Reimbursed, Voided
@@ -34,6 +36,7 @@ CREATE TABLE [dbo].[Expenses]
     CONSTRAINT [FK_Expenses_PaymentAccounts] FOREIGN KEY ([PaymentAccountId]) REFERENCES [dbo].[Accounts]([Id]),
     CONSTRAINT [FK_Expenses_Customers] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers]([Id]),
     CONSTRAINT [FK_Expenses_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
+    CONSTRAINT [FK_Expenses_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes]([Id]),
     CONSTRAINT [FK_Expenses_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
     CONSTRAINT [FK_Expenses_BankTransactions] FOREIGN KEY ([BankTransactionId]) REFERENCES [dbo].[BankTransactions]([Id]),
     CONSTRAINT [FK_Expenses_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id])
@@ -66,6 +69,9 @@ CREATE INDEX [IX_Expenses_CustomerId] ON [dbo].[Expenses] ([CustomerId]) WHERE C
 GO
 
 CREATE INDEX [IX_Expenses_ProjectId] ON [dbo].[Expenses] ([ProjectId]) WHERE ProjectId IS NOT NULL
+GO
+
+CREATE INDEX [IX_Expenses_CostCodeId] ON [dbo].[Expenses] ([CostCodeId]) WHERE CostCodeId IS NOT NULL
 GO
 
 CREATE INDEX [IX_Expenses_IsPersonal] ON [dbo].[Expenses] ([IsPersonal])
