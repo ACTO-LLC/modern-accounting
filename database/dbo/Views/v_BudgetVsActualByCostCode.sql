@@ -16,7 +16,9 @@ CREATE VIEW [dbo].[v_BudgetVsActualByCostCode] AS
 
 -- Coded rows: one per JobCostCode (independent of whether any costs have
 -- posted yet, so budgeted-but-untouched lines still appear).
+-- RowId is the CostCodeId as text so it's unique across the UNION.
 SELECT
+    CAST(cc.[Id] AS NVARCHAR(50)) AS [RowId],
     cc.[ProjectId],
     cc.[Id] AS [CostCodeId],
     cc.[Code],
@@ -44,9 +46,11 @@ LEFT JOIN (
 UNION ALL
 
 -- Uncoded bucket: one row per project that has any JobCosts with NULL
--- CostCodeId. Code/Description are fixed sentinel strings; SortOrder is
--- large so this row sorts last in the report.
+-- CostCodeId. Gate on ProjectId IS NOT NULL so JobCosts with both columns
+-- NULL don't fabricate a synthetic row with a NULL ProjectId.
+-- RowId is `uncoded-<ProjectId>` so it's unique across the view.
 SELECT
+    'uncoded-' + CAST([ProjectId] AS NVARCHAR(36)) AS [RowId],
     [ProjectId],
     NULL AS [CostCodeId],
     '(Uncoded)' AS [Code],
@@ -59,5 +63,6 @@ SELECT
     SUM(CASE WHEN [IsCommitted] = 1 THEN [Amount] ELSE 0 END) AS [Committed]
 FROM [dbo].[JobCosts]
 WHERE [CostCodeId] IS NULL
+  AND [ProjectId] IS NOT NULL
 GROUP BY [ProjectId];
 GO

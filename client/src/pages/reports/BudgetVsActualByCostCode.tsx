@@ -21,6 +21,7 @@ function sanitizeCsv(value: string): string {
 }
 
 interface BudgetRow {
+  RowId: string;
   ProjectId: string;
   CostCodeId: string | null;
   Code: string;
@@ -95,13 +96,16 @@ export default function BudgetVsActualByCostCode() {
   const totalsPctUsed = totals.budget !== 0 ? (totals.effective / totals.budget) * 100 : null;
 
   const exportCsv = () => {
+    // Header + body have to stay in lock-step. When the toggle is off we omit
+    // both the Committed column and the redundant Total column (which would
+    // just equal Actual). When it's on, we show Actual and Total side by side.
     const headers = [
       'Code',
       'Description',
       'Budget',
       ...(includeCommitted ? ['Committed'] : []),
       'Actual',
-      includeCommitted ? 'Total (Actual + Committed)' : 'Actual',
+      ...(includeCommitted ? ['Total (Actual + Committed)'] : []),
       'Variance',
       '% Used',
     ];
@@ -115,7 +119,7 @@ export default function BudgetVsActualByCostCode() {
       num(r.Budget),
       ...(includeCommitted ? [num(r.Committed)] : []),
       num(r.Actual),
-      num(r._effectiveActual),
+      ...(includeCommitted ? [num(r._effectiveActual)] : []),
       num(r._variance),
       r._pctUsed != null ? num(r._pctUsed) : text(''),
     ]);
@@ -245,7 +249,7 @@ export default function BudgetVsActualByCostCode() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {computed.map((r) => (
                 <tr
-                  key={r.CostCodeId ?? `uncoded-${r.ProjectId}`}
+                  key={r.RowId}
                   className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${r.IsUncodedBucket ? 'italic text-gray-500 dark:text-gray-400' : ''}`}
                 >
                   <td className="px-4 py-2 text-sm font-mono text-gray-900 dark:text-gray-100">{r.Code}</td>

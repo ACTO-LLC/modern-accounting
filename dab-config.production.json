@@ -1417,7 +1417,7 @@
                 "object": "dbo.v_BudgetVsActualByCostCode",
                 "type": "view",
                 "key-fields": [
-                    "ProjectId"
+                    "RowId"
                 ]
             },
             "permissions": [
@@ -1441,6 +1441,7 @@
                 }
             ],
             "mappings": {
+                "RowId": "RowId",
                 "ProjectId": "ProjectId",
                 "CostCodeId": "CostCodeId",
                 "Code": "Code",
