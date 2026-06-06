@@ -36,5 +36,8 @@ GO
 CREATE INDEX [IX_OverheadAllocationRuns_Period] ON [dbo].[OverheadAllocationRuns] ([PeriodStart], [PeriodEnd])
 GO
 
-CREATE INDEX [IX_OverheadAllocationRuns_Active] ON [dbo].[OverheadAllocationRuns] ([RuleId], [PeriodStart], [PeriodEnd]) WHERE [ReversedAt] IS NULL
+-- UNIQUE filtered index: enforces "at most one un-reversed run per (rule, period)"
+-- at the database level so concurrent sp_RunOverheadAllocation calls can't race past
+-- the SP's EXISTS check. The SP's check stays as a soft guard for a nicer error.
+CREATE UNIQUE INDEX [UQ_OverheadAllocationRuns_Active] ON [dbo].[OverheadAllocationRuns] ([RuleId], [PeriodStart], [PeriodEnd]) WHERE [ReversedAt] IS NULL
 GO

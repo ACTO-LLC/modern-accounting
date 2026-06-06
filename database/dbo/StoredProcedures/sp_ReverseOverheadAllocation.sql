@@ -4,7 +4,8 @@
 -- SourceId) and stamps the run with ReversedAt / ReversedBy. The run record
 -- itself is preserved for audit.
 --
--- Calling on an already-reversed run is a no-op (throws to surface mistakes).
+-- Calling on an already-reversed run throws (60006) so accidental double-reversals
+-- surface as errors rather than passing silently.
 CREATE PROCEDURE [dbo].[sp_ReverseOverheadAllocation]
     @RunId UNIQUEIDENTIFIER,
     @ReversedBy NVARCHAR(200) = NULL
