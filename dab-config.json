@@ -1463,6 +1463,52 @@
                 "enabled": false
             }
         },
+        "wip": {
+            "source": {
+                "object": "dbo.v_WIP",
+                "type": "view",
+                "key-fields": [
+                    "ProjectId"
+                ]
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "Status": "Status",
+                "ContractAmount": "ContractAmount",
+                "EstimatedCost": "EstimatedCost",
+                "CostToDate": "CostToDate",
+                "PercentComplete": "PercentComplete",
+                "EarnedRevenue": "EarnedRevenue",
+                "BilledToDate": "BilledToDate",
+                "OverUnder": "OverUnder"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
         "timeentries": {
             "source": {
                 "object": "dbo.v_TimeEntries",

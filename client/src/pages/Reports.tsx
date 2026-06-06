@@ -149,6 +149,14 @@ const jobCostingReports: ReportItem[] = [
     color: 'bg-amber-100 text-amber-600',
     visibilityFlag: 'job_costing',
   },
+  {
+    name: 'Work in Progress',
+    description: 'Earned vs. billed revenue per job (cost-to-cost) — pending accountant review',
+    href: '/reports/wip',
+    icon: TrendingUp,
+    color: 'bg-rose-100 text-rose-600',
+    visibilityFlag: 'job_costing',
+  },
 ];
 
 const inventoryReports: ReportItem[] = [
