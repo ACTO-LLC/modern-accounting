@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { customersApi, Customer } from '../lib/api';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -19,6 +20,8 @@ export const projectSchema = z.object({
   EndDate: z.string().optional(),
   BudgetedHours: z.coerce.number().min(0).optional().nullable(),
   BudgetedAmount: z.coerce.number().min(0).optional().nullable(),
+  EstimatedCost: z.coerce.number().min(0).optional().nullable(),
+  ContractAmount: z.coerce.number().min(0).optional().nullable(),
 });
 
 export type ProjectFormData = z.infer<typeof projectSchema>;
@@ -39,6 +42,8 @@ export default function ProjectForm({
   submitButtonText = 'Save Project'
 }: ProjectFormProps) {
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ['customers'],
@@ -223,6 +228,51 @@ export default function ProjectForm({
             )}
           />
         </div>
+
+        {jobCostingEnabled && (
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
+              name="EstimatedCost"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Estimated Cost"
+                  type="number"
+                  slotProps={{
+                    htmlInput: { step: '0.01', min: '0' },
+                    input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                  }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message ?? 'Internal cost estimate (job costing)'}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+            <Controller
+              name="ContractAmount"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Contract Amount"
+                  type="number"
+                  slotProps={{
+                    htmlInput: { step: '0.01', min: '0' },
+                    input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                  }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message ?? 'Contract value with customer'}
+                  size="small"
+                  fullWidth
+                />
+              )}
+            />
+          </div>
+        )}
 
         <div className="flex justify-end items-center border-t dark:border-gray-600 pt-4">
           <Button variant="outlined" onClick={() => navigate('/projects')} sx={{ mr: 1.5 }}>

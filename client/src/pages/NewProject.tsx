@@ -18,6 +18,8 @@ export default function NewProject() {
         EndDate: data.EndDate || undefined,
         BudgetedHours: data.BudgetedHours || undefined,
         BudgetedAmount: data.BudgetedAmount || undefined,
+        EstimatedCost: data.EstimatedCost ?? null,
+        ContractAmount: data.ContractAmount ?? null,
       };
       await projectsApi.create(projectInput);
     },

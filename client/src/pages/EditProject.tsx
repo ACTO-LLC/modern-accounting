@@ -3,12 +3,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { projectsApi, timeEntriesApi, ProjectInput, Project, TimeEntry } from '../lib/api';
 import { formatGuidForOData } from '../lib/validation';
 import ProjectForm, { ProjectFormData } from '../components/ProjectForm';
+import CostCodesSection from '../components/CostCodesSection';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 export default function EditProject() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: project, isLoading: projectLoading, error: projectError } = useQuery<Project>({
     queryKey: ['project', id],
@@ -36,6 +40,8 @@ export default function EditProject() {
         EndDate: data.EndDate || undefined,
         BudgetedHours: data.BudgetedHours || undefined,
         BudgetedAmount: data.BudgetedAmount || undefined,
+        EstimatedCost: data.EstimatedCost ?? null,
+        ContractAmount: data.ContractAmount ?? null,
       };
       await projectsApi.update(id!, projectInput);
     },
@@ -82,6 +88,8 @@ export default function EditProject() {
     EndDate: project.EndDate ? project.EndDate.split('T')[0] : '',
     BudgetedHours: project.BudgetedHours || undefined,
     BudgetedAmount: project.BudgetedAmount || undefined,
+    EstimatedCost: project.EstimatedCost ?? null,
+    ContractAmount: project.ContractAmount ?? null,
   };
 
   return (
@@ -130,6 +138,8 @@ export default function EditProject() {
         isSubmitting={mutation.isPending}
         submitButtonText="Update Project"
       />
+
+      {jobCostingEnabled && id && <CostCodesSection projectId={id} />}
 
       {/* Delete Button */}
       <div className="mt-6 pt-6 border-t">

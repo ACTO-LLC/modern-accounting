@@ -227,6 +227,8 @@ export interface Project {
   EndDate?: string;
   BudgetedHours?: number;
   BudgetedAmount?: number;
+  EstimatedCost?: number;
+  ContractAmount?: number;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -240,6 +242,30 @@ export interface ProjectInput {
   EndDate?: string;
   BudgetedHours?: number;
   BudgetedAmount?: number;
+  EstimatedCost?: number | null;
+  ContractAmount?: number | null;
+}
+
+// Job Costing (#614)
+export interface JobCostCode {
+  Id: string;
+  ProjectId: string;
+  Code: string;
+  Description: string;
+  BudgetedAmount?: number;
+  BudgetedHours?: number;
+  SortOrder: number;
+  CreatedAt: string;
+  UpdatedAt: string;
+}
+
+export interface JobCostCodeInput {
+  ProjectId: string;
+  Code: string;
+  Description: string;
+  BudgetedAmount?: number | null;
+  BudgetedHours?: number | null;
+  SortOrder?: number;
 }
 
 // Time Entry Types
@@ -315,6 +341,30 @@ export const projectsApi = {
 
   delete: async (id: string): Promise<void> => {
     await api.delete(`/projects_write/Id/${id}`);
+  },
+};
+
+// Job Cost Codes API (#614)
+export const jobCostCodesApi = {
+  getByProject: async (projectId: string): Promise<JobCostCode[]> => {
+    const response = await api.get(
+      `/jobcostcodes?$filter=ProjectId eq ${projectId}&$orderby=SortOrder,Code`
+    );
+    return response.data.value;
+  },
+
+  create: async (input: JobCostCodeInput): Promise<JobCostCode> => {
+    const response = await api.post('/jobcostcodes', input);
+    return response.data;
+  },
+
+  update: async (id: string, input: Partial<JobCostCodeInput>): Promise<JobCostCode> => {
+    const response = await api.patch(`/jobcostcodes/Id/${id}`, input);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/jobcostcodes/Id/${id}`);
   },
 };
 
