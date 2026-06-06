@@ -28,7 +28,8 @@ BEGIN
 
     DECLARE @BurdenPercent DECIMAL(6, 2);             -- match column precision
     DECLARE @IsActive BIT;
-    SELECT @BurdenPercent = [BurdenPercent], @IsActive = [IsActive]
+    DECLARE @TenantId UNIQUEIDENTIFIER;
+    SELECT @BurdenPercent = [BurdenPercent], @IsActive = [IsActive], @TenantId = [TenantId]
     FROM [dbo].[OverheadAllocationRules] WHERE [Id] = @RuleId;
 
     IF @BurdenPercent IS NULL
@@ -52,9 +53,9 @@ BEGIN
         BEGIN TRAN;
 
         INSERT INTO [dbo].[OverheadAllocationRuns]
-            ([Id], [RuleId], [PeriodStart], [PeriodEnd], [BurdenPercent], [RunBy])
+            ([Id], [RuleId], [PeriodStart], [PeriodEnd], [BurdenPercent], [RunBy], [TenantId])
         VALUES
-            (@RunId, @RuleId, @PeriodStart, @PeriodEnd, @BurdenPercent, @RunBy);
+            (@RunId, @RuleId, @PeriodStart, @PeriodEnd, @BurdenPercent, @RunBy, @TenantId);
 
         -- One JobCosts row per project that had labor in the period. PostingDate
         -- is the period end so reports group the allocation into the period.
@@ -69,8 +70,11 @@ BEGIN
             CAST(SUM(jc.[Amount]) * @BurdenPercent / 100.0 AS DECIMAL(19, 4)),
             NULL,
             0,
-            NULL
+            -- Propagate TenantId from the project so tenant-scoped JobCosts
+            -- queries see overhead rows alongside the labor that drove them.
+            MAX(p.[TenantId])
         FROM [dbo].[JobCosts] jc
+        JOIN [dbo].[Projects] p ON jc.[ProjectId] = p.[Id]
         WHERE jc.[SourceType] = 'TimeEntry'
           AND jc.[IsCommitted] = 0
           AND jc.[PostingDate] BETWEEN @PeriodStart AND @PeriodEnd
