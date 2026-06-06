@@ -13,6 +13,7 @@ SELECT
     po.[ConvertedToBillId],
     po.[ProjectId],
     p.[Name] AS ProjectName,
+    po.[CostCodeId],
     po.[ClassId],
     cl.[Name] AS ClassName,
     po.[CreatedAt],

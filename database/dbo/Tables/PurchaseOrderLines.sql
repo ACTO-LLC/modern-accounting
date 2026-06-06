@@ -7,6 +7,8 @@ CREATE TABLE [dbo].[PurchaseOrderLines] (
     [UnitPrice] DECIMAL(18, 2) NOT NULL DEFAULT 0,
     [Amount] DECIMAL(18, 2) NOT NULL DEFAULT 0,
     [ProjectId] UNIQUEIDENTIFIER NULL,
+    -- Job Costing (issue #612): cost code override per line.
+    [CostCodeId] UNIQUEIDENTIFIER NULL,
     [ClassId] UNIQUEIDENTIFIER NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
@@ -21,7 +23,9 @@ CREATE TABLE [dbo].[PurchaseOrderLines] (
     CONSTRAINT [FK_PurchaseOrderLines_ProductsServices] FOREIGN KEY ([ProductServiceId])
         REFERENCES [dbo].[ProductsServices] ([Id]),
     CONSTRAINT [FK_PurchaseOrderLines_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
-    CONSTRAINT [FK_PurchaseOrderLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
+    CONSTRAINT [FK_PurchaseOrderLines_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes]([Id]),
+    CONSTRAINT [FK_PurchaseOrderLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
+    CONSTRAINT [CK_PurchaseOrderLines_CostCodeImpliesProject] CHECK ([CostCodeId] IS NULL OR [ProjectId] IS NOT NULL)
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[PurchaseOrderLines_History]));
 GO
@@ -33,6 +37,9 @@ CREATE INDEX [IX_PurchaseOrderLines_ProductServiceId] ON [dbo].[PurchaseOrderLin
 GO
 
 CREATE INDEX [IX_PurchaseOrderLines_ProjectId] ON [dbo].[PurchaseOrderLines] ([ProjectId]) WHERE ProjectId IS NOT NULL;
+GO
+
+CREATE INDEX [IX_PurchaseOrderLines_CostCodeId] ON [dbo].[PurchaseOrderLines] ([CostCodeId]) WHERE CostCodeId IS NOT NULL;
 GO
 
 CREATE INDEX [IX_PurchaseOrderLines_ClassId] ON [dbo].[PurchaseOrderLines] ([ClassId]) WHERE ClassId IS NOT NULL;
