@@ -31,9 +31,9 @@ CREATE TABLE [dbo].[TimeEntries]
     CONSTRAINT [FK_TimeEntries_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects] ([Id]),
     CONSTRAINT [FK_TimeEntries_Customers] FOREIGN KEY ([CustomerId]) REFERENCES [dbo].[Customers] ([Id]),
     CONSTRAINT [FK_TimeEntries_InvoiceLines] FOREIGN KEY ([InvoiceLineId]) REFERENCES [dbo].[InvoiceLines] ([Id]),
-    CONSTRAINT [FK_TimeEntries_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes] ([Id]),
     -- TimeEntries.ProjectId is NOT NULL so the CostCodeImpliesProject invariant
     -- is satisfied by construction; no extra CHECK constraint needed here.
+    CONSTRAINT [FK_TimeEntries_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes] ([Id])
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[TimeEntries_History]))
 GO
