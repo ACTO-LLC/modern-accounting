@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '../lib/api';
 import ExpenseForm, { ExpenseFormData } from '../components/ExpenseForm';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface Expense {
   Id: string;
@@ -29,6 +30,8 @@ export default function EditExpense() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: expense, isLoading } = useQuery({
     queryKey: ['expense', id],
@@ -51,8 +54,8 @@ export default function EditExpense() {
         PaymentAccountId: data.PaymentAccountId || null,
         CustomerId: data.CustomerId || null,
         ProjectId: data.ProjectId || null,
-        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
+        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       };
 
       await api.patch(`/expenses_write/Id/${id}`, expenseData);

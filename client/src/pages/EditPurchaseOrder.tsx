@@ -4,6 +4,7 @@ import api from '../lib/api';
 import PurchaseOrderForm, { PurchaseOrderFormData } from '../components/PurchaseOrderForm';
 import { formatGuidForOData, isValidUUID } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface PurchaseOrder {
   Id: string;
@@ -39,6 +40,8 @@ export default function EditPurchaseOrder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   // Validate ID early
   const isIdValid = isValidUUID(id);
@@ -79,8 +82,8 @@ export default function EditPurchaseOrder() {
       await api.patch(`/purchaseorders_write/Id/${id}`, {
         ...poData,
         ProjectId: data.ProjectId || null,
-        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
+        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       });
 
       // 2. Handle Lines Reconciliation
@@ -109,8 +112,8 @@ export default function EditPurchaseOrder() {
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
           ProjectId: l.ProjectId || null,
-          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         })),
         ...toAdd.map(l => api.post('/purchaseorderlines', {
           PurchaseOrderId: id,
@@ -119,8 +122,8 @@ export default function EditPurchaseOrder() {
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
           ProjectId: l.ProjectId || null,
-          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         }))
       ];
 

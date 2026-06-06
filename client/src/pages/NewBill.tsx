@@ -6,6 +6,7 @@ import BillForm, { BillFormData } from '../components/BillForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface Bill {
   Id: string;
@@ -23,6 +24,8 @@ export default function NewBill() {
   const { settings } = useCompanySettings();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const mutation = useMutation({
     mutationFn: async (data: BillFormData) => {
@@ -55,8 +58,8 @@ export default function NewBill() {
               Description: line.Description || '',
               Amount: line.Amount,
               ProjectId: line.ProjectId || null,
-              CostCodeId: line.CostCodeId || null,
               ClassId: line.ClassId || null,
+              ...(jobCostingEnabled && { CostCodeId: line.CostCodeId || null }),
             })
           )
         );

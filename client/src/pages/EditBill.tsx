@@ -6,6 +6,7 @@ import BillForm, { BillFormData } from '../components/BillForm';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -51,6 +52,8 @@ export default function EditBill() {
   const { settings } = useCompanySettings();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   // Validate ID before using in query
   const isIdValid = isValidUUID(id);
@@ -116,8 +119,8 @@ export default function EditBill() {
           Description: l.Description || '',
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
-          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         })),
         ...toAdd.map(l => api.post('/billlines', {
           BillId: id,
@@ -125,8 +128,8 @@ export default function EditBill() {
           Description: l.Description || '',
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
-          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         }))
       ];
 

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '../lib/api';
 import VendorCreditForm, { VendorCreditFormData } from '../components/VendorCreditForm';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface VendorCredit {
   Id: string;
@@ -13,6 +14,8 @@ export default function NewVendorCredit() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const mutation = useMutation({
     mutationFn: async (data: VendorCreditFormData) => {
@@ -21,8 +24,8 @@ export default function NewVendorCredit() {
       await api.post('/vendorcredits_write', {
         ...creditData,
         ProjectId: data.ProjectId || null,
-        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
+        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       });
 
       // DAB doesn't return the created entity, so we need to query for it
@@ -49,8 +52,8 @@ export default function NewVendorCredit() {
               UnitPrice: line.UnitPrice,
               Amount: line.Amount,
               ProjectId: line.ProjectId || null,
-              CostCodeId: line.CostCodeId || null,
               ClassId: line.ClassId || null,
+              ...(jobCostingEnabled && { CostCodeId: line.CostCodeId || null }),
             })
           )
         );

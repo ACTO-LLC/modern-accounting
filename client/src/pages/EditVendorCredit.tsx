@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '../lib/api';
 import VendorCreditForm, { VendorCreditFormData } from '../components/VendorCreditForm';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -46,6 +47,8 @@ export default function EditVendorCredit() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   // Validate ID before using in query
   const isIdValid = isValidUUID(id);
@@ -82,8 +85,8 @@ export default function EditVendorCredit() {
       await api.patch(`/vendorcredits_write/Id/${id}`, {
         ...creditData,
         ProjectId: data.ProjectId || null,
-        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
+        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       });
 
       // 2. Handle Lines Reconciliation
@@ -111,8 +114,8 @@ export default function EditVendorCredit() {
           UnitPrice: l.UnitPrice,
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
-          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         })),
         ...toAdd.map(l => api.post('/vendorcreditlines', {
           VendorCreditId: id,
@@ -123,8 +126,8 @@ export default function EditVendorCredit() {
           UnitPrice: l.UnitPrice,
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
-          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         }))
       ];
 
