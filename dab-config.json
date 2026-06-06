@@ -1686,6 +1686,7 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "ProjectId": "ProjectId",
+                "CostCodeId": "CostCodeId",
                 "ClassId": "ClassId"
             },
             "key-fields": [
@@ -3469,6 +3470,7 @@
                 "CustomerName": "CustomerName",
                 "ProjectId": "ProjectId",
                 "ProjectName": "ProjectName",
+                "CostCodeId": "CostCodeId",
                 "ClassId": "ClassId",
                 "ClassName": "ClassName",
                 "BankTransactionId": "BankTransactionId",
@@ -3521,6 +3523,7 @@
                 "ReimbursedDate": "ReimbursedDate",
                 "CustomerId": "CustomerId",
                 "ProjectId": "ProjectId",
+                "CostCodeId": "CostCodeId",
                 "ClassId": "ClassId",
                 "BankTransactionId": "BankTransactionId",
                 "Status": "Status",
@@ -4134,6 +4137,7 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "ProjectId": "ProjectId",
+                "CostCodeId": "CostCodeId",
                 "ClassId": "ClassId"
             },
             "key-fields": [
