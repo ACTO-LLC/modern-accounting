@@ -75,7 +75,9 @@ BEGIN
           AND jc.[IsCommitted] = 0
           AND jc.[PostingDate] BETWEEN @PeriodStart AND @PeriodEnd
         GROUP BY jc.[ProjectId]
-        HAVING SUM(jc.[Amount]) > 0;
+        -- Allocate for any non-zero labor total (including negative corrections),
+        -- so reversing/adjusting time entries flows through to overhead consistently.
+        HAVING SUM(jc.[Amount]) <> 0;
 
         SET @RowsWritten = @@ROWCOUNT;
 

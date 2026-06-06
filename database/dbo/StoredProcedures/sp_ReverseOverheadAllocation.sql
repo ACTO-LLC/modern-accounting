@@ -13,30 +13,33 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @ReversedAt DATETIME2;
-    SELECT @ReversedAt = [ReversedAt]
-    FROM [dbo].[OverheadAllocationRuns] WHERE [Id] = @RunId;
-
-    IF @ReversedAt IS NULL AND NOT EXISTS (SELECT 1 FROM [dbo].[OverheadAllocationRuns] WHERE [Id] = @RunId)
-        THROW 60005, 'Allocation run not found.', 1;
-    IF @ReversedAt IS NOT NULL
-        THROW 60006, 'Allocation run is already reversed.', 1;
-
     DECLARE @RowsRemoved INT = 0;
 
     BEGIN TRY
         BEGIN TRAN;
+
+        -- Atomic guard: only stamp the run if it's currently un-reversed. Doing the
+        -- check via the UPDATE itself (rather than a prior SELECT) prevents two
+        -- concurrent reversals from both passing and silently overwriting the
+        -- first session's audit stamp.
+        UPDATE [dbo].[OverheadAllocationRuns]
+        SET [ReversedAt] = SYSDATETIME(),
+            [ReversedBy] = @ReversedBy
+        WHERE [Id] = @RunId AND [ReversedAt] IS NULL;
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM [dbo].[OverheadAllocationRuns] WHERE [Id] = @RunId)
+                THROW 60005, 'Allocation run not found.', 1;
+            ELSE
+                THROW 60006, 'Allocation run is already reversed.', 1;
+        END
 
         DELETE FROM [dbo].[JobCosts]
         WHERE [SourceType] = 'OverheadAllocation'
           AND [SourceId] = @RunId;
 
         SET @RowsRemoved = @@ROWCOUNT;
-
-        UPDATE [dbo].[OverheadAllocationRuns]
-        SET [ReversedAt] = SYSDATETIME(),
-            [ReversedBy] = @ReversedBy
-        WHERE [Id] = @RunId;
 
         COMMIT TRAN;
     END TRY
