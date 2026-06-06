@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, Briefcase, ChevronRight, ChevronDown } from 'lucide-react';
 import api from '../../lib/api';
@@ -240,10 +240,9 @@ export default function UnbilledCosts() {
               {grouped.map((g) => {
                 const isOpen = expanded.has(g.projectId);
                 return (
-                  <>
+                  <Fragment key={g.projectId}>
                     <tr
-                      key={g.projectId}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-gray-25 dark:bg-gray-800"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-white dark:bg-gray-800"
                       onClick={() => toggle(g.projectId)}
                     >
                       <td className="px-2 py-2">
@@ -281,7 +280,7 @@ export default function UnbilledCosts() {
                         </td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
