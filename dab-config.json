@@ -1221,7 +1221,8 @@
                     "actions": [
                         "create",
                         "read",
-                        "update"
+                        "update",
+                        "delete"
                     ]
                 }
             ],
