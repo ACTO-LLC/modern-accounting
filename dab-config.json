@@ -1509,6 +1509,52 @@
                 "enabled": false
             }
         },
+        "unbilledcosts": {
+            "source": {
+                "object": "dbo.v_UnbilledCosts",
+                "type": "view",
+                "key-fields": [
+                    "RowId"
+                ]
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "RowId": "RowId",
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "CostCodeId": "CostCodeId",
+                "CostCode": "CostCode",
+                "SourceType": "SourceType",
+                "SourceId": "SourceId",
+                "PostingDate": "PostingDate",
+                "Amount": "Amount",
+                "Description": "Description"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
         "timeentries": {
             "source": {
                 "object": "dbo.v_TimeEntries",

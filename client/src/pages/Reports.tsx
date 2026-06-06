@@ -157,6 +157,14 @@ const jobCostingReports: ReportItem[] = [
     color: 'bg-rose-100 text-rose-600',
     visibilityFlag: 'job_costing',
   },
+  {
+    name: 'Unbilled Costs',
+    description: 'Billable costs posted to jobs but not yet pulled onto a customer invoice',
+    href: '/reports/unbilled-costs',
+    icon: Receipt,
+    color: 'bg-emerald-100 text-emerald-600',
+    visibilityFlag: 'job_costing',
+  },
 ];
 
 const inventoryReports: ReportItem[] = [

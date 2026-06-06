@@ -108,6 +108,7 @@ import ExpenseReport from './pages/reports/ExpenseReport';
 import JobProfitability from './pages/reports/JobProfitability';
 import BudgetVsActualByCostCode from './pages/reports/BudgetVsActualByCostCode';
 import WIP from './pages/reports/WIP';
+import UnbilledCosts from './pages/reports/UnbilledCosts';
 import Mileage from './pages/Mileage';
 import NewMileage from './pages/NewMileage';
 import EditMileage from './pages/EditMileage';
@@ -279,6 +280,7 @@ function AppContent() {
             <Route path="reports/job-profitability" element={<JobProfitability />} />
             <Route path="reports/job-budget-actual" element={<BudgetVsActualByCostCode />} />
             <Route path="reports/wip" element={<WIP />} />
+            <Route path="reports/unbilled-costs" element={<UnbilledCosts />} />
             <Route path="reports/mileage" element={<MileageReport />} />
             <Route path="reports/inventory-valuation" element={<InventoryValuation />} />
             <Route path="reports/inventory-stock-status" element={<InventoryStockStatus />} />
