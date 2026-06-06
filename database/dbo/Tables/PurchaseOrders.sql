@@ -11,6 +11,8 @@ CREATE TABLE [dbo].[PurchaseOrders]
     [Total] DECIMAL(19, 4) NOT NULL DEFAULT 0,
     [ConvertedToBillId] UNIQUEIDENTIFIER NULL, -- FK to Bills when converted
     [ProjectId] UNIQUEIDENTIFIER NULL,
+    -- Job Costing (issue #612): cost code default for lines that don't override.
+    [CostCodeId] UNIQUEIDENTIFIER NULL,
     [ClassId] UNIQUEIDENTIFIER NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
@@ -20,7 +22,9 @@ CREATE TABLE [dbo].[PurchaseOrders]
     CONSTRAINT [FK_PurchaseOrders_Vendors] FOREIGN KEY ([VendorId]) REFERENCES [dbo].[Vendors]([Id]),
     CONSTRAINT [FK_PurchaseOrders_Bills] FOREIGN KEY ([ConvertedToBillId]) REFERENCES [dbo].[Bills]([Id]),
     CONSTRAINT [FK_PurchaseOrders_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
-    CONSTRAINT [FK_PurchaseOrders_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
+    CONSTRAINT [FK_PurchaseOrders_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes]([Id]),
+    CONSTRAINT [FK_PurchaseOrders_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
+    CONSTRAINT [CK_PurchaseOrders_CostCodeImpliesProject] CHECK ([CostCodeId] IS NULL OR [ProjectId] IS NOT NULL)
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[PurchaseOrders_History]))
 GO
@@ -42,6 +46,9 @@ CREATE INDEX [IX_PurchaseOrders_PODate] ON [dbo].[PurchaseOrders] ([PODate])
 GO
 
 CREATE INDEX [IX_PurchaseOrders_ProjectId] ON [dbo].[PurchaseOrders] ([ProjectId]) WHERE ProjectId IS NOT NULL
+GO
+
+CREATE INDEX [IX_PurchaseOrders_CostCodeId] ON [dbo].[PurchaseOrders] ([CostCodeId]) WHERE CostCodeId IS NOT NULL
 GO
 
 CREATE INDEX [IX_PurchaseOrders_ClassId] ON [dbo].[PurchaseOrders] ([ClassId]) WHERE ClassId IS NOT NULL

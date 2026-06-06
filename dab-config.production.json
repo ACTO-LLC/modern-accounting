@@ -1874,6 +1874,7 @@
                 "UpdatedAt": "UpdatedAt",
                 "ProjectId": "ProjectId",
                 "ProjectName": "ProjectName",
+                "CostCodeId": "CostCodeId",
                 "ClassId": "ClassId",
                 "ClassName": "ClassName"
             },
@@ -1918,6 +1919,7 @@
                 "Total": "Total",
                 "ConvertedToBillId": "ConvertedToBillId",
                 "ProjectId": "ProjectId",
+                "CostCodeId": "CostCodeId",
                 "ClassId": "ClassId"
             },
             "cache": {
@@ -1959,6 +1961,7 @@
                 "CreatedAt": "CreatedAt",
                 "UpdatedAt": "UpdatedAt",
                 "ProjectId": "ProjectId",
+                "CostCodeId": "CostCodeId",
                 "ClassId": "ClassId"
             },
             "key-fields": [
