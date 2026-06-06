@@ -40,8 +40,13 @@ export default function EditProject() {
         EndDate: data.EndDate || undefined,
         BudgetedHours: data.BudgetedHours || undefined,
         BudgetedAmount: data.BudgetedAmount || undefined,
-        EstimatedCost: data.EstimatedCost ?? null,
-        ContractAmount: data.ContractAmount ?? null,
+        // Only round-trip the cost-side fields when the flag is on. Otherwise the
+        // payload would include `null` for these and clear previously-saved values
+        // any time the flag is later turned off.
+        ...(jobCostingEnabled && {
+          EstimatedCost: data.EstimatedCost ?? null,
+          ContractAmount: data.ContractAmount ?? null,
+        }),
       };
       await projectsApi.update(id!, projectInput);
     },

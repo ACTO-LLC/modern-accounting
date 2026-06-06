@@ -2,6 +2,7 @@ import axios from 'axios';
 import { PublicClientApplication, SilentRequest, AccountInfo } from '@azure/msal-browser';
 import { apiRequest, roleHierarchy } from './authConfig';
 import { formatDateForOData } from './dateUtils';
+import { formatGuidForOData } from './validation';
 
 const api = axios.create({
   baseURL: '/api',
@@ -347,8 +348,11 @@ export const projectsApi = {
 // Job Cost Codes API (#614)
 export const jobCostCodesApi = {
   getByProject: async (projectId: string): Promise<JobCostCode[]> => {
+    // Validate to prevent malformed OData / injection — projectId comes from route params.
+    const validated = formatGuidForOData(projectId, 'ProjectId');
+    const filter = encodeURIComponent(`ProjectId eq ${validated}`);
     const response = await api.get(
-      `/jobcostcodes?$filter=ProjectId eq ${projectId}&$orderby=SortOrder,Code`
+      `/jobcostcodes?$filter=${filter}&$orderby=SortOrder,Code`
     );
     return response.data.value;
   },

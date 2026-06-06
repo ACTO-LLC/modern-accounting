@@ -11,6 +11,11 @@ import MenuItem from '@mui/material/MenuItem';
 import InputAdornment from '@mui/material/InputAdornment';
 import Button from '@mui/material/Button';
 
+// Numeric fields store number | null. The '' → null conversion happens in each
+// field's Controller onChange (see below) so blank inputs stay null instead of
+// being coerced to 0.
+const nullableNumber = z.number().min(0).nullable().optional();
+
 export const projectSchema = z.object({
   Name: z.string().min(1, 'Project name is required'),
   CustomerId: z.string().min(1, 'Customer is required'),
@@ -18,11 +23,17 @@ export const projectSchema = z.object({
   Status: z.enum(['Active', 'Completed', 'OnHold']).optional(),
   StartDate: z.string().optional(),
   EndDate: z.string().optional(),
-  BudgetedHours: z.coerce.number().min(0).optional().nullable(),
-  BudgetedAmount: z.coerce.number().min(0).optional().nullable(),
-  EstimatedCost: z.coerce.number().min(0).optional().nullable(),
-  ContractAmount: z.coerce.number().min(0).optional().nullable(),
+  BudgetedHours: nullableNumber,
+  BudgetedAmount: nullableNumber,
+  EstimatedCost: nullableNumber,
+  ContractAmount: nullableNumber,
 });
+
+// Helper for `onChange` on <TextField type="number"> backed by react-hook-form:
+// blank input -> null, otherwise Number(value).
+function toNullableNumber(value: string): number | null {
+  return value === '' ? null : Number(value);
+}
 
 export type ProjectFormData = z.infer<typeof projectSchema>;
 
@@ -197,6 +208,7 @@ export default function ProjectForm({
               <TextField
                 {...field}
                 value={field.value ?? ''}
+                onChange={(e) => field.onChange(toNullableNumber(e.target.value))}
                 label="Budgeted Hours"
                 type="number"
                 slotProps={{ htmlInput: { step: '0.5', min: '0' } }}
@@ -214,6 +226,7 @@ export default function ProjectForm({
               <TextField
                 {...field}
                 value={field.value ?? ''}
+                onChange={(e) => field.onChange(toNullableNumber(e.target.value))}
                 label="Budgeted Amount"
                 type="number"
                 slotProps={{
@@ -238,6 +251,7 @@ export default function ProjectForm({
                 <TextField
                   {...field}
                   value={field.value ?? ''}
+                  onChange={(e) => field.onChange(toNullableNumber(e.target.value))}
                   label="Estimated Cost"
                   type="number"
                   slotProps={{
@@ -258,6 +272,7 @@ export default function ProjectForm({
                 <TextField
                   {...field}
                   value={field.value ?? ''}
+                  onChange={(e) => field.onChange(toNullableNumber(e.target.value))}
                   label="Contract Amount"
                   type="number"
                   slotProps={{

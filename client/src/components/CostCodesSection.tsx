@@ -1,23 +1,30 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, InputAdornment, IconButton,
+  Button, TextField, InputAdornment,
 } from '@mui/material';
+import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { jobCostCodesApi, JobCostCode, JobCostCodeInput } from '../lib/api';
 import { useCurrency } from '../contexts/CurrencyContext';
 
+// Numeric fields store number | null. The '' → null conversion happens in each
+// field's Controller onChange so blank inputs stay null instead of 0.
 const costCodeSchema = z.object({
   Code: z.string().min(1, 'Code is required').max(50),
   Description: z.string().min(1, 'Description is required').max(200),
-  BudgetedAmount: z.coerce.number().min(0).optional().nullable(),
-  BudgetedHours: z.coerce.number().min(0).optional().nullable(),
+  BudgetedAmount: z.number().min(0).nullable().optional(),
+  BudgetedHours: z.number().min(0).nullable().optional(),
   SortOrder: z.coerce.number().int().min(0).optional(),
 });
+
+function toNullableNumber(value: string): number | null {
+  return value === '' ? null : Number(value);
+}
 type CostCodeFormData = z.infer<typeof costCodeSchema>;
 
 interface Props {
@@ -63,6 +70,51 @@ export default function CostCodesSection({ projectId }: Props) {
   const totalAmount = costCodes.reduce((sum, c) => sum + (c.BudgetedAmount ?? 0), 0);
   const totalHours = costCodes.reduce((sum, c) => sum + (c.BudgetedHours ?? 0), 0);
 
+  const columns = useMemo<GridColDef<JobCostCode>[]>(() => [
+    { field: 'Code', headerName: 'Code', width: 140, cellClassName: 'font-mono' },
+    { field: 'Description', headerName: 'Description', flex: 1, minWidth: 200 },
+    {
+      field: 'BudgetedAmount',
+      headerName: 'Budgeted Amount',
+      width: 160,
+      align: 'right',
+      headerAlign: 'right',
+      valueFormatter: (value) => (value != null ? formatCurrency(value as number) : '—'),
+    },
+    {
+      field: 'BudgetedHours',
+      headerName: 'Budgeted Hours',
+      width: 140,
+      align: 'right',
+      headerAlign: 'right',
+      valueFormatter: (value) => (value != null ? (value as number).toFixed(1) : '—'),
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      headerName: '',
+      width: 90,
+      getActions: ({ row }) => [
+        <GridActionsCellItem
+          key="edit"
+          icon={<Pencil className="w-4 h-4" />}
+          label="Edit"
+          onClick={() => setEditing(row)}
+        />,
+        <GridActionsCellItem
+          key="delete"
+          icon={<Trash2 className="w-4 h-4" />}
+          label="Delete"
+          onClick={() => {
+            if (window.confirm(`Delete cost code "${row.Code}"?`)) {
+              deleteMutation.mutate(row.Id);
+            }
+          }}
+        />,
+      ],
+    },
+  ], [formatCurrency, deleteMutation]);
+
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mt-6">
       <div className="flex items-center justify-between mb-4">
@@ -99,53 +151,25 @@ export default function CostCodesSection({ projectId }: Props) {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">Loading cost codes...</div>
-      ) : costCodes.length === 0 ? (
+      {costCodes.length === 0 && !isLoading ? (
         <div className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
           No cost codes yet. Add one to start tracking the project budget by line item.
         </div>
       ) : (
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead>
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Code</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
-              <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Budgeted Amount</th>
-              <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Budgeted Hours</th>
-              <th className="px-3 py-2 w-20"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {costCodes.map((code) => (
-              <tr key={code.Id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono">{code.Code}</td>
-                <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{code.Description}</td>
-                <td className="px-3 py-2 text-sm text-right text-gray-900 dark:text-gray-100">
-                  {code.BudgetedAmount != null ? formatCurrency(code.BudgetedAmount) : '—'}
-                </td>
-                <td className="px-3 py-2 text-sm text-right text-gray-900 dark:text-gray-100">
-                  {code.BudgetedHours != null ? code.BudgetedHours.toFixed(1) : '—'}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <IconButton size="small" onClick={() => setEditing(code)}>
-                    <Pencil className="w-4 h-4" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      if (window.confirm(`Delete cost code "${code.Code}"?`)) {
-                        deleteMutation.mutate(code.Id);
-                      }
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </IconButton>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div style={{ width: '100%' }}>
+          <DataGrid<JobCostCode>
+            rows={costCodes}
+            columns={columns}
+            getRowId={(row) => row.Id}
+            loading={isLoading}
+            disableRowSelectionOnClick
+            autoHeight
+            initialState={{
+              pagination: { paginationModel: { pageSize: 25 } },
+            }}
+            pageSizeOptions={[10, 25, 50]}
+          />
+        </div>
       )}
 
       {(creating || editing) && (
@@ -228,6 +252,7 @@ function CostCodeDialog({ existing, onCancel, onSubmit, isSubmitting }: DialogPr
                   <TextField
                     {...field}
                     value={field.value ?? ''}
+                    onChange={(e) => field.onChange(toNullableNumber(e.target.value))}
                     label="Budgeted Amount"
                     type="number"
                     slotProps={{
@@ -248,6 +273,7 @@ function CostCodeDialog({ existing, onCancel, onSubmit, isSubmitting }: DialogPr
                   <TextField
                     {...field}
                     value={field.value ?? ''}
+                    onChange={(e) => field.onChange(toNullableNumber(e.target.value))}
                     label="Budgeted Hours"
                     type="number"
                     slotProps={{ htmlInput: { step: '0.5', min: '0' } }}
