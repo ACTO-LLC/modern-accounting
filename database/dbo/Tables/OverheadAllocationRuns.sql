@@ -11,7 +11,7 @@ CREATE TABLE [dbo].[OverheadAllocationRuns]
     [PeriodEnd] DATE NOT NULL,
     -- Snapshot of the rule's BurdenPercent at the time of run, so later edits to
     -- the rule don't rewrite the historical effective rate.
-    [BurdenPercent] DECIMAL(5, 2) NOT NULL,
+    [BurdenPercent] DECIMAL(6, 2) NOT NULL,           -- matches Rules.BurdenPercent precision
     [RunAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [RunBy] NVARCHAR(200) NULL,
     -- Rows written by this run (for quick reference; not the source of truth).

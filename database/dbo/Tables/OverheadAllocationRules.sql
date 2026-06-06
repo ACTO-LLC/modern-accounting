@@ -6,7 +6,7 @@ CREATE TABLE [dbo].[OverheadAllocationRules]
     [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
     [Name] NVARCHAR(100) NOT NULL,
     -- BurdenPercent: 25.00 means 25% of direct labor cost is allocated as overhead.
-    [BurdenPercent] DECIMAL(5, 2) NOT NULL,
+    [BurdenPercent] DECIMAL(6, 2) NOT NULL,           -- DECIMAL(6,2) covers the CHECK's 0..1000 range; DECIMAL(5,2) would cap at 999.99.
     [IsActive] BIT NOT NULL DEFAULT 1,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),

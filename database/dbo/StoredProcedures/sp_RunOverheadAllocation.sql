@@ -26,7 +26,7 @@ BEGIN
     IF @PeriodStart > @PeriodEnd
         THROW 60001, 'PeriodStart must be on or before PeriodEnd.', 1;
 
-    DECLARE @BurdenPercent DECIMAL(5, 2);
+    DECLARE @BurdenPercent DECIMAL(6, 2);             -- match column precision
     DECLARE @IsActive BIT;
     SELECT @BurdenPercent = [BurdenPercent], @IsActive = [IsActive]
     FROM [dbo].[OverheadAllocationRules] WHERE [Id] = @RuleId;
@@ -87,6 +87,11 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRAN;
+        -- Two concurrent calls can pass the EXISTS check above and race into the
+        -- INSERT; the UNIQUE filtered index then rejects one with a raw 2601/2627.
+        -- Map that back to the friendly 60004 so callers see a single error code.
+        IF ERROR_NUMBER() IN (2601, 2627)
+            THROW 60004, 'An un-reversed run for this rule and period already exists.', 1;
         THROW;
     END CATCH
 
