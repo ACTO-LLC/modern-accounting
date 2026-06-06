@@ -226,10 +226,11 @@ export interface Project {
   Status: 'Active' | 'Completed' | 'OnHold';
   StartDate?: string;
   EndDate?: string;
-  BudgetedHours?: number;
-  BudgetedAmount?: number;
-  EstimatedCost?: number;
-  ContractAmount?: number;
+  // Nullable columns on the DB side — explicit `null` so call sites coalesce safely.
+  BudgetedHours?: number | null;
+  BudgetedAmount?: number | null;
+  EstimatedCost?: number | null;
+  ContractAmount?: number | null;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -253,8 +254,9 @@ export interface JobCostCode {
   ProjectId: string;
   Code: string;
   Description: string;
-  BudgetedAmount?: number;
-  BudgetedHours?: number;
+  // Nullable columns on the DB side — explicit `null` so call sites coalesce safely.
+  BudgetedAmount?: number | null;
+  BudgetedHours?: number | null;
   SortOrder: number;
   CreatedAt: string;
   UpdatedAt: string;
