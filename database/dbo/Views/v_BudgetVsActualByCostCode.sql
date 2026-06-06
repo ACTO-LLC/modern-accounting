@@ -27,21 +27,25 @@ SELECT
     CAST(0 AS BIT) AS [IsUncodedBucket],
     COALESCE(cc.[BudgetedAmount], 0) AS [Budget],
     COALESCE(cc.[BudgetedHours], 0) AS [BudgetedHours],
-    COALESCE(act.[Actual], 0) AS [Actual],
-    COALESCE(cmt.[Committed], 0) AS [Committed]
+    COALESCE(jca.[Actual], 0) AS [Actual],
+    COALESCE(jca.[Committed], 0) AS [Committed]
 FROM [dbo].[JobCostCodes] cc
 LEFT JOIN (
-    SELECT [CostCodeId], SUM([Amount]) AS [Actual]
+    -- Single pass: aggregate Actual and Committed in one scan, grouped by
+    -- (ProjectId, CostCodeId). The join below matches on BOTH keys so a
+    -- JobCost whose CostCodeId belongs to a different project than its own
+    -- ProjectId (which the line-level FK doesn't currently enforce — see
+    -- follow-up #633) can't leak into the wrong project's totals.
+    SELECT
+        [ProjectId],
+        [CostCodeId],
+        SUM(CASE WHEN [IsCommitted] = 0 THEN [Amount] ELSE 0 END) AS [Actual],
+        SUM(CASE WHEN [IsCommitted] = 1 THEN [Amount] ELSE 0 END) AS [Committed]
     FROM [dbo].[JobCosts]
-    WHERE [IsCommitted] = 0 AND [CostCodeId] IS NOT NULL
-    GROUP BY [CostCodeId]
-) act ON cc.[Id] = act.[CostCodeId]
-LEFT JOIN (
-    SELECT [CostCodeId], SUM([Amount]) AS [Committed]
-    FROM [dbo].[JobCosts]
-    WHERE [IsCommitted] = 1 AND [CostCodeId] IS NOT NULL
-    GROUP BY [CostCodeId]
-) cmt ON cc.[Id] = cmt.[CostCodeId]
+    WHERE [CostCodeId] IS NOT NULL
+    GROUP BY [ProjectId], [CostCodeId]
+) jca ON cc.[Id] = jca.[CostCodeId]
+     AND cc.[ProjectId] = jca.[ProjectId]
 
 UNION ALL
 

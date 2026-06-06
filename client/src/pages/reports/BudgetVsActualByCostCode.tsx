@@ -129,12 +129,21 @@ export default function BudgetVsActualByCostCode() {
         row.map((cell) => (cell.numeric ? cell.v : `"${sanitizeCsv(cell.v).replace(/"/g, '""')}"`)).join(','),
       ),
     ].join('\n');
-    const projectName = projects.find((p) => p.Id === projectId)?.Name ?? 'project';
+    const projectName = projects.find((p) => p.Id === projectId)?.Name ?? '';
+    // Conservative filename slug: collapse anything that isn't alphanumeric to
+    // a single hyphen, strip leading/trailing hyphens, fall back to "project"
+    // if the result is empty. Guards against /, \, :, ?, etc. that break
+    // filenames across OSes/browsers.
+    const slug =
+      projectName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'project';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `budget-vs-actual-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `budget-vs-actual-${slug}-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -170,10 +179,11 @@ export default function BudgetVsActualByCostCode() {
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="min-w-[260px]">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="bva-job-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Job <span className="text-red-500">*</span>
             </label>
             <select
+              id="bva-job-select"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
