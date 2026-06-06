@@ -120,20 +120,33 @@ export default function JobProfitability() {
       'Gross Margin',
       'Gross Margin %',
     ];
-    const body = effectiveRows.map((r) => [
-      r.ProjectName,
-      r.CustomerName ?? '',
-      r.Status,
-      (r.ContractAmount ?? 0).toFixed(2),
-      r.RevenueToDate.toFixed(2),
-      r._effectiveCost.toFixed(2),
-      r._effectiveMargin.toFixed(2),
-      r._effectiveMarginPct != null ? r._effectiveMarginPct.toFixed(2) : '',
+    // Tag numeric cells so the CSV builder can leave them as plain numbers
+    // (no quoting, no formula sanitization — sanitizing "-123.45" would prefix
+    // the minus and break the value from being read as a number in Excel).
+    type Cell = { v: string; numeric?: boolean };
+    const num = (n: number): Cell => ({ v: n.toFixed(2), numeric: true });
+    const text = (s: string): Cell => ({ v: s });
+
+    const body: Cell[][] = effectiveRows.map((r) => [
+      text(r.ProjectName),
+      text(r.CustomerName ?? ''),
+      text(r.Status),
+      num(r.ContractAmount ?? 0),
+      num(r.RevenueToDate),
+      num(r._effectiveCost),
+      num(r._effectiveMargin),
+      r._effectiveMarginPct != null ? num(r._effectiveMarginPct) : text(''),
     ]);
     const csv = [
       headers.join(','),
       ...body.map((row) =>
-        row.map((cell) => `"${sanitizeCsv(String(cell)).replace(/"/g, '""')}"`).join(','),
+        row
+          .map((cell) =>
+            cell.numeric
+              ? cell.v
+              : `"${sanitizeCsv(cell.v).replace(/"/g, '""')}"`,
+          )
+          .join(','),
       ),
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
