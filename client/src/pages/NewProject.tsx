@@ -19,8 +19,8 @@ export default function NewProject() {
         Status: data.Status,
         StartDate: data.StartDate || undefined,
         EndDate: data.EndDate || undefined,
-        BudgetedHours: data.BudgetedHours || undefined,
-        BudgetedAmount: data.BudgetedAmount || undefined,
+        BudgetedHours: data.BudgetedHours ?? null,
+        BudgetedAmount: data.BudgetedAmount ?? null,
         // Only send the cost-side fields when the flag is on, so a flag-off
         // create doesn't touch the API surface area at all.
         ...(jobCostingEnabled && {

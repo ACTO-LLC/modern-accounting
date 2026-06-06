@@ -38,8 +38,8 @@ export default function EditProject() {
         Status: data.Status,
         StartDate: data.StartDate || undefined,
         EndDate: data.EndDate || undefined,
-        BudgetedHours: data.BudgetedHours || undefined,
-        BudgetedAmount: data.BudgetedAmount || undefined,
+        BudgetedHours: data.BudgetedHours ?? null,
+        BudgetedAmount: data.BudgetedAmount ?? null,
         // Only round-trip the cost-side fields when the flag is on. Otherwise the
         // payload would include `null` for these and clear previously-saved values
         // any time the flag is later turned off.
@@ -91,8 +91,8 @@ export default function EditProject() {
     Status: project.Status,
     StartDate: project.StartDate ? project.StartDate.split('T')[0] : '',
     EndDate: project.EndDate ? project.EndDate.split('T')[0] : '',
-    BudgetedHours: project.BudgetedHours || undefined,
-    BudgetedAmount: project.BudgetedAmount || undefined,
+    BudgetedHours: project.BudgetedHours ?? null,
+    BudgetedAmount: project.BudgetedAmount ?? null,
     EstimatedCost: project.EstimatedCost ?? null,
     ContractAmount: project.ContractAmount ?? null,
   };

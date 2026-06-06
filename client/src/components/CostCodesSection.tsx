@@ -37,7 +37,7 @@ export default function CostCodesSection({ projectId }: Props) {
   const [editing, setEditing] = useState<JobCostCode | null>(null);
   const [creating, setCreating] = useState(false);
 
-  const { data: costCodes = [], isLoading } = useQuery<JobCostCode[]>({
+  const { data: costCodes = [], isLoading, error, refetch } = useQuery<JobCostCode[]>({
     queryKey: ['jobCostCodes', projectId],
     queryFn: () => jobCostCodesApi.getByProject(projectId),
     enabled: !!projectId,
@@ -49,6 +49,10 @@ export default function CostCodesSection({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['jobCostCodes', projectId] });
       setCreating(false);
     },
+    onError: (err) => {
+      console.error('Failed to create cost code:', err);
+      alert('Failed to create cost code. Please try again.');
+    },
   });
 
   const updateMutation = useMutation({
@@ -58,12 +62,20 @@ export default function CostCodesSection({ projectId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['jobCostCodes', projectId] });
       setEditing(null);
     },
+    onError: (err) => {
+      console.error('Failed to update cost code:', err);
+      alert('Failed to update cost code. Please try again.');
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => jobCostCodesApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['jobCostCodes', projectId] });
+    },
+    onError: (err) => {
+      console.error('Failed to delete cost code:', err);
+      alert('Failed to delete cost code. Please try again.');
     },
   });
 
@@ -151,7 +163,12 @@ export default function CostCodesSection({ projectId }: Props) {
         </div>
       )}
 
-      {costCodes.length === 0 && !isLoading ? (
+      {error ? (
+        <div className="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-300 flex items-center justify-between">
+          <span>Couldn't load cost codes. {error instanceof Error ? error.message : ''}</span>
+          <Button size="small" variant="outlined" onClick={() => refetch()}>Retry</Button>
+        </div>
+      ) : costCodes.length === 0 && !isLoading ? (
         <div className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
           No cost codes yet. Add one to start tracking the project budget by line item.
         </div>
@@ -176,11 +193,17 @@ export default function CostCodesSection({ projectId }: Props) {
         <CostCodeDialog
           existing={editing}
           onCancel={() => { setCreating(false); setEditing(null); }}
-          onSubmit={(data) => {
-            if (editing) {
-              return updateMutation.mutateAsync({ id: editing.Id, input: data });
+          onSubmit={async (data) => {
+            try {
+              if (editing) {
+                await updateMutation.mutateAsync({ id: editing.Id, input: data });
+              } else {
+                await createMutation.mutateAsync({ ProjectId: projectId, ...data });
+              }
+            } catch {
+              // Already surfaced via the mutation's onError; swallow here so
+              // react-hook-form's submit handler doesn't see an unhandled rejection.
             }
-            return createMutation.mutateAsync({ ProjectId: projectId, ...data });
           }}
           isSubmitting={createMutation.isPending || updateMutation.isPending}
         />

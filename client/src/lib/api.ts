@@ -241,8 +241,8 @@ export interface ProjectInput {
   Status?: 'Active' | 'Completed' | 'OnHold';
   StartDate?: string;
   EndDate?: string;
-  BudgetedHours?: number;
-  BudgetedAmount?: number;
+  BudgetedHours?: number | null;
+  BudgetedAmount?: number | null;
   EstimatedCost?: number | null;
   ContractAmount?: number | null;
 }
