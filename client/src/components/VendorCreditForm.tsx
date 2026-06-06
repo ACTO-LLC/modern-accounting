@@ -12,11 +12,14 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ProjectSelector from './ProjectSelector';
 import ClassSelector from './ClassSelector';
+import CostCodeSelector from './CostCodeSelector';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import api from '../lib/api';
 
 export const vendorCreditSchema = z.object({
   VendorId: z.string().uuid('Please select a vendor'),
   ProjectId: z.string().uuid().nullish(),
+  CostCodeId: z.string().uuid().nullish(),
   ClassId: z.string().uuid().nullish(),
   CreditNumber: z.string().min(1, 'Credit number is required'),
   CreditDate: z.string().min(1, 'Credit date is required'),
@@ -31,6 +34,7 @@ export const vendorCreditSchema = z.object({
     AccountId: z.string().uuid('Please select an account'),
     ProductServiceId: z.string().nullish(),
     ProjectId: z.string().uuid().nullish(),
+    CostCodeId: z.string().uuid().nullish(),
     ClassId: z.string().uuid().nullish(),
     Description: z.string().nullish(),
     Quantity: z.number().min(0, 'Quantity must be positive'),
@@ -69,6 +73,8 @@ interface VendorCreditFormProps {
 
 export default function VendorCreditForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Vendor Credit' }: VendorCreditFormProps) {
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
@@ -106,7 +112,7 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
       CreditDate: new Date().toISOString().split('T')[0],
       ProjectId: null,
       ClassId: null,
-      Lines: [{ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0, ProjectId: null, ClassId: null }],
+      Lines: [{ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0, ProjectId: null, CostCodeId: null, ClassId: null }],
       Subtotal: 0,
       TaxAmount: 0,
       TotalAmount: 0,
@@ -124,6 +130,8 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
     control,
     name: "Lines"
   });
+
+  const watchedHeaderProjectId = useWatch({ control, name: 'ProjectId' });
 
   // Update totals when lines change
   useEffect(() => {
@@ -259,11 +267,29 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
             render={({ field }) => (
               <ProjectSelector
                 value={field.value || ''}
-                onChange={field.onChange}
+                onChange={(projectId) => {
+                  field.onChange(projectId || null);
+                  if (jobCostingEnabled) setValue('CostCodeId', null);
+                }}
                 disabled={isSubmitting}
               />
             )}
           />
+
+          {jobCostingEnabled && (
+            <Controller
+              name="CostCodeId"
+              control={control}
+              render={({ field }) => (
+                <CostCodeSelector
+                  value={field.value || ''}
+                  onChange={(costCodeId) => field.onChange(costCodeId || null)}
+                  projectId={watchedHeaderProjectId ?? null}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+          )}
 
           <Controller
             name="ClassId"
@@ -308,7 +334,7 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
               variant="outlined"
               size="small"
               startIcon={<Plus className="w-4 h-4" />}
-              onClick={() => append({ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0, ProjectId: null, ClassId: null })}
+              onClick={() => append({ AccountId: '', Description: '', Quantity: 1, UnitPrice: 0, Amount: 0, ProjectId: null, CostCodeId: null, ClassId: null })}
             >
               Add Item
             </Button>
@@ -463,12 +489,31 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
                         render={({ field: pField }) => (
                           <ProjectSelector
                             value={pField.value || ''}
-                            onChange={pField.onChange}
+                            onChange={(projectId) => {
+                              pField.onChange(projectId || null);
+                              if (jobCostingEnabled) setValue(`Lines.${index}.CostCodeId`, null);
+                            }}
                             disabled={isSubmitting}
                           />
                         )}
                       />
                     </div>
+                    {jobCostingEnabled && (
+                      <div className="flex-1">
+                        <Controller
+                          name={`Lines.${index}.CostCodeId`}
+                          control={control}
+                          render={({ field: ccField }) => (
+                            <CostCodeSelector
+                              value={ccField.value || ''}
+                              onChange={(costCodeId) => ccField.onChange(costCodeId || null)}
+                              projectId={lines?.[index]?.ProjectId ?? null}
+                              disabled={isSubmitting}
+                            />
+                          )}
+                        />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <Controller
                         name={`Lines.${index}.ClassId`}

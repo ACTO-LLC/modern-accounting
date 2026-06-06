@@ -21,6 +21,7 @@ interface VendorCreditLine {
   UnitPrice: number;
   Amount: number;
   ProjectId?: string | null;
+  CostCodeId?: string | null;
   ClassId?: string | null;
 }
 
@@ -81,6 +82,7 @@ export default function EditVendorCredit() {
       await api.patch(`/vendorcredits_write/Id/${id}`, {
         ...creditData,
         ProjectId: data.ProjectId || null,
+        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
       });
 
@@ -109,6 +111,7 @@ export default function EditVendorCredit() {
           UnitPrice: l.UnitPrice,
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
+          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/vendorcreditlines', {
@@ -120,6 +123,7 @@ export default function EditVendorCredit() {
           UnitPrice: l.UnitPrice,
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
+          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
         }))
       ];

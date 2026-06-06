@@ -16,6 +16,7 @@ interface PurchaseOrder {
   Status: 'Draft' | 'Sent' | 'Received' | 'Partial' | 'Cancelled';
   Notes?: string;
   ProjectId?: string | null;
+  CostCodeId?: string | null;
   ClassId?: string | null;
   Lines?: PurchaseOrderLine[];
 }
@@ -29,6 +30,7 @@ interface PurchaseOrderLine {
   UnitPrice: number;
   Amount?: number;
   ProjectId?: string | null;
+  CostCodeId?: string | null;
   ClassId?: string | null;
 }
 
@@ -77,6 +79,7 @@ export default function EditPurchaseOrder() {
       await api.patch(`/purchaseorders_write/Id/${id}`, {
         ...poData,
         ProjectId: data.ProjectId || null,
+        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
       });
 
@@ -106,6 +109,7 @@ export default function EditPurchaseOrder() {
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
           ProjectId: l.ProjectId || null,
+          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/purchaseorderlines', {
@@ -115,6 +119,7 @@ export default function EditPurchaseOrder() {
           Quantity: l.Quantity,
           UnitPrice: l.UnitPrice,
           ProjectId: l.ProjectId || null,
+          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
         }))
       ];

@@ -21,6 +21,7 @@ interface BillLine {
   Description: string;
   Amount: number;
   ProjectId?: string | null;
+  CostCodeId?: string | null;
   ClassId?: string | null;
 }
 
@@ -115,6 +116,7 @@ export default function EditBill() {
           Description: l.Description || '',
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
+          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
         })),
         ...toAdd.map(l => api.post('/billlines', {
@@ -123,6 +125,7 @@ export default function EditBill() {
           Description: l.Description || '',
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
+          CostCodeId: l.CostCodeId || null,
           ClassId: l.ClassId || null,
         }))
       ];

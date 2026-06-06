@@ -14,6 +14,8 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ProjectSelector from './ProjectSelector';
 import ClassSelector from './ClassSelector';
+import CostCodeSelector from './CostCodeSelector';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 export const billSchema = z.object({
   VendorId: z.string().uuid('Please select a vendor'),
@@ -33,6 +35,7 @@ export const billSchema = z.object({
     Description: z.string().nullish(),
     Amount: z.number().min(0, 'Amount must be positive'),
     ProjectId: z.string().uuid().nullish(),
+    CostCodeId: z.string().uuid().nullish(),
     ClassId: z.string().uuid().nullish()
   })).min(1, 'At least one line item is required')
 });
@@ -62,6 +65,8 @@ interface BillFormProps {
 export default function BillForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Bill' }: BillFormProps) {
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
@@ -96,7 +101,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
       Memo: '',
       ProjectId: null,
       ClassId: null,
-      Lines: [{ AccountId: '', Description: '', Amount: 0, ProjectId: null, ClassId: null }],
+      Lines: [{ AccountId: '', Description: '', Amount: 0, ProjectId: null, CostCodeId: null, ClassId: null }],
       TotalAmount: 0,
       AmountPaid: 0,
       ...initialValues
@@ -332,7 +337,7 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
               variant="outlined"
               size="small"
               startIcon={<Plus className="w-4 h-4" />}
-              onClick={() => append({ AccountId: '', Description: '', Amount: 0, ProjectId: null, ClassId: null })}
+              onClick={() => append({ AccountId: '', Description: '', Amount: 0, ProjectId: null, CostCodeId: null, ClassId: null })}
             >
               Add Item
             </Button>
@@ -416,12 +421,34 @@ export default function BillForm({ initialValues, onSubmit, title, isSubmitting:
                       render={({ field: pField }) => (
                         <ProjectSelector
                           value={pField.value || ''}
-                          onChange={(projectId) => pField.onChange(projectId || null)}
+                          onChange={(projectId) => {
+                            pField.onChange(projectId || null);
+                            // Clearing/changing the project invalidates any cost code already chosen.
+                            if (jobCostingEnabled) {
+                              setValue(`Lines.${index}.CostCodeId`, null);
+                            }
+                          }}
                           disabled={isSubmitting}
                         />
                       )}
                     />
                   </div>
+                  {jobCostingEnabled && (
+                    <div className="flex-1">
+                      <Controller
+                        name={`Lines.${index}.CostCodeId`}
+                        control={control}
+                        render={({ field: ccField }) => (
+                          <CostCodeSelector
+                            value={ccField.value || ''}
+                            onChange={(costCodeId) => ccField.onChange(costCodeId || null)}
+                            projectId={lines?.[index]?.ProjectId ?? null}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
+                  )}
                   <div className="flex-1">
                     <Controller
                       name={`Lines.${index}.ClassId`}

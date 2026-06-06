@@ -282,6 +282,7 @@ export interface TimeEntry {
   Hours: number;
   HourlyRate: number;
   CostRate: number;
+  CostCodeId?: string | null;
   Description?: string;
   IsBillable: boolean;
   Status: 'Pending' | 'Approved' | 'Invoiced';
@@ -298,6 +299,7 @@ export interface TimeEntryInput {
   Hours: number;
   HourlyRate?: number | null;
   CostRate?: number | null;
+  CostCodeId?: string | null;
   Description?: string | null;
   IsBillable?: boolean | null;
   Status?: 'Pending' | 'Approved' | 'Invoiced' | null;

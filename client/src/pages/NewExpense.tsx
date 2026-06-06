@@ -28,6 +28,7 @@ export default function NewExpense() {
         PaymentAccountId: data.PaymentAccountId || null,
         CustomerId: data.CustomerId || null,
         ProjectId: data.ProjectId || null,
+        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
       };
 

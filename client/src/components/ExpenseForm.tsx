@@ -12,6 +12,8 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import InputAdornment from '@mui/material/InputAdornment';
+import CostCodeSelector from './CostCodeSelector';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 const expenseSchemaBase = z.object({
   ExpenseNumber: z.string().nullish(),
@@ -28,6 +30,7 @@ const expenseSchemaBase = z.object({
   IsPersonal: z.boolean(),
   CustomerId: z.string().uuid().nullish(),
   ProjectId: z.string().uuid().nullish(),
+  CostCodeId: z.string().uuid().nullish(),
   ClassId: z.string().uuid().nullish(),
   Status: z.enum(['Recorded', 'Pending', 'Reimbursed', 'Voided']),
 });
@@ -86,6 +89,8 @@ export default function ExpenseForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [receipts, setReceipts] = useState<ReceiptFile[]>([]);
   const [useQuickVendor, setUseQuickVendor] = useState(false);
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
@@ -155,6 +160,7 @@ export default function ExpenseForm({
   });
 
   const isReimbursable = useWatch({ control, name: 'IsReimbursable' });
+  const watchedProjectId = useWatch({ control, name: 'ProjectId' });
   const isSubmitting = externalIsSubmitting || formIsSubmitting;
 
   // Amount uses register with valueAsNumber — destructure ref for inputRef pattern
@@ -572,6 +578,13 @@ export default function ExpenseForm({
                 label="Project (optional)"
                 size="small"
                 fullWidth
+                onChange={(e) => {
+                  field.onChange(e);
+                  // Project change invalidates any cost code already chosen.
+                  if (jobCostingEnabled) {
+                    setValue('CostCodeId', null);
+                  }
+                }}
               >
                 <MenuItem value="">Select project...</MenuItem>
                 {projects?.map((project) => (
@@ -582,6 +595,20 @@ export default function ExpenseForm({
               </TextField>
             )}
           />
+
+          {jobCostingEnabled && (
+            <Controller
+              name="CostCodeId"
+              control={control}
+              render={({ field }) => (
+                <CostCodeSelector
+                  value={field.value || ''}
+                  onChange={(costCodeId) => field.onChange(costCodeId || null)}
+                  projectId={watchedProjectId ?? null}
+                />
+              )}
+            />
+          )}
 
           {/* Class */}
           <Controller

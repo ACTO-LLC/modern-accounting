@@ -5,8 +5,8 @@
 --   * UPDATE from Approved -> not   -> remove JobCosts row (un-approval / status flip)
 --   * UPDATE of Hours/CostRate/EntryDate/ProjectId on an Approved entry -> upsert
 --   * DELETE                        -> remove JobCosts row
--- Issue #610 (epic #606). When #615 adds TimeEntries.CostCodeId, update the INSERT below
--- to project it through.
+-- Issue #610 (epic #606). #615 added TimeEntries.CostCodeId and this trigger now
+-- projects it through to JobCosts.
 CREATE TRIGGER [dbo].[TR_TimeEntries_PostJobCosts]
 ON [dbo].[TimeEntries]
 AFTER INSERT, UPDATE, DELETE
@@ -51,7 +51,7 @@ BEGIN
         ([ProjectId], [CostCodeId], [SourceType], [SourceId], [PostingDate], [Amount], [Hours], [IsCommitted], [TenantId])
     SELECT
         i.[ProjectId],
-        NULL,                                       -- TimeEntries.CostCodeId not added yet (see #615)
+        i.[CostCodeId],                             -- nullable; OK because TimeEntries.ProjectId is NOT NULL
         'TimeEntry',
         i.[Id],
         i.[EntryDate],

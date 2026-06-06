@@ -19,6 +19,7 @@ interface Expense {
   IsReimbursable: boolean;
   CustomerId: string | null;
   ProjectId: string | null;
+  CostCodeId: string | null;
   ClassId: string | null;
   Status: string;
 }
@@ -50,6 +51,7 @@ export default function EditExpense() {
         PaymentAccountId: data.PaymentAccountId || null,
         CustomerId: data.CustomerId || null,
         ProjectId: data.ProjectId || null,
+        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
       };
 
@@ -119,6 +121,7 @@ export default function EditExpense() {
     IsReimbursable: expense.IsReimbursable,
     CustomerId: expense.CustomerId,
     ProjectId: expense.ProjectId,
+    CostCodeId: expense.CostCodeId,
     ClassId: expense.ClassId,
     Status: expense.Status as ExpenseFormData['Status'],
   };

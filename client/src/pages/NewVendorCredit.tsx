@@ -21,6 +21,7 @@ export default function NewVendorCredit() {
       await api.post('/vendorcredits_write', {
         ...creditData,
         ProjectId: data.ProjectId || null,
+        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
       });
 
@@ -48,6 +49,7 @@ export default function NewVendorCredit() {
               UnitPrice: line.UnitPrice,
               Amount: line.Amount,
               ProjectId: line.ProjectId || null,
+              CostCodeId: line.CostCodeId || null,
               ClassId: line.ClassId || null,
             })
           )

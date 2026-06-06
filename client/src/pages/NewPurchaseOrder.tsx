@@ -28,6 +28,7 @@ export default function NewPurchaseOrder() {
       await api.post('/purchaseorders_write', {
         ...poData,
         ProjectId: data.ProjectId || null,
+        CostCodeId: data.CostCodeId || null,
         ClassId: data.ClassId || null,
       });
 
@@ -52,6 +53,7 @@ export default function NewPurchaseOrder() {
             Quantity: line.Quantity,
             UnitPrice: line.UnitPrice,
             ProjectId: line.ProjectId || null,
+            CostCodeId: line.CostCodeId || null,
             ClassId: line.ClassId || null,
           })
         )

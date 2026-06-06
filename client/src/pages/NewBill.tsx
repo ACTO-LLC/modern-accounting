@@ -55,6 +55,7 @@ export default function NewBill() {
               Description: line.Description || '',
               Amount: line.Amount,
               ProjectId: line.ProjectId || null,
+              CostCodeId: line.CostCodeId || null,
               ClassId: line.ClassId || null,
             })
           )
