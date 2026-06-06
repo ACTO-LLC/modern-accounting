@@ -10,12 +10,15 @@
 --
 -- Definitions:
 --   CostToDate       = sum of JobCosts.Amount where IsCommitted = 0
---   PercentComplete  = CostToDate / EstimatedCost
---                      (NULL when EstimatedCost is NULL or 0 — no basis to
---                       compute completion. Can exceed 100% when actuals run
---                       past the estimate; intentional, surfaces overruns.)
---   EarnedRevenue    = PercentComplete * ContractAmount
---                      (NULL when PercentComplete or ContractAmount is NULL)
+--   PercentComplete  = CostToDate / EstimatedCost * 100  (expressed 0..100)
+--                      NULL when EstimatedCost is NULL or 0 — no basis to
+--                      compute completion. Can exceed 100% when actuals
+--                      run past the estimate; intentional, surfaces
+--                      overruns.
+--   EarnedRevenue    = CostToDate / EstimatedCost * ContractAmount
+--                      = (PercentComplete / 100) * ContractAmount
+--                      NULL when EstimatedCost is NULL/0 or ContractAmount
+--                      is NULL.
 --   BilledToDate     = same definition as v_JobProfitability.RevenueToDate —
 --                      posted InvoiceLines on this project minus non-voided
 --                      CreditMemoLines. Keeps the two reports reconciled.

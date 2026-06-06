@@ -72,19 +72,40 @@ export default function WIP() {
     },
   });
 
+  // Totals: when any row has NULL EarnedRevenue/OverUnder (i.e. no basis to
+  // compute completion), propagate NULL through to the total so the row
+  // doesn't silently mix computed + unknown values. The display layer shows
+  // "—" for those columns. Sums that are always computable (contract, cost,
+  // billed) accumulate normally.
   const totals = useMemo(() => {
-    return rows.reduce(
-      (acc, r) => {
-        acc.contract += r.ContractAmount ?? 0;
-        acc.estimatedCost += r.EstimatedCost ?? 0;
-        acc.cost += r.CostToDate;
-        acc.earned += r.EarnedRevenue ?? 0;
-        acc.billed += r.BilledToDate;
-        acc.overUnder += r.OverUnder ?? 0;
-        return acc;
+    let earnedHasNull = false;
+    let overUnderHasNull = false;
+    const acc = rows.reduce(
+      (a, r) => {
+        a.contract += r.ContractAmount ?? 0;
+        a.estimatedCost += r.EstimatedCost ?? 0;
+        a.cost += r.CostToDate;
+        a.billed += r.BilledToDate;
+        if (r.EarnedRevenue == null) earnedHasNull = true;
+        else a.earned += r.EarnedRevenue;
+        if (r.OverUnder == null) overUnderHasNull = true;
+        else a.overUnder += r.OverUnder;
+        return a;
       },
       { contract: 0, estimatedCost: 0, cost: 0, earned: 0, billed: 0, overUnder: 0 },
     );
+    return {
+      ...acc,
+      earned: earnedHasNull ? null : acc.earned,
+      overUnder: overUnderHasNull ? null : acc.overUnder,
+    } as {
+      contract: number;
+      estimatedCost: number;
+      cost: number;
+      billed: number;
+      earned: number | null;
+      overUnder: number | null;
+    };
   }, [rows]);
 
   const exportCsv = () => {
@@ -303,19 +324,21 @@ export default function WIP() {
                 </td>
                 <td className="px-4 py-2 text-sm text-right text-gray-400">—</td>
                 <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
-                  {formatCurrencyStandalone(totals.earned)}
+                  {totals.earned != null ? formatCurrencyStandalone(totals.earned) : <span className="text-gray-400">—</span>}
                 </td>
                 <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
                   {formatCurrencyStandalone(totals.billed)}
                 </td>
                 <td className={`px-4 py-2 text-sm text-right font-semibold ${
-                  totals.overUnder > 0
-                    ? 'text-amber-700 dark:text-amber-400'
-                    : totals.overUnder < 0
-                      ? 'text-blue-700 dark:text-blue-400'
-                      : 'text-gray-700 dark:text-gray-300'
+                  totals.overUnder == null
+                    ? 'text-gray-400'
+                    : totals.overUnder > 0
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : totals.overUnder < 0
+                        ? 'text-blue-700 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300'
                 }`}>
-                  {formatCurrencyStandalone(totals.overUnder)}
+                  {totals.overUnder != null ? formatCurrencyStandalone(totals.overUnder) : '—'}
                 </td>
               </tr>
             </tfoot>
