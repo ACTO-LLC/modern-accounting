@@ -70,28 +70,57 @@ export default function UnbilledCosts() {
     },
   });
 
-  // Group rows by project for the expandable rendering.
+  // Group rows by project for the expandable rendering. A project can legitimately
+  // contain rows for different customers (the Expense branch returns the expense's
+  // billable customer, which may differ from the project's owning customer), so we
+  // track distinct customers per group and render "Multiple customers" when the
+  // set is heterogeneous instead of silently picking the first.
   const grouped = useMemo(() => {
     const map = new Map<
       string,
-      { projectName: string; customerName: string | null; rows: UnbilledRow[]; total: number }
+      {
+        projectName: string;
+        rows: UnbilledRow[];
+        total: number;
+        customers: Map<string, string>; // CustomerId -> CustomerName (preserves uniques)
+        hasNullCustomer: boolean;
+      }
     >();
     for (const r of rows) {
-      const g = map.get(r.ProjectId);
-      if (g) {
-        g.rows.push(r);
-        g.total += r.Amount;
-      } else {
-        map.set(r.ProjectId, {
+      let g = map.get(r.ProjectId);
+      if (!g) {
+        g = {
           projectName: r.ProjectName,
-          customerName: r.CustomerName,
-          rows: [r],
-          total: r.Amount,
-        });
+          rows: [],
+          total: 0,
+          customers: new Map(),
+          hasNullCustomer: false,
+        };
+        map.set(r.ProjectId, g);
       }
+      g.rows.push(r);
+      g.total += r.Amount;
+      if (r.CustomerId) g.customers.set(r.CustomerId, r.CustomerName ?? '—');
+      else g.hasNullCustomer = true;
     }
     return Array.from(map.entries())
-      .map(([projectId, g]) => ({ projectId, ...g }))
+      .map(([projectId, g]) => {
+        const customerNames = Array.from(g.customers.values());
+        const totalKinds = customerNames.length + (g.hasNullCustomer ? 1 : 0);
+        return {
+          projectId,
+          projectName: g.projectName,
+          rows: g.rows,
+          total: g.total,
+          customerDisplay:
+            totalKinds === 0
+              ? '—'
+              : totalKinds === 1
+                ? customerNames[0] ?? '—'
+                : 'Multiple customers',
+          isMultiCustomer: totalKinds > 1,
+        };
+      })
       .sort((a, b) => a.projectName.localeCompare(b.projectName));
   }, [rows]);
 
@@ -242,28 +271,35 @@ export default function UnbilledCosts() {
                 return (
                   <Fragment key={g.projectId}>
                     <tr
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-white dark:bg-gray-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset"
+                      // Mouse convenience only — the focusable control is the
+                      // <button> below, which preserves table-row semantics for
+                      // screen readers (a row announces as a row, not a button).
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-white dark:bg-gray-800"
                       onClick={() => toggle(g.projectId)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          toggle(g.projectId);
-                        }
-                      }}
-                      tabIndex={0}
-                      role="button"
-                      aria-expanded={isOpen}
-                      aria-label={`Toggle ${g.projectName}`}
                     >
                       <td className="px-2 py-2">
-                        {isOpen
-                          ? <ChevronDown className="w-4 h-4 text-gray-500" />
-                          : <ChevronRight className="w-4 h-4 text-gray-500" />}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            // Don't let the row's onClick also fire and re-toggle.
+                            e.stopPropagation();
+                            toggle(g.projectId);
+                          }}
+                          aria-expanded={isOpen}
+                          aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${g.projectName}`}
+                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          {isOpen
+                            ? <ChevronDown className="w-4 h-4 text-gray-500" />
+                            : <ChevronRight className="w-4 h-4 text-gray-500" />}
+                        </button>
                       </td>
                       <td className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {g.projectName}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{g.customerName ?? '—'}</td>
+                      <td className={`px-4 py-2 text-sm ${g.isMultiCustomer ? 'italic text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {g.customerDisplay}
+                      </td>
                       <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{g.rows.length} {g.rows.length === 1 ? 'item' : 'items'}</td>
                       <td className="px-4 py-2"></td>
                       <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
