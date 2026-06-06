@@ -43,9 +43,12 @@ SELECT
     COALESCE(cost.[CostToDate], 0) AS [CostToDate],
     CASE
         WHEN p.[EstimatedCost] IS NULL OR p.[EstimatedCost] = 0 THEN NULL
+        -- Wide DECIMAL: tiny (e.g. mis-entered) EstimatedCost + a real cost
+        -- can push the percentage far past 100; we want the value to surface
+        -- in the report rather than overflow.
         ELSE CAST(
             COALESCE(cost.[CostToDate], 0) / p.[EstimatedCost] * 100.0
-            AS DECIMAL(9, 2))
+            AS DECIMAL(18, 2))
     END AS [PercentComplete],
     CASE
         WHEN p.[EstimatedCost] IS NULL OR p.[EstimatedCost] = 0

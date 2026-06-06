@@ -72,18 +72,21 @@ export default function WIP() {
     },
   });
 
-  // Totals: when any row has NULL EarnedRevenue/OverUnder (i.e. no basis to
-  // compute completion), propagate NULL through to the total so the row
-  // doesn't silently mix computed + unknown values. The display layer shows
-  // "—" for those columns. Sums that are always computable (contract, cost,
-  // billed) accumulate normally.
+  // Totals: any column with a NULL row value propagates NULL through the
+  // total so the row doesn't silently mix computed + unknown values. The
+  // display layer shows "—" for those columns. Columns that are always
+  // computable per row (CostToDate, BilledToDate) accumulate normally.
   const totals = useMemo(() => {
+    let contractHasNull = false;
+    let estCostHasNull = false;
     let earnedHasNull = false;
     let overUnderHasNull = false;
     const acc = rows.reduce(
       (a, r) => {
-        a.contract += r.ContractAmount ?? 0;
-        a.estimatedCost += r.EstimatedCost ?? 0;
+        if (r.ContractAmount == null) contractHasNull = true;
+        else a.contract += r.ContractAmount;
+        if (r.EstimatedCost == null) estCostHasNull = true;
+        else a.estimatedCost += r.EstimatedCost;
         a.cost += r.CostToDate;
         a.billed += r.BilledToDate;
         if (r.EarnedRevenue == null) earnedHasNull = true;
@@ -96,11 +99,13 @@ export default function WIP() {
     );
     return {
       ...acc,
+      contract: contractHasNull ? null : acc.contract,
+      estimatedCost: estCostHasNull ? null : acc.estimatedCost,
       earned: earnedHasNull ? null : acc.earned,
       overUnder: overUnderHasNull ? null : acc.overUnder,
     } as {
-      contract: number;
-      estimatedCost: number;
+      contract: number | null;
+      estimatedCost: number | null;
       cost: number;
       billed: number;
       earned: number | null;
@@ -314,10 +319,10 @@ export default function WIP() {
               <tr>
                 <td colSpan={3} className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Total</td>
                 <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
-                  {formatCurrencyStandalone(totals.contract)}
+                  {totals.contract != null ? formatCurrencyStandalone(totals.contract) : <span className="text-gray-400">—</span>}
                 </td>
                 <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
-                  {formatCurrencyStandalone(totals.estimatedCost)}
+                  {totals.estimatedCost != null ? formatCurrencyStandalone(totals.estimatedCost) : <span className="text-gray-400">—</span>}
                 </td>
                 <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
                   {formatCurrencyStandalone(totals.cost)}
