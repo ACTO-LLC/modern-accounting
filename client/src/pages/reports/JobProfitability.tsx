@@ -5,6 +5,7 @@ import api from '../../lib/api';
 import ReportHeader from '../../components/reports/ReportHeader';
 import { formatCurrencyStandalone } from '../../contexts/CurrencyContext';
 import { useFeatureFlags } from '../../contexts/FeatureFlagsContext';
+import { formatGuidForOData } from '../../lib/validation';
 
 /**
  * Prevent CSV formula injection: values starting with =, +, -, or @ are
@@ -67,7 +68,9 @@ export default function JobProfitability() {
     queryFn: async () => {
       const filters: string[] = [];
       if (customerId !== 'all') {
-        filters.push(`CustomerId eq ${customerId}`);
+        // Validate the GUID — even though the value comes from a <select>, this
+        // keeps malformed/tampered input from producing a broken OData filter.
+        filters.push(`CustomerId eq ${formatGuidForOData(customerId, 'CustomerId')}`);
       }
       if (statusFilter !== 'All') {
         filters.push(`Status eq '${statusFilter}'`);
