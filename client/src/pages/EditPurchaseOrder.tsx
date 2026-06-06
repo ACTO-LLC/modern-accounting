@@ -4,6 +4,7 @@ import api from '../lib/api';
 import PurchaseOrderForm, { PurchaseOrderFormData } from '../components/PurchaseOrderForm';
 import { formatGuidForOData, isValidUUID } from '../lib/validation';
 import { useToast } from '../hooks/useToast';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface PurchaseOrder {
   Id: string;
@@ -16,6 +17,7 @@ interface PurchaseOrder {
   Status: 'Draft' | 'Sent' | 'Received' | 'Partial' | 'Cancelled';
   Notes?: string;
   ProjectId?: string | null;
+  CostCodeId?: string | null;
   ClassId?: string | null;
   Lines?: PurchaseOrderLine[];
 }
@@ -29,6 +31,7 @@ interface PurchaseOrderLine {
   UnitPrice: number;
   Amount?: number;
   ProjectId?: string | null;
+  CostCodeId?: string | null;
   ClassId?: string | null;
 }
 
@@ -37,6 +40,8 @@ export default function EditPurchaseOrder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   // Validate ID early
   const isIdValid = isValidUUID(id);
@@ -78,6 +83,7 @@ export default function EditPurchaseOrder() {
         ...poData,
         ProjectId: data.ProjectId || null,
         ClassId: data.ClassId || null,
+        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       });
 
       // 2. Handle Lines Reconciliation
@@ -107,6 +113,7 @@ export default function EditPurchaseOrder() {
           UnitPrice: l.UnitPrice,
           ProjectId: l.ProjectId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         })),
         ...toAdd.map(l => api.post('/purchaseorderlines', {
           PurchaseOrderId: id,
@@ -116,6 +123,7 @@ export default function EditPurchaseOrder() {
           UnitPrice: l.UnitPrice,
           ProjectId: l.ProjectId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         }))
       ];
 

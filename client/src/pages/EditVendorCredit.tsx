@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '../lib/api';
 import VendorCreditForm, { VendorCreditFormData } from '../components/VendorCreditForm';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -21,6 +22,7 @@ interface VendorCreditLine {
   UnitPrice: number;
   Amount: number;
   ProjectId?: string | null;
+  CostCodeId?: string | null;
   ClassId?: string | null;
 }
 
@@ -45,6 +47,8 @@ export default function EditVendorCredit() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   // Validate ID before using in query
   const isIdValid = isValidUUID(id);
@@ -110,6 +114,7 @@ export default function EditVendorCredit() {
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         })),
         ...toAdd.map(l => api.post('/vendorcreditlines', {
           VendorCreditId: id,
@@ -121,6 +126,7 @@ export default function EditVendorCredit() {
           Amount: l.Amount,
           ProjectId: l.ProjectId || null,
           ClassId: l.ClassId || null,
+          ...(jobCostingEnabled && { CostCodeId: l.CostCodeId || null }),
         }))
       ];
 

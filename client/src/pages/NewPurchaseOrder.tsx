@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import PurchaseOrderForm, { PurchaseOrderFormData } from '../components/PurchaseOrderForm';
 import { useToast } from '../hooks/useToast';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface CreatePurchaseOrderResponse {
   Id: string;
@@ -18,6 +19,8 @@ interface CreatePurchaseOrderResponse {
 export default function NewPurchaseOrder() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const onSubmit = async (data: PurchaseOrderFormData) => {
     try {
@@ -29,6 +32,7 @@ export default function NewPurchaseOrder() {
         ...poData,
         ProjectId: data.ProjectId || null,
         ClassId: data.ClassId || null,
+        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       });
 
       // DAB doesn't return the created entity, so we need to query for it
@@ -53,6 +57,7 @@ export default function NewPurchaseOrder() {
             UnitPrice: line.UnitPrice,
             ProjectId: line.ProjectId || null,
             ClassId: line.ClassId || null,
+            ...(jobCostingEnabled && { CostCodeId: line.CostCodeId || null }),
           })
         )
       );

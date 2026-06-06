@@ -14,12 +14,15 @@ import api from '../lib/api';
 import ProductServiceSelector, { ProductService } from './ProductServiceSelector';
 import ProjectSelector from './ProjectSelector';
 import ClassSelector from './ClassSelector';
+import CostCodeSelector from './CostCodeSelector';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 // Line item schema with proper validation
 const lineItemSchema = z.object({
   Id: z.string().nullish(),
   ProductServiceId: z.string().nullish(),
   ProjectId: z.string().uuid().nullish(),
+  CostCodeId: z.string().uuid().nullish(),
   ClassId: z.string().uuid().nullish(),
   Description: z.string().min(1, 'Description is required'),
   Quantity: z.number().min(0.0001, 'Quantity must be positive'),
@@ -32,6 +35,7 @@ export const purchaseOrderSchema = z.object({
   PONumber: z.string().min(1, 'PO number is required'),
   VendorId: z.string().uuid('Please select a valid vendor'),
   ProjectId: z.string().uuid().nullish(),
+  CostCodeId: z.string().uuid().nullish(),
   ClassId: z.string().uuid().nullish(),
   PODate: z.string().min(1, 'PO date is required'),
   ExpectedDate: z.string().optional(),
@@ -78,6 +82,8 @@ interface PurchaseOrderFormProps {
 
 export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSubmitting: externalIsSubmitting, submitButtonText = 'Save Purchase Order' }: PurchaseOrderFormProps) {
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: vendors } = useQuery({
     queryKey: ['vendors'],
@@ -94,8 +100,9 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
       PODate: new Date().toISOString().split('T')[0],
       ExpectedDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
       ProjectId: null,
+      CostCodeId: null,
       ClassId: null,
-      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, ClassId: null }],
+      Lines: [{ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, CostCodeId: null, ClassId: null }],
       Subtotal: 0,
       Total: 0,
       Notes: '',
@@ -112,6 +119,8 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
     control,
     name: "Lines"
   });
+
+  const watchedHeaderProjectId = useWatch({ control, name: "ProjectId" });
 
   useEffect(() => {
     const subtotal = lines.reduce((sum, line) => {
@@ -241,11 +250,29 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
             render={({ field }) => (
               <ProjectSelector
                 value={field.value || ''}
-                onChange={field.onChange}
+                onChange={(projectId) => {
+                  field.onChange(projectId || null);
+                  if (jobCostingEnabled) setValue('CostCodeId', null);
+                }}
                 disabled={isSubmitting}
               />
             )}
           />
+
+          {jobCostingEnabled && (
+            <Controller
+              name="CostCodeId"
+              control={control}
+              render={({ field }) => (
+                <CostCodeSelector
+                  value={field.value || ''}
+                  onChange={(costCodeId) => field.onChange(costCodeId || null)}
+                  projectId={watchedHeaderProjectId ?? null}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+          )}
 
           <Controller
             name="ClassId"
@@ -291,7 +318,7 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
               variant="outlined"
               size="small"
               startIcon={<Plus className="w-4 h-4" />}
-              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, ClassId: null })}
+              onClick={() => append({ ProductServiceId: '', Description: '', Quantity: 1, UnitPrice: 0, ProjectId: null, CostCodeId: null, ClassId: null })}
             >
               Add Item
             </Button>
@@ -406,12 +433,31 @@ export default function PurchaseOrderForm({ initialValues, onSubmit, title, isSu
                         render={({ field: pField }) => (
                           <ProjectSelector
                             value={pField.value || ''}
-                            onChange={pField.onChange}
+                            onChange={(projectId) => {
+                              pField.onChange(projectId || null);
+                              if (jobCostingEnabled) setValue(`Lines.${index}.CostCodeId`, null);
+                            }}
                             disabled={isSubmitting}
                           />
                         )}
                       />
                     </div>
+                    {jobCostingEnabled && (
+                      <div className="flex-1">
+                        <Controller
+                          name={`Lines.${index}.CostCodeId`}
+                          control={control}
+                          render={({ field: ccField }) => (
+                            <CostCodeSelector
+                              value={ccField.value || ''}
+                              onChange={(costCodeId) => ccField.onChange(costCodeId || null)}
+                              projectId={lines?.[index]?.ProjectId ?? null}
+                              disabled={isSubmitting}
+                            />
+                          )}
+                        />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <Controller
                         name={`Lines.${index}.ClassId`}

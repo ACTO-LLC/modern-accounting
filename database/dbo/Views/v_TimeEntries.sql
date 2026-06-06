@@ -9,6 +9,7 @@ SELECT
     t.[Hours],
     t.[HourlyRate],
     t.[CostRate],
+    t.[CostCodeId],
     t.[Description],
     t.[IsBillable],
     t.[Status],

@@ -12,6 +12,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
 import { timeEntriesApi, projectsApi, customersApi, employeesApi, Project, Customer, Employee, TimeEntryInput } from '../lib/api';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import CostCodeSelector from '../components/CostCodeSelector';
 
 const timeEntrySchema = z.object({
   ProjectId: z.string().min(1, 'Project is required'),
@@ -20,6 +21,7 @@ const timeEntrySchema = z.object({
   Hours: z.coerce.number().min(0.25, 'Minimum 0.25 hours').max(24, 'Maximum 24 hours'),
   HourlyRate: z.coerce.number().min(0).nullish(),
   CostRate: z.coerce.number().min(0).nullish(),
+  CostCodeId: z.string().uuid().nullish(),
   Description: z.string().nullish(),
   IsBillable: z.boolean().nullish(),
 });
@@ -82,6 +84,9 @@ export default function NewTimeEntry() {
         Description: data.Description || null,
         IsBillable: data.IsBillable ?? true,
         Status: 'Pending',
+        // Only round-trip CostCodeId when the flag is on. With the flag off it
+        // would otherwise be sent as null and could clear any value set elsewhere.
+        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId ?? null }),
       };
       await timeEntriesApi.create(entry);
     },
@@ -168,6 +173,22 @@ export default function NewTimeEntry() {
             </p>
           )}
         </div>
+
+        {jobCostingEnabled && (
+          <div>
+            <Controller
+              name="CostCodeId"
+              control={control}
+              render={({ field }) => (
+                <CostCodeSelector
+                  value={field.value || ''}
+                  onChange={(costCodeId) => field.onChange(costCodeId || null)}
+                  projectId={selectedProjectId ?? null}
+                />
+              )}
+            />
+          </div>
+        )}
 
         <div>
           <Controller
