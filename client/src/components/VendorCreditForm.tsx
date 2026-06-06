@@ -19,7 +19,8 @@ import api from '../lib/api';
 export const vendorCreditSchema = z.object({
   VendorId: z.string().uuid('Please select a vendor'),
   ProjectId: z.string().uuid().nullish(),
-  CostCodeId: z.string().uuid().nullish(),
+  // VendorCredits has no header-level CostCodeId column; cost codes are
+  // tracked per VendorCreditLine.
   ClassId: z.string().uuid().nullish(),
   CreditNumber: z.string().min(1, 'Credit number is required'),
   CreditDate: z.string().min(1, 'Credit date is required'),
@@ -130,8 +131,6 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
     control,
     name: "Lines"
   });
-
-  const watchedHeaderProjectId = useWatch({ control, name: 'ProjectId' });
 
   // Update totals when lines change
   useEffect(() => {
@@ -267,29 +266,11 @@ export default function VendorCreditForm({ initialValues, onSubmit, title, isSub
             render={({ field }) => (
               <ProjectSelector
                 value={field.value || ''}
-                onChange={(projectId) => {
-                  field.onChange(projectId || null);
-                  if (jobCostingEnabled) setValue('CostCodeId', null);
-                }}
+                onChange={(projectId) => field.onChange(projectId || null)}
                 disabled={isSubmitting}
               />
             )}
           />
-
-          {jobCostingEnabled && (
-            <Controller
-              name="CostCodeId"
-              control={control}
-              render={({ field }) => (
-                <CostCodeSelector
-                  value={field.value || ''}
-                  onChange={(costCodeId) => field.onChange(costCodeId || null)}
-                  projectId={watchedHeaderProjectId ?? null}
-                  disabled={isSubmitting}
-                />
-              )}
-            />
-          )}
 
           <Controller
             name="ClassId"

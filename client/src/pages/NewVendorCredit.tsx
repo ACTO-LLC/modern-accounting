@@ -25,7 +25,6 @@ export default function NewVendorCredit() {
         ...creditData,
         ProjectId: data.ProjectId || null,
         ClassId: data.ClassId || null,
-        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       });
 
       // DAB doesn't return the created entity, so we need to query for it

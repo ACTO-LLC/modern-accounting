@@ -86,7 +86,6 @@ export default function EditVendorCredit() {
         ...creditData,
         ProjectId: data.ProjectId || null,
         ClassId: data.ClassId || null,
-        ...(jobCostingEnabled && { CostCodeId: data.CostCodeId || null }),
       });
 
       // 2. Handle Lines Reconciliation
