@@ -12,7 +12,9 @@
 --   CostToDate       = sum of JobCosts.Amount where IsCommitted = 0
 --   CommittedCost    = sum of JobCosts.Amount where IsCommitted = 1 (open POs)
 --   GrossMargin      = RevenueToDate - CostToDate
---   GrossMarginPct   = GrossMargin / RevenueToDate * 100 (NULL when no revenue)
+--   GrossMarginPct   = GrossMargin / RevenueToDate * 100 (NULL only when
+--                      revenue is exactly zero; computed for negative revenue
+--                      too, e.g. when credit memos exceed posted invoices)
 CREATE VIEW [dbo].[v_JobProfitability] AS
 SELECT
     p.[Id] AS [ProjectId],
@@ -30,7 +32,7 @@ SELECT
     COALESCE(cmt.[CommittedCost], 0) AS [CommittedCost],
     (COALESCE(rev.[RevenueToDate], 0) - COALESCE(cost.[CostToDate], 0)) AS [GrossMargin],
     CASE
-        WHEN COALESCE(rev.[RevenueToDate], 0) > 0
+        WHEN COALESCE(rev.[RevenueToDate], 0) <> 0
         THEN CAST(
             (COALESCE(rev.[RevenueToDate], 0) - COALESCE(cost.[CostToDate], 0))
             / COALESCE(rev.[RevenueToDate], 0) * 100.0

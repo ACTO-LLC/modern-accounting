@@ -84,12 +84,14 @@ export default function JobProfitability() {
   });
 
   // Apply the "include committed" toggle to derive an effective cost per row.
+  // GM% is computed for any non-zero revenue (including negative — e.g. credit
+  // memos exceed posted invoices), matching the view's CASE.
   const effectiveRows = useMemo(
     () =>
       rows.map((r) => {
         const cost = r.CostToDate + (includeCommitted ? r.CommittedCost : 0);
         const margin = r.RevenueToDate - cost;
-        const pct = r.RevenueToDate > 0 ? (margin / r.RevenueToDate) * 100 : null;
+        const pct = r.RevenueToDate !== 0 ? (margin / r.RevenueToDate) * 100 : null;
         return { ...r, _effectiveCost: cost, _effectiveMargin: margin, _effectiveMarginPct: pct };
       }),
     [rows, includeCommitted],
@@ -107,7 +109,8 @@ export default function JobProfitability() {
       { contract: 0, revenue: 0, cost: 0, margin: 0 },
     );
   }, [effectiveRows]);
-  const totalsPct = totals.revenue > 0 ? (totals.margin / totals.revenue) * 100 : null;
+  // Match the per-row guard so negative aggregate revenue still produces a ratio.
+  const totalsPct = totals.revenue !== 0 ? (totals.margin / totals.revenue) * 100 : null;
 
   const exportCsv = () => {
     const headers = [
@@ -131,7 +134,9 @@ export default function JobProfitability() {
       text(r.ProjectName),
       text(r.CustomerName ?? ''),
       text(r.Status),
-      num(r.ContractAmount ?? 0),
+      // Null ContractAmount exports as empty (matches the on-screen "—") so an
+      // unknown contract isn't silently coerced to $0.00.
+      r.ContractAmount != null ? num(r.ContractAmount) : text(''),
       num(r.RevenueToDate),
       num(r._effectiveCost),
       num(r._effectiveMargin),
