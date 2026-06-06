@@ -43,12 +43,15 @@ SELECT
     COALESCE(cost.[CostToDate], 0) AS [CostToDate],
     CASE
         WHEN p.[EstimatedCost] IS NULL OR p.[EstimatedCost] = 0 THEN NULL
-        -- Wide DECIMAL: tiny (e.g. mis-entered) EstimatedCost + a real cost
-        -- can push the percentage far past 100; we want the value to surface
-        -- in the report rather than overflow.
+        -- Wide DECIMAL: a tiny (e.g. mis-entered) EstimatedCost + a real
+        -- CostToDate (DECIMAL(19,4)) can push the percentage extremely far
+        -- past 100. DECIMAL(28,2) gives 26 digits left of the decimal —
+        -- enough headroom to surface absurd ratios as the report value
+        -- instead of failing the whole query with arithmetic overflow.
+        -- Multiply by integer 100 to keep the arithmetic in pure decimal.
         ELSE CAST(
-            COALESCE(cost.[CostToDate], 0) / p.[EstimatedCost] * 100.0
-            AS DECIMAL(18, 2))
+            COALESCE(cost.[CostToDate], 0) / p.[EstimatedCost] * 100
+            AS DECIMAL(28, 2))
     END AS [PercentComplete],
     CASE
         WHEN p.[EstimatedCost] IS NULL OR p.[EstimatedCost] = 0
