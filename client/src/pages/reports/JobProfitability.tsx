@@ -1,9 +1,24 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { Download, Briefcase } from 'lucide-react';
 import api from '../../lib/api';
 import ReportHeader from '../../components/reports/ReportHeader';
 import { formatCurrencyStandalone } from '../../contexts/CurrencyContext';
+import { useFeatureFlags } from '../../contexts/FeatureFlagsContext';
+
+/**
+ * Prevent CSV formula injection: values starting with =, +, -, or @ are
+ * coerced to text by prefixing a single quote. Matches the sanitizer in
+ * components/reports/ReportTable.tsx.
+ */
+function sanitizeCsv(value: string): string {
+  const trimmed = String(value).trim();
+  if (trimmed.startsWith('=') || trimmed.startsWith('+') ||
+      trimmed.startsWith('-') || trimmed.startsWith('@')) {
+    return `'${trimmed}`;
+  }
+  return trimmed;
+}
 
 interface JobProfitabilityRow {
   ProjectId: string;
@@ -34,6 +49,8 @@ export default function JobProfitability() {
   const [customerId, setCustomerId] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('Active');
   const [includeCommitted, setIncludeCommitted] = useState(false);
+  const { isFeatureEnabled } = useFeatureFlags();
+  const jobCostingEnabled = isFeatureEnabled('job_costing');
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ['customers-min'],
@@ -41,10 +58,12 @@ export default function JobProfitability() {
       const response = await api.get<{ value: Customer[] }>('/customers?$select=Id,Name&$orderby=Name');
       return response.data.value;
     },
+    enabled: jobCostingEnabled,
   });
 
   const { data: rows = [], isLoading, error } = useQuery<JobProfitabilityRow[]>({
     queryKey: ['job-profitability', customerId, statusFilter],
+    enabled: jobCostingEnabled,
     queryFn: async () => {
       const filters: string[] = [];
       if (customerId !== 'all') {
@@ -110,16 +129,42 @@ export default function JobProfitability() {
     ]);
     const csv = [
       headers.join(','),
-      ...body.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+      ...body.map((row) =>
+        row.map((cell) => `"${sanitizeCsv(String(cell)).replace(/"/g, '""')}"`).join(','),
+      ),
     ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `job-profitability-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    URL.revokeObjectURL(url);
+    // Delay revocation so the download isn't truncated in some browsers.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+
+  // Hard guard: the route is reachable by direct URL even when the flag is off
+  // (Reports.tsx already hides the link). Render an explicit disabled state so
+  // no data is fetched or displayed.
+  if (!jobCostingEnabled) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <ReportHeader
+          title="Job Profitability"
+          subtitle="Revenue, cost, and gross margin per job"
+        />
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-10 text-center">
+          <Briefcase className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500 mb-3" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Job Costing is disabled
+          </h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Enable the Job Costing feature in admin settings to see this report.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">

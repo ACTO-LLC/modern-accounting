@@ -5,8 +5,10 @@
 -- bounding is a polish item.
 --
 -- Definitions:
---   RevenueToDate    = sum of InvoiceLines.Amount where the parent Invoice is
---                      not Draft and the line is tagged to the project
+--   RevenueToDate    = sum of InvoiceLines.Amount where the parent Invoice has
+--                      been posted (PostedAt IS NOT NULL), MINUS the sum of
+--                      CreditMemoLines.Amount where the parent CreditMemo is
+--                      not Voided. Credit memos reduce realized revenue.
 --   CostToDate       = sum of JobCosts.Amount where IsCommitted = 0
 --   CommittedCost    = sum of JobCosts.Amount where IsCommitted = 1 (open POs)
 --   GrossMargin      = RevenueToDate - CostToDate
@@ -38,14 +40,25 @@ SELECT
 FROM [dbo].[Projects] p
 LEFT JOIN [dbo].[Customers] c ON p.[CustomerId] = c.[Id]
 LEFT JOIN (
-    SELECT
-        il.[ProjectId],
-        SUM(il.[Amount]) AS [RevenueToDate]
-    FROM [dbo].[InvoiceLines] il
-    JOIN [dbo].[Invoices] i ON il.[InvoiceId] = i.[Id]
-    WHERE i.[Status] <> 'Draft'
-      AND il.[ProjectId] IS NOT NULL
-    GROUP BY il.[ProjectId]
+    SELECT [ProjectId], SUM([Amount]) AS [RevenueToDate]
+    FROM (
+        -- Posted invoices: positive revenue.
+        SELECT il.[ProjectId], il.[Amount]
+        FROM [dbo].[InvoiceLines] il
+        JOIN [dbo].[Invoices] i ON il.[InvoiceId] = i.[Id]
+        WHERE i.[PostedAt] IS NOT NULL
+          AND il.[ProjectId] IS NOT NULL
+
+        UNION ALL
+
+        -- Non-voided credit memos: NEGATIVE revenue (credits issued back to customer).
+        SELECT cml.[ProjectId], -1 * cml.[Amount]
+        FROM [dbo].[CreditMemoLines] cml
+        JOIN [dbo].[CreditMemos] cm ON cml.[CreditMemoId] = cm.[Id]
+        WHERE cm.[Status] <> 'Voided'
+          AND cml.[ProjectId] IS NOT NULL
+    ) src
+    GROUP BY [ProjectId]
 ) rev ON p.[Id] = rev.[ProjectId]
 LEFT JOIN (
     SELECT
