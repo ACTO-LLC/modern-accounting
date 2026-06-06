@@ -1281,6 +1281,87 @@
                 "enabled": false
             }
         },
+        "overheadallocationrules": {
+            "source": "dbo.OverheadAllocationRules",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "create",
+                        "read",
+                        "update"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "Name": "Name",
+                "BurdenPercent": "BurdenPercent",
+                "IsActive": "IsActive",
+                "CreatedAt": "CreatedAt",
+                "UpdatedAt": "UpdatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
+        "overheadallocationruns": {
+            "source": "dbo.OverheadAllocationRuns",
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "*"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "Id": "Id",
+                "RuleId": "RuleId",
+                "PeriodStart": "PeriodStart",
+                "PeriodEnd": "PeriodEnd",
+                "BurdenPercent": "BurdenPercent",
+                "RunAt": "RunAt",
+                "RunBy": "RunBy",
+                "RowsWritten": "RowsWritten",
+                "ReversedAt": "ReversedAt",
+                "ReversedBy": "ReversedBy",
+                "CreatedAt": "CreatedAt"
+            },
+            "key-fields": [
+                "Id"
+            ],
+            "cache": {
+                "enabled": false
+            }
+        },
         "timeentries": {
             "source": {
                 "object": "dbo.v_TimeEntries",
