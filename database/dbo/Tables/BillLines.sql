@@ -20,7 +20,10 @@ CREATE TABLE [dbo].[BillLines] (
     CONSTRAINT [FK_BillLines_Accounts] FOREIGN KEY ([AccountId]) REFERENCES [dbo].[Accounts] ([Id]),
     CONSTRAINT [FK_BillLines_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
     CONSTRAINT [FK_BillLines_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes]([Id]),
-    CONSTRAINT [FK_BillLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
+    CONSTRAINT [FK_BillLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
+    -- A cost code only makes sense under a project; the trigger gates on ProjectId so
+    -- a CostCodeId without one would silently never post.
+    CONSTRAINT [CK_BillLines_CostCodeImpliesProject] CHECK ([CostCodeId] IS NULL OR [ProjectId] IS NOT NULL)
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[BillLines_History]));
 GO

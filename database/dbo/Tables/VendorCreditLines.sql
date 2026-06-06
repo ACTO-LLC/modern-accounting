@@ -20,7 +20,10 @@ CREATE TABLE [dbo].[VendorCreditLines]
     CONSTRAINT [FK_VendorCreditLines_Accounts] FOREIGN KEY ([AccountId]) REFERENCES [dbo].[Accounts]([Id]),
     CONSTRAINT [FK_VendorCreditLines_Projects] FOREIGN KEY ([ProjectId]) REFERENCES [dbo].[Projects]([Id]),
     CONSTRAINT [FK_VendorCreditLines_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes]([Id]),
-    CONSTRAINT [FK_VendorCreditLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id])
+    CONSTRAINT [FK_VendorCreditLines_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
+    -- A cost code only makes sense under a project; the trigger gates on ProjectId so
+    -- a CostCodeId without one would silently never post.
+    CONSTRAINT [CK_VendorCreditLines_CostCodeImpliesProject] CHECK ([CostCodeId] IS NULL OR [ProjectId] IS NOT NULL)
 )
 GO
 

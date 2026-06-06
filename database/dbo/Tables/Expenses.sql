@@ -39,7 +39,10 @@ CREATE TABLE [dbo].[Expenses]
     CONSTRAINT [FK_Expenses_JobCostCodes] FOREIGN KEY ([CostCodeId]) REFERENCES [dbo].[JobCostCodes]([Id]),
     CONSTRAINT [FK_Expenses_Classes] FOREIGN KEY ([ClassId]) REFERENCES [dbo].[Classes]([Id]),
     CONSTRAINT [FK_Expenses_BankTransactions] FOREIGN KEY ([BankTransactionId]) REFERENCES [dbo].[BankTransactions]([Id]),
-    CONSTRAINT [FK_Expenses_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id])
+    CONSTRAINT [FK_Expenses_JournalEntries] FOREIGN KEY ([JournalEntryId]) REFERENCES [dbo].[JournalEntries]([Id]),
+    -- A cost code only makes sense under a project; the trigger gates on ProjectId so
+    -- a CostCodeId without one would silently never post.
+    CONSTRAINT [CK_Expenses_CostCodeImpliesProject] CHECK ([CostCodeId] IS NULL OR [ProjectId] IS NOT NULL)
 )
 WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[Expenses_History]))
 GO
