@@ -76,11 +76,16 @@ WHERE jc.[SourceType] = 'BillLine'
 UNION ALL
 
 -- Expense: include non-Voided expenses tagged to a customer.
+-- CustomerId/Name come from the EXPENSE, not the project — the branch's
+-- billable filter is e.CustomerId IS NOT NULL, and an expense's billable
+-- customer can differ from the project's owning customer. Using the project's
+-- CustomerId here would silently mis-attribute the row and break the customer
+-- filter the report exposes.
 SELECT
     CAST(jc.[Id] AS NVARCHAR(50)),
     jc.[ProjectId],
     p.[Name],
-    p.[CustomerId],
+    e.[CustomerId],
     c.[Name],
     jc.[CostCodeId],
     cc.[Code],
@@ -92,7 +97,7 @@ SELECT
 FROM [dbo].[JobCosts] jc
 JOIN [dbo].[Expenses] e ON jc.[SourceId] = e.[Id]
 JOIN [dbo].[Projects] p ON jc.[ProjectId] = p.[Id]
-LEFT JOIN [dbo].[Customers] c ON p.[CustomerId] = c.[Id]
+LEFT JOIN [dbo].[Customers] c ON e.[CustomerId] = c.[Id]
 LEFT JOIN [dbo].[JobCostCodes] cc ON jc.[CostCodeId] = cc.[Id]
 WHERE jc.[SourceType] = 'Expense'
   AND jc.[IsCommitted] = 0

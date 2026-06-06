@@ -242,8 +242,18 @@ export default function UnbilledCosts() {
                 return (
                   <Fragment key={g.projectId}>
                     <tr
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-white dark:bg-gray-800"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer bg-white dark:bg-gray-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset"
                       onClick={() => toggle(g.projectId)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggle(g.projectId);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-expanded={isOpen}
+                      aria-label={`Toggle ${g.projectName}`}
                     >
                       <td className="px-2 py-2">
                         {isOpen
