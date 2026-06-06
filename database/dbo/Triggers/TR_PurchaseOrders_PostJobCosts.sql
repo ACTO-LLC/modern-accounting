@@ -49,7 +49,7 @@ BEGIN
         NULL
     FROM [dbo].[PurchaseOrderLines] pol
     JOIN inserted i ON pol.[PurchaseOrderId] = i.[Id]
-    WHERE i.[Status] NOT IN ('Draft','Cancelled')
+    WHERE i.[Status] NOT IN ('Draft','Cancelled','Received')   -- 'Received' = fully received: commitment realized
       AND i.[ConvertedToBillId] IS NULL
       AND (pol.[ProjectId] IS NOT NULL OR i.[ProjectId] IS NOT NULL);
 END

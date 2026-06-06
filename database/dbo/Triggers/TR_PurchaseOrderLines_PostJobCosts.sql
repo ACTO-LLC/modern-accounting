@@ -8,9 +8,13 @@
 -- This matches the "header default + per-line override" model in issue #612 and
 -- means PO header tagging alone is sufficient for lines to post.
 --
--- Active PO = Status NOT IN ('Draft','Cancelled') AND ConvertedToBillId IS NULL.
--- When the PO converts to a Bill (ConvertedToBillId set), the committed entries
--- drop off and the resulting Bill's lines post as actuals via
+-- Active PO = Status NOT IN ('Draft','Cancelled','Received') AND ConvertedToBillId IS NULL.
+-- 'Received' is excluded because per the issue spec a fully-received PO has had its
+-- commitment realized — even if the matching Bill hasn't arrived yet, the cost is no
+-- longer "ordered but not received". 'Partial' remains committed because the data
+-- model has no per-line received-quantity to drive partial decommit (out of scope).
+-- When the PO converts to a Bill (ConvertedToBillId set), any remaining committed
+-- entries drop off and the Bill's lines post as actuals via
 -- TR_BillLines_PostJobCosts (#611).
 --
 -- See TR_PurchaseOrders_PostJobCosts (companion in #612) for the parent trigger
@@ -56,7 +60,7 @@ BEGIN
         NULL
     FROM inserted i
     JOIN [dbo].[PurchaseOrders] po ON i.[PurchaseOrderId] = po.[Id]
-    WHERE po.[Status] NOT IN ('Draft','Cancelled')
+    WHERE po.[Status] NOT IN ('Draft','Cancelled','Received')   -- 'Received' = fully received: commitment realized
       AND po.[ConvertedToBillId] IS NULL
       AND (i.[ProjectId] IS NOT NULL OR po.[ProjectId] IS NOT NULL);  -- effective project present
 END
