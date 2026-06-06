@@ -2,6 +2,7 @@ import axios from 'axios';
 import { PublicClientApplication, SilentRequest, AccountInfo } from '@azure/msal-browser';
 import { apiRequest, roleHierarchy } from './authConfig';
 import { formatDateForOData } from './dateUtils';
+import { formatGuidForOData } from './validation';
 
 const api = axios.create({
   baseURL: '/api',
@@ -225,8 +226,11 @@ export interface Project {
   Status: 'Active' | 'Completed' | 'OnHold';
   StartDate?: string;
   EndDate?: string;
-  BudgetedHours?: number;
-  BudgetedAmount?: number;
+  // Nullable columns on the DB side — explicit `null` so call sites coalesce safely.
+  BudgetedHours?: number | null;
+  BudgetedAmount?: number | null;
+  EstimatedCost?: number | null;
+  ContractAmount?: number | null;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -238,8 +242,33 @@ export interface ProjectInput {
   Status?: 'Active' | 'Completed' | 'OnHold';
   StartDate?: string;
   EndDate?: string;
-  BudgetedHours?: number;
-  BudgetedAmount?: number;
+  BudgetedHours?: number | null;
+  BudgetedAmount?: number | null;
+  EstimatedCost?: number | null;
+  ContractAmount?: number | null;
+}
+
+// Job Costing (#614)
+export interface JobCostCode {
+  Id: string;
+  ProjectId: string;
+  Code: string;
+  Description: string;
+  // Nullable columns on the DB side — explicit `null` so call sites coalesce safely.
+  BudgetedAmount?: number | null;
+  BudgetedHours?: number | null;
+  SortOrder: number;
+  CreatedAt: string;
+  UpdatedAt: string;
+}
+
+export interface JobCostCodeInput {
+  ProjectId: string;
+  Code: string;
+  Description: string;
+  BudgetedAmount?: number | null;
+  BudgetedHours?: number | null;
+  SortOrder?: number;
 }
 
 // Time Entry Types
@@ -315,6 +344,33 @@ export const projectsApi = {
 
   delete: async (id: string): Promise<void> => {
     await api.delete(`/projects_write/Id/${id}`);
+  },
+};
+
+// Job Cost Codes API (#614)
+export const jobCostCodesApi = {
+  getByProject: async (projectId: string): Promise<JobCostCode[]> => {
+    // Validate to prevent malformed OData / injection — projectId comes from route params.
+    const validated = formatGuidForOData(projectId, 'ProjectId');
+    const filter = encodeURIComponent(`ProjectId eq ${validated}`);
+    const response = await api.get(
+      `/jobcostcodes?$filter=${filter}&$orderby=SortOrder,Code`
+    );
+    return response.data.value;
+  },
+
+  create: async (input: JobCostCodeInput): Promise<JobCostCode> => {
+    const response = await api.post('/jobcostcodes', input);
+    return response.data;
+  },
+
+  update: async (id: string, input: Partial<JobCostCodeInput>): Promise<JobCostCode> => {
+    const response = await api.patch(`/jobcostcodes/Id/${id}`, input);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/jobcostcodes/Id/${id}`);
   },
 };
 
