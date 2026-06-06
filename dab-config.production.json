@@ -1363,6 +1363,55 @@
                 "enabled": false
             }
         },
+        "jobprofitability": {
+            "source": {
+                "object": "dbo.v_JobProfitability",
+                "type": "view",
+                "key-fields": [
+                    "ProjectId"
+                ]
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "ProjectId": "ProjectId",
+                "ProjectName": "ProjectName",
+                "CustomerId": "CustomerId",
+                "CustomerName": "CustomerName",
+                "Status": "Status",
+                "StartDate": "StartDate",
+                "EndDate": "EndDate",
+                "ContractAmount": "ContractAmount",
+                "BudgetedAmount": "BudgetedAmount",
+                "EstimatedCost": "EstimatedCost",
+                "RevenueToDate": "RevenueToDate",
+                "CostToDate": "CostToDate",
+                "CommittedCost": "CommittedCost",
+                "GrossMargin": "GrossMargin",
+                "GrossMarginPct": "GrossMarginPct"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
         "timeentries": {
             "source": {
                 "object": "dbo.v_TimeEntries",
