@@ -4,8 +4,8 @@
 --   * "Coded" rows come from JobCostCodes, with Actual/Committed aggregated
 --     from JobCosts matched on CostCodeId.
 --   * A synthetic "(Uncoded)" row per project aggregates JobCosts that have
---     ProjectId set but no CostCodeId, so costs that escape coding still
---     show up in the report instead of vanishing.
+--     no CostCodeId, so costs that escape coding still show up in the
+--     report instead of vanishing.
 --
 -- Variance and percent-used are NOT pre-computed here because the report
 -- offers a toggle for including committed costs, so the client decides the
@@ -50,8 +50,8 @@ LEFT JOIN (
 UNION ALL
 
 -- Uncoded bucket: one row per project that has any JobCosts with NULL
--- CostCodeId. Gate on ProjectId IS NOT NULL so JobCosts with both columns
--- NULL don't fabricate a synthetic row with a NULL ProjectId.
+-- CostCodeId. (JobCosts.ProjectId is NOT NULL in the schema, so no extra
+-- guard is needed here.)
 -- RowId is `uncoded-<ProjectId>` so it's unique across the view.
 SELECT
     'uncoded-' + CAST([ProjectId] AS NVARCHAR(36)) AS [RowId],
@@ -67,6 +67,5 @@ SELECT
     SUM(CASE WHEN [IsCommitted] = 1 THEN [Amount] ELSE 0 END) AS [Committed]
 FROM [dbo].[JobCosts]
 WHERE [CostCodeId] IS NULL
-  AND [ProjectId] IS NOT NULL
 GROUP BY [ProjectId];
 GO
