@@ -579,7 +579,9 @@ export default function ExpenseForm({
                 size="small"
                 fullWidth
                 onChange={(e) => {
-                  field.onChange(e);
+                  // The "Select project..." MenuItem has value '', which would
+                  // fail the schema's uuid().nullish() check — coalesce to null.
+                  field.onChange(e.target.value === '' ? null : e.target.value);
                   // Project change invalidates any cost code already chosen.
                   if (jobCostingEnabled) {
                     setValue('CostCodeId', null);

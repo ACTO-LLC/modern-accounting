@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
@@ -42,6 +42,18 @@ export default function CostCodeSelector({
     () => costCodes?.find((c) => c.Id === value) ?? null,
     [costCodes, value],
   );
+
+  // Defense in depth: if projectId changes out from under us, clear any stale
+  // cost-code value via onChange so the form state doesn't carry a code that
+  // doesn't belong to the new project. Skip the first render (initial value is
+  // expected to match the initial projectId) and reentrancy via a ref guard.
+  const prevProjectIdRef = useRef<string | null | undefined>(projectId);
+  useEffect(() => {
+    if (prevProjectIdRef.current !== projectId) {
+      prevProjectIdRef.current = projectId;
+      if (value) onChange('');
+    }
+  }, [projectId, value, onChange]);
 
   const effectivelyDisabled = disabled || !projectId;
   const hint = !projectId ? 'Pick a project first' : error;
