@@ -1418,6 +1418,51 @@
                 "enabled": false
             }
         },
+        "budgetvsactualbycostcode": {
+            "source": {
+                "object": "dbo.v_BudgetVsActualByCostCode",
+                "type": "view",
+                "key-fields": [
+                    "RowId"
+                ]
+            },
+            "permissions": [
+                {
+                    "role": "authenticated",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Admin",
+                    "actions": [
+                        "read"
+                    ]
+                },
+                {
+                    "role": "Accountant",
+                    "actions": [
+                        "read"
+                    ]
+                }
+            ],
+            "mappings": {
+                "RowId": "RowId",
+                "ProjectId": "ProjectId",
+                "CostCodeId": "CostCodeId",
+                "Code": "Code",
+                "Description": "Description",
+                "SortOrder": "SortOrder",
+                "IsUncodedBucket": "IsUncodedBucket",
+                "Budget": "Budget",
+                "BudgetedHours": "BudgetedHours",
+                "Actual": "Actual",
+                "Committed": "Committed"
+            },
+            "cache": {
+                "enabled": false
+            }
+        },
         "timeentries": {
             "source": {
                 "object": "dbo.v_TimeEntries",

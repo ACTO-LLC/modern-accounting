@@ -141,6 +141,14 @@ const jobCostingReports: ReportItem[] = [
     color: 'bg-indigo-100 text-indigo-600',
     visibilityFlag: 'job_costing',
   },
+  {
+    name: 'Budget vs. Actual by Cost Code',
+    description: 'Per-job breakdown of budget, committed, actual, variance, and % used by line item',
+    href: '/reports/job-budget-actual',
+    icon: Scale,
+    color: 'bg-amber-100 text-amber-600',
+    visibilityFlag: 'job_costing',
+  },
 ];
 
 const inventoryReports: ReportItem[] = [
