@@ -446,6 +446,12 @@ Modern Accounting provides a suite of financial reports accessible from the Repo
 - **Sales by Customer** -- "Sales breakdown showing customer, invoice count, amount, and percentage of total sales"
 - **Sales by Product/Service** -- "Sales breakdown showing product/service, quantity sold, amount, and percentage of sales"
 
+**Job Costing Reports** section (only visible if Job Costing feature is enabled):
+- **Job Profitability** -- "Revenue, cost, and gross margin per job with optional committed-cost toggle"
+- **Budget vs. Actual by Cost Code** -- "Per-job breakdown of budget, committed, actual, variance, and % used by line item"
+- **Work in Progress** -- "Earned vs. billed revenue per job (cost-to-cost) -- pending accountant review"
+- **Unbilled Costs** -- "Billable costs posted to jobs but not yet pulled onto a customer invoice"
+
 **Inventory Reports** section (only visible if Inventory feature is enabled):
 - Inventory Valuation Summary, Inventory Stock Status, Physical Inventory Worksheet
 
@@ -611,7 +617,8 @@ This is one of the most important settings. It controls how invoices and bills a
 
 #### Feature Visibility
 
-- Toggle features on or off: **Sales Receipts**, **Mileage**, **Payroll**, **Inventory**. Disabling a feature hides it from the sidebar and all related pages.
+- Toggle features on or off: **Sales Receipts**, **Mileage**, **Payroll**, **Inventory**, and **Job Costing**. Disabling a feature hides it from the sidebar and all related pages.
+- **Job Costing** defaults to *off* (the only opt-in flag here) — turn it on to enable cost-code tracking on the Project edit page, Project/CostCode pickers on transaction forms, and a Job Costing Reports section. See the separate Job Costing guide for details. The other flags default to *on* for backward compatibility.
 
 #### Onboarding
 

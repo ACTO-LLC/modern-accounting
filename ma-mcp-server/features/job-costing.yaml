@@ -1,0 +1,84 @@
+key: job_costing
+name: Job Costing
+menuPath: /reports/job-profitability
+icon: Briefcase
+difficulty: 4
+category: advanced
+sortOrder: 90
+
+spotlight:
+  message: "Track labor, materials, and overhead against jobs and see profitability per project."
+  position: right
+
+description:
+  short: "Track costs against jobs and report on profitability"
+  detailed: |
+    Job Costing is an opt-in module that attributes labor, materials, subcontractor
+    costs, and overhead to individual projects (jobs), then reports profitability
+    against contract values. Useful for services firms, construction, and any
+    project-based business.
+
+    With Job Costing enabled you can:
+    - Define cost codes per project (e.g. "01-100 Site Work", "02-200 Framing")
+      with budgeted amounts and hours.
+    - Set Estimated Cost and Contract Amount on each project.
+    - Tag Bill lines, Expenses, Purchase Orders, Vendor Credits, and Time
+      Entries to a project + cost code on the existing forms.
+    - Run four new reports: Job Profitability, Budget vs. Actual by Cost Code,
+      Work in Progress (cost-to-cost percent-complete), and Unbilled Costs.
+
+    The flag is off by default — an admin must enable it under Settings >
+    Feature Visibility before any of the surfaces appear.
+
+capabilities:
+  - "Define cost codes per project with budgeted amounts and hours"
+  - "Tag Bills, Expenses, POs, Vendor Credits, and Time Entries to a project + cost code"
+  - "Capture employer cost rate on Time Entries (distinct from billable rate)"
+  - "Run a Job Profitability report (revenue vs. cost vs. gross margin per job)"
+  - "Run a Budget vs. Actual by Cost Code report (per-job, line-item drill-down)"
+  - "Run a Work in Progress report (earned vs. billed using cost-to-cost % complete)"
+  - "Run an Unbilled Costs report (billable costs not yet invoiced)"
+  - "Configure overhead allocation rules and run reversible allocations"
+  - "Track committed costs separately from actuals via Purchase Orders"
+
+accountingConcepts:
+  - term: "Cost Code"
+    explanation: "A line-item bucket under a project, e.g. '01-100 Site Work'. Each transaction tagged to a project can be further tagged to a cost code so reports can compare budget vs. actual at the line-item level."
+  - term: "Estimated Cost vs. Contract Amount"
+    explanation: "Estimated Cost is your internal cost projection (what the job will cost you to deliver). Contract Amount is what the customer agreed to pay you. Job Profitability is the difference between revenue earned and cost incurred."
+  - term: "Cost Rate vs. Hourly Rate"
+    explanation: "Cost Rate is the employer's cost per hour for an employee (wages + burden). Hourly Rate is what the customer is billed. They're separate fields on Time Entries; the difference drives labor profitability."
+  - term: "Committed Cost"
+    explanation: "Open POs that have been issued to vendors but not yet received or invoiced. Reports show committed amounts separately from actuals so you can see what's already promised but not yet paid."
+  - term: "Cost-to-Cost Percent Complete"
+    explanation: "A revenue-recognition method that estimates project completion as Cost-to-Date / Total Estimated Cost. Earned Revenue is then % Complete × Contract Amount. The WIP report uses this method — review with an accountant before relying on it for external reporting."
+  - term: "Over-billing / Under-billing"
+    explanation: "If you've billed the customer more than you've earned (per percent-complete), you're over-billed — that excess is a liability. If you've earned more than you've billed, you're under-billed — that gap is an asset. The WIP report surfaces both."
+  - term: "Unbilled Costs"
+    explanation: "Billable costs (Time Entries, Bills, Expenses) that have been posted to a job but not yet pulled onto a customer invoice. Tracking these prevents revenue leakage."
+
+prerequisites:
+  - projects
+  - time_tracking
+  - bills
+  - expenses
+
+leadsTo:
+  - reports
+
+experienceLevelNotes:
+  beginner: "Skip this unless your business runs project-based work (consulting, construction, services). The default off state is fine for retail, product sales, and most service businesses that don't bill against projects."
+  intermediate: "Enable when you need to know per-job profitability, not just company-wide. Set up cost codes on a single pilot project first, tag a few transactions, and run the Job Profitability report to see the shape before rolling out widely."
+  advanced: "Full job-costing module covering cost capture, committed costs (POs), overhead allocation, percent-complete WIP accounting (cost-to-cost method), and four dedicated reports. Pending: composite FK enforcement of cost-code-belongs-to-project consistency, period-bounded report filters, manual % complete override, and bulk invoice-from-unbilled-costs."
+
+sampleTasks:
+  - title: "Enable Job Costing"
+    description: "Turn on the Job Costing feature in Settings > Feature Visibility to make cost codes, pickers, and reports visible."
+  - title: "Set up cost codes on a project"
+    description: "Open an existing project's edit page, scroll to the Cost Codes section, and add the budget line items for that job."
+  - title: "Tag a Time Entry with a cost code"
+    description: "On the Log Time form, pick a project and then a cost code; set the Cost Rate so labor flows into job profitability."
+  - title: "Run the Job Profitability report"
+    description: "Reports > Job Profitability. Filter by customer or status and toggle Include Committed Costs to see margin with and without open POs."
+  - title: "Find unbilled costs to invoice"
+    description: "Reports > Unbilled Costs. Expand a job to see the billable Time, Bill, and Expense rows that haven't been pulled onto a customer invoice yet."
