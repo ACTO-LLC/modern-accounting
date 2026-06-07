@@ -6,7 +6,7 @@ This guide walks you through setting up the AI-Driven Feature Addition System fr
 
 Before starting, ensure you have:
 
-- **Node.js 18+** - [Download](https://nodejs.org/)
+- **Node.js 20+** - [Download](https://nodejs.org/)
 - **Git** - Configured with credentials for pushing to GitHub
 - **SQL Server** - Local instance or Docker container
 - **GitHub Account** - With access to the target repository
@@ -33,45 +33,15 @@ Ensure your local SQL Server instance is running and accessible on the configure
 
 ### Create Database Tables
 
-Run the migration script to create required tables:
+The `Enhancements` and `Deployments` tables are part of the project's sqlproj (`database/dbo/Tables/Enhancements.sql`, `database/dbo/Tables/Deployments.sql`). Deploy with the unified script:
 
 ```bash
-cd csv-import-api
-node run-sql.js ../database/migrations/020_Enhancements.sql
+npm run db:deploy
 ```
 
-Or manually execute the SQL:
+This auto-detects SqlPackage vs Node.js mode and applies the full schema. See [database deployment](../architecture/database-deployment.md) and [claude-guidance/database.md](../claude-guidance/database.md) for the sqlproj-vs-migrations rule.
 
-```sql
--- Create Enhancements table
-CREATE TABLE Enhancements (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    RequestorName NVARCHAR(200) NOT NULL,
-    Description NVARCHAR(MAX) NOT NULL,
-    Status VARCHAR(50) NOT NULL DEFAULT 'pending',
-    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt DATETIME2 NULL,
-    BranchName VARCHAR(100) NULL,
-    PrNumber INT NULL,
-    Notes NVARCHAR(MAX) NULL
-);
-
-CREATE INDEX IX_Enhancements_Status ON Enhancements(Status);
-CREATE INDEX IX_Enhancements_CreatedAt ON Enhancements(CreatedAt);
-
--- Create Deployments table
-CREATE TABLE Deployments (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    EnhancementId INT NOT NULL FOREIGN KEY REFERENCES Enhancements(Id),
-    ScheduledDate DATETIME2 NOT NULL,
-    Status VARCHAR(50) NOT NULL DEFAULT 'pending',
-    DeployedAt DATETIME2 NULL,
-    Notes NVARCHAR(MAX) NULL
-);
-
-CREATE INDEX IX_Deployments_Status ON Deployments(Status);
-CREATE INDEX IX_Deployments_ScheduledDate ON Deployments(ScheduledDate);
-```
+> **Note:** The current `CK_Enhancements_Status` CHECK constraint only allows `pending, in-progress, deployed, reverted, failed`. The monitor-agent's `EnhancementStatus` union (in `monitor-agent/src/db.ts`) uses a more granular flow (`processing`, `planning`, `implementing`, `reviewing`, `copilot_reviewing`, `pr_created`, `completed`). End-to-end runs against the deployed schema will fail until the constraint is updated to match — track separately, this is a known gap, not a setup problem.
 
 ## Step 2: GitHub Setup
 
@@ -282,10 +252,10 @@ INSERT INTO Enhancements (RequestorName, Description, Status)
 VALUES ('test@example.com', 'Test enhancement: Add a comment to README', 'pending');
 ```
 
-Or use the API:
+Or use the API (chat-api runs on port 8080 in local dev):
 
 ```bash
-curl -X POST http://localhost:3001/api/enhancements \
+curl -X POST http://localhost:8080/api/enhancements \
   -H "Content-Type: application/json" \
   -d '{
     "requestorName": "test@example.com",

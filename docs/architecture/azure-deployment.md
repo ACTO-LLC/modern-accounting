@@ -1,6 +1,10 @@
 # Azure Deployment Guide for Modern Accounting
 
-This guide covers deploying Modern Accounting to Azure for A CTO, LLC.
+This guide covers deploying Modern Accounting to Azure for A CTO, LLC. It is the **system reference + initial deployment runbook**: cost estimates, infra provisioning, schedule automation, manual ops.
+
+For incident-driven gotchas (Oryx bypass, Key Vault RBAC, DAB Container App config, custom domains / DNS), see [../claude-guidance/azure.md](../claude-guidance/azure.md).
+
+> Some specifics in this doc (deploy command syntax, App Service vs Container Apps split, scheduling assumptions) may have drifted since first authored — verify against current scripts before running. The cross-cutting gotchas in `claude-guidance/azure.md` are kept more current.
 
 ## Target Environment
 
@@ -149,8 +153,10 @@ $env:SQL_USER = "sqladmin"
 $env:SQL_SA_PASSWORD = $sqlPassword
 $env:SQL_DATABASE = "AccountingDB"
 
-node scripts/deploy-db.js --node
+npm run db:deploy
 ```
+
+See [database-deployment.md](database-deployment.md) for what `db:deploy` does (auto-detects SqlPackage vs Node.js mode) and [../claude-guidance/database.md](../claude-guidance/database.md) for the sqlproj-vs-migrations rule.
 
 ### Step 7: Deploy Application
 

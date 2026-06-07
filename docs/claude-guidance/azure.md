@@ -1,5 +1,11 @@
 # Claude Guidelines: Azure Deployment & Infrastructure
 
+Incident-driven notes for AI assistants working on Azure infrastructure. Each section is structured Problem → Root Cause → Solution and captures a specific gotcha that bit us.
+
+For the end-to-end deployment runbook (cost estimate, infra provisioning, schedule automation, manual ops), see [../architecture/azure-deployment.md](../architecture/azure-deployment.md).
+
+---
+
 ## Azure App Service Node.js Deployment - Oryx Bypass (Jan 2026)
 
 **Problem:** Node.js app fails to start on Azure App Service (Linux) with `ERR_MODULE_NOT_FOUND` errors, even when `node_modules` is included in the deployment package.
