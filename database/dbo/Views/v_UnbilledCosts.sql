@@ -26,7 +26,7 @@ CREATE VIEW [dbo].[v_UnbilledCosts] AS
 
 -- TimeEntry: strict gate (real billable + linkage data).
 SELECT
-    CAST(jc.[Id] AS NVARCHAR(50)) AS [RowId],
+    jc.[SourceType] + '-' + CAST(jc.[SourceId] AS NVARCHAR(36)) AS [RowId],
     jc.[ProjectId],
     p.[Name] AS [ProjectName],
     p.[CustomerId],
@@ -53,7 +53,7 @@ UNION ALL
 
 -- BillLine: include all coded-to-a-project lines (no InvoiceLineId yet).
 SELECT
-    CAST(jc.[Id] AS NVARCHAR(50)),
+    jc.[SourceType] + '-' + CAST(jc.[SourceId] AS NVARCHAR(36)),
     jc.[ProjectId],
     p.[Name],
     p.[CustomerId],
@@ -82,7 +82,7 @@ UNION ALL
 -- CustomerId here would silently mis-attribute the row and break the customer
 -- filter the report exposes.
 SELECT
-    CAST(jc.[Id] AS NVARCHAR(50)),
+    jc.[SourceType] + '-' + CAST(jc.[SourceId] AS NVARCHAR(36)),
     jc.[ProjectId],
     p.[Name],
     e.[CustomerId],
