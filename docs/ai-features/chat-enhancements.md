@@ -3,6 +3,8 @@
 ## Overview
 This document describes the enhancements made to the AI chat interface to support file uploads, message editing, and improved error handling.
 
+> **Authored Jan 2026.** The feature catalog and UX still describes today's chat interface. Backend specifics (env vars, ports, file-processing pipeline) have drifted; the highlights have been refreshed in this audit but spot-check against `chat-api/server.js` and `chat-api/src/services/` before relying on internal details.
+
 ## Features Implemented
 
 ### 1. File Upload Support
@@ -148,20 +150,23 @@ The AI system prompt has been updated to include:
 ### Configuration
 
 #### Environment Variables
-Create a `.env` file in the client directory:
+
+Create `client/.env.local`:
 ```
-VITE_CHAT_API_URL=http://localhost:7071
+VITE_API_URL=http://localhost:8080
 ```
 
-Create a `.env` file in the chat-api directory:
+Create `chat-api/.env`:
 ```
+PORT=8080
 AZURE_OPENAI_ENDPOINT=your_endpoint
 AZURE_OPENAI_API_KEY=your_key
-AZURE_OPENAI_DEPLOYMENT=gpt-4
-DAB_MCP_URL=http://localhost:5000/mcp
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+DAB_API_URL=http://localhost:5000/api
 APP_URL=http://localhost:5173
-PORT=7071
 ```
+
+See the project `CLAUDE.md` "Local Development with Git Worktrees" section for the full required env-var set (Azure OpenAI, QBO, Plaid). `gpt-4o` is current; older deployments may name it differently.
 
 ## Usage Examples
 
@@ -289,5 +294,5 @@ localStorage.setItem('debug', 'chat:*');
 
 ## Support
 For issues or questions, please refer to:
-- GitHub Issue: ehalsey/modern-accounting#78
+- GitHub Issue: ACTO-LLC/modern-accounting#78
 - Related Issues: #77 (AI Onboarding), #72 (AI Assistant)

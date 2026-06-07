@@ -18,9 +18,9 @@ User-facing walkthroughs and onboarding material.
 System design, deployment, and security.
 
 - [Solution Architecture](architecture/solution-architecture.md) — high-level system shape: client, chat-api, DAB, MCPs, database. _Last touched 2026-03-16._
-- [Auth Architecture](architecture/auth-architecture.md) — Entra ID auth flow, MSAL, role mapping. _Last touched 2026-01-31._
-- [Azure Deployment](architecture/azure-deployment.md) — App Service, Container Apps, custom domains, scheduling. _Last touched 2026-03-07._
-- [Database Deployment](architecture/database-deployment.md) — `npm run db:deploy`, sqlproj, SqlPackage vs Node.js fallback. _Last touched 2026-04-13._
+- [Auth Architecture](architecture/auth-architecture.md) — Entra ID auth flow, MSAL, role mapping. Paired with [`claude-guidance/auth.md`](claude-guidance/auth.md). _Last touched 2026-06-07._
+- [Azure Deployment](architecture/azure-deployment.md) — App Service, Container Apps, custom domains, scheduling. Paired with [`claude-guidance/azure.md`](claude-guidance/azure.md). _Last touched 2026-06-07._
+- [Database Deployment](architecture/database-deployment.md) — `npm run db:deploy`, sqlproj, SqlPackage vs Node.js fallback. Paired with [`claude-guidance/database.md`](claude-guidance/database.md). _Last touched 2026-06-07._
 - [Security](architecture/security.md) — MFA, RBAC, multi-tenant model. _Last touched 2026-01-16._
 - [Entra ID User Management](architecture/entra-id-user-management.md) — adding users, role assignment, group sync. _Last touched 2026-02-23._
 - [VM Dev Setup](architecture/vm-dev-setup.md) — Azure VM (`ehalsey-dev01`) for Docker-based development. _Last touched 2026-04-13._
@@ -37,10 +37,10 @@ REST and import surface.
 
 The AI-driven feature-addition system (issue #87).
 
-- [AI Feature System](ai-features/ai-feature-system.md) — architecture deep-dive: monitor agent, enhancements table, deployment flow. _Last touched 2026-01-15._
-- [AI Feature Setup](ai-features/ai-feature-setup.md) — environment vars, GitHub token, getting the monitor agent running. _Last touched 2026-01-15._
+- [AI Feature System](ai-features/ai-feature-system.md) — architecture deep-dive: monitor agent, enhancements table, deployment flow. _Last touched 2026-06-07._
+- [AI Feature Setup](ai-features/ai-feature-setup.md) — environment vars, GitHub token, getting the monitor agent running. _Last touched 2026-06-07._
 - [AI Workflow Diagram](ai-features/ai-workflow-diagram.md) — visual: chat request → plan → code → PR. _Last touched 2026-01-15._
-- [Chat Enhancements](ai-features/chat-enhancements.md) — the in-app chat interface for requesting features. _Last touched 2026-01-13._
+- [Chat Enhancements](ai-features/chat-enhancements.md) — the in-app chat interface for requesting features. _Last touched 2026-06-07._
 
 ## Integrations
 
@@ -53,10 +53,10 @@ External service integrations.
 
 Deep-dive technical guides referenced from the project `CLAUDE.md`. Intended audience is AI assistants (and developers reading along).
 
-- [Auth](claude-guidance/auth.md) — MSAL, Azure AD, Plaid/QBO auth flows. _Last touched 2026-02-03._
-- [Azure](claude-guidance/azure.md) — App Service, Container Apps, Key Vault, custom domains. _Last touched 2026-03-07._
+- [Auth](claude-guidance/auth.md) — MSAL, Azure AD, Plaid/QBO auth flows. Paired with [`architecture/auth-architecture.md`](architecture/auth-architecture.md). _Last touched 2026-06-07._
+- [Azure](claude-guidance/azure.md) — App Service, Container Apps, Key Vault, custom domains. Paired with [`architecture/azure-deployment.md`](architecture/azure-deployment.md). _Last touched 2026-06-07._
 - [DAB](claude-guidance/dab.md) — Data API Builder config, OData, role authorization. _Last touched 2026-02-03._
-- [Database](claude-guidance/database.md) — schema management, migrations, production SQL. _Last touched 2026-02-03._
+- [Database](claude-guidance/database.md) — schema management, migrations, production SQL. Paired with [`architecture/database-deployment.md`](architecture/database-deployment.md). _Last touched 2026-06-07._
 - [Feature Flags](claude-guidance/feature-flags.md) — flag system, admin toggles, nav visibility. _Last touched 2026-06-04._
 - [Frontend](claude-guidance/frontend.md) — MUI DataGrid, Zod nullish, Express proxy, pagination. _Last touched 2026-02-03._
 - [MCP](claude-guidance/mcp.md) — MCP servers, local/prod switching, QBO token injection. _Last touched 2026-04-15._

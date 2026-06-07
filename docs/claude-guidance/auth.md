@@ -1,5 +1,11 @@
 # Claude Guidelines: Authentication & Authorization
 
+Incident-driven notes for AI assistants. Each section is Problem → Root Cause → Solution and captures a specific gotcha (MSAL v3 init, QBO callback Managed Identity, Plaid `Service` role mismatch).
+
+For the system reference (diagrams, role definitions, end-to-end token flow, env vars), see [../architecture/auth-architecture.md](../architecture/auth-architecture.md).
+
+---
+
 ## MSAL v3 Azure AD Authentication Issues (Jan 2026)
 
 **Problem:** Login fails with `endpoints_resolution_error: Endpoints cannot be resolved` or `AADSTS650053: scope 'openid,profile,email' doesn't exist`.

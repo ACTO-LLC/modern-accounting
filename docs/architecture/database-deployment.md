@@ -1,6 +1,8 @@
 # Database Deployment Guide
 
-This document describes how to deploy the AccountingDB database schema.
+This document describes **how to deploy** the AccountingDB database schema: deployment modes, env vars, local dev workflow, CI/CD workflow.
+
+For the **canonical schema-management rules** (sqlproj is the single source of truth for ALL schema objects, when to use migrations, prod SQL access patterns, journal-entry invariants), see [../claude-guidance/database.md](../claude-guidance/database.md).
 
 ## Overview
 
@@ -156,23 +158,11 @@ database/
     └── AccountingDB.dacpac       # Compiled database package
 ```
 
-## Adding New Tables
+## Adding New Tables / Schema Changes
 
-1. Create the SQL file in `database/dbo/Tables/YourTable.sql`
-2. Add the file to `AccountingDB.sqlproj`:
-   ```xml
-   <Build Include="dbo\Tables\YourTable.sql" />
-   ```
-3. Run `node scripts/deploy-db.js` to deploy
+The sqlproj is the **single source of truth** for ALL schema objects (tables, views, stored procedures, triggers, indexes). Migrations are for data operations only.
 
-## Schema Migrations
-
-For complex schema changes (adding columns to existing tables, data migrations), use migration scripts:
-
-1. Create a new migration file: `database/migrations/NNN_Description.sql`
-2. The script will be run automatically by `deploy-db.js`
-
-Migration scripts should be idempotent (safe to run multiple times).
+See [../claude-guidance/database.md](../claude-guidance/database.md#database-schema-management-hybrid-approach) for the canonical rule, examples, and the "never use migrations for X" list.
 
 ## Troubleshooting
 

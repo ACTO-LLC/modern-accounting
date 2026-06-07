@@ -1,6 +1,8 @@
 # Authentication & Authorization Architecture
 
-This document describes the end-to-end authentication and authorization flow for Modern Accounting, including token forwarding, DAB role-based access, and backend service authentication.
+This document describes the end-to-end authentication and authorization flow for Modern Accounting, including token forwarding, DAB role-based access, and backend service authentication. It is the **system reference**: diagrams, role definitions, env vars, security principles.
+
+For incident-driven gotchas (MSAL v3 init, QBO callback Managed Identity, Plaid `Service` role mismatch), see [../claude-guidance/auth.md](../claude-guidance/auth.md).
 
 ## Architecture Overview
 
@@ -317,43 +319,11 @@ app.post('/api/migrate', optionalJWT, async (req, res) => {
 
 ### Code Implementation
 
-```javascript
-// chat-api/qbo-auth.js
-import { DefaultAzureCredential } from '@azure/identity';
+`DefaultAzureCredential` from `@azure/identity` acquires a token for the DAB audience (`api://${AZURE_AD_AUDIENCE}/.default`); the token is cached with a 5-minute expiry buffer and reused across requests. Local dev skips auth when `DAB_API_URL` points at localhost.
 
-const DAB_AUDIENCE = process.env.AZURE_AD_AUDIENCE;
-let azureCredential = null;
-let cachedToken = null;
-let tokenExpiry = null;
-
-async function getDabAuthToken() {
-    // Skip for local development
-    if (DAB_API_URL.includes('localhost')) return null;
-
-    // Return cached token if still valid
-    if (cachedToken && tokenExpiry &&
-        new Date() < new Date(tokenExpiry.getTime() - 5 * 60 * 1000)) {
-        return cachedToken;
-    }
-
-    try {
-        if (!azureCredential) {
-            azureCredential = new DefaultAzureCredential();
-        }
-
-        const scope = `api://${DAB_AUDIENCE}/.default`;
-        const tokenResponse = await azureCredential.getToken(scope);
-
-        cachedToken = tokenResponse.token;
-        tokenExpiry = new Date(tokenResponse.expiresOnTimestamp);
-
-        return cachedToken;
-    } catch (error) {
-        console.error('Failed to acquire DAB auth token:', error.message);
-        return null;
-    }
-}
-```
+For the actual reference implementations and the role-selection gotcha, see [../claude-guidance/auth.md](../claude-guidance/auth.md):
+- **QBO callback** uses Managed Identity → `chat-api/qbo-auth.js`
+- **Plaid token exchange** uses Managed Identity with `X-MS-API-ROLE: Service` (not `Admin` — see incident notes) → `chat-api/plaid-service.js`
 
 ## QuickBooks OAuth Flow
 

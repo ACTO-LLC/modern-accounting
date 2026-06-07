@@ -105,20 +105,21 @@ The Chat API provides REST endpoints for managing enhancements and deployments.
 
 ### 3. Monitor Agent Service
 
-The Monitor Agent is a standalone Node.js service that polls the database for pending enhancements and processes them automatically.
+The Monitor Agent is a standalone **TypeScript** service (run with `tsx` in dev, transpiled to JS in prod) that polls the database for pending enhancements and processes them automatically.
 
-**Key Modules:**
+**Key Modules** (under `monitor-agent/src/`):
 
 | Module | Purpose |
 |--------|---------|
 | `index.ts` | Main entry point and polling loop |
 | `config.ts` | Configuration management |
-| `db.ts` | Database operations |
-| `claude.ts` | Claude AI integration |
-| `github.ts` | GitHub API operations |
+| `db.ts` | Database operations + `EnhancementStatus` union type |
+| `claude.ts` | Claude AI integration (plan + code + review + commit/PR generation) |
+| `github.ts` | GitHub API operations (Octokit) |
 | `copilot.ts` | Copilot review automation |
-| `git.ts` | Local git operations |
-| `scheduler.ts` | Deployment scheduling |
+| `git.ts` | Local git operations (simple-git) |
+| `scheduler.ts` | Deployment scheduling logic |
+| `run-scheduler.ts` | One-shot scheduler entry point (for cron / Task Scheduler) |
 | `notifications.ts` | Email/Slack notifications |
 
 **Processing Pipeline:**
@@ -281,7 +282,7 @@ DRY_RUN=false
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - SQL Server (local or Docker)
 - Git configured with credentials
 - GitHub token with repo access

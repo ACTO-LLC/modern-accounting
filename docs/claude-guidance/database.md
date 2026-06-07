@@ -1,5 +1,11 @@
 # Claude Guidelines: Database & Schema Management
 
+Schema-management rules and incident-driven gotchas for AI assistants. This is the **canonical reference** for "where does this object go — sqlproj or migration?", running SQL against prod, and the connection-string / driver pitfalls we've hit.
+
+For the **deployment runbook** (modes, env vars, `docker compose up`, `npm run db:clone`, CI/CD workflow), see [../architecture/database-deployment.md](../architecture/database-deployment.md).
+
+---
+
 ## Database Schema Management (Hybrid Approach)
 
 **We use a hybrid approach:**
