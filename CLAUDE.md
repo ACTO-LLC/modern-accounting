@@ -166,9 +166,9 @@ The system enables administrators to request feature changes through a chat inte
 - **Database Tables** - `Enhancements` and `Deployments` tables
 
 **Documentation:**
-- [System Overview](docs/ai-feature-system.md)
-- [API Reference](docs/api-reference.md)
-- [Setup Guide](docs/ai-feature-setup.md)
+- [System Overview](docs/ai-features/ai-feature-system.md)
+- [API Reference](docs/api/api-reference.md)
+- [Setup Guide](docs/ai-features/ai-feature-setup.md)
 
 **Quick Start:**
 ```bash
@@ -188,18 +188,20 @@ npm run dev  # Start the monitor agent
 
 For detailed technical guidance on specific topics, see these documents:
 
+For a full index of all docs, see [docs/README.md](docs/README.md).
+
 | Topic | Document |
 |-------|----------|
-| Azure deployment, App Service, Container Apps, Key Vault | [docs/claude-azure.md](docs/claude-azure.md) |
-| DAB configuration, endpoints, OData, role authorization | [docs/claude-dab.md](docs/claude-dab.md) |
-| MSAL, Azure AD auth, Plaid/QBO auth flows | [docs/claude-auth.md](docs/claude-auth.md) |
-| Playwright testing patterns, auth bypass | [docs/claude-testing.md](docs/claude-testing.md) |
-| Schema management, migrations, production SQL | [docs/claude-database.md](docs/claude-database.md) |
-| QBO migration architecture, field mapping, cutoff dates | [docs/claude-qbo-migration.md](docs/claude-qbo-migration.md) |
-| MUI DataGrid, Zod nullish, Express proxy, pagination | [docs/claude-frontend.md](docs/claude-frontend.md) |
-| Feature flags system, admin toggles, nav visibility | [docs/claude-feature-flags.md](docs/claude-feature-flags.md) |
-| Entra ID user management, roles, group sync | [docs/entra-id-user-management.md](docs/entra-id-user-management.md) |
-| MCP servers, local/prod switching, QBO token injection | [docs/claude-mcp.md](docs/claude-mcp.md) |
+| Azure deployment, App Service, Container Apps, Key Vault | [docs/claude-guidance/azure.md](docs/claude-guidance/azure.md) |
+| DAB configuration, endpoints, OData, role authorization | [docs/claude-guidance/dab.md](docs/claude-guidance/dab.md) |
+| MSAL, Azure AD auth, Plaid/QBO auth flows | [docs/claude-guidance/auth.md](docs/claude-guidance/auth.md) |
+| Playwright testing patterns, auth bypass | [docs/claude-guidance/testing.md](docs/claude-guidance/testing.md) |
+| Schema management, migrations, production SQL | [docs/claude-guidance/database.md](docs/claude-guidance/database.md) |
+| QBO migration architecture, field mapping, cutoff dates | [docs/claude-guidance/qbo-migration.md](docs/claude-guidance/qbo-migration.md) |
+| MUI DataGrid, Zod nullish, Express proxy, pagination | [docs/claude-guidance/frontend.md](docs/claude-guidance/frontend.md) |
+| Feature flags system, admin toggles, nav visibility | [docs/claude-guidance/feature-flags.md](docs/claude-guidance/feature-flags.md) |
+| Entra ID user management, roles, group sync | [docs/architecture/entra-id-user-management.md](docs/architecture/entra-id-user-management.md) |
+| MCP servers, local/prod switching, QBO token injection | [docs/claude-guidance/mcp.md](docs/claude-guidance/mcp.md) |
 
 ---
 

@@ -460,6 +460,6 @@ CREATE TABLE Deployments (
 
 ## Related Documentation
 
-- [API Reference](./api-reference.md) - Detailed endpoint documentation
+- [API Reference](../api/api-reference.md) - Detailed endpoint documentation
 - [Setup Guide](./ai-feature-setup.md) - Step-by-step installation
 - [Chat Enhancements](./chat-enhancements.md) - Chat interface documentation

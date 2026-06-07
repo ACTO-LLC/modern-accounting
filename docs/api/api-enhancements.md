@@ -480,6 +480,6 @@ interface UpdateEnhancementRequest {
 
 ## Related Documentation
 
-- [AI Feature System Overview](./ai-feature-system.md)
-- [AI Workflow Diagram](./ai-workflow-diagram.md)
+- [AI Feature System Overview](../ai-features/ai-feature-system.md)
+- [AI Workflow Diagram](../ai-features/ai-workflow-diagram.md)
 - [Full API Reference](./api-reference.md) - Includes deployments and GitHub endpoints

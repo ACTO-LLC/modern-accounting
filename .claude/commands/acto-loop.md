@@ -219,7 +219,7 @@ Use the hybrid approach documented in CLAUDE.md.
 
 ## References
 
-- `docs/pr-review-template.md` — PR review process template
+- `docs/process/pr-review-template.md` — PR review process template
 - `CLAUDE.md` — project patterns and known issues
 
 ## Example Execution

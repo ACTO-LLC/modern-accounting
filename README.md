@@ -610,16 +610,18 @@ See [.env.example](.env.example) for all options.
 
 ## Documentation
 
+See [docs/README.md](docs/README.md) for the full index. Highlights:
+
 | Document | Description |
 |----------|-------------|
-| [AI Feature System](docs/ai-feature-system.md) | Architecture deep-dive |
-| [AI Setup Guide](docs/ai-feature-setup.md) | Monitor agent configuration |
-| [Guided Onboarding](docs/guided-onboarding.md) | Progressive learning system |
-| [API Reference](docs/api-reference.md) | Endpoint documentation |
-| [AI Workflow Diagram](docs/ai-workflow-diagram.md) | Visual architecture |
+| [AI Feature System](docs/ai-features/ai-feature-system.md) | Architecture deep-dive |
+| [AI Setup Guide](docs/ai-features/ai-feature-setup.md) | Monitor agent configuration |
+| [Guided Onboarding](docs/tutorials/guided-onboarding.md) | Progressive learning system |
+| [API Reference](docs/api/api-reference.md) | Endpoint documentation |
+| [AI Workflow Diagram](docs/ai-features/ai-workflow-diagram.md) | Visual architecture |
 | [Development Guide](DEVELOPMENT.md) | Local setup details |
 | [Security](SECURITY.md) | Secrets management |
-| [Security Deep-Dive](docs/security.md) | MFA, RBAC, multi-tenant architecture |
+| [Security Deep-Dive](docs/architecture/security.md) | MFA, RBAC, multi-tenant architecture |
 
 ---
 

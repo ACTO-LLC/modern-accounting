@@ -121,7 +121,7 @@ WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[CompanyFeatureFlags_History
 - `Admin` has full access
 - `Accountant` can create, read, and update (but not delete)
 
-**Important:** Write operations require the `X-MS-API-ROLE` header (see [claude-dab.md](claude-dab.md) for details).
+**Important:** Write operations require the `X-MS-API-ROLE` header (see [dab.md](dab.md) for details).
 
 ---
 
