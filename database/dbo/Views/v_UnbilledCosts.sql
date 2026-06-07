@@ -21,7 +21,14 @@
 --   * Overhead       -> skip. Allocations are reporting overlays, not
 --                       directly invoiceable.
 --
--- Aggregates are all-time; period-bounded filtering tracked in #635.
+-- This view is row-level (no aggregation) — one output row per qualifying
+-- JobCosts row. Period-bounded filtering is tracked in #635.
+--
+-- RowId = SourceType + '-' + SourceId. The posting triggers on the source
+-- tables (TR_TimeEntries_PostJobCosts, TR_BillLines_PostJobCosts,
+-- TR_Expenses_PostJobCosts) delete+insert on update, so JobCosts.Id is
+-- unstable across edits. SourceType + SourceId identify the underlying
+-- transaction directly and stay stable.
 CREATE VIEW [dbo].[v_UnbilledCosts] AS
 
 -- TimeEntry: strict gate (real billable + linkage data).
@@ -53,7 +60,7 @@ UNION ALL
 
 -- BillLine: include all coded-to-a-project lines (no InvoiceLineId yet).
 SELECT
-    jc.[SourceType] + '-' + CAST(jc.[SourceId] AS NVARCHAR(36)),
+    jc.[SourceType] + '-' + CAST(jc.[SourceId] AS NVARCHAR(36)) AS [RowId],
     jc.[ProjectId],
     p.[Name],
     p.[CustomerId],
@@ -82,7 +89,7 @@ UNION ALL
 -- CustomerId here would silently mis-attribute the row and break the customer
 -- filter the report exposes.
 SELECT
-    jc.[SourceType] + '-' + CAST(jc.[SourceId] AS NVARCHAR(36)),
+    jc.[SourceType] + '-' + CAST(jc.[SourceId] AS NVARCHAR(36)) AS [RowId],
     jc.[ProjectId],
     p.[Name],
     e.[CustomerId],
