@@ -217,7 +217,7 @@ Production uses custom domains on `a-cto.com` with free App Service Managed Cert
 | QBO MCP | `https://mcp-qbo.a-cto.com` |
 | MA MCP | `https://mcp-ma.a-cto.com` |
 
-**DNS Zone location:** The `a-cto.com` DNS zone lives in subscription `8883174d...`, RG `acto-dns-prod-rg` — NOT in the modern-accounting resource group. See [docs/claude-azure.md](../../docs/claude-azure.md#custom-domains--ssl-feb-2026) for detailed setup instructions.
+**DNS Zone location:** The `a-cto.com` DNS zone lives in subscription `8883174d...`, RG `acto-dns-prod-rg` — NOT in the modern-accounting resource group. See [docs/claude-guidance/azure.md](../../docs/claude-guidance/azure.md#custom-domains--ssl-feb-2026) for detailed setup instructions.
 
 **IMPORTANT:** The Bicep `dns-zone.bicep` module is designed for greenfield setups. For this project, DNS records are manually added to the existing zone because it contains 50+ records for other services (email, other apps). Do NOT deploy `dns-zone.bicep` — it would create a duplicate zone with different nameservers.
 

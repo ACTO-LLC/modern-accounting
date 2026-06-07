@@ -254,5 +254,5 @@ erDiagram
 ## Related Documentation
 
 - [AI Feature System Overview](./ai-feature-system.md)
-- [API Reference](./api-reference.md)
+- [API Reference](../api/api-reference.md)
 - [Setup Guide](./ai-feature-setup.md)

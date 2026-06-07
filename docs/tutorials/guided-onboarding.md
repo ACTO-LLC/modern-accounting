@@ -359,6 +359,6 @@ const pathToFeatureKey: Record<string, string> = {
 
 ## Related Documentation
 
-- [AI Feature System](ai-feature-system.md) - How autonomous feature development works
-- [Security](security.md) - Authentication and authorization details
-- [API Reference](api-reference.md) - Full API documentation
+- [AI Feature System](../ai-features/ai-feature-system.md) - How autonomous feature development works
+- [Security](../architecture/security.md) - Authentication and authorization details
+- [API Reference](../api/api-reference.md) - Full API documentation

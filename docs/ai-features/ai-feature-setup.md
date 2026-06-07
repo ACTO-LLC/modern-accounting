@@ -471,6 +471,6 @@ ORDER BY UpdatedAt DESC;
 ## Next Steps
 
 - Review [AI Feature System Overview](./ai-feature-system.md)
-- Check [API Reference](./api-reference.md) for endpoint details
+- Check [API Reference](../api/api-reference.md) for endpoint details
 - Set up branch protection rules on GitHub
 - Configure CI/CD pipeline for the repository
