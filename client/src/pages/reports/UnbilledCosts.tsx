@@ -250,7 +250,7 @@ export default function UnbilledCosts() {
         </div>
       ) : grouped.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center text-gray-500 dark:text-gray-400">
-          No unbilled costs match the current filters. 🎉
+          No unbilled costs match the current filters.
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
@@ -259,7 +259,8 @@ export default function UnbilledCosts() {
               <tr>
                 <th className="px-2 py-2 w-10"></th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Project / Source</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer / Cost Code</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cost Code</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
@@ -300,8 +301,9 @@ export default function UnbilledCosts() {
                       <td className={`px-4 py-2 text-sm ${g.isMultiCustomer ? 'italic text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
                         {g.customerDisplay}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{g.rows.length} {g.rows.length === 1 ? 'item' : 'items'}</td>
-                      <td className="px-4 py-2"></td>
+                      <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400" colSpan={3}>
+                        {g.rows.length} {g.rows.length === 1 ? 'item' : 'items'}
+                      </td>
                       <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
                         {formatCurrencyStandalone(g.total)}
                       </td>
@@ -311,6 +313,9 @@ export default function UnbilledCosts() {
                         <td className="px-2 py-2"></td>
                         <td className="px-4 py-2 pl-10 text-sm text-gray-700 dark:text-gray-300">
                           {sourceLabel[r.SourceType]}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                          {r.CustomerName ?? '—'}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 font-mono">
                           {r.CostCode ?? '—'}
@@ -333,7 +338,7 @@ export default function UnbilledCosts() {
             <tfoot className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <td className="px-2 py-2"></td>
-                <td colSpan={4} className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <td colSpan={5} className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   Total unbilled
                 </td>
                 <td className="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
